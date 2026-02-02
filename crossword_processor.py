@@ -111,64 +111,73 @@ class CrosswordGridProcessor:
         
     def find_cell_size(self):
         """
-        Find cell size and grid origin using edge detection and Hough transform.
+        Find cell size and grid origin using multiple detection methods.
 
-        This approach detects grid lines directly rather than relying on black squares,
-        making it robust against grids with adjacent black cells that might merge
-        in binary thresholding.
+        Tries contour detection first (more reliable for PDFs with grey cells),
+        then falls back to edge/Hough detection for screenshots with true black cells.
         """
-        print("\nFinding cell size using edge detection...")
+        print("\nFinding cell size...")
 
-        # Step 1: Edge detection to find grid lines
-        edges = cv2.Canny(self.gray, 50, 150)
+        # Method 1: Find grid as largest square-ish rectangle (works best for PDFs)
+        _, binary = cv2.threshold(self.gray, 200, 255, cv2.THRESH_BINARY_INV)
+        contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # Step 2: Hough transform to detect lines
-        # Use probabilistic Hough for better line segment detection
-        lines = cv2.HoughLinesP(edges, 1, np.pi/180, 100, minLineLength=200, maxLineGap=10)
+        grid_found = False
+        for contour in sorted(contours, key=cv2.contourArea, reverse=True)[:10]:
+            x, y, w, h = cv2.boundingRect(contour)
+            area = w * h
+            aspect = w / h if h > 0 else 0
 
-        if lines is None or len(lines) == 0:
-            raise ValueError("Could not detect grid lines in image")
+            # Grid should be roughly square and large
+            if 0.8 < aspect < 1.2 and area > 50000:
+                grid_x, grid_y = x, y
+                grid_w, grid_h = w, h
+                grid_found = True
+                print(f"  Found grid via contour: ({grid_x}, {grid_y}) {grid_w}x{grid_h}")
+                break
 
-        # Step 3: Separate horizontal and vertical lines
-        h_lines = []  # y-coordinates of horizontal lines
-        v_lines = []  # x-coordinates of vertical lines
+        # Method 2: Fall back to edge detection + Hough transform
+        if not grid_found:
+            print("  Trying edge detection method...")
+            edges = cv2.Canny(self.gray, 50, 150)
+            lines = cv2.HoughLinesP(edges, 1, np.pi/180, 100, minLineLength=200, maxLineGap=10)
 
-        for line in lines:
-            x1, y1, x2, y2 = line[0]
-            # Horizontal line: y values are similar
-            if abs(y2 - y1) < 10:
-                h_lines.append((y1 + y2) // 2)
-            # Vertical line: x values are similar
-            elif abs(x2 - x1) < 10:
-                v_lines.append((x1 + x2) // 2)
+            if lines is None or len(lines) == 0:
+                raise ValueError("Could not detect grid in image")
 
-        if not h_lines or not v_lines:
-            raise ValueError(f"Insufficient grid lines detected (h:{len(h_lines)}, v:{len(v_lines)})")
+            h_lines = []
+            v_lines = []
 
-        print(f"  Detected {len(h_lines)} horizontal, {len(v_lines)} vertical line segments")
+            for line in lines:
+                x1, y1, x2, y2 = line[0]
+                if abs(y2 - y1) < 10:
+                    h_lines.append((y1 + y2) // 2)
+                elif abs(x2 - x1) < 10:
+                    v_lines.append((x1 + x2) // 2)
 
-        # Step 4: Find grid boundaries from line positions
-        grid_x = min(v_lines)
-        grid_y = min(h_lines)
-        grid_x_max = max(v_lines)
-        grid_y_max = max(h_lines)
+            if not h_lines or not v_lines:
+                raise ValueError(f"Insufficient grid lines detected")
 
-        grid_w = grid_x_max - grid_x
-        grid_h = grid_y_max - grid_y
+            print(f"  Detected {len(h_lines)} horizontal, {len(v_lines)} vertical line segments")
 
-        # Step 5: Calculate cell size from grid dimensions and known grid size
+            grid_x = min(v_lines)
+            grid_y = min(h_lines)
+            grid_w = max(v_lines) - grid_x
+            grid_h = max(h_lines) - grid_y
+
+        # Calculate cell size from grid dimensions
         cell_w = grid_w / self.cols
         cell_h = grid_h / self.rows
 
-        # Store as float for more accurate cell center calculations
+        # Store values
         self.cell_size_w = cell_w
         self.cell_size_h = cell_h
-        self.cell_size = (cell_w + cell_h) / 2  # Keep average for backwards compatibility
-        self.grid_origin = (grid_x, grid_y)
+        self.cell_size = (cell_w + cell_h) / 2
+        self.grid_origin = (int(grid_x), int(grid_y))
         self.grid_width = grid_w
         self.grid_height = grid_h
 
-        print(f"  Grid boundary: ({grid_x}, {grid_y}) to ({grid_x_max}, {grid_y_max})")
+        print(f"  Grid boundary: ({grid_x}, {grid_y}) to ({grid_x + grid_w}, {grid_y + grid_h})")
         print(f"  Grid dimensions: {grid_w}x{grid_h} pixels")
         print(f"  Cell size: {cell_w:.1f}x{cell_h:.1f} pixels (avg: {self.cell_size:.1f})")
         print(f"  Grid origin: {self.grid_origin}")
@@ -213,8 +222,10 @@ class CrosswordGridProcessor:
 
                 avg_brightness = np.mean(region)
 
-                # Black square threshold (dark = black cell)
-                if avg_brightness < 128:
+                # Black/grey square threshold
+                # Screenshots have black cells (~0-50), PDFs have grey cells (~150)
+                # White cells are typically 240-255
+                if avg_brightness < 200:
                     row_str += '#'
                 else:
                     row_str += '.'

@@ -26,6 +26,7 @@ from flask import Flask, render_template, request, jsonify
 import yaml
 
 from crossword_processor import CrosswordGridProcessor
+from pdf_processor import process_times_pdf
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
@@ -149,6 +150,107 @@ def load_clues_file(filepath):
     raise ValueError("Could not parse clues file as JSON or YAML")
 
 
+def process_pdf_upload(pdf_file):
+    """
+    Process a PDF file containing both crossword grid and clues.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_path = os.path.join(tmpdir, 'crossword.pdf')
+        pdf_file.save(pdf_path)
+
+        try:
+            # Extract grid image and clues from PDF
+            grid_path, clue_data = process_times_pdf(pdf_path, tmpdir)
+
+            # Write clues as YAML for the processor
+            yaml_path = os.path.join(tmpdir, 'clues.yaml')
+            with open(yaml_path, 'w') as f:
+                yaml.dump(clue_data, f)
+
+            # Process the crossword
+            processor = CrosswordGridProcessor(grid_path, yaml_path)
+            processor.load_image()
+            processor.load_clues()
+            processor.find_cell_size()
+            processor.extract_grid_structure()
+
+            across_starts, down_starts = processor.find_clue_positions()
+            across_lengths, down_lengths = processor.calculate_clue_lengths(
+                across_starts, down_starts)
+
+            # For PDF imports, we don't have answers, so skip validation
+            # Create empty grid
+            grid = [['-' for _ in range(processor.cols)] for _ in range(processor.rows)]
+            for r in range(processor.rows):
+                for c in range(processor.cols):
+                    if processor.layout[r][c] == '#':
+                        grid[r][c] = '#'
+
+            validation_warnings = ["PDF import: No answer validation (answers not provided)"]
+
+            # Build response JSON
+            cell_numbers = {}
+            all_starts = {}
+            all_starts.update(across_starts)
+            all_starts.update(down_starts)
+            for num, (row, col) in all_starts.items():
+                key = f"{row},{col}"
+                if key not in cell_numbers or num < cell_numbers[key]:
+                    cell_numbers[key] = num
+
+            across_clues = [
+                {'number': c['number'], 'clue': c['clue']}
+                for c in clue_data.get('across', [])
+            ]
+            down_clues = [
+                {'number': c['number'], 'clue': c['clue']}
+                for c in clue_data.get('down', [])
+            ]
+
+            numbering_across = [
+                {'number': num, 'row': row, 'col': col, 'length': across_lengths[num]}
+                for num, (row, col) in sorted(across_starts.items())
+            ]
+            numbering_down = [
+                {'number': num, 'row': row, 'col': col, 'length': down_lengths[num]}
+                for num, (row, col) in sorted(down_starts.items())
+            ]
+
+            response = {
+                'success': True,
+                'warnings': validation_warnings,
+                'puzzle': {
+                    'publication': clue_data.get('publication', ''),
+                    'series': clue_data.get('series', ''),
+                    'number': clue_data.get('number', ''),
+                    'grid': {
+                        'rows': processor.rows,
+                        'cols': processor.cols,
+                        'layout': processor.layout,
+                        'solution': grid,
+                        'cellNumbers': cell_numbers
+                    },
+                    'numbering': {
+                        'across': numbering_across,
+                        'down': numbering_down
+                    },
+                    'clues': {
+                        'across': across_clues,
+                        'down': down_clues
+                    }
+                }
+            }
+
+            return jsonify(response)
+
+        except Exception as e:
+            import traceback
+            return jsonify({
+                'error': str(e),
+                'traceback': traceback.format_exc()
+            }), 500
+
+
 @app.route('/')
 def index():
     """Serve the main page"""
@@ -158,9 +260,14 @@ def index():
 @app.route('/upload', methods=['POST'])
 def upload():
     """
-    Process uploaded grid image and clues file.
+    Process uploaded grid image and clues file, or a single PDF containing both.
     Returns puzzle data as JSON.
     """
+    # Check if PDF upload (single file with both grid and clues)
+    if 'pdf_file' in request.files and request.files['pdf_file'].filename:
+        return process_pdf_upload(request.files['pdf_file'])
+
+    # Otherwise expect separate grid image and clues file
     if 'grid_image' not in request.files:
         return jsonify({'error': 'No grid image uploaded'}), 400
     if 'clues_yaml' not in request.files:
