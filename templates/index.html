@@ -13,9 +13,28 @@
             <p class="subtitle" id="puzzle-info"></p>
         </header>
 
+        <!-- Navigation tabs -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="puzzles">My Puzzles</button>
+            <button class="nav-tab" data-tab="import">Import PDF</button>
+        </nav>
+
+        <!-- Puzzle List Section -->
+        <section id="puzzles-section" class="puzzles-section">
+            <div class="puzzles-header">
+                <h2>Stored Puzzles</h2>
+                <select id="series-filter" class="series-filter">
+                    <option value="">All Series</option>
+                </select>
+            </div>
+            <div id="puzzle-list" class="puzzle-list">
+                <p class="empty-message">No puzzles imported yet. Use the Import tab to add puzzles.</p>
+            </div>
+        </section>
+
         <!-- Upload Section -->
-        <section id="upload-section" class="upload-section">
-            <h2>Load Puzzle</h2>
+        <section id="upload-section" class="upload-section hidden">
+            <h2>Import Puzzle</h2>
             <p class="upload-hint">Upload a Times Cryptic PDF containing the grid and clues</p>
 
             <form id="pdf-upload-form">
@@ -33,7 +52,7 @@
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary">
-                    Process PDF
+                    Import PDF
                 </button>
             </form>
             <div id="upload-error" class="error-message"></div>
@@ -41,6 +60,11 @@
 
         <!-- Puzzle Section (hidden until puzzle loaded) -->
         <section id="puzzle-section" class="puzzle-section hidden">
+            <div class="puzzle-header">
+                <button class="btn btn-back" id="back-btn">&larr; Back to Puzzles</button>
+                <div class="puzzle-title" id="puzzle-title"></div>
+            </div>
+
             <div class="puzzle-layout">
                 <!-- Grid -->
                 <div class="grid-container">
@@ -72,6 +96,26 @@
                 <span id="current-clue-text"></span>
             </div>
         </section>
+
+        <!-- Add Answers Modal -->
+        <div id="answers-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Add Answers File</h3>
+                <p>Add an answers file to enable solution checking for this puzzle.</p>
+                <form id="add-answers-form">
+                    <input type="hidden" id="modal-series" name="series">
+                    <input type="hidden" id="modal-puzzle-number" name="puzzle_number">
+                    <div class="upload-field">
+                        <label for="modal-answers-file">Answers File</label>
+                        <input type="file" id="modal-answers-file" accept=".yaml,.yml,.json" required>
+                    </div>
+                    <div class="modal-buttons">
+                        <button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Answers</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         <!-- Instructions -->
         <section class="instructions">
