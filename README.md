@@ -382,7 +382,7 @@ Grid Reader/
 - State easily gets out of sync between browser and server
 - Ported React UI adds complexity without clear benefit
 
-**Target architecture:** Simple stateless API call:
+**Target architecture:** Merge LLM solving into Grid Reader as a single `/solve` endpoint:
 
 ```
 POST /solve
@@ -401,11 +401,18 @@ Response:
 ```
 
 **Benefits:**
+- Single server - no cryptic-trainer dependency
 - No session state to manage
 - No pre-annotation required
 - Single request/response
 - Works on any clue
-- Grid Reader remains simple - just displays answer and optional explanation
+- Grid Reader becomes fully self-contained
+
+**Implementation:**
+- Copy LLM solving logic from cryptic-trainer into Grid Reader
+- Delete trainer.js and all proxy code
+- Add simple `/solve` endpoint that calls LLM and returns answer
+- UI: modal shows "Solving..." then displays answer + explanation with "Apply" button
 
 ## License
 
