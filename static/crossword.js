@@ -416,7 +416,8 @@ class CrosswordPuzzle {
             });
 
             optionEl.addEventListener('click', () => {
-                this.submitTrainerChoice(index, opt.label || opt.value);
+                // Send the index for multiple choice (API expects index, not label)
+                this.submitTrainerChoice(index, index);
             });
 
             optionsDiv.appendChild(optionEl);
