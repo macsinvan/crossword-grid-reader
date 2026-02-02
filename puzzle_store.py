@@ -190,6 +190,7 @@ class PuzzleStore:
                 puzzle_info = {
                     'series': series_name,
                     'number': puzzle_dir.name,
+                    'date': data.get('puzzle', {}).get('date'),
                     'imported_at': data.get('imported_at'),
                     'has_answers': data.get('has_answers', False),
                     'publication': data.get('puzzle', {}).get('publication', ''),

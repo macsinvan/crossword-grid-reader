@@ -145,9 +145,11 @@ class CrosswordPuzzle {
             item.className = 'puzzle-item';
             item.innerHTML = `
                 <div class="puzzle-item-info">
-                    <span class="puzzle-series">${puzzle.series}</span>
-                    <span class="puzzle-number">#${puzzle.number}</span>
-                    ${puzzle.has_answers ? '<span class="has-answers">✓ Answers</span>' : ''}
+                    <div class="puzzle-item-title">${puzzle.series} #${puzzle.number}</div>
+                    <div class="puzzle-item-meta">
+                        ${puzzle.date ? `<span class="puzzle-date">${puzzle.date}</span>` : ''}
+                        ${puzzle.has_answers ? '<span class="has-answers">✓ Answers</span>' : '<span class="no-answers">No answers</span>'}
+                    </div>
                 </div>
                 <div class="puzzle-item-actions">
                     ${!puzzle.has_answers ? `<button class="btn btn-small btn-secondary add-answers-btn" data-series="${puzzle.series}" data-number="${puzzle.number}">Add Answers</button>` : ''}
@@ -185,8 +187,11 @@ class CrosswordPuzzle {
             this.initUserGrid();
             this.renderPuzzle();
 
-            document.getElementById('puzzle-title').textContent =
-                `${this.puzzle.series || this.puzzle.publication} #${this.puzzle.number}`;
+            const titleParts = [`${this.puzzle.series || this.puzzle.publication} #${this.puzzle.number}`];
+            if (this.puzzle.date) {
+                titleParts.push(`— ${this.puzzle.date}`);
+            }
+            document.getElementById('puzzle-title').textContent = titleParts.join(' ');
 
             document.getElementById('puzzles-section').classList.add('hidden');
             document.getElementById('upload-section').classList.add('hidden');
@@ -292,8 +297,11 @@ class CrosswordPuzzle {
                 this.showWarnings(data.warnings);
             }
 
-            document.getElementById('puzzle-title').textContent =
-                `${this.puzzle.series || this.puzzle.publication} #${this.puzzle.number}`;
+            const titleParts = [`${this.puzzle.series || this.puzzle.publication} #${this.puzzle.number}`];
+            if (this.puzzle.date) {
+                titleParts.push(`— ${this.puzzle.date}`);
+            }
+            document.getElementById('puzzle-title').textContent = titleParts.join(' ');
 
             document.getElementById('puzzles-section').classList.add('hidden');
             document.getElementById('upload-section').classList.add('hidden');

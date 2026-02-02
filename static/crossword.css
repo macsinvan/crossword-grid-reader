@@ -550,6 +550,13 @@ header h1 {
 .puzzle-item-meta {
     font-size: 0.85rem;
     color: #666;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.puzzle-date {
+    color: #555;
 }
 
 .puzzle-item-actions {

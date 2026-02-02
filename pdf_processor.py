@@ -72,6 +72,70 @@ def extract_grid_image(pdf_path, output_path=None):
     return output_path
 
 
+def extract_metadata_from_pdf(pdf_path):
+    """
+    Extract puzzle metadata (date, number, series) from the PDF header.
+
+    The Times PDF has a header like:
+        THE TIMES
+        Friday, 16 January 2026
+        Times Cryptic No 29441
+
+    Returns:
+        Dict with 'date', 'number', 'series'
+    """
+    with pdfplumber.open(pdf_path) as pdf:
+        page = pdf.pages[0]
+
+        # Get words from top portion of page (header area)
+        words = page.extract_words()
+
+        # Find the y-position where clues start (ACROSS)
+        clue_start_y = None
+        for word in words:
+            if word['text'] == 'ACROSS':
+                clue_start_y = word['top']
+                break
+
+        # Extract text from header (top 15% of page or before ACROSS)
+        header_bottom = min(page.height * 0.15, clue_start_y or page.height * 0.15)
+        header_crop = page.crop((0, 0, page.width, header_bottom))
+        header_text = header_crop.extract_text() or ''
+
+    metadata = {
+        'date': None,
+        'number': None,
+        'series': 'Times Cryptic'  # Default
+    }
+
+    # Parse the header text
+    lines = header_text.split('\n')
+
+    for line in lines:
+        line = line.strip()
+
+        # Look for date pattern: "Friday, 16 January 2026"
+        date_match = re.match(
+            r'(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),?\s+'
+            r'(\d{1,2})\s+'
+            r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+'
+            r'(\d{4})',
+            line, re.IGNORECASE
+        )
+        if date_match:
+            metadata['date'] = line
+            continue
+
+        # Look for puzzle number pattern: "Times Cryptic No 29441"
+        puzzle_match = re.match(r'(Times\s+\w+)\s+No\.?\s*(\d+)', line, re.IGNORECASE)
+        if puzzle_match:
+            metadata['series'] = puzzle_match.group(1)
+            metadata['number'] = int(puzzle_match.group(2))
+            continue
+
+    return metadata
+
+
 def extract_clues_from_pdf(pdf_path):
     """
     Extract clues text from the PDF and parse into structured format.
@@ -194,7 +258,7 @@ def parse_clue_column(text, header):
 
 def process_times_pdf(pdf_path, output_dir=None):
     """
-    Process a Times Cryptic PDF to extract grid image and clues.
+    Process a Times Cryptic PDF to extract grid image, clues, and metadata.
 
     Args:
         pdf_path: Path to the PDF file
@@ -206,12 +270,15 @@ def process_times_pdf(pdf_path, output_dir=None):
     if output_dir is None:
         output_dir = tempfile.mkdtemp()
 
-    # Extract puzzle number from filename or text
-    puzzle_number = None
-    filename = os.path.basename(pdf_path)
-    num_match = re.search(r'(\d{5})', filename)
-    if num_match:
-        puzzle_number = int(num_match.group(1))
+    # Extract metadata (date, puzzle number, series) from PDF header
+    metadata = extract_metadata_from_pdf(pdf_path)
+
+    # Fallback: try to get puzzle number from filename if not found in PDF
+    if metadata['number'] is None:
+        filename = os.path.basename(pdf_path)
+        num_match = re.search(r'(\d{5})', filename)
+        if num_match:
+            metadata['number'] = int(num_match.group(1))
 
     # Extract grid image
     grid_path = os.path.join(output_dir, 'grid.png')
@@ -223,8 +290,9 @@ def process_times_pdf(pdf_path, output_dir=None):
     # Build YAML-compatible structure
     clues_data = {
         'publication': 'The Times',
-        'series': 'Times Cryptic',
-        'number': puzzle_number or 'unknown',
+        'series': metadata['series'],
+        'number': metadata['number'] or 'unknown',
+        'date': metadata['date'],
         'grid_size': {
             'rows': 15,
             'cols': 15
