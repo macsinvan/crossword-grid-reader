@@ -109,6 +109,16 @@ The trainer walks you through:
 - The cryptic-trainer server running on port 5001
 - The clue must be annotated in the trainer database
 
+### Auto-Import from Annotated Files
+
+If you have annotated puzzle files (from Times_Puzzle_Import), the trainer integration supports **automatic import**:
+
+1. Place annotated puzzle files in `../Times_Puzzle_Import/solved/` (relative to Grid Reader)
+2. Files should be named `Times_XXXXX_v2.json` (e.g., `Times_29453_v2.json`)
+3. When you click "Solve" on a clue, if the puzzle isn't in the trainer database but an annotated file exists, it will be **automatically imported**
+
+This means you don't need to manually import puzzles into the trainer - just have the annotated JSON files in the right location.
+
 ## File Formats
 
 ### Answers File (Optional)
@@ -174,9 +184,11 @@ puzzles/
 - `POST /validate` - Check answers against solution
 
 ### Trainer Proxy (requires cryptic-trainer on port 5001)
-- `POST /trainer/start` - Start a training session for a clue
+- `POST /trainer/start` - Start a training session for a clue (auto-imports if annotated file exists)
 - `POST /trainer/input` - Submit user input to trainer
 - `POST /trainer/continue` - Skip to next training step
+- `POST /trainer/import-puzzle` - Manually import a puzzle from annotated files
+- `GET /trainer/check-puzzle?puzzle_number=XXXXX` - Check if annotated data exists for a puzzle
 
 ## Command Line Usage
 
@@ -216,11 +228,13 @@ This dual approach handles both screenshots (black cells) and PDFs (grey cells).
 
 When you click "Solve":
 
-1. The current clue text and enumeration are extracted
+1. The current clue text, enumeration, and puzzle metadata are extracted
 2. Cross letters from intersecting words are collected
-3. A request is sent to the trainer API to find the matching clue
-4. If found, the training session begins with step-by-step guidance
-5. On completion, the answer is applied back to the grid
+3. A request is sent to the trainer API to find the matching clue by ID (e.g., `times-29453-11a`)
+4. If not found in the trainer database, check for annotated file in `Times_Puzzle_Import/solved/`
+5. If annotated file exists, **auto-import** the puzzle to the trainer database
+6. Start the training session with step-by-step guidance
+7. On completion, the answer is applied back to the grid
 
 ## Supported Formats
 
@@ -245,7 +259,13 @@ Some PDFs encode ligatures (fi, fl) as special characters. The processor attempt
 
 ### "Clue not found in trainer database"
 
-The Solve feature only works for clues that have been annotated in the cryptic-trainer. You can still solve normally without the trainer.
+The Solve feature only works for clues that have been annotated. If you have annotated puzzle files:
+
+1. Ensure they're in `../Times_Puzzle_Import/solved/` (relative to Grid Reader)
+2. Files should be named `Times_XXXXX_v2.json`
+3. The auto-import will load them when you click Solve
+
+If no annotated file exists, you can still solve normally without the trainer.
 
 ### Cannot connect to trainer service
 
