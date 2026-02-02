@@ -301,19 +301,40 @@ class CrosswordPuzzle {
         if (render.inputMode === 'tap_words') {
             this.renderTrainerClueWords(render.highlights || []);
             document.getElementById('trainer-input-section').classList.add('hidden');
-        } else if (render.inputMode === 'enter_text') {
+            document.querySelector('.trainer-actions').classList.remove('hidden');
+        } else if (render.inputMode === 'text' || render.inputMode === 'enter_text') {
             clueWordsContainer.innerHTML = '';
             document.getElementById('trainer-input-section').classList.remove('hidden');
             document.getElementById('trainer-text-input').value = '';
             document.getElementById('trainer-text-input').focus();
+            document.querySelector('.trainer-actions').classList.remove('hidden');
         } else if (render.inputMode === 'multiple_choice' && render.options) {
             // API uses 'options' not 'buttons'
             this.renderTrainerMultipleChoice(render.options);
             document.getElementById('trainer-input-section').classList.add('hidden');
+            document.querySelector('.trainer-actions').classList.add('hidden'); // Hide Skip/Submit for MC
         } else if (render.inputMode === 'multiple_choice' && render.buttons) {
             // Fallback for buttons format
             this.renderTrainerMultipleChoice(render.buttons);
             document.getElementById('trainer-input-section').classList.add('hidden');
+            document.querySelector('.trainer-actions').classList.add('hidden');
+        } else if (render.inputMode === 'none' || !render.inputMode) {
+            // Teaching/confirmation phase - show clue words with highlights and continue button
+            document.getElementById('trainer-input-section').classList.add('hidden');
+
+            // Show clue words with any highlights (like the found definition)
+            if (render.highlights && render.highlights.length > 0) {
+                this.renderTrainerClueWords(render.highlights);
+            }
+
+            if (render.button) {
+                // Show a continue button below the clue words
+                this.renderContinueButton(render.button, clueWordsContainer.children.length > 0);
+                document.querySelector('.trainer-actions').classList.add('hidden');
+            } else {
+                // No button - show Skip to allow moving forward
+                document.querySelector('.trainer-actions').classList.remove('hidden');
+            }
         }
 
         // Store answer if provided
@@ -332,6 +353,24 @@ class CrosswordPuzzle {
         } else {
             document.getElementById('trainer-feedback').classList.add('hidden');
         }
+    }
+
+    renderContinueButton(button, appendToExisting = false) {
+        const container = document.getElementById('trainer-clue-words');
+        if (!appendToExisting) {
+            container.innerHTML = '';
+        }
+
+        const btnEl = document.createElement('button');
+        btnEl.className = 'btn btn-primary trainer-continue-btn';
+        btnEl.textContent = button.label || 'Continue →';
+        btnEl.style.cssText = 'display: block; margin: 20px auto; padding: 12px 30px; font-size: 1.1rem;';
+
+        btnEl.addEventListener('click', () => {
+            this.skipTrainerStep(); // Use skip/continue endpoint
+        });
+
+        container.appendChild(btnEl);
     }
 
     renderTrainerClueWords(highlights) {
