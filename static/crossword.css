@@ -609,6 +609,12 @@ header h1 {
     background: #c82333;
 }
 
+.delete-btn {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+    min-width: auto;
+}
+
 /* Puzzle Header */
 .puzzle-header {
     display: flex;

@@ -154,6 +154,7 @@ class CrosswordPuzzle {
                 <div class="puzzle-item-actions">
                     ${!puzzle.has_answers ? `<button class="btn btn-small btn-secondary add-answers-btn" data-series="${puzzle.series}" data-number="${puzzle.number}">Add Answers</button>` : ''}
                     <button class="btn btn-small btn-primary play-btn" data-series="${puzzle.series}" data-number="${puzzle.number}">Play</button>
+                    <button class="btn btn-small btn-danger delete-btn" data-series="${puzzle.series}" data-number="${puzzle.number}" title="Delete puzzle">✕</button>
                 </div>
             `;
             container.appendChild(item);
@@ -170,6 +171,34 @@ class CrosswordPuzzle {
                 this.showAddAnswersModal(btn.dataset.series, btn.dataset.number);
             });
         });
+
+        container.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.deletePuzzle(btn.dataset.series, btn.dataset.number);
+            });
+        });
+    }
+
+    async deletePuzzle(series, puzzleNumber) {
+        if (!confirm(`Delete ${series} #${puzzleNumber}? This cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/puzzles/${encodeURIComponent(series)}/${puzzleNumber}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Delete failed');
+            }
+
+            // Refresh the puzzle list
+            this.loadPuzzleList(document.getElementById('series-filter').value);
+        } catch (error) {
+            alert('Failed to delete puzzle: ' + error.message);
+        }
     }
 
     async loadPuzzle(series, puzzleNumber) {
