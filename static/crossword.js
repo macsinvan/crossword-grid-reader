@@ -86,6 +86,410 @@ class CrosswordPuzzle {
                 this.handleKeydown(e);
             }
         });
+
+        // Trainer controls
+        document.getElementById('solve-btn').addEventListener('click', () => {
+            this.openTrainer();
+        });
+
+        document.getElementById('trainer-close').addEventListener('click', () => {
+            this.closeTrainer();
+        });
+
+        document.getElementById('trainer-submit').addEventListener('click', () => {
+            this.submitTrainerInput();
+        });
+
+        document.getElementById('trainer-skip').addEventListener('click', () => {
+            this.skipTrainerStep();
+        });
+
+        document.getElementById('trainer-apply').addEventListener('click', () => {
+            this.applyTrainerAnswer();
+        });
+
+        document.getElementById('trainer-text-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.submitTrainerInput();
+            }
+        });
+    }
+
+    // =========================================================================
+    // TRAINER FUNCTIONALITY
+    // =========================================================================
+
+    async openTrainer() {
+        if (!this.selectedCell || !this.puzzle) return;
+
+        const wordData = this.getWordDataForTrainer();
+        if (!wordData) return;
+
+        // Store current word data for later
+        this.trainerWordData = wordData;
+        this.trainerState = null;
+        this.trainerAnswer = '';
+
+        // Show the modal
+        document.getElementById('trainer-modal').classList.remove('hidden');
+        document.getElementById('trainer-clue-number').textContent = `${wordData.clueNumber}${wordData.direction === 'across' ? 'A' : 'D'}`;
+        document.getElementById('trainer-clue-text').textContent = wordData.clueText;
+
+        // Render answer boxes with cross letters
+        this.renderTrainerAnswerBoxes(wordData.length, wordData.crossLetters, wordData.enumeration);
+
+        // Try to start training session
+        await this.startTrainerSession(wordData);
+    }
+
+    closeTrainer() {
+        document.getElementById('trainer-modal').classList.add('hidden');
+        this.trainerState = null;
+        this.trainerWordData = null;
+    }
+
+    getWordDataForTrainer() {
+        if (!this.selectedCell) return null;
+
+        const { row, col } = this.selectedCell;
+        const number = this.getCurrentClueNumber();
+        if (!number) return null;
+
+        const clue = this.puzzle.clues[this.direction].find(c => c.number === number);
+        if (!clue) return null;
+
+        const wordCells = this.getWordCells(row, col);
+        const numbering = this.puzzle.numbering[this.direction].find(n => n.number === number);
+
+        // Extract cross letters (letters already filled in)
+        const crossLetters = wordCells.map(({ r, c }, index) => ({
+            position: index,
+            letter: this.userGrid[r][c] || null
+        })).filter(cl => cl.letter);
+
+        // Extract enumeration from clue text (e.g., "(5)" or "(3-4)")
+        const enumMatch = clue.clue.match(/\([\d,\-\s]+\)\s*$/);
+        const enumeration = enumMatch ? enumMatch[0].replace(/[()]/g, '').trim() : String(numbering?.length || wordCells.length);
+
+        return {
+            clueNumber: number,
+            direction: this.direction,
+            clueText: clue.clue,
+            length: numbering?.length || wordCells.length,
+            enumeration: enumeration,
+            crossLetters: crossLetters,
+            cells: wordCells
+        };
+    }
+
+    renderTrainerAnswerBoxes(length, crossLetters, enumeration) {
+        const container = document.getElementById('trainer-answer-boxes');
+        container.innerHTML = '';
+
+        // Parse enumeration to determine word breaks (e.g., "3-4" means 3 letters, gap, 4 letters)
+        const parts = enumeration.split(/[-,\s]+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+
+        let letterIndex = 0;
+        const crossMap = {};
+        crossLetters.forEach(cl => {
+            crossMap[cl.position] = cl.letter;
+        });
+
+        parts.forEach((partLength, partIndex) => {
+            // Add word gap between parts
+            if (partIndex > 0) {
+                const gap = document.createElement('div');
+                gap.className = 'trainer-answer-box word-gap';
+                container.appendChild(gap);
+            }
+
+            // Add letter boxes for this part
+            for (let i = 0; i < partLength; i++) {
+                const box = document.createElement('div');
+                box.className = 'trainer-answer-box';
+                box.dataset.index = letterIndex;
+
+                if (crossMap[letterIndex]) {
+                    box.textContent = crossMap[letterIndex];
+                    box.classList.add('cross-letter');
+                }
+
+                container.appendChild(box);
+                letterIndex++;
+            }
+        });
+    }
+
+    async startTrainerSession(wordData) {
+        // Show loading state
+        document.getElementById('trainer-instruction').textContent = 'Looking for training data...';
+        document.getElementById('trainer-clue-words').innerHTML = '';
+        document.getElementById('trainer-input-section').classList.add('hidden');
+        document.getElementById('trainer-feedback').classList.add('hidden');
+        document.getElementById('trainer-complete').classList.add('hidden');
+        document.querySelector('.trainer-actions').classList.remove('hidden');
+
+        try {
+            // Call the trainer API to start a session
+            const response = await fetch('/trainer/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clue_text: wordData.clueText,
+                    enumeration: wordData.enumeration,
+                    cross_letters: wordData.crossLetters
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                this.showTrainerNotAvailable(data.error);
+                return;
+            }
+
+            this.trainerState = data;
+            this.renderTrainerState(data);
+
+        } catch (error) {
+            console.error('Trainer API error:', error);
+            this.showTrainerNotAvailable('Could not connect to trainer service');
+        }
+    }
+
+    showTrainerNotAvailable(message) {
+        document.getElementById('trainer-instruction').textContent = message || 'Training not available for this clue';
+        document.getElementById('trainer-clue-words').innerHTML = '<p style="color: #666; font-style: italic;">This clue has not been annotated for training yet.</p>';
+        document.getElementById('trainer-input-section').classList.add('hidden');
+        document.querySelector('.trainer-actions').classList.add('hidden');
+    }
+
+    renderTrainerState(state) {
+        const render = state.render;
+
+        // Update instruction text
+        document.getElementById('trainer-instruction').textContent = render.primaryText || '';
+
+        // Render clue words for tap selection if needed
+        if (render.inputMode === 'tap_words') {
+            this.renderTrainerClueWords(render.highlights || []);
+            document.getElementById('trainer-input-section').classList.add('hidden');
+        } else if (render.inputMode === 'enter_text') {
+            document.getElementById('trainer-clue-words').innerHTML = '';
+            document.getElementById('trainer-input-section').classList.remove('hidden');
+            document.getElementById('trainer-text-input').value = '';
+            document.getElementById('trainer-text-input').focus();
+        } else if (render.inputMode === 'multiple_choice' && render.buttons) {
+            this.renderTrainerMultipleChoice(render.buttons);
+            document.getElementById('trainer-input-section').classList.add('hidden');
+        }
+
+        // Show/hide complete state
+        if (render.panel === 'complete' || state.complete) {
+            this.showTrainerComplete(state.answer || this.trainerAnswer);
+        }
+
+        // Show feedback if present
+        if (state.feedback) {
+            this.showTrainerFeedback(state.feedback);
+        }
+    }
+
+    renderTrainerClueWords(highlights) {
+        const container = document.getElementById('trainer-clue-words');
+        container.innerHTML = '';
+
+        // Split clue into words
+        const clueText = this.trainerWordData.clueText;
+        const words = clueText.replace(/\([\d,\-\s]+\)\s*$/, '').split(/\s+/).filter(Boolean);
+
+        // Build highlight map
+        const highlightMap = {};
+        (highlights || []).forEach(h => {
+            (h.indices || []).forEach(i => {
+                highlightMap[i] = h.color?.toLowerCase() || 'selected';
+            });
+        });
+
+        words.forEach((word, index) => {
+            const wordEl = document.createElement('span');
+            wordEl.className = 'trainer-word';
+            wordEl.textContent = word;
+            wordEl.dataset.index = index;
+
+            if (highlightMap[index]) {
+                wordEl.classList.add(`highlight-${highlightMap[index]}`);
+            }
+
+            wordEl.addEventListener('click', () => {
+                this.toggleTrainerWordSelection(wordEl, index);
+            });
+
+            container.appendChild(wordEl);
+        });
+    }
+
+    renderTrainerMultipleChoice(buttons) {
+        const container = document.getElementById('trainer-clue-words');
+        container.innerHTML = '';
+
+        buttons.forEach((btn, index) => {
+            const btnEl = document.createElement('button');
+            btnEl.className = 'btn btn-secondary';
+            btnEl.textContent = btn.label || btn.text || `Option ${index + 1}`;
+            btnEl.style.margin = '5px';
+            btnEl.addEventListener('click', () => {
+                this.submitTrainerChoice(index, btn.value || btn.label);
+            });
+            container.appendChild(btnEl);
+        });
+    }
+
+    toggleTrainerWordSelection(wordEl, index) {
+        wordEl.classList.toggle('selected');
+        // Collect all selected indices for submission
+    }
+
+    async submitTrainerInput() {
+        const textInput = document.getElementById('trainer-text-input');
+        const selectedWords = document.querySelectorAll('.trainer-word.selected');
+
+        let value;
+        if (textInput.value.trim()) {
+            value = textInput.value.trim().toUpperCase();
+        } else if (selectedWords.length > 0) {
+            value = Array.from(selectedWords).map(w => parseInt(w.dataset.index));
+        } else {
+            return; // Nothing to submit
+        }
+
+        await this.sendTrainerInput(value);
+    }
+
+    async submitTrainerChoice(index, value) {
+        await this.sendTrainerInput(value);
+    }
+
+    async sendTrainerInput(value) {
+        if (!this.trainerState) return;
+
+        try {
+            const response = await fetch('/trainer/input', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clue_id: this.trainerState.clue_id,
+                    value: value
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                this.showTrainerFeedback({ correct: false, message: data.error });
+                return;
+            }
+
+            this.trainerState = data;
+
+            if (data.answer) {
+                this.trainerAnswer = data.answer;
+            }
+
+            this.renderTrainerState(data);
+
+        } catch (error) {
+            console.error('Trainer input error:', error);
+            this.showTrainerFeedback({ correct: false, message: 'Connection error' });
+        }
+    }
+
+    async skipTrainerStep() {
+        if (!this.trainerState) return;
+
+        try {
+            const response = await fetch('/trainer/continue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clue_id: this.trainerState.clue_id
+                })
+            });
+
+            const data = await response.json();
+            this.trainerState = data;
+            this.renderTrainerState(data);
+
+        } catch (error) {
+            console.error('Trainer skip error:', error);
+        }
+    }
+
+    showTrainerFeedback(feedback) {
+        const el = document.getElementById('trainer-feedback');
+        el.textContent = feedback.message;
+        el.className = 'trainer-feedback';
+        el.classList.add(feedback.correct ? 'correct' : 'incorrect');
+        el.classList.remove('hidden');
+    }
+
+    showTrainerComplete(answer) {
+        this.trainerAnswer = answer;
+
+        // Update answer boxes with the answer
+        const boxes = document.querySelectorAll('.trainer-answer-box:not(.word-gap)');
+        const letters = answer.toUpperCase().split('');
+        boxes.forEach((box, i) => {
+            if (letters[i] && !box.classList.contains('cross-letter')) {
+                box.textContent = letters[i];
+                box.classList.add('filled');
+            }
+        });
+
+        // Hide actions, show complete section
+        document.querySelector('.trainer-actions').classList.add('hidden');
+        document.getElementById('trainer-input-section').classList.add('hidden');
+        document.getElementById('trainer-clue-words').innerHTML = '';
+        document.getElementById('trainer-instruction').textContent = '';
+        document.getElementById('trainer-complete').classList.remove('hidden');
+    }
+
+    applyTrainerAnswer() {
+        if (!this.trainerAnswer || !this.trainerWordData) return;
+
+        const letters = this.trainerAnswer.toUpperCase().split('');
+        const cells = this.trainerWordData.cells;
+
+        cells.forEach(({ r, c }, i) => {
+            if (letters[i]) {
+                this.setCell(r, c, letters[i]);
+            }
+        });
+
+        this.closeTrainer();
+        this.updateHighlights();
+    }
+
+    async checkTrainerAvailability() {
+        // This method checks if the current clue has training data available
+        // and enables/disables the Solve button accordingly
+        const solveBtn = document.getElementById('solve-btn');
+
+        if (!this.selectedCell || !this.puzzle) {
+            solveBtn.disabled = true;
+            return;
+        }
+
+        const wordData = this.getWordDataForTrainer();
+        if (!wordData) {
+            solveBtn.disabled = true;
+            return;
+        }
+
+        // For now, enable the button - actual availability checked when opened
+        // In future, could make an API call to check if clue exists in trainer DB
+        solveBtn.disabled = false;
     }
 
     switchTab(tab) {
@@ -666,6 +1070,7 @@ class CrosswordPuzzle {
         if (!number) {
             numEl.textContent = '';
             textEl.textContent = '';
+            document.getElementById('solve-btn').disabled = true;
             return;
         }
 
@@ -674,6 +1079,9 @@ class CrosswordPuzzle {
 
         const clue = this.puzzle.clues[this.direction].find(c => c.number === number);
         textEl.textContent = clue ? clue.clue : '';
+
+        // Enable solve button when a clue is selected
+        document.getElementById('solve-btn').disabled = false;
     }
 
     handleKeydown(e) {

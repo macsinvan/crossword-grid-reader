@@ -361,11 +361,265 @@ header h1 {
     min-height: 44px;
     max-width: 100%;
     line-height: 1.4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.clue-bar-content {
+    flex: 1;
 }
 
 #current-clue-number {
     font-weight: bold;
     margin-right: 10px;
+}
+
+.btn-solve {
+    background: #ffc107;
+    color: #333;
+    border: none;
+    padding: 6px 16px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-solve:hover:not(:disabled) {
+    background: #e0a800;
+}
+
+.btn-solve:disabled {
+    background: #6c8ab5;
+    color: #a0b4cc;
+    cursor: not-allowed;
+}
+
+/* Trainer Modal */
+.trainer-content {
+    background: white;
+    padding: 0;
+    border-radius: 12px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    max-width: 600px;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.trainer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px;
+    background: #2c5aa0;
+    color: white;
+    border-radius: 12px 12px 0 0;
+}
+
+.trainer-clue-info {
+    flex: 1;
+}
+
+#trainer-clue-number {
+    font-weight: bold;
+    margin-right: 10px;
+    font-size: 1.1rem;
+}
+
+#trainer-clue-text {
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.btn-close {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1;
+    opacity: 0.8;
+}
+
+.btn-close:hover {
+    opacity: 1;
+}
+
+/* Trainer Answer Boxes */
+.trainer-answer-section {
+    padding: 20px;
+    background: #f5f5f0;
+    border-bottom: 1px solid #ddd;
+}
+
+.trainer-answer-boxes {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.trainer-answer-box {
+    width: 36px;
+    height: 42px;
+    border: 2px solid #333;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    background: white;
+}
+
+.trainer-answer-box.filled {
+    background: #e8f4e8;
+    color: #28a745;
+}
+
+.trainer-answer-box.cross-letter {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.trainer-answer-box.word-gap {
+    width: 12px;
+    border: none;
+    background: transparent;
+}
+
+/* Trainer Instruction Section */
+.trainer-instruction-section {
+    padding: 20px;
+}
+
+.trainer-instruction {
+    font-size: 1.1rem;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+.trainer-clue-words {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.trainer-word {
+    padding: 8px 12px;
+    background: #f0f0f0;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.15s;
+}
+
+.trainer-word:hover {
+    background: #e0e0e0;
+}
+
+.trainer-word.selected {
+    border-color: #2c5aa0;
+    background: #e3f2fd;
+}
+
+.trainer-word.highlight-green {
+    background: #d4edda;
+    border-color: #28a745;
+}
+
+.trainer-word.highlight-orange {
+    background: #fff3cd;
+    border-color: #ffc107;
+}
+
+.trainer-word.highlight-blue {
+    background: #cce5ff;
+    border-color: #007bff;
+}
+
+.trainer-word.highlight-purple {
+    background: #e2d5f1;
+    border-color: #6f42c1;
+}
+
+/* Trainer Input */
+.trainer-input-section {
+    padding: 0 20px 15px;
+}
+
+.trainer-text-input {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.1rem;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    text-transform: uppercase;
+}
+
+.trainer-text-input:focus {
+    border-color: #2c5aa0;
+    outline: none;
+}
+
+/* Trainer Feedback */
+.trainer-feedback {
+    padding: 12px 20px;
+    margin: 0 20px 15px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.trainer-feedback.correct {
+    background: #d4edda;
+    color: #155724;
+}
+
+.trainer-feedback.incorrect {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.trainer-feedback.hint {
+    background: #fff3cd;
+    color: #856404;
+}
+
+/* Trainer Actions */
+.trainer-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding: 15px 20px;
+    border-top: 1px solid #ddd;
+    background: #f9f9f9;
+}
+
+.trainer-complete {
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.trainer-success {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #28a745;
+    margin-bottom: 20px;
+}
+
+.trainer-complete .btn {
+    font-size: 1.1rem;
+    padding: 12px 30px;
 }
 
 /* Instructions */

@@ -361,6 +361,152 @@ def validate():
     })
 
 
+# =============================================================================
+# TRAINER API PROXY
+# =============================================================================
+# These endpoints proxy requests to the cryptic-trainer backend (port 5001)
+
+import requests
+
+TRAINER_API_BASE = 'http://localhost:5001'
+
+
+@app.route('/trainer/start', methods=['POST'])
+def trainer_start():
+    """
+    Start a training session for a clue.
+    Proxies to cryptic-trainer API.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    clue_text = data.get('clue_text', '')
+    enumeration = data.get('enumeration', '')
+    cross_letters = data.get('cross_letters', [])
+
+    try:
+        # First, try to find the clue in the trainer database
+        # Search by clue text
+        search_response = requests.get(
+            f'{TRAINER_API_BASE}/clues',
+            timeout=5
+        )
+
+        if search_response.status_code != 200:
+            return jsonify({'error': 'Trainer service unavailable'}), 503
+
+        clues = search_response.json()
+
+        # Find matching clue by text (fuzzy match)
+        clue_id = None
+        for clue in clues:
+            clue_data = clue.get('clue', {})
+            if clue_data.get('text', '').strip() == clue_text.strip():
+                clue_id = clue.get('id')
+                break
+            # Also check without enumeration
+            clue_text_no_enum = re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip()
+            if clue_data.get('text', '').strip() == clue_text_no_enum:
+                clue_id = clue.get('id')
+                break
+
+        if not clue_id:
+            return jsonify({
+                'error': 'Clue not found in trainer database',
+                'message': 'This clue has not been annotated for training.'
+            }), 404
+
+        # Start training session
+        start_response = requests.post(
+            f'{TRAINER_API_BASE}/api/training/start',
+            json={'clue_id': clue_id, 'cross_letters': cross_letters},
+            timeout=10
+        )
+
+        if start_response.status_code != 200:
+            return jsonify({'error': 'Failed to start training session'}), 500
+
+        result = start_response.json()
+        result['clue_id'] = clue_id
+        return jsonify(result)
+
+    except requests.exceptions.ConnectionError:
+        return jsonify({
+            'error': 'Cannot connect to trainer service',
+            'message': 'Make sure cryptic-trainer server is running on port 5001'
+        }), 503
+    except requests.exceptions.Timeout:
+        return jsonify({'error': 'Trainer service timeout'}), 504
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/trainer/input', methods=['POST'])
+def trainer_input():
+    """
+    Submit user input to the trainer.
+    Proxies to cryptic-trainer API.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    clue_id = data.get('clue_id')
+    value = data.get('value')
+
+    if not clue_id:
+        return jsonify({'error': 'Missing clue_id'}), 400
+
+    try:
+        response = requests.post(
+            f'{TRAINER_API_BASE}/api/training/input',
+            json={'clue_id': clue_id, 'value': value},
+            timeout=10
+        )
+
+        result = response.json()
+        result['clue_id'] = clue_id
+        return jsonify(result)
+
+    except requests.exceptions.ConnectionError:
+        return jsonify({'error': 'Cannot connect to trainer service'}), 503
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/trainer/continue', methods=['POST'])
+def trainer_continue():
+    """
+    Continue to the next step in training.
+    Proxies to cryptic-trainer API.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    clue_id = data.get('clue_id')
+
+    if not clue_id:
+        return jsonify({'error': 'Missing clue_id'}), 400
+
+    try:
+        response = requests.post(
+            f'{TRAINER_API_BASE}/api/training/continue',
+            json={'clue_id': clue_id},
+            timeout=10
+        )
+
+        result = response.json()
+        result['clue_id'] = clue_id
+        return jsonify(result)
+
+    except requests.exceptions.ConnectionError:
+        return jsonify({'error': 'Cannot connect to trainer service'}), 503
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("Starting Crossword Server...")
     print("Open http://localhost:8080 in your browser")
