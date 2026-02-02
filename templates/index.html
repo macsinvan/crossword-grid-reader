@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crossword Puzzle</title>
+    <link rel="stylesheet" href="/static/crossword.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Crossword Puzzle</h1>
+            <p class="subtitle" id="puzzle-info"></p>
+        </header>
+
+        <!-- Upload Section -->
+        <section id="upload-section" class="upload-section">
+            <h2>Load Puzzle</h2>
+            <form id="upload-form">
+                <div class="upload-controls">
+                    <div class="upload-field">
+                        <label for="grid-image">Grid Image (PNG/JPG)</label>
+                        <input type="file" id="grid-image" accept="image/*" required>
+                        <span class="file-name" id="grid-file-name">No file selected</span>
+                    </div>
+                    <div class="upload-field">
+                        <label for="clues-yaml">Clues (YAML or JSON)</label>
+                        <input type="file" id="clues-yaml" accept=".yaml,.yml,.json" required>
+                        <span class="file-name" id="clues-file-name">No file selected</span>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="process-btn">
+                    Process Puzzle
+                </button>
+            </form>
+            <div id="upload-error" class="error-message"></div>
+        </section>
+
+        <!-- Puzzle Section (hidden until puzzle loaded) -->
+        <section id="puzzle-section" class="puzzle-section hidden">
+            <div class="puzzle-layout">
+                <!-- Grid -->
+                <div class="grid-container">
+                    <div id="crossword-grid" class="crossword-grid"></div>
+                    <div class="grid-controls">
+                        <button class="btn btn-check" id="check-btn">Check Answers</button>
+                        <button class="btn btn-clear" id="clear-btn">Clear Grid</button>
+                        <button class="btn btn-reveal" id="reveal-btn">Reveal All</button>
+                    </div>
+                    <div id="validation-result" class="validation-result"></div>
+                </div>
+
+                <!-- Clues -->
+                <div class="clues-container">
+                    <div class="clues-panel">
+                        <h3>Across</h3>
+                        <ul id="across-clues" class="clue-list"></ul>
+                    </div>
+                    <div class="clues-panel">
+                        <h3>Down</h3>
+                        <ul id="down-clues" class="clue-list"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current clue display -->
+            <div class="current-clue-bar">
+                <span id="current-clue-number"></span>
+                <span id="current-clue-text"></span>
+            </div>
+        </section>
+
+        <!-- Instructions -->
+        <section class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li><strong>Click</strong> a cell to select it</li>
+                <li><strong>Type</strong> to fill in letters</li>
+                <li><strong>Arrow keys</strong> to navigate</li>
+                <li><strong>Space</strong> or click selected cell to toggle direction</li>
+                <li><strong>Tab/Shift+Tab</strong> to move between clues</li>
+                <li><strong>Backspace</strong> to clear and move back</li>
+                <li><strong>Click a clue</strong> to jump to that word</li>
+            </ul>
+        </section>
+    </div>
+
+    <script src="/static/crossword.js"></script>
+</body>
+</html>
