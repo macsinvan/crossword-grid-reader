@@ -373,16 +373,39 @@ Grid Reader/
 
 ## TODO
 
-### Auto-solve clues via LLM
+### Replace trainer integration with simple LLM solve
 
-Currently, the trainer only works with **pre-annotated** clues. This is a significant limitation - you must manually annotate each clue's definition, wordplay steps, etc. before the trainer can guide someone through it.
+**Current state (deprecated/experimental):** The trainer integration is overly complex and fragile:
+- Requires pre-annotated clues in a separate database
+- Maintains session state on the cryptic-trainer server
+- Multiple API calls back and forth for each interaction
+- State easily gets out of sync between browser and server
+- Ported React UI adds complexity without clear benefit
 
-**Future enhancement:** Send unannotated clues to cryptic-trainer and have it use an LLM to:
-1. Parse the clue structure (find definition, identify wordplay type)
-2. Generate solving steps automatically
-3. Store the generated annotation for future use
+**Target architecture:** Simple stateless API call:
 
-This would allow the "Solve" button to work on **any** clue, not just ones that have been manually annotated.
+```
+POST /solve
+{
+  "clue": "See boss bungle work (6)",
+  "enumeration": "6",
+  "cross_letters": [{"position": 2, "letter": "S"}]  // optional hints
+}
+
+Response:
+{
+  "answer": "BISHOP",
+  "confidence": 0.95,
+  "explanation": "Definition: 'See boss' (a BISHOP runs a diocese/see). Wordplay: bungle=BISH (slang) + work=OP (opus). BISH+OP=BISHOP"
+}
+```
+
+**Benefits:**
+- No session state to manage
+- No pre-annotation required
+- Single request/response
+- Works on any clue
+- Grid Reader remains simple - just displays answer and optional explanation
 
 ## License
 
