@@ -278,6 +278,9 @@ class CrosswordPuzzle {
             return;
         }
 
+        // Debug: log inputMode to help diagnose issues
+        console.log('Trainer inputMode:', render.inputMode, 'panel:', render.panel);
+
         // Build instruction text from various possible sources
         let instructionText = '';
         if (render.intro?.title) {
@@ -297,12 +300,26 @@ class CrosswordPuzzle {
         // Show intro text if available (detailed instructions)
         const clueWordsContainer = document.getElementById('trainer-clue-words');
 
+        // Check if instruction looks like it needs text input (fallback detection)
+        const needsTextInput = instructionText && (
+            instructionText.includes("synonym") ||
+            instructionText.includes("What's a") ||
+            instructionText.toLowerCase().includes("type") ||
+            instructionText.toLowerCase().includes("enter ")
+        );
+
         // Render based on input mode
         if (render.inputMode === 'tap_words') {
             this.renderTrainerClueWords(render.highlights || []);
             document.getElementById('trainer-input-section').classList.add('hidden');
             document.querySelector('.trainer-actions').classList.remove('hidden');
-        } else if (render.inputMode === 'text' || render.inputMode === 'enter_text') {
+        } else if (
+            render.inputMode === 'text' ||
+            render.inputMode === 'enter_text' ||
+            render.inputMode === 'free_text' ||
+            render.inputMode === 'input' ||
+            needsTextInput  // Fallback: detect text input need from instruction
+        ) {
             clueWordsContainer.innerHTML = '';
             document.getElementById('trainer-input-section').classList.remove('hidden');
             document.getElementById('trainer-text-input').value = '';
