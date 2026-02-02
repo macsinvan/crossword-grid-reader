@@ -478,6 +478,7 @@ class CrosswordPuzzle {
     }
 
     selectCell(row, col) {
+        // If clicking the same cell, toggle direction
         if (this.selectedCell &&
             this.selectedCell.row === row &&
             this.selectedCell.col === col) {
@@ -486,6 +487,20 @@ class CrosswordPuzzle {
         }
 
         this.selectedCell = { row, col };
+
+        // Determine best direction for this cell
+        const canGoAcross = this.isPartOfAcross(row, col);
+        const canGoDown = this.isPartOfDown(row, col);
+
+        if (canGoAcross && !canGoDown) {
+            // Cell is only part of an across word
+            this.direction = 'across';
+        } else if (canGoDown && !canGoAcross) {
+            // Cell is only part of a down word
+            this.direction = 'down';
+        }
+        // If both directions valid, keep current direction preference
+
         this.clearValidation();
         this.updateHighlights();
         this.updateCurrentClue();
