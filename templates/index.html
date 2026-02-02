@@ -16,47 +16,26 @@
         <!-- Upload Section -->
         <section id="upload-section" class="upload-section">
             <h2>Load Puzzle</h2>
+            <p class="upload-hint">Upload a Times Cryptic PDF containing the grid and clues</p>
 
-            <!-- PDF Upload (simplest option) -->
-            <div class="upload-option">
-                <h3>Option 1: Upload PDF</h3>
-                <p class="upload-hint">Upload a Times Cryptic PDF with grid and clues</p>
-                <form id="pdf-upload-form">
+            <form id="pdf-upload-form">
+                <div class="upload-controls">
                     <div class="upload-field">
-                        <label for="pdf-file">PDF File</label>
-                        <input type="file" id="pdf-file" accept=".pdf">
+                        <label for="pdf-file">PDF File (required)</label>
+                        <input type="file" id="pdf-file" accept=".pdf" required>
                         <span class="file-name" id="pdf-file-name">No file selected</span>
                     </div>
-                    <button type="submit" class="btn btn-primary">
-                        Process PDF
-                    </button>
-                </form>
-            </div>
-
-            <div class="upload-divider"><span>or</span></div>
-
-            <!-- Separate files upload -->
-            <div class="upload-option">
-                <h3>Option 2: Upload Grid + Clues</h3>
-                <p class="upload-hint">Upload grid image and clues file separately</p>
-                <form id="upload-form">
-                    <div class="upload-controls">
-                        <div class="upload-field">
-                            <label for="grid-image">Grid Image (PNG/JPG)</label>
-                            <input type="file" id="grid-image" accept="image/*">
-                            <span class="file-name" id="grid-file-name">No file selected</span>
-                        </div>
-                        <div class="upload-field">
-                            <label for="clues-yaml">Clues (YAML or JSON)</label>
-                            <input type="file" id="clues-yaml" accept=".yaml,.yml,.json">
-                            <span class="file-name" id="clues-file-name">No file selected</span>
-                        </div>
+                    <div class="upload-field">
+                        <label for="answers-file">Answers File (optional)</label>
+                        <input type="file" id="answers-file" accept=".yaml,.yml,.json">
+                        <span class="file-name" id="answers-file-name">No file selected</span>
+                        <span class="upload-hint">JSON or YAML with answers for validation</span>
                     </div>
-                    <button type="submit" class="btn btn-primary" id="process-btn">
-                        Process Puzzle
-                    </button>
-                </form>
-            </div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    Process PDF
+                </button>
+            </form>
             <div id="upload-error" class="error-message"></div>
         </section>
 

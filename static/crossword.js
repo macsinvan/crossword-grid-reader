@@ -21,31 +21,20 @@ class CrosswordPuzzle {
 
     initEventListeners() {
         // File input display
-        document.getElementById('grid-image').addEventListener('change', (e) => {
-            const fileName = e.target.files[0]?.name || 'No file selected';
-            document.getElementById('grid-file-name').textContent = fileName;
-        });
-
-        document.getElementById('clues-yaml').addEventListener('change', (e) => {
-            const fileName = e.target.files[0]?.name || 'No file selected';
-            document.getElementById('clues-file-name').textContent = fileName;
-        });
-
-        // PDF upload form
         document.getElementById('pdf-file').addEventListener('change', (e) => {
             const fileName = e.target.files[0]?.name || 'No file selected';
             document.getElementById('pdf-file-name').textContent = fileName;
         });
 
+        document.getElementById('answers-file').addEventListener('change', (e) => {
+            const fileName = e.target.files[0]?.name || 'No file selected';
+            document.getElementById('answers-file-name').textContent = fileName;
+        });
+
+        // PDF upload form
         document.getElementById('pdf-upload-form').addEventListener('submit', (e) => {
             e.preventDefault();
             this.uploadPDF();
-        });
-
-        // Form submission
-        document.getElementById('upload-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.uploadPuzzle();
         });
 
         // Grid controls
@@ -71,6 +60,7 @@ class CrosswordPuzzle {
 
     async uploadPDF() {
         const pdfFile = document.getElementById('pdf-file').files[0];
+        const answersFile = document.getElementById('answers-file').files[0];
 
         if (!pdfFile) {
             this.showError('Please select a PDF file.');
@@ -80,21 +70,10 @@ class CrosswordPuzzle {
         const formData = new FormData();
         formData.append('pdf_file', pdfFile);
 
-        await this.processUpload(formData);
-    }
-
-    async uploadPuzzle() {
-        const gridImage = document.getElementById('grid-image').files[0];
-        const cluesYaml = document.getElementById('clues-yaml').files[0];
-
-        if (!gridImage || !cluesYaml) {
-            this.showError('Please select both a grid image and clues YAML file.');
-            return;
+        // Optional answers file for validation
+        if (answersFile) {
+            formData.append('answers_file', answersFile);
         }
-
-        const formData = new FormData();
-        formData.append('grid_image', gridImage);
-        formData.append('clues_yaml', cluesYaml);
 
         await this.processUpload(formData);
     }
