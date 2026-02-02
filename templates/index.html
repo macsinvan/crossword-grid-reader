@@ -69,6 +69,11 @@
                 <!-- Grid -->
                 <div class="grid-container">
                     <div id="crossword-grid" class="crossword-grid"></div>
+                    <!-- Current clue display - directly below grid -->
+                    <div class="current-clue-bar">
+                        <span id="current-clue-number"></span>
+                        <span id="current-clue-text"></span>
+                    </div>
                     <div class="grid-controls">
                         <button class="btn btn-check" id="check-btn">Check Answers</button>
                         <button class="btn btn-clear" id="clear-btn">Clear Grid</button>
@@ -88,12 +93,6 @@
                         <ul id="down-clues" class="clue-list"></ul>
                     </div>
                 </div>
-            </div>
-
-            <!-- Current clue display -->
-            <div class="current-clue-bar">
-                <span id="current-clue-number"></span>
-                <span id="current-clue-text"></span>
             </div>
         </section>
 
