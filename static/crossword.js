@@ -273,32 +273,64 @@ class CrosswordPuzzle {
 
     renderTrainerState(state) {
         const render = state.render;
+        if (!render) {
+            console.error('No render data in state:', state);
+            return;
+        }
 
-        // Update instruction text
-        document.getElementById('trainer-instruction').textContent = render.primaryText || '';
+        // Build instruction text from various possible sources
+        let instructionText = '';
+        if (render.intro?.title) {
+            instructionText = render.intro.title;
+        }
+        if (render.panel?.instruction) {
+            instructionText = instructionText
+                ? `${instructionText}\n\n${render.panel.instruction}`
+                : render.panel.instruction;
+        }
+        if (render.actionPrompt && !instructionText) {
+            instructionText = render.actionPrompt;
+        }
 
-        // Render clue words for tap selection if needed
+        document.getElementById('trainer-instruction').innerHTML = instructionText.replace(/\n/g, '<br>');
+
+        // Show intro text if available (detailed instructions)
+        const clueWordsContainer = document.getElementById('trainer-clue-words');
+
+        // Render based on input mode
         if (render.inputMode === 'tap_words') {
             this.renderTrainerClueWords(render.highlights || []);
             document.getElementById('trainer-input-section').classList.add('hidden');
         } else if (render.inputMode === 'enter_text') {
-            document.getElementById('trainer-clue-words').innerHTML = '';
+            clueWordsContainer.innerHTML = '';
             document.getElementById('trainer-input-section').classList.remove('hidden');
             document.getElementById('trainer-text-input').value = '';
             document.getElementById('trainer-text-input').focus();
+        } else if (render.inputMode === 'multiple_choice' && render.options) {
+            // API uses 'options' not 'buttons'
+            this.renderTrainerMultipleChoice(render.options);
+            document.getElementById('trainer-input-section').classList.add('hidden');
         } else if (render.inputMode === 'multiple_choice' && render.buttons) {
+            // Fallback for buttons format
             this.renderTrainerMultipleChoice(render.buttons);
             document.getElementById('trainer-input-section').classList.add('hidden');
         }
 
+        // Store answer if provided
+        if (render.answer) {
+            this.trainerAnswer = render.answer;
+        }
+
         // Show/hide complete state
-        if (render.panel === 'complete' || state.complete) {
-            this.showTrainerComplete(state.answer || this.trainerAnswer);
+        if (render.phaseId === 'complete' || state.complete) {
+            this.showTrainerComplete(render.answer || this.trainerAnswer);
         }
 
         // Show feedback if present
-        if (state.feedback) {
-            this.showTrainerFeedback(state.feedback);
+        if (state.feedback || state.message) {
+            this.showTrainerFeedback(state.feedback || state.message, state.correct);
+        } else {
+            document.getElementById('trainer-feedback').classList.add('hidden');
         }
     }
 
@@ -336,20 +368,61 @@ class CrosswordPuzzle {
         });
     }
 
-    renderTrainerMultipleChoice(buttons) {
+    renderTrainerMultipleChoice(options) {
         const container = document.getElementById('trainer-clue-words');
         container.innerHTML = '';
 
-        buttons.forEach((btn, index) => {
-            const btnEl = document.createElement('button');
-            btnEl.className = 'btn btn-secondary';
-            btnEl.textContent = btn.label || btn.text || `Option ${index + 1}`;
-            btnEl.style.margin = '5px';
-            btnEl.addEventListener('click', () => {
-                this.submitTrainerChoice(index, btn.value || btn.label);
+        // Create a styled options container
+        const optionsDiv = document.createElement('div');
+        optionsDiv.className = 'trainer-options';
+        optionsDiv.style.cssText = 'display: flex; flex-direction: column; gap: 10px; width: 100%;';
+
+        options.forEach((opt, index) => {
+            const optionEl = document.createElement('button');
+            optionEl.className = 'trainer-option-btn';
+            optionEl.style.cssText = `
+                display: block;
+                width: 100%;
+                padding: 12px 15px;
+                text-align: left;
+                background: #f8f9fa;
+                border: 2px solid #dee2e6;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-family: inherit;
+            `;
+
+            const labelEl = document.createElement('div');
+            labelEl.style.cssText = 'font-weight: bold; font-size: 1rem; margin-bottom: 4px;';
+            labelEl.textContent = opt.label || opt.text || `Option ${index + 1}`;
+
+            optionEl.appendChild(labelEl);
+
+            if (opt.description) {
+                const descEl = document.createElement('div');
+                descEl.style.cssText = 'font-size: 0.85rem; color: #666;';
+                descEl.textContent = opt.description;
+                optionEl.appendChild(descEl);
+            }
+
+            optionEl.addEventListener('mouseenter', () => {
+                optionEl.style.borderColor = '#2c5aa0';
+                optionEl.style.background = '#e7f1ff';
             });
-            container.appendChild(btnEl);
+            optionEl.addEventListener('mouseleave', () => {
+                optionEl.style.borderColor = '#dee2e6';
+                optionEl.style.background = '#f8f9fa';
+            });
+
+            optionEl.addEventListener('click', () => {
+                this.submitTrainerChoice(index, opt.label || opt.value);
+            });
+
+            optionsDiv.appendChild(optionEl);
         });
+
+        container.appendChild(optionsDiv);
     }
 
     toggleTrainerWordSelection(wordEl, index) {
@@ -432,11 +505,22 @@ class CrosswordPuzzle {
         }
     }
 
-    showTrainerFeedback(feedback) {
+    showTrainerFeedback(feedbackOrMessage, isCorrect) {
         const el = document.getElementById('trainer-feedback');
-        el.textContent = feedback.message;
+
+        // Handle both object format {message, correct} and simple string
+        let message, correct;
+        if (typeof feedbackOrMessage === 'object') {
+            message = feedbackOrMessage.message || feedbackOrMessage;
+            correct = feedbackOrMessage.correct;
+        } else {
+            message = feedbackOrMessage;
+            correct = isCorrect;
+        }
+
+        el.textContent = message;
         el.className = 'trainer-feedback';
-        el.classList.add(feedback.correct ? 'correct' : 'incorrect');
+        el.classList.add(correct ? 'correct' : 'incorrect');
         el.classList.remove('hidden');
     }
 
