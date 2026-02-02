@@ -226,15 +226,78 @@ This dual approach handles both screenshots (black cells) and PDFs (grey cells).
 
 ### Trainer Integration
 
+The trainer UI is a vanilla JavaScript port of the React `TemplateTrainer` component from cryptic-trainer. This allows Grid Reader to provide the same guided solving experience without requiring the React app.
+
+#### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Grid Reader (port 8080)                      │
+├─────────────────────────────────────────────────────────────────┤
+│  crossword.js          │  trainer.js (TemplateTrainer)          │
+│  - Grid UI             │  - 4-section layout                    │
+│  - Cell selection      │  - Word tap selection                  │
+│  - Keyboard nav        │  - Multiple choice                     │
+│  - openTrainer()       │  - Text input                          │
+│    └──────────────────►│  - Feedback display                    │
+│                        │  - Solved view                         │
+├────────────────────────┴────────────────────────────────────────┤
+│                    crossword_server.py (Flask)                   │
+│  - Serves static files and puzzle data                          │
+│  - Proxies /trainer/* requests to cryptic-trainer API           │
+│  - Looks up clues by ID (e.g., times-29453-1a)                  │
+│  - Auto-imports annotated puzzles if not in trainer DB          │
+└─────────────────────────────────────────────────────────────────┘
+                                 │
+                                 ▼ HTTP API calls
+┌─────────────────────────────────────────────────────────────────┐
+│               cryptic-trainer server (port 5001)                 │
+│  cryptic_trainer_bundle/server.py                               │
+├─────────────────────────────────────────────────────────────────┤
+│  /clues              - List/search annotated clues              │
+│  /clues/import       - Import puzzle from annotated JSON        │
+│  /training/start     - Start training session for a clue       │
+│  /training/input     - Submit user answer (returns feedback)    │
+│  /training/continue  - Advance to next step                     │
+│  /training/learnings - Get all learnings for early solve        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Trainer UI Layout (4 Sections)
+
+The TemplateTrainer displays a fixed 4-section layout:
+
+1. **Section 1 - Clue Words**: Displays clue text as tappable words. In `tap_words` mode, clicking words selects/deselects them (highlighted in gray). Confirmed selections from server show colored highlights (GREEN=definition, ORANGE=indicator, BLUE=fodder, PURPLE=other).
+
+2. **Section 2 - Input Area**: Shows either:
+   - **Answer boxes**: Empty boxes for the final answer (filled on completion)
+   - **Text input**: For intermediate steps like typing extracted letters
+
+3. **Section 3 - Action + Button**: Shows the current instruction/prompt and action button:
+   - **Check**: Submit current selection/input for validation
+   - **Continue**: Advance after viewing teaching content
+
+4. **Section 4 - Details** (scrollable): Contains:
+   - **Feedback**: Red/green message for wrong/correct answers
+   - **Multiple choice**: Radio-button options for clue type selection
+   - **Intro panel**: Blue box with hints for new users
+   - **Teaching panel**: Yellow box explaining the current step
+   - **Learnings**: Accumulated insights shown as collapsed badges
+
+#### Data Flow
+
 When you click "Solve":
 
-1. The current clue text, enumeration, and puzzle metadata are extracted
-2. Cross letters from intersecting words are collected
-3. A request is sent to the trainer API to find the matching clue by ID (e.g., `times-29453-11a`)
-4. If not found in the trainer database, check for annotated file in `Times_Puzzle_Import/solved/`
-5. If annotated file exists, **auto-import** the puzzle to the trainer database
-6. Start the training session with step-by-step guidance
-7. On completion, the answer is applied back to the grid
+1. `crossword.js` extracts clue text, enumeration, puzzle number, clue number, direction
+2. Sends POST to `/trainer/start` with this data
+3. `crossword_server.py` looks up clue by constructed ID (e.g., `times-29453-1a`)
+4. If not found, checks for annotated file and auto-imports
+5. Proxies to cryptic-trainer `/training/start` endpoint
+6. Returns `render` object describing what to display
+7. `trainer.js` creates TemplateTrainer instance with render state
+8. User interacts (tap words, select options, type text)
+9. Submissions go to `/trainer/input`, returns new render state
+10. On completion, "Apply to Grid" transfers answer back to puzzle
 
 ## Supported Formats
 
@@ -275,6 +338,22 @@ cd ../cryptic-trainer/cryptic_trainer_bundle
 python3 server.py
 ```
 
+## Running Both Servers
+
+For full functionality, you need both servers running:
+
+```bash
+# Terminal 1: cryptic-trainer API server (port 5001)
+cd /path/to/cryptic-trainer/cryptic_trainer_bundle
+python3 server.py
+
+# Terminal 2: Grid Reader web server (port 8080)
+cd /path/to/Grid\ Reader
+python3 crossword_server.py
+```
+
+Then open http://localhost:8080 in your browser.
+
 ## Project Structure
 
 ```
@@ -288,7 +367,8 @@ Grid Reader/
 │   └── index.html           # Web UI
 └── static/
     ├── crossword.css        # Styles
-    └── crossword.js         # Interactive grid + trainer logic
+    ├── crossword.js         # Interactive grid logic
+    └── trainer.js           # TemplateTrainer (ported from React)
 ```
 
 ## License
