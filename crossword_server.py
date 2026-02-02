@@ -370,12 +370,137 @@ import requests
 
 TRAINER_API_BASE = 'http://localhost:5001'
 
+# Directory containing annotated puzzle files (Times_XXXXX_v2.json)
+ANNOTATED_PUZZLES_DIR = os.path.join(os.path.dirname(__file__), '..', 'Times_Puzzle_Import', 'solved')
+
+
+def find_annotated_puzzle_file(puzzle_number):
+    """
+    Find the annotated puzzle file for a given puzzle number.
+    Returns the file path if found, None otherwise.
+    """
+    if not os.path.exists(ANNOTATED_PUZZLES_DIR):
+        return None
+
+    # Look for Times_XXXXX_v2.json format
+    filename = f'Times_{puzzle_number}_v2.json'
+    filepath = os.path.join(ANNOTATED_PUZZLES_DIR, filename)
+
+    if os.path.exists(filepath):
+        return filepath
+
+    return None
+
+
+def load_annotated_puzzle(puzzle_number):
+    """
+    Load the annotated puzzle data from file.
+    Returns the puzzle data dict or None if not found.
+    """
+    filepath = find_annotated_puzzle_file(puzzle_number)
+    if not filepath:
+        return None
+
+    try:
+        with open(filepath, 'r') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return None
+
+
+def import_puzzle_to_trainer(puzzle_number):
+    """
+    Import an annotated puzzle into the trainer database.
+    Returns (success, message) tuple.
+    """
+    puzzle_data = load_annotated_puzzle(puzzle_number)
+    if not puzzle_data:
+        return False, f'No annotated puzzle file found for puzzle {puzzle_number}'
+
+    try:
+        response = requests.post(
+            f'{TRAINER_API_BASE}/clues/import',
+            json={'puzzle': puzzle_data, 'publicationId': 'times'},
+            timeout=30
+        )
+
+        if response.status_code == 200:
+            result = response.json()
+            return True, f"Imported {result.get('saved', 0)} clues, skipped {result.get('skipped', 0)}"
+        else:
+            return False, f'Import failed: {response.text}'
+
+    except requests.exceptions.ConnectionError:
+        return False, 'Cannot connect to trainer service'
+    except Exception as e:
+        return False, str(e)
+
+
+def find_clue_in_annotated_data(puzzle_number, clue_number, direction):
+    """
+    Find a specific clue in the annotated puzzle data.
+    Returns the clue entry or None if not found.
+    """
+    puzzle_data = load_annotated_puzzle(puzzle_number)
+    if not puzzle_data:
+        return None
+
+    # Build the clue ID format: times-XXXXX-Na or times-XXXXX-Nd
+    dir_suffix = 'a' if direction.lower() == 'across' else 'd'
+    clue_id = f'times-{puzzle_number}-{clue_number}{dir_suffix}'
+
+    return puzzle_data.get(clue_id)
+
+
+@app.route('/trainer/import-puzzle', methods=['POST'])
+def trainer_import_puzzle():
+    """
+    Import an annotated puzzle into the trainer database.
+    This loads the puzzle from Times_Puzzle_Import/solved/ directory.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    puzzle_number = data.get('puzzle_number')
+    if not puzzle_number:
+        return jsonify({'error': 'Missing puzzle_number'}), 400
+
+    success, message = import_puzzle_to_trainer(puzzle_number)
+
+    if success:
+        return jsonify({'success': True, 'message': message})
+    else:
+        return jsonify({'success': False, 'error': message}), 400
+
+
+@app.route('/trainer/check-puzzle', methods=['GET'])
+def trainer_check_puzzle():
+    """
+    Check if annotated data exists for a puzzle.
+    """
+    puzzle_number = request.args.get('puzzle_number')
+    if not puzzle_number:
+        return jsonify({'error': 'Missing puzzle_number'}), 400
+
+    filepath = find_annotated_puzzle_file(puzzle_number)
+    has_annotations = filepath is not None
+
+    return jsonify({
+        'puzzle_number': puzzle_number,
+        'has_annotations': has_annotations,
+        'filepath': filepath if has_annotations else None
+    })
+
 
 @app.route('/trainer/start', methods=['POST'])
 def trainer_start():
     """
     Start a training session for a clue.
     Proxies to cryptic-trainer API.
+
+    If the clue is not in the trainer database but annotated data exists,
+    it will auto-import the puzzle first.
     """
     data = request.get_json()
     if not data:
@@ -384,10 +509,12 @@ def trainer_start():
     clue_text = data.get('clue_text', '')
     enumeration = data.get('enumeration', '')
     cross_letters = data.get('cross_letters', [])
+    puzzle_number = data.get('puzzle_number')  # Optional - for auto-import
+    clue_number = data.get('clue_number')  # Optional - e.g. "7" or "11"
+    direction = data.get('direction', '')  # Optional - "across" or "down"
 
     try:
         # First, try to find the clue in the trainer database
-        # Search by clue text
         search_response = requests.get(
             f'{TRAINER_API_BASE}/clues',
             timeout=5
@@ -396,36 +523,77 @@ def trainer_start():
         if search_response.status_code != 200:
             return jsonify({'error': 'Trainer service unavailable'}), 503
 
-        clues = search_response.json()
+        response_data = search_response.json()
+        clues = response_data.get('items', []) if isinstance(response_data, dict) else response_data
 
-        # Find matching clue by text (fuzzy match)
+        # Normalize the clue text for comparison (remove enumeration)
+        clue_text_no_enum = re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip()
+
+        # Find matching clue by text
         clue_id = None
         for clue in clues:
             clue_data = clue.get('clue', {})
-            if clue_data.get('text', '').strip() == clue_text.strip():
+            trainer_clue_text = clue_data.get('text', '').strip()
+
+            if trainer_clue_text == clue_text.strip():
                 clue_id = clue.get('id')
                 break
-            # Also check without enumeration
-            clue_text_no_enum = re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip()
-            if clue_data.get('text', '').strip() == clue_text_no_enum:
+            if trainer_clue_text == clue_text_no_enum:
                 clue_id = clue.get('id')
                 break
+
+        # If not found, try to auto-import the puzzle
+        if not clue_id and puzzle_number:
+            # Check if annotated data exists
+            annotated_data = load_annotated_puzzle(puzzle_number)
+            if annotated_data:
+                # Import the puzzle
+                success, message = import_puzzle_to_trainer(puzzle_number)
+                if success:
+                    # Now try to find the clue again by ID
+                    if clue_number and direction:
+                        dir_suffix = 'a' if direction.lower() == 'across' else 'd'
+                        clue_id = f'times-{puzzle_number}-{clue_number}{dir_suffix}'
+
+                        # Verify it was imported
+                        verify_response = requests.get(
+                            f'{TRAINER_API_BASE}/clues',
+                            timeout=5
+                        )
+                        if verify_response.status_code == 200:
+                            verify_data = verify_response.json()
+                            verify_clues = verify_data.get('items', []) if isinstance(verify_data, dict) else verify_data
+                            found = any(c.get('id') == clue_id for c in verify_clues)
+                            if not found:
+                                clue_id = None
 
         if not clue_id:
+            # Check if annotated data exists but wasn't imported
+            if puzzle_number:
+                has_annotations = find_annotated_puzzle_file(puzzle_number) is not None
+                if has_annotations:
+                    return jsonify({
+                        'error': 'Clue import failed',
+                        'message': 'Annotated data exists but could not be imported. Check the console for errors.',
+                        'has_annotations': True
+                    }), 500
+
             return jsonify({
                 'error': 'Clue not found in trainer database',
-                'message': 'This clue has not been annotated for training.'
+                'message': 'This clue has not been annotated for training.',
+                'has_annotations': False
             }), 404
 
-        # Start training session
+        # Start training session - use clueId (camelCase) as expected by the API
         start_response = requests.post(
-            f'{TRAINER_API_BASE}/api/training/start',
-            json={'clue_id': clue_id, 'cross_letters': cross_letters},
+            f'{TRAINER_API_BASE}/training/start',
+            json={'clueId': clue_id, 'cross_letters': cross_letters},
             timeout=10
         )
 
         if start_response.status_code != 200:
-            return jsonify({'error': 'Failed to start training session'}), 500
+            error_text = start_response.text
+            return jsonify({'error': f'Failed to start training session: {error_text}'}), 500
 
         result = start_response.json()
         result['clue_id'] = clue_id
@@ -439,6 +607,8 @@ def trainer_start():
     except requests.exceptions.Timeout:
         return jsonify({'error': 'Trainer service timeout'}), 504
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -459,9 +629,10 @@ def trainer_input():
         return jsonify({'error': 'Missing clue_id'}), 400
 
     try:
+        # API expects camelCase: clueId
         response = requests.post(
-            f'{TRAINER_API_BASE}/api/training/input',
-            json={'clue_id': clue_id, 'value': value},
+            f'{TRAINER_API_BASE}/training/input',
+            json={'clueId': clue_id, 'value': value},
             timeout=10
         )
 
@@ -491,9 +662,10 @@ def trainer_continue():
         return jsonify({'error': 'Missing clue_id'}), 400
 
     try:
+        # API expects camelCase: clueId
         response = requests.post(
-            f'{TRAINER_API_BASE}/api/training/continue',
-            json={'clue_id': clue_id},
+            f'{TRAINER_API_BASE}/training/continue',
+            json={'clueId': clue_id},
             timeout=10
         )
 

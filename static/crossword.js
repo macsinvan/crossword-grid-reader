@@ -231,6 +231,9 @@ class CrosswordPuzzle {
         document.querySelector('.trainer-actions').classList.remove('hidden');
 
         try {
+            // Get puzzle number from current puzzle info
+            const puzzleNumber = this.currentPuzzleInfo?.number || this.puzzle?.number;
+
             // Call the trainer API to start a session
             const response = await fetch('/trainer/start', {
                 method: 'POST',
@@ -238,7 +241,10 @@ class CrosswordPuzzle {
                 body: JSON.stringify({
                     clue_text: wordData.clueText,
                     enumeration: wordData.enumeration,
-                    cross_letters: wordData.crossLetters
+                    cross_letters: wordData.crossLetters,
+                    puzzle_number: puzzleNumber,
+                    clue_number: wordData.clueNumber,
+                    direction: wordData.direction
                 })
             });
 
