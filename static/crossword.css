@@ -400,43 +400,40 @@ header h1 {
 }
 
 /* Trainer Modal */
-.trainer-content {
+.trainer-modal-wrapper {
     background: white;
-    padding: 0;
     border-radius: 12px;
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-    max-width: 600px;
+    max-width: 700px;
     width: 95%;
     max-height: 90vh;
     overflow-y: auto;
 }
 
-.trainer-header {
+.trainer-modal-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    padding: 20px;
+    padding: 16px 20px;
     background: #2c5aa0;
     color: white;
     border-radius: 12px 12px 0 0;
-}
-
-.trainer-clue-info {
-    flex: 1;
+    gap: 10px;
 }
 
 #trainer-clue-number {
     font-weight: bold;
-    margin-right: 10px;
     font-size: 1.1rem;
+    flex-shrink: 0;
 }
 
 #trainer-clue-text {
-    font-size: 1rem;
+    font-size: 0.95rem;
     line-height: 1.4;
+    flex: 1;
 }
 
-.btn-close {
+.trainer-modal-header .btn-close {
     background: transparent;
     border: none;
     color: white;
@@ -445,48 +442,16 @@ header h1 {
     padding: 0 5px;
     line-height: 1;
     opacity: 0.8;
+    flex-shrink: 0;
 }
 
-.btn-close:hover {
+.trainer-modal-header .btn-close:hover {
     opacity: 1;
 }
 
-/* Trainer Answer Boxes */
-.trainer-answer-section {
-    padding: 20px;
-    background: #f5f5f0;
-    border-bottom: 1px solid #ddd;
-}
-
-.trainer-answer-boxes {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-.trainer-answer-box {
-    width: 36px;
-    height: 42px;
-    border: 2px solid #333;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-    font-weight: bold;
-    text-transform: uppercase;
-    background: white;
-}
-
-.trainer-answer-box.filled {
-    background: #e8f4e8;
-    color: #28a745;
-}
-
-.trainer-answer-box.cross-letter {
-    background: #fff3cd;
-    color: #856404;
+/* Trainer Container - where TemplateTrainer renders */
+.trainer-container {
+    padding: 0;
 }
 
 .trainer-answer-box.word-gap {
@@ -529,8 +494,9 @@ header h1 {
 }
 
 .trainer-word.selected {
-    border-color: #2c5aa0;
-    background: #e3f2fd;
+    border-color: #2c5aa0 !important;
+    background: #e3f2fd !important;
+    box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.3);
 }
 
 .trainer-word.highlight-green {

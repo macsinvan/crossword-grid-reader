@@ -526,21 +526,31 @@ def trainer_start():
         response_data = search_response.json()
         clues = response_data.get('items', []) if isinstance(response_data, dict) else response_data
 
-        # Normalize the clue text for comparison (remove enumeration)
-        clue_text_no_enum = re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip()
-
-        # Find matching clue by text
+        # First, try to find by constructed ID (most reliable)
         clue_id = None
-        for clue in clues:
-            clue_data = clue.get('clue', {})
-            trainer_clue_text = clue_data.get('text', '').strip()
+        if puzzle_number and clue_number and direction:
+            dir_suffix = 'a' if direction.lower() == 'across' else 'd'
+            expected_id = f'times-{puzzle_number}-{clue_number}{dir_suffix}'
+            for clue in clues:
+                if clue.get('id') == expected_id:
+                    clue_id = expected_id
+                    break
 
-            if trainer_clue_text == clue_text.strip():
-                clue_id = clue.get('id')
-                break
-            if trainer_clue_text == clue_text_no_enum:
-                clue_id = clue.get('id')
-                break
+        # Fallback: try matching by text (for clues without puzzle context)
+        if not clue_id:
+            # Normalize the clue text for comparison (remove enumeration)
+            clue_text_no_enum = re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip()
+
+            for clue in clues:
+                clue_data = clue.get('clue', {})
+                trainer_clue_text = clue_data.get('text', '').strip()
+
+                if trainer_clue_text == clue_text.strip():
+                    clue_id = clue.get('id')
+                    break
+                if trainer_clue_text == clue_text_no_enum:
+                    clue_id = clue.get('id')
+                    break
 
         # If not found, try to auto-import the puzzle
         if not clue_id and puzzle_number:

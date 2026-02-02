@@ -18,6 +18,10 @@ class CrosswordPuzzle {
         this.currentClueNumber = null;
         this.currentPuzzleInfo = null;
 
+        // Trainer state
+        this.templateTrainer = null;
+        this.trainerWordData = null;
+
         this.initEventListeners();
         this.loadPuzzleList();
     }
@@ -82,6 +86,10 @@ class CrosswordPuzzle {
 
         // Keyboard input
         document.addEventListener('keydown', (e) => {
+            // Don't intercept keyboard when typing in the trainer input
+            if (e.target.id === 'trainer-text-input') {
+                return;
+            }
             if (this.puzzle && this.selectedCell) {
                 this.handleKeydown(e);
             }
@@ -94,25 +102,6 @@ class CrosswordPuzzle {
 
         document.getElementById('trainer-close').addEventListener('click', () => {
             this.closeTrainer();
-        });
-
-        document.getElementById('trainer-submit').addEventListener('click', () => {
-            this.submitTrainerInput();
-        });
-
-        document.getElementById('trainer-skip').addEventListener('click', () => {
-            this.skipTrainerStep();
-        });
-
-        document.getElementById('trainer-apply').addEventListener('click', () => {
-            this.applyTrainerAnswer();
-        });
-
-        document.getElementById('trainer-text-input').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                this.submitTrainerInput();
-            }
         });
     }
 
@@ -128,25 +117,91 @@ class CrosswordPuzzle {
 
         // Store current word data for later
         this.trainerWordData = wordData;
-        this.trainerState = null;
-        this.trainerAnswer = '';
 
         // Show the modal
         document.getElementById('trainer-modal').classList.remove('hidden');
         document.getElementById('trainer-clue-number').textContent = `${wordData.clueNumber}${wordData.direction === 'across' ? 'A' : 'D'}`;
         document.getElementById('trainer-clue-text').textContent = wordData.clueText;
 
-        // Render answer boxes with cross letters
-        this.renderTrainerAnswerBoxes(wordData.length, wordData.crossLetters, wordData.enumeration);
+        // Get puzzle number for clue lookup
+        const puzzleNumber = this.currentPuzzleInfo?.number || this.puzzle?.number;
 
-        // Try to start training session
-        await this.startTrainerSession(wordData);
+        // First, start the session via API to get the clue_id
+        try {
+            const response = await fetch('/trainer/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clue_text: wordData.clueText,
+                    enumeration: wordData.enumeration,
+                    cross_letters: wordData.crossLetters,
+                    puzzle_number: puzzleNumber,
+                    clue_number: wordData.clueNumber,
+                    direction: wordData.direction
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                document.getElementById('trainer-container').innerHTML = `
+                    <div style="padding: 2rem; text-align: center; color: #666;">
+                        <p>${data.error}</p>
+                        <p style="font-style: italic; margin-top: 0.5rem;">This clue has not been annotated for training yet.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Create TemplateTrainer instance with the clue_id from server
+            const container = document.getElementById('trainer-container');
+            this.templateTrainer = new TemplateTrainer(container, {
+                clueId: data.clue_id,
+                clueText: wordData.clueText,
+                enumeration: wordData.enumeration,
+                answer: data.render?.answer || '',
+                onComplete: () => this.applyTrainerAnswer(),
+                onBack: () => this.closeTrainer()
+            });
+
+            // Store the initial render state
+            this.templateTrainer.render = data.render;
+            this.templateTrainer.loading = false;
+            this.templateTrainer.renderUI();
+
+        } catch (error) {
+            console.error('Trainer API error:', error);
+            document.getElementById('trainer-container').innerHTML = `
+                <div style="padding: 2rem; text-align: center; color: #dc2626;">
+                    <p>Could not connect to trainer service</p>
+                </div>
+            `;
+        }
     }
 
     closeTrainer() {
         document.getElementById('trainer-modal').classList.add('hidden');
-        this.trainerState = null;
+        this.templateTrainer = null;
         this.trainerWordData = null;
+    }
+
+    applyTrainerAnswer() {
+        if (!this.templateTrainer?.render?.answer || !this.trainerWordData) {
+            this.closeTrainer();
+            return;
+        }
+
+        const letters = this.templateTrainer.render.answer.toUpperCase().split('');
+        const cells = this.trainerWordData.cells;
+
+        cells.forEach(({ r, c }, i) => {
+            if (letters[i]) {
+                this.setCell(r, c, letters[i]);
+            }
+        });
+
+        this.closeTrainer();
+        this.updateHighlights();
     }
 
     getWordDataForTrainer() {
@@ -181,462 +236,6 @@ class CrosswordPuzzle {
             crossLetters: crossLetters,
             cells: wordCells
         };
-    }
-
-    renderTrainerAnswerBoxes(length, crossLetters, enumeration) {
-        const container = document.getElementById('trainer-answer-boxes');
-        container.innerHTML = '';
-
-        // Parse enumeration to determine word breaks (e.g., "3-4" means 3 letters, gap, 4 letters)
-        const parts = enumeration.split(/[-,\s]+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n));
-
-        let letterIndex = 0;
-        const crossMap = {};
-        crossLetters.forEach(cl => {
-            crossMap[cl.position] = cl.letter;
-        });
-
-        parts.forEach((partLength, partIndex) => {
-            // Add word gap between parts
-            if (partIndex > 0) {
-                const gap = document.createElement('div');
-                gap.className = 'trainer-answer-box word-gap';
-                container.appendChild(gap);
-            }
-
-            // Add letter boxes for this part
-            for (let i = 0; i < partLength; i++) {
-                const box = document.createElement('div');
-                box.className = 'trainer-answer-box';
-                box.dataset.index = letterIndex;
-
-                if (crossMap[letterIndex]) {
-                    box.textContent = crossMap[letterIndex];
-                    box.classList.add('cross-letter');
-                }
-
-                container.appendChild(box);
-                letterIndex++;
-            }
-        });
-    }
-
-    async startTrainerSession(wordData) {
-        // Show loading state
-        document.getElementById('trainer-instruction').textContent = 'Looking for training data...';
-        document.getElementById('trainer-clue-words').innerHTML = '';
-        document.getElementById('trainer-input-section').classList.add('hidden');
-        document.getElementById('trainer-feedback').classList.add('hidden');
-        document.getElementById('trainer-complete').classList.add('hidden');
-        document.querySelector('.trainer-actions').classList.remove('hidden');
-
-        try {
-            // Get puzzle number from current puzzle info
-            const puzzleNumber = this.currentPuzzleInfo?.number || this.puzzle?.number;
-
-            // Call the trainer API to start a session
-            const response = await fetch('/trainer/start', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    clue_text: wordData.clueText,
-                    enumeration: wordData.enumeration,
-                    cross_letters: wordData.crossLetters,
-                    puzzle_number: puzzleNumber,
-                    clue_number: wordData.clueNumber,
-                    direction: wordData.direction
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.error) {
-                this.showTrainerNotAvailable(data.error);
-                return;
-            }
-
-            this.trainerState = data;
-            this.renderTrainerState(data);
-
-        } catch (error) {
-            console.error('Trainer API error:', error);
-            this.showTrainerNotAvailable('Could not connect to trainer service');
-        }
-    }
-
-    showTrainerNotAvailable(message) {
-        document.getElementById('trainer-instruction').textContent = message || 'Training not available for this clue';
-        document.getElementById('trainer-clue-words').innerHTML = '<p style="color: #666; font-style: italic;">This clue has not been annotated for training yet.</p>';
-        document.getElementById('trainer-input-section').classList.add('hidden');
-        document.querySelector('.trainer-actions').classList.add('hidden');
-    }
-
-    renderTrainerState(state) {
-        const render = state.render;
-        if (!render) {
-            console.error('No render data in state:', state);
-            return;
-        }
-
-        // Debug: log inputMode to help diagnose issues
-        console.log('Trainer inputMode:', render.inputMode, 'panel:', render.panel);
-
-        // Build instruction text from various possible sources
-        let instructionText = '';
-        if (render.intro?.title) {
-            instructionText = render.intro.title;
-        }
-        if (render.panel?.instruction) {
-            instructionText = instructionText
-                ? `${instructionText}\n\n${render.panel.instruction}`
-                : render.panel.instruction;
-        }
-        if (render.actionPrompt && !instructionText) {
-            instructionText = render.actionPrompt;
-        }
-
-        document.getElementById('trainer-instruction').innerHTML = instructionText.replace(/\n/g, '<br>');
-
-        // Show intro text if available (detailed instructions)
-        const clueWordsContainer = document.getElementById('trainer-clue-words');
-
-        // Check if instruction looks like it needs text input (fallback detection)
-        const needsTextInput = instructionText && (
-            instructionText.includes("synonym") ||
-            instructionText.includes("What's a") ||
-            instructionText.toLowerCase().includes("type") ||
-            instructionText.toLowerCase().includes("enter ")
-        );
-
-        // Render based on input mode
-        if (render.inputMode === 'tap_words') {
-            this.renderTrainerClueWords(render.highlights || []);
-            document.getElementById('trainer-input-section').classList.add('hidden');
-            document.querySelector('.trainer-actions').classList.remove('hidden');
-        } else if (
-            render.inputMode === 'text' ||
-            render.inputMode === 'enter_text' ||
-            render.inputMode === 'free_text' ||
-            render.inputMode === 'input' ||
-            needsTextInput  // Fallback: detect text input need from instruction
-        ) {
-            clueWordsContainer.innerHTML = '';
-            document.getElementById('trainer-input-section').classList.remove('hidden');
-            document.getElementById('trainer-text-input').value = '';
-            document.getElementById('trainer-text-input').focus();
-            document.querySelector('.trainer-actions').classList.remove('hidden');
-        } else if (render.inputMode === 'multiple_choice' && render.options) {
-            // API uses 'options' not 'buttons'
-            this.renderTrainerMultipleChoice(render.options);
-            document.getElementById('trainer-input-section').classList.add('hidden');
-            document.querySelector('.trainer-actions').classList.add('hidden'); // Hide Skip/Submit for MC
-        } else if (render.inputMode === 'multiple_choice' && render.buttons) {
-            // Fallback for buttons format
-            this.renderTrainerMultipleChoice(render.buttons);
-            document.getElementById('trainer-input-section').classList.add('hidden');
-            document.querySelector('.trainer-actions').classList.add('hidden');
-        } else if (render.inputMode === 'none' || !render.inputMode) {
-            // Teaching/confirmation phase - show clue words with highlights and continue button
-            document.getElementById('trainer-input-section').classList.add('hidden');
-
-            // Show clue words with any highlights (like the found definition)
-            if (render.highlights && render.highlights.length > 0) {
-                this.renderTrainerClueWords(render.highlights);
-            }
-
-            if (render.button) {
-                // Show a continue button below the clue words
-                this.renderContinueButton(render.button, clueWordsContainer.children.length > 0);
-                document.querySelector('.trainer-actions').classList.add('hidden');
-            } else {
-                // No button - show Skip to allow moving forward
-                document.querySelector('.trainer-actions').classList.remove('hidden');
-            }
-        }
-
-        // Store answer if provided
-        if (render.answer) {
-            this.trainerAnswer = render.answer;
-        }
-
-        // Show/hide complete state
-        if (render.phaseId === 'complete' || state.complete) {
-            this.showTrainerComplete(render.answer || this.trainerAnswer);
-        }
-
-        // Show feedback if present
-        if (state.feedback || state.message) {
-            this.showTrainerFeedback(state.feedback || state.message, state.correct);
-        } else {
-            document.getElementById('trainer-feedback').classList.add('hidden');
-        }
-    }
-
-    renderContinueButton(button, appendToExisting = false) {
-        const container = document.getElementById('trainer-clue-words');
-        if (!appendToExisting) {
-            container.innerHTML = '';
-        }
-
-        const btnEl = document.createElement('button');
-        btnEl.className = 'btn btn-primary trainer-continue-btn';
-        btnEl.textContent = button.label || 'Continue →';
-        btnEl.style.cssText = 'display: block; margin: 20px auto; padding: 12px 30px; font-size: 1.1rem;';
-
-        btnEl.addEventListener('click', () => {
-            this.skipTrainerStep(); // Use skip/continue endpoint
-        });
-
-        container.appendChild(btnEl);
-    }
-
-    renderTrainerClueWords(highlights) {
-        const container = document.getElementById('trainer-clue-words');
-        container.innerHTML = '';
-
-        // Split clue into words
-        const clueText = this.trainerWordData.clueText;
-        const words = clueText.replace(/\([\d,\-\s]+\)\s*$/, '').split(/\s+/).filter(Boolean);
-
-        // Build highlight map
-        const highlightMap = {};
-        (highlights || []).forEach(h => {
-            (h.indices || []).forEach(i => {
-                highlightMap[i] = h.color?.toLowerCase() || 'selected';
-            });
-        });
-
-        words.forEach((word, index) => {
-            const wordEl = document.createElement('span');
-            wordEl.className = 'trainer-word';
-            wordEl.textContent = word;
-            wordEl.dataset.index = index;
-
-            if (highlightMap[index]) {
-                wordEl.classList.add(`highlight-${highlightMap[index]}`);
-            }
-
-            wordEl.addEventListener('click', () => {
-                this.toggleTrainerWordSelection(wordEl, index);
-            });
-
-            container.appendChild(wordEl);
-        });
-    }
-
-    renderTrainerMultipleChoice(options) {
-        const container = document.getElementById('trainer-clue-words');
-        container.innerHTML = '';
-
-        // Create a styled options container
-        const optionsDiv = document.createElement('div');
-        optionsDiv.className = 'trainer-options';
-        optionsDiv.style.cssText = 'display: flex; flex-direction: column; gap: 10px; width: 100%;';
-
-        options.forEach((opt, index) => {
-            const optionEl = document.createElement('button');
-            optionEl.className = 'trainer-option-btn';
-            optionEl.style.cssText = `
-                display: block;
-                width: 100%;
-                padding: 12px 15px;
-                text-align: left;
-                background: #f8f9fa;
-                border: 2px solid #dee2e6;
-                border-radius: 8px;
-                cursor: pointer;
-                transition: all 0.2s;
-                font-family: inherit;
-            `;
-
-            const labelEl = document.createElement('div');
-            labelEl.style.cssText = 'font-weight: bold; font-size: 1rem; margin-bottom: 4px;';
-            labelEl.textContent = opt.label || opt.text || `Option ${index + 1}`;
-
-            optionEl.appendChild(labelEl);
-
-            if (opt.description) {
-                const descEl = document.createElement('div');
-                descEl.style.cssText = 'font-size: 0.85rem; color: #666;';
-                descEl.textContent = opt.description;
-                optionEl.appendChild(descEl);
-            }
-
-            optionEl.addEventListener('mouseenter', () => {
-                optionEl.style.borderColor = '#2c5aa0';
-                optionEl.style.background = '#e7f1ff';
-            });
-            optionEl.addEventListener('mouseleave', () => {
-                optionEl.style.borderColor = '#dee2e6';
-                optionEl.style.background = '#f8f9fa';
-            });
-
-            optionEl.addEventListener('click', () => {
-                // Send the index for multiple choice (API expects index, not label)
-                this.submitTrainerChoice(index, index);
-            });
-
-            optionsDiv.appendChild(optionEl);
-        });
-
-        container.appendChild(optionsDiv);
-    }
-
-    toggleTrainerWordSelection(wordEl, index) {
-        wordEl.classList.toggle('selected');
-        // Collect all selected indices for submission
-    }
-
-    async submitTrainerInput() {
-        const textInput = document.getElementById('trainer-text-input');
-        const selectedWords = document.querySelectorAll('.trainer-word.selected');
-
-        let value;
-        if (textInput.value.trim()) {
-            value = textInput.value.trim().toUpperCase();
-        } else if (selectedWords.length > 0) {
-            value = Array.from(selectedWords).map(w => parseInt(w.dataset.index));
-        } else {
-            return; // Nothing to submit
-        }
-
-        await this.sendTrainerInput(value);
-    }
-
-    async submitTrainerChoice(index, value) {
-        await this.sendTrainerInput(value);
-    }
-
-    async sendTrainerInput(value) {
-        if (!this.trainerState) return;
-
-        try {
-            const response = await fetch('/trainer/input', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    clue_id: this.trainerState.clue_id,
-                    value: value
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.error) {
-                this.showTrainerFeedback({ correct: false, message: data.error });
-                return;
-            }
-
-            this.trainerState = data;
-
-            if (data.answer) {
-                this.trainerAnswer = data.answer;
-            }
-
-            this.renderTrainerState(data);
-
-        } catch (error) {
-            console.error('Trainer input error:', error);
-            this.showTrainerFeedback({ correct: false, message: 'Connection error' });
-        }
-    }
-
-    async skipTrainerStep() {
-        if (!this.trainerState) return;
-
-        try {
-            const response = await fetch('/trainer/continue', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    clue_id: this.trainerState.clue_id
-                })
-            });
-
-            const data = await response.json();
-            this.trainerState = data;
-            this.renderTrainerState(data);
-
-        } catch (error) {
-            console.error('Trainer skip error:', error);
-        }
-    }
-
-    showTrainerFeedback(feedbackOrMessage, isCorrect) {
-        const el = document.getElementById('trainer-feedback');
-
-        // Handle both object format {message, correct} and simple string
-        let message, correct;
-        if (typeof feedbackOrMessage === 'object') {
-            message = feedbackOrMessage.message || feedbackOrMessage;
-            correct = feedbackOrMessage.correct;
-        } else {
-            message = feedbackOrMessage;
-            correct = isCorrect;
-        }
-
-        el.textContent = message;
-        el.className = 'trainer-feedback';
-        el.classList.add(correct ? 'correct' : 'incorrect');
-        el.classList.remove('hidden');
-    }
-
-    showTrainerComplete(answer) {
-        this.trainerAnswer = answer;
-
-        // Update answer boxes with the answer
-        const boxes = document.querySelectorAll('.trainer-answer-box:not(.word-gap)');
-        const letters = answer.toUpperCase().split('');
-        boxes.forEach((box, i) => {
-            if (letters[i] && !box.classList.contains('cross-letter')) {
-                box.textContent = letters[i];
-                box.classList.add('filled');
-            }
-        });
-
-        // Hide actions, show complete section
-        document.querySelector('.trainer-actions').classList.add('hidden');
-        document.getElementById('trainer-input-section').classList.add('hidden');
-        document.getElementById('trainer-clue-words').innerHTML = '';
-        document.getElementById('trainer-instruction').textContent = '';
-        document.getElementById('trainer-complete').classList.remove('hidden');
-    }
-
-    applyTrainerAnswer() {
-        if (!this.trainerAnswer || !this.trainerWordData) return;
-
-        const letters = this.trainerAnswer.toUpperCase().split('');
-        const cells = this.trainerWordData.cells;
-
-        cells.forEach(({ r, c }, i) => {
-            if (letters[i]) {
-                this.setCell(r, c, letters[i]);
-            }
-        });
-
-        this.closeTrainer();
-        this.updateHighlights();
-    }
-
-    async checkTrainerAvailability() {
-        // This method checks if the current clue has training data available
-        // and enables/disables the Solve button accordingly
-        const solveBtn = document.getElementById('solve-btn');
-
-        if (!this.selectedCell || !this.puzzle) {
-            solveBtn.disabled = true;
-            return;
-        }
-
-        const wordData = this.getWordDataForTrainer();
-        if (!wordData) {
-            solveBtn.disabled = true;
-            return;
-        }
-
-        // For now, enable the button - actual availability checked when opened
-        // In future, could make an API call to check if clue exists in trainer DB
-        solveBtn.disabled = false;
     }
 
     switchTab(tab) {

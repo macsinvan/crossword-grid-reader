@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crossword Puzzle</title>
-    <link rel="stylesheet" href="/static/crossword.css">
+    <link rel="stylesheet" href="/static/crossword.css?v=8">
 </head>
 <body>
     <div class="container">
@@ -101,33 +101,14 @@
 
         <!-- Trainer Modal -->
         <div id="trainer-modal" class="modal hidden">
-            <div class="trainer-content">
-                <div class="trainer-header">
-                    <div class="trainer-clue-info">
-                        <span id="trainer-clue-number"></span>
-                        <span id="trainer-clue-text"></span>
-                    </div>
+            <div class="trainer-modal-wrapper">
+                <div class="trainer-modal-header">
+                    <span id="trainer-clue-number"></span>
+                    <span id="trainer-clue-text"></span>
                     <button class="btn-close" id="trainer-close">&times;</button>
                 </div>
-                <div class="trainer-answer-section">
-                    <div id="trainer-answer-boxes" class="trainer-answer-boxes"></div>
-                </div>
-                <div class="trainer-instruction-section">
-                    <div id="trainer-instruction" class="trainer-instruction"></div>
-                    <div id="trainer-clue-words" class="trainer-clue-words"></div>
-                </div>
-                <div id="trainer-input-section" class="trainer-input-section">
-                    <input type="text" id="trainer-text-input" class="trainer-text-input" placeholder="Type your answer...">
-                </div>
-                <div id="trainer-feedback" class="trainer-feedback hidden"></div>
-                <div class="trainer-actions">
-                    <button class="btn btn-secondary" id="trainer-skip">Skip</button>
-                    <button class="btn btn-primary" id="trainer-submit">Submit</button>
-                </div>
-                <div class="trainer-complete hidden" id="trainer-complete">
-                    <div class="trainer-success">Solved!</div>
-                    <button class="btn btn-primary" id="trainer-apply">Apply to Grid</button>
-                </div>
+                <!-- TemplateTrainer renders into this container -->
+                <div id="trainer-container" class="trainer-container"></div>
             </div>
         </div>
 
@@ -166,6 +147,7 @@
         </section>
     </div>
 
-    <script src="/static/crossword.js"></script>
+    <script src="/static/trainer.js?v=3"></script>
+    <script src="/static/crossword.js?v=8"></script>
 </body>
 </html>
