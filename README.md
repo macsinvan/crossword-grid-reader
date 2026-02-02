@@ -371,6 +371,19 @@ Grid Reader/
     └── trainer.js           # TemplateTrainer (ported from React)
 ```
 
+## TODO
+
+### Auto-solve clues via LLM
+
+Currently, the trainer only works with **pre-annotated** clues. This is a significant limitation - you must manually annotate each clue's definition, wordplay steps, etc. before the trainer can guide someone through it.
+
+**Future enhancement:** Send unannotated clues to cryptic-trainer and have it use an LLM to:
+1. Parse the clue structure (find definition, identify wordplay type)
+2. Generate solving steps automatically
+3. Store the generated annotation for future use
+
+This would allow the "Solve" button to work on **any** clue, not just ones that have been manually annotated.
+
 ## License
 
 MIT
