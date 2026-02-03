@@ -11,6 +11,7 @@ A web-based tool for importing, solving, and learning to solve Times Cryptic cro
 - **Guided Solving**: Click "Solve" on any clue to get step-by-step solving guidance (requires cryptic-trainer)
 - **Cross Letter Support**: Pre-filled letters from intersecting words appear in the trainer
 - **Robust Grid Detection**: Uses edge detection and contour analysis to handle various PDF formats
+- **Progress Persistence**: Puzzle progress auto-saves to browser localStorage and survives page refresh
 
 ## Requirements
 
@@ -81,9 +82,16 @@ Below the grid, showing:
 
 #### Controls
 - **Check Answers**: Highlights incorrect cells (requires answers)
-- **Clear Grid**: Removes all entered letters
+- **Clear Grid**: Removes all entered letters (also clears saved progress)
 - **Reveal All**: Shows the complete solution (requires answers)
 - **Back to Puzzles**: Return to puzzle list
+
+#### Progress Persistence
+Your solving progress is automatically saved to browser localStorage:
+- Progress saves after each letter you type
+- Survives browser refresh (Cmd+R) and browser restart
+- Each puzzle has independent progress
+- Clear Grid and Reveal All clear saved progress
 
 ### Guided Solving (Trainer Integration)
 
@@ -97,7 +105,7 @@ Click the **Solve** button to open the trainer modal:
 3. **Instructions**: Step-by-step guidance through the solving process
 4. **Word Selection**: Tap clue words to identify parts (definition, indicator, fodder)
 5. **Text Input**: Enter answers or intermediate results
-6. **Apply to Grid**: Transfer the solved answer back to the puzzle
+6. **Auto-Apply**: When solved, the answer automatically fills in the grid and the modal closes
 
 The trainer walks you through:
 - Finding the definition
@@ -297,7 +305,7 @@ When you click "Solve":
 7. `trainer.js` creates TemplateTrainer instance with render state
 8. User interacts (tap words, select options, type text)
 9. Submissions go to `/trainer/input`, returns new render state
-10. On completion, "Apply to Grid" transfers answer back to puzzle
+10. On completion, answer automatically applies to grid and modal closes
 
 ## Supported Formats
 
