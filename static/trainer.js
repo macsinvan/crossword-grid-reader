@@ -202,7 +202,7 @@ class TemplateTrainer {
     }
 
     async handleSolve() {
-        // Give up - reveal full answer and complete training
+        // Give up - reveal full answer and show summary step
         try {
             const response = await fetch('/trainer/reveal', {
                 method: 'POST',
@@ -212,16 +212,14 @@ class TemplateTrainer {
 
             const data = await response.json();
 
-            if (data.success || data.complete) {
-                // Set render to complete state with answer
-                this.render = {
-                    complete: true,
-                    answer: data.answer || this.render?.answer || this.answer
-                };
-                // Trigger onComplete callback to apply answer to grid and close
-                if (this.onComplete) {
-                    this.onComplete();
-                }
+            if (data.success) {
+                // Show the summary/teaching step with learnings
+                // Server returns render state with button to complete
+                this.render = data;
+                this.answerLocked = true;  // Lock answer boxes
+                this.feedback = null;
+                this.hintVisible = false;
+                this.renderUI();  // Render summary, don't close yet
             } else {
                 this.error = data.error || 'Could not reveal answer';
                 this.renderError();
@@ -407,10 +405,6 @@ class TemplateTrainer {
                 ${this.renderLearnings()}
             </div>
 
-            <!-- SECTION 5: SOLVE BUTTON -->
-            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end;">
-                ${this.renderSolveButton()}
-            </div>
         `;
 
         this.container.innerHTML = html;
@@ -434,10 +428,13 @@ class TemplateTrainer {
             `;
         }
 
-        // Default: Answer entry boxes
+        // Default: Answer entry boxes with Solve button
         return `
-            <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
-                ${this.renderAnswerBoxes()}
+            <div style="display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap;">
+                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                    ${this.renderAnswerBoxes()}
+                </div>
+                ${this.renderSolveButton()}
             </div>
         `;
     }
@@ -618,10 +615,13 @@ class TemplateTrainer {
     // Solve button - reveals full answer and completes training
     renderSolveButton() {
         return `<button class="solve-button"
-                        style="padding: 0.5rem 1rem; background: #dc2626; color: white;
-                               font-weight: 500; border-radius: 0.5rem; border: none;
-                               cursor: pointer; font-size: 0.875rem;"
-                        title="Give up and reveal the answer">
+                        style="padding: 0.25rem 0.5rem; background: none; color: #9ca3af;
+                               font-weight: 400; border-radius: 0.25rem; border: 1px solid #e5e7eb;
+                               cursor: pointer; font-size: 0.75rem; opacity: 0.7;
+                               transition: opacity 0.2s, color 0.2s;"
+                        title="Give up and reveal the answer"
+                        onmouseover="this.style.opacity='1'; this.style.color='#6b7280';"
+                        onmouseout="this.style.opacity='0.7'; this.style.color='#9ca3af';">
             Solve
         </button>`;
     }

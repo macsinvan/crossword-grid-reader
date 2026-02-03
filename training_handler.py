@@ -2322,3 +2322,122 @@ def solve_step(clue_id, clue):
         "message": f"The answer was: {expected}",
         "render": get_render(clue_id, clue)
     }
+
+
+def reveal_answer(clue_id, clue):
+    """
+    Reveal the full answer and skip to the final teaching/summary step.
+    Used when user gives up entirely.
+    """
+    session = _sessions.get(clue_id)
+    if not session:
+        # Start a session if none exists
+        start_session(clue_id, clue)
+        session = _sessions.get(clue_id)
+
+    steps = clue.get("steps", [])
+    answer = clue.get("clue", {}).get("answer", "")
+
+    # Build learnings from all steps (showing what user would have learned)
+    learnings = []
+    learnings.append({
+        "title": "REVEALED: Full answer",
+        "text": f"The answer is: {answer}"
+    })
+
+    # Add all step explanations to learnings
+    for step in steps:
+        step_type = step.get("type", "")
+        if step_type == "standard_definition":
+            def_text = step.get("expected", {}).get("text", "")
+            learnings.append({
+                "title": f"DEFINITION FOUND: {def_text}",
+                "text": f"The definition was: {def_text}"
+            })
+        elif step_type == "synonym":
+            fodder = step.get("fodder", {}).get("text", "")
+            result = step.get("result", "")
+            learnings.append({
+                "title": f"SYNONYM: {fodder} → {result}",
+                "text": step.get("hint", f"{fodder} means {result}")
+            })
+        elif step_type == "abbreviation":
+            fodder = step.get("fodder", {}).get("text", "")
+            result = step.get("result", "")
+            learnings.append({
+                "title": f"ABBREVIATION: {fodder} → {result}",
+                "text": step.get("hint", f"{fodder} abbreviates to {result}")
+            })
+        elif step_type == "anagram":
+            indicator = step.get("indicator", {}).get("text", "")
+            fodder = step.get("fodder", {}).get("text", "")
+            result = step.get("result", "")
+            learnings.append({
+                "title": f"ANAGRAM: {fodder} → {result}",
+                "text": f"'{indicator}' signals anagram of '{fodder}'"
+            })
+        elif step_type == "reversal":
+            indicator = step.get("indicator", {}).get("text", "")
+            fodder = step.get("fodder", "")
+            result = step.get("result", "")
+            learnings.append({
+                "title": f"REVERSAL: {fodder} → {result}",
+                "text": f"'{indicator}' signals reversal"
+            })
+        elif step_type == "container_verify":
+            outer = step.get("outer", "")
+            inner = step.get("inner", "")
+            result = step.get("result", "")
+            learnings.append({
+                "title": f"CONTAINER: {outer} around {inner} → {result}",
+                "text": step.get("hint", f"{inner} goes inside {outer}")
+            })
+        elif step_type == "charade_verify":
+            components = step.get("components", [])
+            result = step.get("result", "")
+            learnings.append({
+                "title": f"CHARADE: {' + '.join(components)} → {result}",
+                "text": f"The pieces combine: {' + '.join(components)} = {result}"
+            })
+
+    # Update session to final state
+    session["learnings"] = learnings
+    session["step_index"] = len(steps)  # Past all steps
+
+    # Build highlights for all wordplay parts
+    highlights = []
+    for step in steps:
+        if "fodder" in step and isinstance(step["fodder"], dict):
+            highlights.append({
+                "indices": step["fodder"].get("indices", []),
+                "color": "BLUE"
+            })
+        if "indicator" in step and isinstance(step["indicator"], dict):
+            highlights.append({
+                "indices": step["indicator"].get("indices", []),
+                "color": "YELLOW"
+            })
+        if "expected" in step and isinstance(step["expected"], dict):
+            highlights.append({
+                "indices": step["expected"].get("indices", []),
+                "color": "GREEN"
+            })
+
+    return {
+        "success": True,
+        "revealed": True,
+        "answer": answer,
+        "complete": False,  # Not complete yet - show summary first
+        "phaseId": "teaching",
+        "inputMode": "none",
+        "stepType": "summary",
+        "actionPrompt": "Review the solution",
+        "panel": {
+            "title": "SOLUTION REVEALED",
+            "instruction": f"The answer is **{answer}**. Here's how the wordplay works:"
+        },
+        "button": {"label": "Complete →", "action": "complete"},
+        "learnings": learnings,
+        "highlights": highlights,
+        "words": clue.get("words", [])
+    }

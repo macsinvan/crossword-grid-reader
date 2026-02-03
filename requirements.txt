@@ -10,3 +10,6 @@ requests>=2.25.0
 # Supabase (Phase 1)
 supabase>=2.0.0
 python-dotenv>=1.0.0
+
+# OCR validation
+pyspellchecker>=0.7.0

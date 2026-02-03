@@ -709,7 +709,7 @@
       "id": "times-29453-2d",
       "clue": {
         "number": "2D",
-        "text": "Crooked old mater which strongly suggests criminal is mom",
+        "text": "Crooked old mater — which strongly suggests criminal is mum",
         "enumeration": "6",
         "answer": "OMERTA",
         "definition": [
@@ -805,7 +805,7 @@
       "id": "times-29453-1a",
       "clue": {
         "number": "1A",
-        "text": "Cover up in shower not after nurses turn around",
+        "text": "Cover up in shower? Not after nurses turn round",
         "enumeration": "6",
         "answer": "BROLLY",
         "definition": [
@@ -1001,44 +1001,44 @@
       "id": "times-29453-8d",
       "clue": {
         "number": "8D",
-        "text": "But you must wear socks steamy in here",
+        "text": "Steamy in here, but you must wear socks",
         "enumeration": "8",
         "answer": "HOTHOUSE",
         "definition": [
           {
-            "text": "steamy in here",
-            "position": "end"
+            "text": "Steamy in here",
+            "position": "start"
           }
         ]
       },
       "words": [
-        "But",
+        "Steamy",
+        "in",
+        "here",
+        "but",
         "you",
         "must",
         "wear",
-        "socks",
-        "steamy",
-        "in",
-        "here"
+        "socks"
       ],
       "steps": [
         {
           "type": "standard_definition",
           "expected": {
             "indices": [
-              5,
-              6,
-              7
+              0,
+              1,
+              2
             ],
-            "text": "steamy in here"
+            "text": "Steamy in here"
           },
-          "position": "end"
+          "position": "start"
         },
         {
           "type": "synonym",
           "fodder": {
             "indices": [
-              1
+              4
             ],
             "text": "you"
           },
@@ -1049,7 +1049,7 @@
           "type": "synonym",
           "fodder": {
             "indices": [
-              4
+              7
             ],
             "text": "socks"
           },
@@ -1060,8 +1060,8 @@
           "type": "container_verify",
           "indicator": {
             "indices": [
-              2,
-              3
+              5,
+              6
             ],
             "text": "must wear"
           },
@@ -1387,7 +1387,7 @@
       "id": "times-29453-26d",
       "clue": {
         "number": "26D",
-        "text": "In Republican's absence conflicts happened",
+        "text": "In Republican's absence, conflicts happened",
         "enumeration": "3",
         "answer": "WAS",
         "definition": [
@@ -1748,7 +1748,7 @@
       "id": "times-29453-18d",
       "clue": {
         "number": "18D",
-        "text": "Fugitives attempt to escape upset good egg",
+        "text": "Fugitive's attempt to escape upset good egg",
         "enumeration": "8",
         "answer": "FLEETING",
         "definition": [
@@ -2255,7 +2255,7 @@
       "id": "times-29453-19a",
       "clue": {
         "number": "19A",
-        "text": "Are cold kisses coming inside only when it's dark?",
+        "text": "Are cold kissers coming inside only when it's dark?",
         "enumeration": "5,7",
         "answer": "SOLAR ECLIPSE",
         "definition": [
@@ -2268,7 +2268,7 @@
       "words": [
         "Are",
         "cold",
-        "kisses",
+        "kissers",
         "coming",
         "inside",
         "only",
@@ -2328,10 +2328,10 @@
             "indices": [
               2
             ],
-            "text": "kisses"
+            "text": "kissers"
           },
           "result": "LIPS",
-          "hint": "You kiss with your lips"
+          "hint": "Kissers is slang for lips"
         },
         {
           "type": "container_verify",
@@ -2871,7 +2871,7 @@
       "id": "times-29453-26a",
       "clue": {
         "number": "26A",
-        "text": "Turn bench back to street exposed to blasts",
+        "text": "Turn bench back in street exposed to blasts",
         "enumeration": "9",
         "answer": "WINDSWEPT",
         "definition": [

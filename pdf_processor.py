@@ -19,6 +19,36 @@ from PIL import Image
 import tempfile
 import os
 
+# Common English words for spell checking (expandable)
+# This catches obvious OCR errors like "ofice" -> "office", "confiicts" -> "conflicts"
+COMMON_WORDS = {
+    # Common cryptic crossword words
+    'office', 'conflicts', 'fugitive', 'kisses', 'kissers', 'around', 'round',
+    'street', 'exposed', 'blasts', 'shower', 'nurses', 'criminal', 'suggests',
+    'strongly', 'crooked', 'absence', 'republican', 'happened', 'attempt',
+    'escape', 'upset', 'steamy', 'socks', 'wear', 'must', 'here', 'singer',
+    'costume', 'representative', 'country', 'movement', 'moderate', 'opposed',
+    'referendum', 'option', 'concerning', 'sight', 'struggles', 'flatter',
+    'track', 'little', 'time', 'come', 'five', 'mean', 'boss', 'bungle',
+    'work', 'number', 'after', 'dance', 'party', 'starving', 'sharp', 'turns',
+    'afraid', 'coach', 'turkish', 'leader', 'lunch', 'state', 'also',
+    # Add more as needed
+}
+
+# Known OCR error patterns: wrong -> correct
+OCR_CORRECTIONS = {
+    'ofice': 'office',
+    'oflice': 'office',
+    'offlce': 'office',
+    'confiicts': 'conflicts',
+    'conflcts': 'conflicts',
+    'confiict': 'conflict',
+    'confllcts': 'conflicts',
+    'fl': 'fi',  # Common ligature issue
+    'ﬁ': 'fi',   # Unicode fi ligature
+    'ﬂ': 'fl',   # Unicode fl ligature
+}
+
 
 def extract_grid_image(pdf_path, output_path=None):
     """
@@ -189,6 +219,88 @@ def extract_clues_from_pdf(pdf_path):
     }
 
 
+def fix_ocr_errors(text):
+    """
+    Fix known OCR errors in extracted text.
+
+    Args:
+        text: Raw text from PDF extraction
+
+    Returns:
+        Corrected text with OCR errors fixed
+    """
+    result = text
+
+    # Apply known corrections
+    for wrong, correct in OCR_CORRECTIONS.items():
+        result = result.replace(wrong, correct)
+
+    # Fix common ligature issues
+    result = result.replace('\x00', 'fi')  # null char often means fi ligature
+    result = result.replace('ﬁ', 'fi')
+    result = result.replace('ﬂ', 'fl')
+
+    return result
+
+
+def validate_words(text):
+    """
+    Check text for potentially misspelled words and return warnings.
+    Uses pyspellchecker if available, falls back to pattern matching.
+
+    Args:
+        text: Text to validate
+
+    Returns:
+        List of warning strings for suspicious words
+    """
+    warnings = []
+
+    # Extract words (letters only)
+    words = re.findall(r"[a-zA-Z]+", text)
+
+    # Try to use spellchecker library if available
+    try:
+        from spellchecker import SpellChecker
+        spell = SpellChecker()
+
+        for word in words:
+            word_lower = word.lower()
+
+            # Skip short words and common crossword abbreviations
+            if len(word_lower) <= 2:
+                continue
+
+            # Check if word is misspelled
+            if word_lower not in spell and word_lower not in COMMON_WORDS:
+                # Get correction suggestion
+                correction = spell.correction(word_lower)
+                if correction and correction != word_lower:
+                    warnings.append(f"'{word}' may be misspelled - did you mean '{correction}'?")
+
+    except ImportError:
+        # Fallback: pattern-based checks
+        for word in words:
+            word_lower = word.lower()
+
+            # Skip short words (likely abbreviations or valid)
+            if len(word_lower) <= 2:
+                continue
+
+            # Check for double letters that are uncommon (potential OCR errors)
+            # e.g., "confiicts" has "ii" which is rare in English
+            if 'ii' in word_lower and word_lower not in ['radii', 'alibi', 'bikini', 'hawaii', 'ascii', 'shiitake']:
+                warnings.append(f"Suspicious double 'i' in '{word}' - possible OCR error")
+
+            # Check for 'f' followed by unusual letter (ligature issues)
+            # e.g., "ofice" should be "office"
+            if re.search(r'f[aeiou]ce', word_lower) and 'ff' not in word_lower:
+                if word_lower not in ['face', 'surface', 'interface', 'preface']:
+                    warnings.append(f"'{word}' may have missing 'f' - possible OCR error")
+
+    return warnings
+
+
 def parse_clue_column(text, header):
     """
     Parse a column of clues from extracted text.
@@ -240,18 +352,23 @@ def parse_clue_column(text, header):
     if current_clue:
         clues.append(current_clue)
 
-    # Clean up - extract enumeration
+    # Clean up - extract enumeration and fix OCR errors
     for clue in clues:
         # Extract enumeration from clue text, e.g., "(5)" or "(5,3)" or "(5-4)"
         enum_match = re.search(r'\([\d,\-]+\)\s*$', clue['clue'])
         if enum_match:
             clue['enumeration'] = enum_match.group(0)
 
-        # Fix common PDF text extraction issues (ligatures become null chars)
-        clue['clue'] = (clue['clue']
-            .replace('\x00', 'fi')  # fi ligature
-            .replace('  ', ' ')
-            .strip())
+        # Fix OCR errors
+        clue['clue'] = fix_ocr_errors(clue['clue'])
+
+        # Clean up whitespace
+        clue['clue'] = re.sub(r'\s+', ' ', clue['clue']).strip()
+
+        # Validate and warn about suspicious words
+        warnings = validate_words(clue['clue'])
+        if warnings:
+            clue['ocr_warnings'] = warnings
 
     return clues
 
@@ -287,6 +404,15 @@ def process_times_pdf(pdf_path, output_dir=None):
     # Extract clues
     clues = extract_clues_from_pdf(pdf_path)
 
+    # Collect OCR warnings
+    ocr_warnings = []
+    for direction in ['across', 'down']:
+        for clue in clues[direction]:
+            if 'ocr_warnings' in clue:
+                for warning in clue['ocr_warnings']:
+                    ocr_warnings.append(f"{clue['number']}{direction[0].upper()}: {warning}")
+                del clue['ocr_warnings']  # Don't include in output
+
     # Build YAML-compatible structure
     clues_data = {
         'publication': 'The Times',
@@ -300,6 +426,10 @@ def process_times_pdf(pdf_path, output_dir=None):
         'across': clues['across'],
         'down': clues['down']
     }
+
+    # Add warnings if any
+    if ocr_warnings:
+        clues_data['ocr_warnings'] = ocr_warnings
 
     return grid_path, clues_data
 
@@ -318,6 +448,13 @@ def main():
     print(f"Processing: {pdf_path}")
 
     grid_path, clues_data = process_times_pdf(pdf_path, output_dir)
+
+    # Show OCR warnings if any
+    if 'ocr_warnings' in clues_data:
+        print(f"\n⚠️  OCR WARNINGS ({len(clues_data['ocr_warnings'])}):")
+        for warning in clues_data['ocr_warnings']:
+            print(f"   {warning}")
+        del clues_data['ocr_warnings']  # Don't save to YAML
 
     # Save clues as YAML
     clues_path = os.path.join(output_dir, 'clues.yaml')

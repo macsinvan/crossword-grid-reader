@@ -774,7 +774,7 @@ def trainer_solve_step():
 @app.route('/trainer/reveal', methods=['POST'])
 def trainer_reveal():
     """
-    Reveal the full answer and complete the training session.
+    Reveal the full answer and show the summary/teaching step.
     Used when user gives up entirely.
     """
     data = request.get_json()
@@ -790,13 +790,10 @@ def trainer_reveal():
         if not clue_data:
             return jsonify({'error': 'Clue not found'}), 404
 
-        answer = clue_data.get('clue', {}).get('answer', '')
-
-        return jsonify({
-            'success': True,
-            'complete': True,
-            'answer': answer
-        })
+        # Skip to final teaching step and get render
+        result = training_handler.reveal_answer(clue_id, clue_data)
+        result['clue_id'] = clue_id
+        return jsonify(result)
 
     except Exception as e:
         import traceback
