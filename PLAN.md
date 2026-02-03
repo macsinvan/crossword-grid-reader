@@ -144,10 +144,58 @@ Polish for public release.
 
 ---
 
+## Publication-Based Architecture (from cryptic-trainer App.tsx)
+
+The trainer app uses a **publication-focused** home page. Users select their "Dojo" (publication) first, then access features within that context.
+
+**User Flow:**
+```
+HOME → Select Publication (Dojo) → Publication Page → Training/Solver/Manual Entry
+```
+
+**Publications (from data.ts):**
+| ID | Name | Description | Strictness |
+|----|------|-------------|------------|
+| `times` | The Times | Pinnacle of cryptic excellence. Strictly fair. | 10/10 |
+| `guardian` | The Guardian | Progressive, playful, humorous. Modern style. | 6/10 |
+| `telegraph` | Daily Telegraph | Elegant surfaces, consistent mechanisms. | 8/10 |
+| `express` | Daily Express | High fairness, straightforward surfaces. | 9/10 |
+
+**Each Publication has:**
+- `id`, `name`, `description`
+- `logoColor`, `countryFlag`
+- `defaultRules` (DojoRules) - Ximenean strictness, indicator style, biases
+- `setters[]` - Named setters with difficulty, tips, common themes
+
+**External Bloggers (community links):**
+- Big Dave's Blog
+- FifteenSquared
+- Times for the Times
+- Reddit r/crosswords
+
+**Publication Page Features:**
+1. **Training Mode** - Practice with clues in the house style
+2. **AI Solver** - Scan/paste clues for AI help
+3. **Manual Entry** - Type clues or import puzzle files
+4. **Settings** - Letter checking toggle
+
+**Design Decisions for Grid Reader:**
+- Keep publication-based navigation (users follow specific publications)
+- Port `PUBLICATIONS` data structure
+- Port `DojoRules` for publication-specific solving hints
+- Port external blogger links (community resources)
+- Preserve setter metadata for teaching context
+
+---
+
 ## Key Assets to Port from cryptic-trainer
 
 | Asset | Source | Purpose |
 |-------|--------|---------|
+| `PUBLICATIONS` | `data.ts` | Publication metadata (Times, Guardian, etc.) |
+| `DojoRules` | `data.ts` | Publication-specific solving rules/biases |
+| `EXTERNAL_BLOGGERS` | `App.tsx` | Community resource links |
+| `CRYPTIC_GLOSSARY` | `data.ts` | Indicators by type, abbreviations |
 | `ABBREVS` dict | `cryptic_trainer.py` | Standard abbreviations (king→R, five→V) |
 | `SYNONYMS` dict | `cryptic_trainer.py` | Common cryptic synonyms |
 | `PHRASES` dict | `cryptic_trainer.py` | Definition phrase mappings |
