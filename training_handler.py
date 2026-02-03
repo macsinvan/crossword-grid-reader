@@ -2427,16 +2427,10 @@ def reveal_answer(clue_id, clue):
         "success": True,
         "revealed": True,
         "answer": answer,
-        "complete": False,  # Not complete yet - show summary first
-        "phaseId": "teaching",
+        "complete": True,  # Complete immediately - apply to grid and close
+        "phaseId": "complete",
         "inputMode": "none",
         "stepType": "summary",
-        "actionPrompt": "Review the solution",
-        "panel": {
-            "title": "SOLUTION REVEALED",
-            "instruction": f"The answer is **{answer}**. Here's how the wordplay works:"
-        },
-        "button": {"label": "Complete →", "action": "complete"},
         "learnings": learnings,
         "highlights": highlights,
         "words": clue.get("words", [])

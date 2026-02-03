@@ -202,7 +202,7 @@ class TemplateTrainer {
     }
 
     async handleSolve() {
-        // Give up - reveal full answer and show summary step
+        // Give up - reveal full answer and apply to grid immediately
         try {
             const response = await fetch('/trainer/reveal', {
                 method: 'POST',
@@ -213,13 +213,10 @@ class TemplateTrainer {
             const data = await response.json();
 
             if (data.success) {
-                // Show the summary/teaching step with learnings
-                // Server returns render state with button to complete
+                // Server returns complete: true, so renderUI() will
+                // call onComplete() which applies answer to grid and closes
                 this.render = data;
-                this.answerLocked = true;  // Lock answer boxes
-                this.feedback = null;
-                this.hintVisible = false;
-                this.renderUI();  // Render summary, don't close yet
+                this.renderUI();
             } else {
                 this.error = data.error || 'Could not reveal answer';
                 this.renderError();
