@@ -350,6 +350,13 @@ class TemplateTrainer {
             return;
         }
 
+        // If answer was revealed (Solve button), show the complete/summary view
+        // This lets user see the learnings before applying to grid
+        if (this.render.revealed) {
+            this.renderComplete();
+            return;
+        }
+
         // Build main UI (React lines 577-782)
         const html = `
             <!-- SECTION 1: CLUE WORDS (React lines 579-601) -->
