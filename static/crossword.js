@@ -366,6 +366,11 @@ class CrosswordPuzzle {
             this.initUserGrid();
             this.renderPuzzle();
 
+            // Try to restore saved progress
+            if (this.loadProgress()) {
+                console.log('Restored saved progress');
+            }
+
             const titleParts = [`${this.puzzle.series || this.puzzle.publication} #${this.puzzle.number}`];
             if (this.puzzle.date) {
                 titleParts.push(`— ${this.puzzle.date}`);
@@ -897,6 +902,9 @@ class CrosswordPuzzle {
         if (cellEl) {
             cellEl.textContent = value;
         }
+
+        // Auto-save progress
+        this.saveProgress();
     }
 
     moveCell(dRow, dCol) {
@@ -1040,6 +1048,7 @@ class CrosswordPuzzle {
         }
 
         this.clearValidation();
+        this.clearProgress();
     }
 
     revealAll() {
@@ -1050,6 +1059,91 @@ class CrosswordPuzzle {
                 if (layout[r][c] !== '#' && solution[r][c] !== '-') {
                     this.setCell(r, c, solution[r][c]);
                 }
+            }
+        }
+        // Clear saved progress when solution is revealed
+        this.clearProgress();
+    }
+
+    // =========================================================================
+    // PROGRESS PERSISTENCE (localStorage)
+    // =========================================================================
+
+    getStorageKey() {
+        if (!this.currentPuzzleInfo) return null;
+        return `puzzle-progress-${this.currentPuzzleInfo.series}-${this.currentPuzzleInfo.number}`;
+    }
+
+    saveProgress() {
+        const key = this.getStorageKey();
+        if (!key || !this.userGrid) return;
+
+        try {
+            const progress = {
+                userGrid: this.userGrid,
+                selectedCell: this.selectedCell,
+                direction: this.direction,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(key, JSON.stringify(progress));
+        } catch (e) {
+            console.warn('Failed to save progress:', e);
+        }
+    }
+
+    loadProgress() {
+        const key = this.getStorageKey();
+        if (!key) return false;
+
+        try {
+            const saved = localStorage.getItem(key);
+            if (!saved) return false;
+
+            const progress = JSON.parse(saved);
+
+            // Verify grid dimensions match
+            if (!progress.userGrid ||
+                progress.userGrid.length !== this.userGrid.length ||
+                progress.userGrid[0]?.length !== this.userGrid[0]?.length) {
+                console.warn('Saved progress grid dimensions mismatch, starting fresh');
+                this.clearProgress();
+                return false;
+            }
+
+            // Restore state
+            this.userGrid = progress.userGrid;
+            this.selectedCell = progress.selectedCell;
+            this.direction = progress.direction || 'across';
+
+            // Update DOM with restored letters
+            for (let r = 0; r < this.userGrid.length; r++) {
+                for (let c = 0; c < this.userGrid[r].length; c++) {
+                    const letter = this.userGrid[r][c];
+                    if (letter && letter !== '#') {
+                        const cellEl = document.querySelector(
+                            `.cell[data-row="${r}"][data-col="${c}"] .cell-letter`
+                        );
+                        if (cellEl) {
+                            cellEl.textContent = letter;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        } catch (e) {
+            console.warn('Failed to load progress:', e);
+            return false;
+        }
+    }
+
+    clearProgress() {
+        const key = this.getStorageKey();
+        if (key) {
+            try {
+                localStorage.removeItem(key);
+            } catch (e) {
+                console.warn('Failed to clear progress:', e);
             }
         }
     }
