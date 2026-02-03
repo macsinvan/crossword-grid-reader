@@ -16,30 +16,16 @@ class TemplateTrainer {
         this.clueText = options.clueText;
         this.enumeration = options.enumeration;
         this.answer = options.answer;
-        this.crossLetters = options.crossLetters || [];
         this.onComplete = options.onComplete;
         this.onBack = options.onBack;
 
-        // Server state (source of truth)
+        // Server state (source of truth) - client is dumb
         this.render = null;
         this.loading = true;
         this.error = null;
 
-        // Ephemeral UI state for step interactions
-        this.selectedIndices = [];
-        this.textInput = '';
+        // Only ephemeral UI state (not persisted, for immediate feedback)
         this.feedback = null;
-        this.userAnswer = [];  // Track letters typed in answer boxes
-        this.answerLocked = false;  // Lock boxes after correct answer typed
-        this.stepTextInput = [];  // Track letters typed in step text input boxes
-        this.hintVisible = false;  // Toggle hint visibility
-
-        // Parse enumeration to get letter count
-        this.letterCount = this.enumeration.split(/[^0-9]+/).filter(Boolean)
-            .reduce((sum, n) => sum + parseInt(n, 10), 0) || this.answer.length || 10;
-
-        // Split clue into words (matching React line 89)
-        this.words = this.clueText.replace(/[,;:]/g, ' ').split(/\s+/).filter(Boolean);
 
         // Note: Don't auto-init here - crossword.js sets render and calls renderUI() directly
     }
@@ -48,14 +34,38 @@ class TemplateTrainer {
     // API CALLS
     // =========================================================================
 
+    // Update UI state on server (client is dumb)
+    async updateUIState(action, data = {}) {
+        try {
+            const response = await fetch('/trainer/ui-state', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clue_id: this.clueId,
+                    action: action,
+                    crossLetters: this.render?.crossLetters || [],
+                    enumeration: this.render?.enumeration || this.enumeration,
+                    ...data
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                this.render = result;
+                this.renderUI();
+            }
+            return result;
+        } catch (e) {
+            console.error('UI state update failed:', e);
+            return { success: false, error: String(e) };
+        }
+    }
+
     // Start session - React lines 94-112
     // Note: In this port, the session is already started by crossword.js openTrainer()
     // which calls /trainer/start. This method is called but the initial render state
     // is already set by crossword.js, so we just render the UI.
     async startSession() {
-        // Reset user answer for new session
-        this.userAnswer = [];
-
         // The session was already started by openTrainer() in crossword.js
         // which sets this.render before creating the TemplateTrainer instance
         // If render is already set, just render the UI
@@ -117,17 +127,12 @@ class TemplateTrainer {
 
             if (data.success !== false) {
                 if (data.correct) {
-                    // Correct - update render state and clear selections (React lines 296-302)
-                    // Note: Server returns render data flat, not under data.render
+                    // Correct - update render state (server handles UI state clearing)
                     this.render = data.render || data;
-                    this.selectedIndices = [];
-                    this.textInput = '';
-                    this.stepTextInput = [];
-                    this.hintVisible = false;
                     this.feedback = null;
                     this.renderUI();
                 } else {
-                    // Wrong - show feedback (React lines 305-310)
+                    // Wrong - show feedback
                     this.feedback = {
                         correct: false,
                         message: data.message || 'Try again'
@@ -159,12 +164,8 @@ class TemplateTrainer {
             const data = await response.json();
 
             if (data.success !== false) {
-                // Note: Server returns render data flat, not under data.render
+                // Server handles UI state - just update render
                 this.render = data.render || data;
-                this.selectedIndices = [];
-                this.textInput = '';
-                this.stepTextInput = [];
-                this.hintVisible = false;
                 this.feedback = null;
                 this.renderUI();
             } else {
@@ -199,10 +200,6 @@ class TemplateTrainer {
                     message: data.message || `Answer revealed: ${data.revealed}`
                 };
                 this.render = data.render || this.render;
-                this.selectedIndices = [];
-                this.textInput = '';
-                this.stepTextInput = [];
-                this.hintVisible = false;
                 this.renderUI();
             } else {
                 this.error = data.error || 'Could not reveal step';
@@ -230,9 +227,8 @@ class TemplateTrainer {
             const data = await response.json();
 
             if (data.success) {
-                // Show summary with learnings, "Done" button will complete
+                // Show summary with learnings - server sets answerLocked
                 this.render = data;
-                this.answerLocked = true;  // Lock answer boxes to show the answer
                 this.renderUI();
             } else {
                 this.error = data.error || 'Could not reveal answer';
@@ -260,15 +256,8 @@ class TemplateTrainer {
             return;
         }
 
-        // Otherwise toggle selection (React lines 262-268)
-        const currentIndex = this.selectedIndices.indexOf(index);
-        if (currentIndex !== -1) {
-            this.selectedIndices.splice(currentIndex, 1);
-        } else {
-            this.selectedIndices.push(index);
-        }
-
-        this.renderUI();
+        // Otherwise toggle selection via server (client is dumb)
+        this.updateUIState('select_word', { index });
     }
 
     // handleSubmit - React lines 274-318
@@ -280,11 +269,11 @@ class TemplateTrainer {
         // Determine value based on input mode (React lines 279-290)
         let value;
         if (this.render.inputMode === 'tap_words') {
-            value = this.selectedIndices;
+            value = this.render.selectedIndices || [];
         } else if (this.render.inputMode === 'multiple_choice') {
             value = optionIndex !== undefined ? optionIndex : 0;
         } else {
-            value = this.textInput;
+            value = (this.render.stepTextInput || []).join('');
         }
 
         this.submitInput(value);
@@ -307,8 +296,9 @@ class TemplateTrainer {
             }
         }
 
-        // Check ephemeral selection
-        if (this.selectedIndices.includes(index)) {
+        // Check selection from server state
+        const selectedIndices = this.render?.selectedIndices || [];
+        if (selectedIndices.includes(index)) {
             return '#94a3b8'; // gray for selection
         }
 
@@ -318,11 +308,11 @@ class TemplateTrainer {
     // canSubmit - React lines 452-458
     canSubmit() {
         if (this.render?.inputMode === 'tap_words') {
-            return this.selectedIndices.length > 0;
+            return (this.render?.selectedIndices || []).length > 0;
         } else if (this.render?.inputMode === 'multiple_choice') {
             return false; // Multiple choice submits immediately on click
         } else if (this.render?.inputMode === 'text') {
-            return this.textInput.trim().length > 0;
+            return (this.render?.stepTextInput || []).join('').trim().length > 0;
         }
         return false;
     }
@@ -379,7 +369,7 @@ class TemplateTrainer {
             <!-- SECTION 1: CLUE WORDS (React lines 579-601) -->
             <div style="background: white; border-radius: 0.75rem 0.75rem 0 0; border: 1px solid #e5e7eb; border-bottom: none; padding: 1rem; min-height: 100px;">
                 <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 1.25rem; font-family: serif; line-height: 1.625;">
-                    ${this.words.map((word, index) => {
+                    ${(this.render?.words || []).map((word, index) => {
                         const bgColor = this.getWordColor(index);
                         const isTapMode = this.render.inputMode === 'tap_words';
                         return `<span
@@ -388,7 +378,7 @@ class TemplateTrainer {
                             ${isTapMode ? '' : ''}
                         >${word}</span>`;
                     }).join('')}
-                    <span style="color: #9ca3af;">(${this.enumeration})</span>
+                    <span style="color: #9ca3af;">(${this.render?.enumeration || ''})</span>
                 </div>
             </div>
 
@@ -466,12 +456,13 @@ class TemplateTrainer {
         const answer = rawAnswer.replace(/\s/g, '');
         const isComplete = this.render?.complete;
         const isAnswerKnown = this.render?.answerKnown || false;
-        // Only lock boxes if user typed correct answer in THIS session (tracked locally)
-        const isAnswerLocked = this.answerLocked || false;
+        // Get answerLocked from server state (client is dumb)
+        const isAnswerLocked = this.render?.answerLocked || false;
 
-        // Get cross letters and enumeration from server render state (dumb client)
+        // Get cross letters, enumeration, and userAnswer from server render state (dumb client)
         const crossLetters = this.render?.crossLetters || [];
-        const enumeration = this.render?.enumeration || this.enumeration || '';
+        const enumeration = this.render?.enumeration || '';
+        const userAnswer = this.render?.userAnswer || [];
 
         // Parse enumeration to get word boundaries (e.g., "5,7" -> [5, 7] means gap after position 4)
         const wordLengths = enumeration.split(/[,\-\s]+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n));
@@ -492,14 +483,14 @@ class TemplateTrainer {
             // Show cross letter if it exists and answer is not yet complete/locked
             const isCrossLetter = crossLetter?.letter && !isComplete && !isAnswerLocked;
 
-            // Determine what to display
+            // Determine what to display (from server state)
             let displayLetter = '';
             if (isComplete || isAnswerLocked) {
                 displayLetter = letter;
             } else if (isCrossLetter) {
                 displayLetter = crossLetter.letter;
             } else {
-                displayLetter = this.userAnswer[i] || '';
+                displayLetter = userAnswer[i] || '';
             }
 
             // Add margin-right for word boundaries (space between words)
@@ -539,8 +530,9 @@ class TemplateTrainer {
     }
 
     renderTextInputBoxes(expectedLength) {
+        const stepTextInput = this.render?.stepTextInput || [];
         return Array(expectedLength).fill('').map((_, i) => {
-            const displayLetter = this.stepTextInput[i] || '';
+            const displayLetter = stepTextInput[i] || '';
             return `<input type="text"
                            class="step-text-input"
                            data-position="${i}"
@@ -631,13 +623,14 @@ class TemplateTrainer {
     renderHintButton() {
         if (!this.render?.hint) return '';
 
-        const opacity = this.hintVisible ? '1' : '0.5';
+        const hintVisible = this.render?.hintVisible || false;
+        const opacity = hintVisible ? '1' : '0.5';
 
         return `<button class="hint-button"
                         style="background: none; border: none; font-size: 1.5rem;
                                cursor: pointer; padding: 0.25rem; opacity: ${opacity};
                                transition: opacity 0.2s;"
-                        title="${this.hintVisible ? 'Hide hint' : 'Show hint'}">
+                        title="${hintVisible ? 'Hide hint' : 'Show hint'}">
             💡
         </button>`;
     }
@@ -673,7 +666,8 @@ class TemplateTrainer {
 
     // Hint content - shown when lightbulb clicked
     renderHintContent() {
-        if (!this.hintVisible || !this.render?.hint) return '';
+        const hintVisible = this.render?.hintVisible || false;
+        if (!hintVisible || !this.render?.hint) return '';
 
         return `<div class="hint-content"
                      style="background: #fef3c7; border: 1px solid #fbbf24;
@@ -735,7 +729,7 @@ class TemplateTrainer {
                     </div>
                 ` : `
                     <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 1rem; font-family: serif; line-height: 1.625; justify-content: center;">
-                        ${this.words.map((word, index) => {
+                        ${(this.render?.words || []).map((word, index) => {
                             const bgColor = this.getWordColor(index);
                             return `<span style="padding: 0.125rem 0.375rem; border-radius: 0.25rem; ${bgColor ? `background-color: ${bgColor}; color: white;` : ''}">${word}</span>`;
                         }).join('')}
@@ -756,12 +750,11 @@ class TemplateTrainer {
     }
 
     attachEventListeners() {
-        // Hint button listener
+        // Hint button listener - toggle via server
         const hintBtn = this.container.querySelector('.hint-button');
         if (hintBtn) {
             hintBtn.addEventListener('click', () => {
-                this.hintVisible = !this.hintVisible;
-                this.renderUI();
+                this.updateUIState('toggle_hint');
             });
         }
 
@@ -811,53 +804,25 @@ class TemplateTrainer {
             });
         });
 
-        // Text input listener (if present)
-        const textInput = this.container.querySelector('#trainer-text-input');
-        if (textInput) {
-            // Set focus on the input
-            textInput.focus();
-
-            textInput.addEventListener('input', (e) => {
-                this.textInput = e.target.value.toUpperCase();
-                // Update the Check button state without full re-render
-                const checkBtn = this.container.querySelector('[data-action="submit"]');
-                if (checkBtn) {
-                    const canSubmit = this.canSubmit();
-                    checkBtn.disabled = !canSubmit;
-                    checkBtn.style.background = canSubmit ? '#2563eb' : '#e5e7eb';
-                    checkBtn.style.color = canSubmit ? 'white' : '#9ca3af';
-                    checkBtn.style.cursor = canSubmit ? 'pointer' : 'not-allowed';
-                }
-            });
-
-            textInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && this.canSubmit()) {
-                    e.preventDefault();
-                    this.handleSubmit();
-                }
-            });
-        }
-
-        // Answer box input listeners (for interactive answer entry)
+        // Answer box input listeners (for interactive answer entry) - update via server
         const answerInputs = this.container.querySelectorAll('.answer-box-input');
         console.log('[Trainer] Found answer inputs:', answerInputs.length);
 
         answerInputs.forEach(input => {
-            // Handle input (letter typed)
+            // Handle input (letter typed) - update server state
             input.addEventListener('input', (e) => {
                 const pos = parseInt(e.target.dataset.position, 10);
                 const letter = e.target.value.toUpperCase().slice(-1); // Take last char if multiple
-                console.log('[Trainer] Input at pos', pos, ':', letter, 'raw value:', e.target.value);
+                console.log('[Trainer] Input at pos', pos, ':', letter);
                 e.target.value = letter;
-                this.userAnswer[pos] = letter;
 
-                // Auto-advance to next empty box
+                // Update server state (server will check if answer is complete)
+                this.updateUIState('type_answer', { position: pos, letter: letter });
+
+                // Auto-advance to next empty box (immediate UI feedback)
                 if (letter) {
                     this.focusNextEmptyBox(pos);
                 }
-
-                // Check if answer is complete and correct
-                this.checkAnswerComplete();
             });
 
             // Handle keyboard navigation
@@ -899,21 +864,20 @@ class TemplateTrainer {
             firstEmptyBox.focus();
         }
 
-        // Step text input listeners (crossword-style boxes for text mode)
+        // Step text input listeners (crossword-style boxes for text mode) - update via server
         const stepTextInputs = this.container.querySelectorAll('.step-text-input');
         if (stepTextInputs.length > 0) {
             stepTextInputs.forEach(input => {
-                // Handle input (letter typed)
+                // Handle input (letter typed) - update server state
                 input.addEventListener('input', (e) => {
                     const pos = parseInt(e.target.dataset.position, 10);
                     const letter = e.target.value.toUpperCase().slice(-1);
                     e.target.value = letter;
-                    this.stepTextInput[pos] = letter;
 
-                    // Update textInput as combined string for submission
-                    this.textInput = this.stepTextInput.join('');
+                    // Update server state
+                    this.updateUIState('type_step', { position: pos, letter: letter });
 
-                    // Auto-advance to next box
+                    // Auto-advance to next box (immediate UI feedback)
                     if (letter) {
                         this.focusNextStepTextBox(pos);
                     }
@@ -993,13 +957,15 @@ class TemplateTrainer {
         }
     }
 
-    // Navigation helpers for answer boxes
+    // Navigation helpers for answer boxes (use server state)
     focusNextEmptyBox(currentPos) {
-        const answer = this.render?.answer || this.answer || '';
+        const answer = (this.render?.answer || '').replace(/\s/g, '');
         const answerLength = answer.length;
+        const crossLetters = this.render?.crossLetters || [];
+        const userAnswer = this.render?.userAnswer || [];
         for (let i = currentPos + 1; i < answerLength; i++) {
-            const crossLetter = this.crossLetters?.find(cl => cl.position === i);
-            if (!crossLetter?.letter && !this.userAnswer[i]) {
+            const crossLetter = crossLetters.find(cl => cl.position === i);
+            if (!crossLetter?.letter && !userAnswer[i]) {
                 const nextInput = this.container.querySelector(`.answer-box-input[data-position="${i}"]`);
                 if (nextInput) {
                     nextInput.focus();
@@ -1012,10 +978,11 @@ class TemplateTrainer {
     }
 
     focusNextEditableBox(currentPos) {
-        const answer = this.render?.answer || this.answer || '';
+        const answer = (this.render?.answer || '').replace(/\s/g, '');
         const answerLength = answer.length;
+        const crossLetters = this.render?.crossLetters || [];
         for (let i = currentPos + 1; i < answerLength; i++) {
-            const crossLetter = this.crossLetters?.find(cl => cl.position === i);
+            const crossLetter = crossLetters.find(cl => cl.position === i);
             if (!crossLetter?.letter) {
                 const nextInput = this.container.querySelector(`.answer-box-input[data-position="${i}"]`);
                 if (nextInput) {
@@ -1028,8 +995,9 @@ class TemplateTrainer {
     }
 
     focusPreviousEditableBox(currentPos) {
+        const crossLetters = this.render?.crossLetters || [];
         for (let i = currentPos - 1; i >= 0; i--) {
-            const crossLetter = this.crossLetters?.find(cl => cl.position === i);
+            const crossLetter = crossLetters.find(cl => cl.position === i);
             if (!crossLetter?.letter) {
                 const prevInput = this.container.querySelector(`.answer-box-input[data-position="${i}"]`);
                 if (prevInput) {
@@ -1041,74 +1009,8 @@ class TemplateTrainer {
         }
     }
 
-    // Answer validation
-    checkAnswerComplete() {
-        const rawAnswer = (this.render?.answer || this.answer || '').toUpperCase();
-        // Strip spaces from answer - boxes don't include spaces
-        const answer = rawAnswer.replace(/\s/g, '');
-        const answerLength = answer.length;
-
-        // Build the complete user answer including cross letters
-        let userFullAnswer = '';
-        for (let i = 0; i < answerLength; i++) {
-            const crossLetter = this.crossLetters?.find(cl => cl.position === i);
-            if (crossLetter?.letter) {
-                userFullAnswer += crossLetter.letter.toUpperCase();
-            } else {
-                userFullAnswer += (this.userAnswer[i] || '').toUpperCase();
-            }
-        }
-
-        // Check if all boxes are filled (no empty strings)
-        if (userFullAnswer.length !== answerLength) {
-            return; // Not complete yet
-        }
-
-        // Check for any unfilled positions
-        for (let i = 0; i < answerLength; i++) {
-            if (!userFullAnswer[i] || userFullAnswer[i] === ' ') {
-                return; // Still has empty boxes
-            }
-        }
-
-        // Check if correct
-        if (userFullAnswer === answer) {
-            this.onAnswerCorrect();
-        } else {
-            this.onAnswerIncorrect(userFullAnswer);
-        }
-    }
-
-    onAnswerCorrect() {
-        // Lock the answer boxes (they'll be re-rendered as divs)
-        this.answerLocked = true;
-
-        // Visual feedback - green borders on existing inputs before re-render
-        this.container.querySelectorAll('.answer-box-input').forEach(input => {
-            input.style.borderColor = '#22c55e';
-            input.style.background = '#f0fdf4';
-            input.disabled = true;
-        });
-
-        // Notify server that answer is known (forms hypothesis)
-        this.submitAnswerHypothesis();
-    }
-
-    onAnswerIncorrect(userAnswer) {
-        // Brief red flash feedback, then reset
-        this.container.querySelectorAll('.answer-box-input').forEach(input => {
-            input.style.borderColor = '#ef4444';
-            input.style.background = '#fef2f2';
-        });
-
-        // Reset after brief delay
-        setTimeout(() => {
-            this.container.querySelectorAll('.answer-box-input').forEach(input => {
-                input.style.borderColor = '#d1d5db';
-                input.style.background = 'white';
-            });
-        }, 500);
-    }
+    // Server-side answer validation is handled by update_ui_state('type_answer')
+    // When server detects correct answer, it sets answerLocked=true in render state
 
     async submitAnswerHypothesis() {
         try {

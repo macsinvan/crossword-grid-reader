@@ -1148,7 +1148,13 @@ def start_session(clue_id, clue):
         "highlights": [],
         "learnings": [],
         "answer_known": False,  # True if user solved from definition (now reviewing wordplay)
-        "found_indicators": []  # Track which indicator indices have been found (any order)
+        "found_indicators": [],  # Track which indicator indices have been found (any order)
+        # UI state (server-driven, client is dumb)
+        "selected_indices": [],  # Words selected in tap_words mode
+        "user_answer": [],  # Letters typed in answer boxes
+        "step_text_input": [],  # Letters typed in step input boxes
+        "hint_visible": False,  # Whether hint is shown
+        "answer_locked": False  # Whether answer boxes are locked (correct answer typed)
     }
     return get_render(clue_id, clue)
 
@@ -1374,7 +1380,13 @@ def get_render(clue_id, clue):
         "actionPrompt": phase.get("actionPrompt", ""),
         "learnings": session.get("learnings", []),
         "answerKnown": session.get("answer_known", False),
-        "words": clue.get("words", [])  # Include words array for UI to display
+        "words": clue.get("words", []),  # Include words array for UI to display
+        # UI state (server-driven, client is dumb)
+        "selectedIndices": session.get("selected_indices", []),
+        "userAnswer": session.get("user_answer", []),
+        "stepTextInput": session.get("step_text_input", []),
+        "hintVisible": session.get("hint_visible", False),
+        "answerLocked": session.get("answer_locked", False)
     }
 
     # Add step progress (for showing "Step 1 of 3" in UI)
@@ -2551,3 +2563,77 @@ def reveal_answer(clue_id, clue):
         "highlights": highlights,
         "words": clue.get("words", [])
     }
+
+
+def update_ui_state(clue_id, clue, action, data):
+    """
+    Update UI state in session (server-driven, client is dumb).
+
+    Actions:
+    - select_word: Toggle word selection at given index
+    - type_answer: Set letter at position in answer boxes
+    - type_step: Set letter at position in step input boxes
+    - toggle_hint: Toggle hint visibility
+    - clear_selections: Clear all word selections
+    - clear_answer: Clear user answer
+    - clear_step_input: Clear step text input
+    """
+    session = _sessions.get(clue_id)
+    if not session:
+        return {"error": "No session", "success": False}
+
+    answer = clue.get("clue", {}).get("answer", "").upper().replace(" ", "")
+
+    if action == "select_word":
+        index = data.get("index")
+        if index is not None:
+            selected = session.get("selected_indices", [])
+            if index in selected:
+                selected.remove(index)
+            else:
+                selected.append(index)
+            session["selected_indices"] = selected
+
+    elif action == "type_answer":
+        position = data.get("position")
+        letter = data.get("letter", "").upper()
+        if position is not None:
+            user_answer = session.get("user_answer", [])
+            # Extend list if needed
+            while len(user_answer) <= position:
+                user_answer.append("")
+            user_answer[position] = letter[:1] if letter else ""
+            session["user_answer"] = user_answer
+
+            # Check if answer is complete and correct
+            user_full = "".join(user_answer).upper()
+            if len(user_full) == len(answer) and user_full == answer:
+                session["answer_locked"] = True
+
+    elif action == "type_step":
+        position = data.get("position")
+        letter = data.get("letter", "").upper()
+        if position is not None:
+            step_input = session.get("step_text_input", [])
+            while len(step_input) <= position:
+                step_input.append("")
+            step_input[position] = letter[:1] if letter else ""
+            session["step_text_input"] = step_input
+
+    elif action == "toggle_hint":
+        session["hint_visible"] = not session.get("hint_visible", False)
+
+    elif action == "clear_selections":
+        session["selected_indices"] = []
+
+    elif action == "clear_answer":
+        session["user_answer"] = []
+        session["answer_locked"] = False
+
+    elif action == "clear_step_input":
+        session["step_text_input"] = []
+
+    # Return updated render
+    result = get_render(clue_id, clue)
+    result["success"] = True
+    return result
