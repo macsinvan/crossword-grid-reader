@@ -2427,10 +2427,11 @@ def reveal_answer(clue_id, clue):
         "success": True,
         "revealed": True,
         "answer": answer,
-        "complete": True,  # Complete immediately - apply to grid and close
-        "phaseId": "complete",
+        "complete": False,  # Show summary first
+        "phaseId": "teaching",
         "inputMode": "none",
         "stepType": "summary",
+        "button": {"label": "Done", "action": "complete"},
         "learnings": learnings,
         "highlights": highlights,
         "words": clue.get("words", [])
