@@ -452,10 +452,16 @@ class TemplateTrainer {
         // Only lock boxes if user typed correct answer in THIS session (tracked locally)
         const isAnswerLocked = this.answerLocked || false;
 
+        // Debug: log cross letters
+        if (this.crossLetters?.length > 0) {
+            console.log('[Trainer] Cross letters:', this.crossLetters);
+        }
+
         return answer.split('').map((letter, i) => {
             // Check if this position has a cross letter from the grid
             const crossLetter = this.crossLetters?.find(cl => cl.position === i);
-            const isCrossLetter = !isComplete && !isAnswerLocked && crossLetter?.letter;
+            // Show cross letter if it exists and answer is not yet complete/locked
+            const isCrossLetter = crossLetter?.letter && !isComplete && !isAnswerLocked;
 
             // Determine what to display
             let displayLetter = '';
