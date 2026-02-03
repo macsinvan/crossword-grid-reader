@@ -391,14 +391,65 @@ import training_handler
 CLUES_DB = {}
 CLUES_DB_PATH = os.path.join(os.path.dirname(__file__), 'clues_db.json')
 
+
+def validate_clue_annotation(clue_id, clue_data):
+    """
+    Validate a clue annotation's data structure.
+    Returns list of errors (empty if valid).
+    """
+    errors = []
+
+    # Check required fields
+    if not clue_data.get('clue'):
+        errors.append(f"{clue_id}: missing 'clue' field")
+        return errors
+
+    if not clue_data['clue'].get('text'):
+        errors.append(f"{clue_id}: missing 'clue.text' field")
+
+    # Validate step data structure
+    steps = clue_data.get('steps', [])
+    for i, step in enumerate(steps):
+        step_type = step.get('type', 'unknown')
+
+        # Check fodder structure - must be dict, list, or str
+        if 'fodder' in step:
+            fodder = step['fodder']
+            if not isinstance(fodder, (dict, list, str)):
+                errors.append(f"{clue_id} step {i} ({step_type}): fodder is {type(fodder).__name__}, expected dict/list/str")
+
+        # Check indicator structure
+        if 'indicator' in step:
+            indicator = step['indicator']
+            if isinstance(indicator, dict) and 'text' not in indicator and 'indices' not in indicator:
+                errors.append(f"{clue_id} step {i} ({step_type}): indicator dict missing 'text' or 'indices'")
+
+    return errors
+
+
 def load_clues_db():
-    """Load the clues database from JSON file."""
+    """Load the clues database from JSON file and validate."""
     global CLUES_DB
     try:
         with open(CLUES_DB_PATH, 'r') as f:
             data = json.load(f)
             CLUES_DB = data.get('training_items', {})
             print(f"Loaded {len(CLUES_DB)} clues from clues_db.json")
+
+            # Validate all clues on startup
+            validation_errors = []
+            for clue_id, clue_data in CLUES_DB.items():
+                errors = validate_clue_annotation(clue_id, clue_data)
+                validation_errors.extend(errors)
+
+            if validation_errors:
+                print(f"WARNING: {len(validation_errors)} validation errors found in clues_db.json:")
+                for e in validation_errors[:10]:  # Show first 10
+                    print(f"  {e}")
+                if len(validation_errors) > 10:
+                    print(f"  ... and {len(validation_errors) - 10} more")
+            else:
+                print("All clue annotations validated successfully")
     except Exception as e:
         print(f"Warning: Could not load clues_db.json: {e}")
         CLUES_DB = {}
@@ -448,6 +499,7 @@ def import_puzzle_to_trainer(puzzle_number):
     """
     Import an annotated puzzle into the local clues database.
     Returns (success, message, mismatches) tuple.
+    Validates data structure before import.
     """
     global CLUES_DB
     puzzle_data = load_annotated_puzzle(puzzle_number)
@@ -458,8 +510,17 @@ def import_puzzle_to_trainer(puzzle_number):
         saved = 0
         skipped = 0
         mismatches = []
+        validation_errors = []
 
         for clue_id, clue_data in puzzle_data.items():
+            # Validate data structure first
+            errors = validate_clue_annotation(clue_id, clue_data)
+            if errors:
+                validation_errors.extend(errors)
+                print(f"VALIDATION ERROR: {clue_id}")
+                for e in errors:
+                    print(f"  {e}")
+                continue
             if clue_id in CLUES_DB:
                 # Check for text mismatch when clue already exists
                 existing_text = CLUES_DB[clue_id].get('clue', {}).get('text', '')
@@ -483,8 +544,15 @@ def import_puzzle_to_trainer(puzzle_number):
         #     json.dump({'version': 3, 'training_items': CLUES_DB}, f, indent=2)
 
         message = f"Imported {saved} clues, skipped {skipped}"
+        if validation_errors:
+            message += f" ({len(validation_errors)} validation errors)"
         if mismatches:
-            message += f" ({len(mismatches)} mismatches detected)"
+            message += f" ({len(mismatches)} text mismatches)"
+
+        # Return failure if there were validation errors
+        if validation_errors:
+            return False, message + "\n" + "\n".join(validation_errors), mismatches
+
         return True, message, mismatches
     except Exception as e:
         return False, str(e), []

@@ -26,6 +26,25 @@ import json
 import os
 
 # =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+def get_fodder_text(step, default=""):
+    """
+    Safely extract fodder text from a step, handling various formats:
+    - dict with 'text' key: {"text": "word", "indices": [...]}
+    - list of strings: ["OM", "ELECTRA"]
+    - plain string: "word"
+    """
+    fodder = step.get("fodder", default)
+    if isinstance(fodder, list):
+        return " + ".join(str(f) for f in fodder)
+    elif isinstance(fodder, dict):
+        return fodder.get("text", default)
+    else:
+        return str(fodder) if fodder else default
+
+# =============================================================================
 # TEACHING HINTS - Loaded from teaching_hints.json
 # =============================================================================
 
@@ -1451,7 +1470,7 @@ def get_render(clue_id, clue):
 
     # Special handling for alternation_discover teaching
     if step["type"] == "alternation_discover" and phase["id"] == "teaching":
-        fodder = step.get("fodder", {}).get("text", "")
+        fodder = get_fodder_text(step)
         result = step.get("result", "")
         pattern = step.get("pattern", "even")
 
@@ -1895,7 +1914,7 @@ def handle_continue(clue_id, clue):
 
             learning_text = f"{split_display} = {result} ✓\nDefinition: \"{definition_text}\" = {result} ✓\n\n**Remember:** Container indicators (about, holds, around, inside, carries) tell you to put one piece inside another."
         elif step["type"] == "alternation_discover":
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             charade_result = ""
             for s in steps:
@@ -1910,15 +1929,15 @@ def handle_continue(clue_id, clue):
 
         # Custom titles for step types that need key info in breadcrumb
         if step["type"] == "abbreviation":
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             learning_title = f"ABBREVIATION: {fodder} → {result}"
         elif step["type"] == "literal_phrase":
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             learning_title = f"LITERAL PHRASE: {fodder} → {result}"
         elif step["type"] == "synonym":
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             learning_title = f"SYNONYM: {fodder} → {result}"
         elif step["type"] == "deletion":
@@ -1930,15 +1949,15 @@ def handle_continue(clue_id, clue):
             result = step.get("result", "")
             learning_title = f"REVERSAL: {fodder} → {result}"
         elif step["type"] == "letter_selection":
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             learning_title = f"LETTER SELECTION: {fodder} → {result}"
         elif step["type"] == "literal":
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             learning_title = f"LITERAL: {fodder} → {result}"
         elif step["type"] == "connector":
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             learning_title = f"CONNECTOR: {fodder}"
         elif step["type"] == "anagram":
             result = step.get("result", "")
@@ -1949,7 +1968,7 @@ def handle_continue(clue_id, clue):
             result = step.get("result", "")
             learning_title = f"CONTAINER: {inner} in {outer} → {result}"
         elif step["type"] == "hidden":
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             learning_title = f"HIDDEN: {result}"
 
@@ -2063,7 +2082,7 @@ def get_all_learnings(clue):
 
         elif step_type == "alternation_discover":
             indicator = step.get("indicator", {}).get("text", "")
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             learnings.append({
                 "title": "ALTERNATION",
@@ -2081,7 +2100,7 @@ def get_all_learnings(clue):
             })
 
         elif step_type == "literal_phrase":
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             learnings.append({
                 "title": f"LITERAL PHRASE: {fodder} → {result}",
@@ -2089,7 +2108,7 @@ def get_all_learnings(clue):
             })
 
         elif step_type == "abbreviation":
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             # Use metadata hint, or fall back to teaching_hints.json
             hint = step.get("hint", "") or get_teaching_hint("abbreviations", fodder,
@@ -2100,7 +2119,7 @@ def get_all_learnings(clue):
             })
 
         elif step_type == "synonym":
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             # Use metadata hint, or fall back to teaching_hints.json
             hint = step.get("hint", "") or get_teaching_hint("synonyms", fodder,
@@ -2130,7 +2149,7 @@ def get_all_learnings(clue):
 
         elif step_type == "letter_selection":
             indicator = step.get("indicator", {}).get("text", "")
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             learnings.append({
                 "title": f"LETTER SELECTION: {fodder} → {result}",
@@ -2138,7 +2157,7 @@ def get_all_learnings(clue):
             })
 
         elif step_type == "literal":
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             learnings.append({
                 "title": f"LITERAL: {fodder} → {result}",
@@ -2146,7 +2165,7 @@ def get_all_learnings(clue):
             })
 
         elif step_type == "connector":
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             learnings.append({
                 "title": f"CONNECTOR: {fodder}",
                 "text": f"'{fodder}' is a linking word.\n\n**Remember:** Connectors join wordplay elements but don't contribute letters."
@@ -2177,7 +2196,7 @@ def get_all_learnings(clue):
 
         elif step_type == "hidden":
             indicator = step.get("indicator", {}).get("text", "")
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             learnings.append({
                 "title": f"HIDDEN: {result}",
@@ -2355,14 +2374,14 @@ def reveal_answer(clue_id, clue):
                 "text": f"The definition was: {def_text}"
             })
         elif step_type == "synonym":
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             learnings.append({
                 "title": f"SYNONYM: {fodder} → {result}",
                 "text": step.get("hint", f"{fodder} means {result}")
             })
         elif step_type == "abbreviation":
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder = get_fodder_text(step)
             result = step.get("result", "")
             learnings.append({
                 "title": f"ABBREVIATION: {fodder} → {result}",
@@ -2370,7 +2389,13 @@ def reveal_answer(clue_id, clue):
             })
         elif step_type == "anagram":
             indicator = step.get("indicator", {}).get("text", "")
-            fodder = step.get("fodder", {}).get("text", "")
+            fodder_raw = step.get("fodder", {})
+            if isinstance(fodder_raw, list):
+                fodder = " + ".join(str(f) for f in fodder_raw)
+            elif isinstance(fodder_raw, dict):
+                fodder = fodder_raw.get("text", "")
+            else:
+                fodder = str(fodder_raw)
             result = step.get("result", "")
             learnings.append({
                 "title": f"ANAGRAM: {fodder} → {result}",
