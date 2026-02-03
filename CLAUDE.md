@@ -23,6 +23,7 @@ Open http://localhost:8080
 | `pdf_processor.py` | PDF parsing, grid/clue extraction |
 | `crossword_processor.py` | Grid structure detection |
 | `puzzle_store.py` | Puzzle storage in `puzzles/` directory |
+| `templates/index.html` | Web UI (bump `?v=N` for cache busting) |
 
 ## Architecture
 
@@ -34,18 +35,24 @@ Grid Reader (8080) ──proxy──► cryptic-trainer (5001)
      └── crossword_server.py (Flask, /trainer/* proxy)
 ```
 
+### Trainer Integration Flow
+1. User clicks "Solve" → `crossword.js` calls `/trainer/start`
+2. Server looks up clue by ID (e.g., `times-29453-1a`)
+3. Auto-imports from `../Times_Puzzle_Import/solved/` if needed
+4. Proxies to cryptic-trainer `/training/start`
+5. `trainer.js` renders the training UI
+6. On completion, answer auto-applies to grid
+
 ## Recent Features
 - **Progress persistence**: localStorage auto-saves puzzle progress (survives refresh)
 - **Auto-apply answers**: Trainer answers auto-fill grid when solved (no button)
 - **Keyboard shortcuts**: Cmd+R etc. work (not intercepted by grid)
 
-## TODO (Major)
-Replace complex trainer integration with simple `/solve` endpoint:
-```
-POST /solve { clue, enumeration, cross_letters }
-Response: { answer, confidence, explanation }
-```
-This would eliminate cryptic-trainer dependency and session state issues.
+## Storage
+Puzzles stored in `puzzles/{series}/{number}/`:
+- `puzzle.json` - grid, clues
+- `original.pdf` - source PDF
+- `answers.json` - optional answers
 
 ## Common Commands
 ```bash
@@ -55,13 +62,47 @@ git push                                  # Push to main
 ```
 
 ## Cache Busting
-When changing JS files, bump version in `templates/index.html`:
+When changing JS/CSS files, bump version in `templates/index.html`:
 ```html
 <script src="/static/crossword.js?v=13"></script>
 ```
 
-## Storage
-Puzzles stored in `puzzles/{series}/{number}/`:
-- `puzzle.json` - grid, clues
-- `original.pdf` - source PDF
-- `answers.json` - optional answers
+## TODO
+
+### Replace trainer integration with simple LLM solve
+
+**Current state (deprecated/experimental):** The trainer integration is complex and fragile:
+- Requires pre-annotated clues in a separate database
+- Maintains session state on the cryptic-trainer server
+- State easily gets out of sync between browser and server
+- Ported React UI adds complexity
+
+**Target architecture:** Single `/solve` endpoint:
+
+```
+POST /solve
+{
+  "clue": "See boss bungle work (6)",
+  "enumeration": "6",
+  "cross_letters": [{"position": 2, "letter": "S"}]
+}
+
+Response:
+{
+  "answer": "BISHOP",
+  "confidence": 0.95,
+  "explanation": "Definition: 'See boss' (BISHOP runs a diocese/see). Wordplay: bungle=BISH + work=OP"
+}
+```
+
+**Benefits:**
+- Single server - no cryptic-trainer dependency
+- No session state to manage
+- No pre-annotation required
+- Works on any clue
+
+**Implementation:**
+- Copy LLM solving logic from cryptic-trainer
+- Delete trainer.js and proxy code
+- Add `/solve` endpoint
+- Simple UI: "Solving..." → answer + explanation
