@@ -664,53 +664,54 @@ class TemplateTrainer {
         </div>`;
     }
 
-    // Solved view - React lines 461-574
+    // Solved view - Clean, compact summary
     renderComplete() {
+        const breakdown = this.render.breakdown || [];
+        const definition = this.render.definition || '';
+
         const html = `
-            <!-- SOLVED HEADER -->
-            <div style="background: #16a34a; border-radius: 0.75rem 0.75rem 0 0; padding: 1.5rem; text-align: center;">
-                <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎉</div>
-                <h2 style="font-size: 1.5rem; font-weight: bold; color: white;">Solved!</h2>
-                <p style="color: #bbf7d0; margin-top: 0.25rem; font-size: 1.125rem; font-family: serif;">${this.answer}</p>
+            <!-- COMPACT HEADER: Answer + Definition -->
+            <div style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); border-radius: 0.75rem 0.75rem 0 0; padding: 1.25rem; text-align: center;">
+                <div style="font-size: 1.75rem; font-weight: bold; color: white; letter-spacing: 0.1em; font-family: monospace;">${this.answer}</div>
+                ${definition ? `<div style="color: #bbf7d0; font-size: 0.875rem; margin-top: 0.25rem;">= ${definition}</div>` : ''}
             </div>
 
-            <!-- CLUE WITH HIGHLIGHTS -->
+            <!-- BREAKDOWN: Visual transformation chain -->
             <div style="background: white; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; padding: 1rem;">
-                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 1.125rem; font-family: serif; line-height: 1.625;">
-                    ${this.words.map((word, index) => {
-                        const bgColor = this.getWordColor(index);
-                        return `<span style="padding: 0.125rem 0.375rem; border-radius: 0.25rem; ${bgColor ? `background-color: ${bgColor}; color: white;` : ''}">${word}</span>`;
-                    }).join('')}
-                    <span style="color: #9ca3af;">(${this.enumeration})</span>
-                </div>
-            </div>
-
-            <!-- LEARNINGS SECTION -->
-            <div style="background: #f8fafc; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; border-top: 1px solid #e5e7eb; padding: 1rem;">
-                <h3 style="font-size: 0.875rem; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">What You Learned</h3>
-                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                    ${this.render.learnings && this.render.learnings.length > 0 ?
-                        this.render.learnings.map(learning => `
-                            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.75rem;">
-                                <div style="display: flex; align-items: flex-start; gap: 0.5rem;">
-                                    <span style="color: #f59e0b;">🎓</span>
-                                    <div>
-                                        <h4 style="font-weight: bold; color: #334155; font-size: 0.875rem;">${learning.title}</h4>
-                                        <p style="color: #475569; font-size: 0.875rem; margin-top: 0.25rem;">${learning.text}</p>
-                                    </div>
+                ${breakdown.length > 0 ? `
+                    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; justify-content: center;">
+                        ${breakdown.map((item, i) => {
+                            let content = '';
+                            if (item.type === 'charade') {
+                                content = `<span style="font-weight: 600;">${item.parts.join(' + ')}</span>`;
+                            } else if (item.type === 'container') {
+                                content = `<span style="font-weight: 600;">${item.inner}</span><span style="color: #6b7280; font-size: 0.75rem;"> in </span><span style="font-weight: 600;">${item.outer}</span>`;
+                            } else {
+                                content = `<span style="color: #6b7280;">${item.from || ''}</span><span style="color: #9ca3af; margin: 0 0.25rem;">→</span><span style="font-weight: 600; color: #16a34a;">${item.to}</span>`;
+                            }
+                            return `
+                                <div style="display: inline-flex; align-items: center; gap: 0.375rem; background: #f1f5f9; padding: 0.375rem 0.625rem; border-radius: 0.375rem; font-size: 0.875rem;">
+                                    <span>${item.icon || '•'}</span>
+                                    ${content}
                                 </div>
-                            </div>
-                        `).join('') :
-                        '<p style="color: #64748b; font-size: 0.875rem; font-style: italic;">Great work completing this clue!</p>'
-                    }
-                </div>
+                                ${i < breakdown.length - 1 ? '<span style="color: #d1d5db;">+</span>' : ''}
+                            `;
+                        }).join('')}
+                    </div>
+                ` : `
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 1rem; font-family: serif; line-height: 1.625; justify-content: center;">
+                        ${this.words.map((word, index) => {
+                            const bgColor = this.getWordColor(index);
+                            return `<span style="padding: 0.125rem 0.375rem; border-radius: 0.25rem; ${bgColor ? `background-color: ${bgColor}; color: white;` : ''}">${word}</span>`;
+                        }).join('')}
+                    </div>
+                `}
             </div>
 
-            <!-- NEXT BUTTON -->
-            <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 0 0 0.75rem 0.75rem; padding: 1rem; display: flex; align-items: center; justify-content: space-between;">
-                <p style="color: #15803d; font-weight: 500;">Ready for the next clue?</p>
-                <button data-action="complete" style="padding: 0.5rem 1.5rem; background: #16a34a; color: white; font-weight: bold; border-radius: 0.5rem; border: none; cursor: pointer;">
-                    Apply to Grid
+            <!-- APPLY BUTTON -->
+            <div style="background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 0 0 0.75rem 0.75rem; padding: 1rem; display: flex; justify-content: center;">
+                <button data-action="complete" style="padding: 0.625rem 2rem; background: #16a34a; color: white; font-weight: 600; border-radius: 0.5rem; border: none; cursor: pointer; font-size: 0.9375rem;">
+                    Apply to Grid →
                 </button>
             </div>
         `;

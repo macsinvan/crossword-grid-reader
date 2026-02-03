@@ -2347,6 +2347,10 @@ def reveal_answer(clue_id, clue):
     """
     Reveal the full answer and skip to the final teaching/summary step.
     Used when user gives up entirely.
+
+    Returns a clean summary with:
+    - breakdown: visual chain showing how answer is constructed
+    - techniques: list of techniques used (no redundant text)
     """
     session = _sessions.get(clue_id)
     if not session:
@@ -2357,36 +2361,42 @@ def reveal_answer(clue_id, clue):
     steps = clue.get("steps", [])
     answer = clue.get("clue", {}).get("answer", "")
 
-    # Build learnings from all steps (showing what user would have learned)
-    learnings = []
-    learnings.append({
-        "title": "REVEALED: Full answer",
-        "text": f"The answer is: {answer}"
-    })
+    # Build breakdown chain (visual formula) and techniques list
+    breakdown = []  # Steps in the transformation chain
+    techniques = []  # Unique techniques used
+    definition = None
 
-    # Add all step explanations to learnings
     for step in steps:
         step_type = step.get("type", "")
+
         if step_type == "standard_definition":
             def_text = step.get("expected", {}).get("text", "")
-            learnings.append({
-                "title": f"DEFINITION FOUND: {def_text}",
-                "text": f"The definition was: {def_text}"
-            })
+            definition = def_text
+
         elif step_type == "synonym":
             fodder = get_fodder_text(step)
             result = step.get("result", "")
-            learnings.append({
-                "title": f"SYNONYM: {fodder} → {result}",
-                "text": step.get("hint", f"{fodder} means {result}")
+            breakdown.append({
+                "type": "synonym",
+                "from": fodder,
+                "to": result,
+                "icon": "📖"
             })
+            if "Synonym" not in [t["name"] for t in techniques]:
+                techniques.append({"name": "Synonym", "icon": "📖"})
+
         elif step_type == "abbreviation":
             fodder = get_fodder_text(step)
             result = step.get("result", "")
-            learnings.append({
-                "title": f"ABBREVIATION: {fodder} → {result}",
-                "text": step.get("hint", f"{fodder} abbreviates to {result}")
+            breakdown.append({
+                "type": "abbreviation",
+                "from": fodder,
+                "to": result,
+                "icon": "✂️"
             })
+            if "Abbreviation" not in [t["name"] for t in techniques]:
+                techniques.append({"name": "Abbreviation", "icon": "✂️"})
+
         elif step_type == "anagram":
             indicator = step.get("indicator", {}).get("text", "")
             fodder_raw = step.get("fodder", {})
@@ -2397,32 +2407,109 @@ def reveal_answer(clue_id, clue):
             else:
                 fodder = str(fodder_raw)
             result = step.get("result", "")
-            learnings.append({
-                "title": f"ANAGRAM: {fodder} → {result}",
-                "text": f"'{indicator}' signals anagram of '{fodder}'"
+            breakdown.append({
+                "type": "anagram",
+                "from": fodder,
+                "to": result,
+                "indicator": indicator,
+                "icon": "🔀"
             })
+            if "Anagram" not in [t["name"] for t in techniques]:
+                techniques.append({"name": "Anagram", "icon": "🔀"})
+
         elif step_type == "reversal":
             indicator = step.get("indicator", {}).get("text", "")
             fodder = step.get("fodder", "")
             result = step.get("result", "")
-            learnings.append({
-                "title": f"REVERSAL: {fodder} → {result}",
-                "text": f"'{indicator}' signals reversal"
+            breakdown.append({
+                "type": "reversal",
+                "from": fodder,
+                "to": result,
+                "indicator": indicator,
+                "icon": "↩️"
             })
+            if "Reversal" not in [t["name"] for t in techniques]:
+                techniques.append({"name": "Reversal", "icon": "↩️"})
+
         elif step_type == "container_verify":
             outer = step.get("outer", "")
             inner = step.get("inner", "")
             result = step.get("result", "")
-            learnings.append({
-                "title": f"CONTAINER: {outer} around {inner} → {result}",
-                "text": step.get("hint", f"{inner} goes inside {outer}")
+            breakdown.append({
+                "type": "container",
+                "outer": outer,
+                "inner": inner,
+                "to": result,
+                "icon": "📦"
             })
+            if "Container" not in [t["name"] for t in techniques]:
+                techniques.append({"name": "Container", "icon": "📦"})
+
         elif step_type == "charade_verify":
             components = step.get("components", [])
             result = step.get("result", "")
+            breakdown.append({
+                "type": "charade",
+                "parts": components,
+                "to": result,
+                "icon": "🔗"
+            })
+            if "Charade" not in [t["name"] for t in techniques]:
+                techniques.append({"name": "Charade", "icon": "🔗"})
+
+        elif step_type == "hidden":
+            fodder = get_fodder_text(step)
+            result = step.get("result", "")
+            breakdown.append({
+                "type": "hidden",
+                "from": fodder,
+                "to": result,
+                "icon": "👁️"
+            })
+            if "Hidden word" not in [t["name"] for t in techniques]:
+                techniques.append({"name": "Hidden word", "icon": "👁️"})
+
+        elif step_type == "deletion":
+            fodder = get_fodder_text(step)
+            result = step.get("result", "")
+            breakdown.append({
+                "type": "deletion",
+                "from": fodder,
+                "to": result,
+                "icon": "✂️"
+            })
+            if "Deletion" not in [t["name"] for t in techniques]:
+                techniques.append({"name": "Deletion", "icon": "✂️"})
+
+        elif step_type == "letter_selection":
+            fodder = get_fodder_text(step)
+            result = step.get("result", "")
+            breakdown.append({
+                "type": "letter_selection",
+                "from": fodder,
+                "to": result,
+                "icon": "🔤"
+            })
+            if "Letter selection" not in [t["name"] for t in techniques]:
+                techniques.append({"name": "Letter selection", "icon": "🔤"})
+
+    # Build legacy learnings for backward compatibility (but cleaner)
+    learnings = []
+    for item in breakdown:
+        if item["type"] == "charade":
             learnings.append({
-                "title": f"CHARADE: {' + '.join(components)} → {result}",
-                "text": f"The pieces combine: {' + '.join(components)} = {result}"
+                "title": f"{item['icon']} {' + '.join(item['parts'])} = {item['to']}",
+                "text": ""
+            })
+        elif item["type"] == "container":
+            learnings.append({
+                "title": f"{item['icon']} {item['inner']} inside {item['outer']} = {item['to']}",
+                "text": ""
+            })
+        else:
+            learnings.append({
+                "title": f"{item['icon']} {item.get('from', '')} → {item['to']}",
+                "text": ""
             })
 
     # Update session to final state
@@ -2452,12 +2539,15 @@ def reveal_answer(clue_id, clue):
         "success": True,
         "revealed": True,
         "answer": answer,
+        "definition": definition,
         "complete": False,  # Show summary first
         "phaseId": "teaching",
         "inputMode": "none",
         "stepType": "summary",
         "button": {"label": "Done", "action": "complete"},
-        "learnings": learnings,
+        "breakdown": breakdown,  # New: visual transformation chain
+        "techniques": techniques,  # New: unique techniques used
+        "learnings": learnings,  # Legacy format for backward compatibility
         "highlights": highlights,
         "words": clue.get("words", [])
     }
