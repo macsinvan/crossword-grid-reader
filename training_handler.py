@@ -1167,6 +1167,18 @@ def clear_session(clue_id):
     if clue_id in _sessions:
         del _sessions[clue_id]
         return True
+
+
+def reset_step_ui_state(session):
+    """Reset UI state when advancing to a new step.
+
+    Called when step_index changes to clear step-specific state like
+    hint visibility, selections, and text input.
+    """
+    session["selected_indices"] = []
+    session["step_text_input"] = []
+    session["hint_visible"] = False
+    # Note: user_answer and answer_locked persist across steps (answer boxes)
     return False
 
 # =============================================================================
@@ -1853,6 +1865,7 @@ def handle_input(clue_id, clue, value):
             session["step_index"] += 1
             session["phase_index"] = 0
             session["answer_known"] = True  # Flag that user already knows answer
+            reset_step_ui_state(session)  # Clear hint, selections, etc.
             return {
                 "correct": True,
                 "render": get_render(clue_id, clue)
@@ -1863,6 +1876,7 @@ def handle_input(clue_id, clue, value):
         if session["phase_index"] >= len(phases):
             session["step_index"] += 1
             session["phase_index"] = 0
+            reset_step_ui_state(session)  # Clear hint, selections, etc.
 
         return {
             "correct": True,
@@ -1998,6 +2012,7 @@ def handle_continue(clue_id, clue):
     if session["phase_index"] >= len(phases):
         session["step_index"] += 1
         session["phase_index"] = 0
+        reset_step_ui_state(session)  # Clear hint, selections, etc.
 
     return get_render(clue_id, clue)
 
