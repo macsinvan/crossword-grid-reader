@@ -281,8 +281,82 @@ user_progress table = {
 | `requirements.txt` | Add `supabase` package |
 | `.env` | Supabase URL + key |
 
+## Supabase Project
+
+**Project URL:** `https://tycvflrjvlvmsiokjaef.supabase.co`
+**Anon Key:** `sb_publishable_ZJKuj06UILTJewkA_gy2xg_U7fSYEwr`
+
+Note: Service role key needed for server-side operations (get from Supabase dashboard → Settings → API)
+
+---
+
+## Database Schema (Phase 1)
+
+```sql
+-- Publications (Times, Guardian, etc.)
+CREATE TABLE publications (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  logo_color TEXT,
+  country_flag TEXT,
+  ximenean_strictness INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Puzzles (the primary entity)
+CREATE TABLE puzzles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  publication_id TEXT REFERENCES publications(id),
+  puzzle_number TEXT NOT NULL,
+  title TEXT,
+  date DATE,
+  grid_layout JSONB NOT NULL,  -- 2D array of cell types
+  grid_size INTEGER NOT NULL,  -- e.g., 15 for 15x15
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(publication_id, puzzle_number)
+);
+
+-- Clues (belong to puzzles)
+CREATE TABLE clues (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  puzzle_id UUID REFERENCES puzzles(id) ON DELETE CASCADE,
+  number INTEGER NOT NULL,
+  direction TEXT NOT NULL CHECK (direction IN ('across', 'down')),
+  text TEXT NOT NULL,
+  enumeration TEXT NOT NULL,  -- e.g., "6" or "3-4"
+  answer TEXT,  -- NULL if answers not provided
+  start_row INTEGER NOT NULL,
+  start_col INTEGER NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(puzzle_id, number, direction)
+);
+
+-- User progress (per puzzle)
+CREATE TABLE user_progress (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id TEXT NOT NULL,  -- anonymous session initially, user_id later
+  puzzle_id UUID REFERENCES puzzles(id) ON DELETE CASCADE,
+  grid_state JSONB NOT NULL,  -- 2D array of entered letters
+  selected_cell JSONB,  -- {row, col}
+  direction TEXT,  -- 'across' or 'down'
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  completed_at TIMESTAMPTZ,
+  UNIQUE(session_id, puzzle_id)
+);
+
+-- Indexes for common queries
+CREATE INDEX idx_puzzles_publication ON puzzles(publication_id);
+CREATE INDEX idx_clues_puzzle ON clues(puzzle_id);
+CREATE INDEX idx_progress_session ON user_progress(session_id);
+CREATE INDEX idx_progress_puzzle ON user_progress(puzzle_id);
+```
+
+---
+
 ## Verification (Phase 1)
-1. Create Supabase project
+1. ~~Create Supabase project~~ ✓ Done
 2. Run migrations to create tables
 3. Start local server with Supabase connection
 4. Import a puzzle → verify in Supabase dashboard
