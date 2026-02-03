@@ -274,7 +274,7 @@
       "id": "times-29453-5d",
       "clue": {
         "number": "5D",
-        "text": "A lot of sharp turns, I'm afraid",
+        "text": "A lot of sharp turns, I\u2019m afraid",
         "enumeration": "3",
         "answer": "EEK",
         "definition": [
@@ -490,7 +490,7 @@
       "id": "times-29453-9d",
       "clue": {
         "number": "9D",
-        "text": "State coach for Turkish leader who's out to lunch?",
+        "text": "State coach for Turkish leader who\u2019s out to lunch?",
         "enumeration": "10",
         "answer": "MADAGASCAR",
         "definition": [
@@ -709,7 +709,7 @@
       "id": "times-29453-2d",
       "clue": {
         "number": "2D",
-        "text": "Crooked old mater — which strongly suggests criminal is mum",
+        "text": "Crooked old mater \u2014 which strongly suggests criminal is mum",
         "enumeration": "6",
         "answer": "OMERTA",
         "definition": [
@@ -1210,7 +1210,7 @@
       "id": "times-29453-24a",
       "clue": {
         "number": "24A",
-        "text": "Couple taken with second sight of Florence",
+        "text": "Couple taken with second sight of Florence?",
         "enumeration": "5",
         "answer": "DUOMO",
         "definition": [
@@ -1644,7 +1644,7 @@
       "id": "times-29453-4a",
       "clue": {
         "number": "4A",
-        "text": "Twit copying antique with pine mostly",
+        "text": "Twit copying antique with pine, mostly",
         "enumeration": "8",
         "answer": "REPROACH",
         "definition": [
@@ -1748,7 +1748,7 @@
       "id": "times-29453-18d",
       "clue": {
         "number": "18D",
-        "text": "Fugitive's attempt to escape upset good egg",
+        "text": "Fugitive\u2019s attempt to escape upset good egg",
         "enumeration": "8",
         "answer": "FLEETING",
         "definition": [
@@ -1931,7 +1931,7 @@
       "id": "times-29453-28a",
       "clue": {
         "number": "28A",
-        "text": "Tsars like roughly level after revolution",
+        "text": "Tsar\u2019s like, roughly level after revolution",
         "enumeration": "6",
         "answer": "CAESAR",
         "definition": [
@@ -2030,7 +2030,7 @@
       "id": "times-29453-3d",
       "clue": {
         "number": "3D",
-        "text": "One missing initially admitted to Electra with some upheaval?",
+        "text": "One missing initially, admitted to Electra with some upheaval?",
         "enumeration": "9",
         "answer": "LATECOMER",
         "definition": [
@@ -2255,7 +2255,7 @@
       "id": "times-29453-19a",
       "clue": {
         "number": "19A",
-        "text": "Are cold kissers coming inside only when it's dark?",
+        "text": "Are cold kissers coming inside only when it\u2019s dark?",
         "enumeration": "5,7",
         "answer": "SOLAR ECLIPSE",
         "definition": [
@@ -2691,7 +2691,7 @@
       "id": "times-29453-27a",
       "clue": {
         "number": "27A",
-        "text": "See dogma remade as massive hit",
+        "text": "See Dogma remade as massive hit",
         "enumeration": "8",
         "answer": "MEGADOSE",
         "definition": [
@@ -2813,7 +2813,9 @@
         {
           "type": "standard_definition",
           "expected": {
-            "indices": [0],
+            "indices": [
+              0
+            ],
             "text": "Many"
           },
           "position": "start"
@@ -2821,7 +2823,9 @@
         {
           "type": "synonym",
           "fodder": {
-            "indices": [1],
+            "indices": [
+              1
+            ],
             "text": "academics"
           },
           "result": "DONS",
@@ -2830,7 +2834,10 @@
         {
           "type": "synonym",
           "fodder": {
-            "indices": [4, 5],
+            "indices": [
+              4,
+              5
+            ],
             "text": "gender-neutral pronoun"
           },
           "result": "ZE",
@@ -2839,7 +2846,10 @@
         {
           "type": "container_verify",
           "indicator": {
-            "indices": [2, 3],
+            "indices": [
+              2,
+              3
+            ],
             "text": "divided by"
           },
           "outer": "DONS",
