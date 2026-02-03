@@ -2218,3 +2218,98 @@ def handle_hypothesis(clue_id, clue, answer):
             "error": "Incorrect answer",
             "message": "That's not quite right. Try again or continue with the training steps."
         }
+
+
+def solve_step(clue_id, clue):
+    """
+    Reveal the answer for the current step and advance to the next phase.
+    Used when user gives up on a step (clicks "Solve Step" button).
+
+    Returns the expected answer for display and advances the phase.
+    """
+    session = _sessions.get(clue_id)
+    if not session:
+        return {"success": False, "error": "No session"}
+
+    # Get current step and phase
+    step_index = session.get("step_index", -1)
+    phase_index = session.get("phase_index", 0)
+    steps = clue.get("steps", [])
+
+    # Get the expected value for the current phase
+    expected = None
+    step = steps[step_index] if 0 <= step_index < len(steps) else {}
+    step_type = step.get("type", "")
+
+    # Determine what the expected answer is based on phase
+    current_phase_id = session.get("current_phase_id", "")
+
+    if current_phase_id == "fodder":
+        # Expected is the fodder word indices - show the fodder text
+        fodder = step.get("fodder", {})
+        expected = fodder.get("text", "") if isinstance(fodder, dict) else str(fodder)
+    elif current_phase_id == "result":
+        # Expected is the result text
+        expected = step.get("result", "")
+    elif current_phase_id == "indicator":
+        # Expected is indicator indices - show indicator text
+        indicator = step.get("indicator", {})
+        expected = indicator.get("text", "") if isinstance(indicator, dict) else str(indicator)
+    elif current_phase_id == "select":
+        # Expected is definition indices - show definition text
+        exp = step.get("expected", {})
+        expected = exp.get("text", "") if isinstance(exp, dict) else ""
+    elif current_phase_id == "first_def" and "definitions" in step:
+        expected = step["definitions"][0].get("text", "")
+    elif current_phase_id == "second_def" and "definitions" in step:
+        expected = step["definitions"][1].get("text", "")
+    elif current_phase_id == "solve":
+        expected = clue.get("clue", {}).get("answer", "")
+    elif current_phase_id.startswith("vocabulary_type_"):
+        vocab_num = int(current_phase_id.split("_")[-1])
+        common_vocab = step.get("common_vocabulary", [])
+        if isinstance(common_vocab, dict):
+            common_vocab = [common_vocab]
+        if vocab_num <= len(common_vocab):
+            expected = common_vocab[vocab_num - 1].get("meaning", "")
+    elif current_phase_id.startswith("vocabulary_tap_"):
+        vocab_num = int(current_phase_id.split("_")[-1])
+        common_vocab = step.get("common_vocabulary", [])
+        if isinstance(common_vocab, dict):
+            common_vocab = [common_vocab]
+        if vocab_num <= len(common_vocab):
+            expected = common_vocab[vocab_num - 1].get("text", "")
+    elif current_phase_id.startswith("indicator_tap_"):
+        # Find unfound indicators
+        indicators = step.get("expected_indicators", [])
+        found_indicators = session.get("found_indicators", [])
+        for ind in indicators:
+            ind_tuple = tuple(ind.get("indices", []))
+            if ind_tuple not in found_indicators:
+                expected = ind.get("text", "")
+                break
+    else:
+        # Default: try to get from step.expected
+        exp = step.get("expected", {})
+        expected = exp.get("text", "") if isinstance(exp, dict) else ""
+
+    # Record that the step was solved (not learned)
+    session["learnings"].append({
+        "title": f"REVEALED: {expected}",
+        "text": f"Step answer shown. The answer was: {expected}"
+    })
+
+    # Now advance to teaching phase (simulate correct input)
+    # We'll use a simulated correct answer to advance
+    answer = clue.get("clue", {}).get("answer", "")
+
+    # Try to advance by simulating the correct response
+    # This handles the phase transition properly
+    result = handle_input(clue_id, clue, expected if expected else "REVEALED")
+
+    return {
+        "success": True,
+        "revealed": expected,
+        "message": f"The answer was: {expected}",
+        "render": get_render(clue_id, clue)
+    }

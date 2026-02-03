@@ -447,18 +447,32 @@ def load_annotated_puzzle(puzzle_number):
 def import_puzzle_to_trainer(puzzle_number):
     """
     Import an annotated puzzle into the local clues database.
-    Returns (success, message) tuple.
+    Returns (success, message, mismatches) tuple.
     """
     global CLUES_DB
     puzzle_data = load_annotated_puzzle(puzzle_number)
     if not puzzle_data:
-        return False, f'No annotated puzzle file found for puzzle {puzzle_number}'
+        return False, f'No annotated puzzle file found for puzzle {puzzle_number}', []
 
     try:
         saved = 0
         skipped = 0
+        mismatches = []
+
         for clue_id, clue_data in puzzle_data.items():
             if clue_id in CLUES_DB:
+                # Check for text mismatch when clue already exists
+                existing_text = CLUES_DB[clue_id].get('clue', {}).get('text', '')
+                new_text = clue_data.get('clue', {}).get('text', '')
+                if existing_text != new_text:
+                    mismatches.append({
+                        'clue_id': clue_id,
+                        'existing_text': existing_text,
+                        'new_text': new_text
+                    })
+                    print(f"WARNING: Text mismatch for {clue_id}")
+                    print(f"  Existing: {existing_text}")
+                    print(f"  New:      {new_text}")
                 skipped += 1
             else:
                 CLUES_DB[clue_id] = clue_data
@@ -468,9 +482,12 @@ def import_puzzle_to_trainer(puzzle_number):
         # with open(CLUES_DB_PATH, 'w') as f:
         #     json.dump({'version': 3, 'training_items': CLUES_DB}, f, indent=2)
 
-        return True, f"Imported {saved} clues, skipped {skipped}"
+        message = f"Imported {saved} clues, skipped {skipped}"
+        if mismatches:
+            message += f" ({len(mismatches)} mismatches detected)"
+        return True, message, mismatches
     except Exception as e:
-        return False, str(e)
+        return False, str(e), []
 
 
 def find_clue_in_annotated_data(puzzle_number, clue_number, direction):
@@ -503,10 +520,14 @@ def trainer_import_puzzle():
     if not puzzle_number:
         return jsonify({'error': 'Missing puzzle_number'}), 400
 
-    success, message = import_puzzle_to_trainer(puzzle_number)
+    success, message, mismatches = import_puzzle_to_trainer(puzzle_number)
 
     if success:
-        return jsonify({'success': True, 'message': message})
+        result = {'success': True, 'message': message}
+        if mismatches:
+            result['mismatches'] = mismatches
+            result['warning'] = f'{len(mismatches)} clue text mismatches detected - annotations may be for wrong clues'
+        return jsonify(result)
     else:
         return jsonify({'success': False, 'error': message}), 400
 
@@ -554,8 +575,24 @@ def trainer_start():
             dir_suffix = 'a' if direction.lower() == 'across' else 'd'
             expected_id = f'times-{puzzle_number}-{clue_number}{dir_suffix}'
             if expected_id in CLUES_DB:
-                clue_id = expected_id
-                clue_data = CLUES_DB[expected_id]
+                candidate_data = CLUES_DB[expected_id]
+                # Verify clue text matches to detect annotation mismatches
+                annotation_text = candidate_data.get('clue', {}).get('text', '').strip()
+                clue_text_no_enum = re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip()
+                if annotation_text == clue_text.strip() or annotation_text == clue_text_no_enum:
+                    clue_id = expected_id
+                    clue_data = candidate_data
+                else:
+                    # Mismatch detected - annotation has wrong clue for this ID
+                    print(f"WARNING: Clue text mismatch for {expected_id}")
+                    print(f"  Puzzle has: {clue_text_no_enum}")
+                    print(f"  Annotation: {annotation_text}")
+                    return jsonify({
+                        'error': 'Annotation mismatch detected',
+                        'message': f'The annotation for {expected_id} has different clue text. Please fix clues_db.json.',
+                        'expected_text': clue_text_no_enum,
+                        'annotation_text': annotation_text
+                    }), 409  # 409 Conflict
 
         # Fallback: try matching by text
         if not clue_id:
@@ -571,11 +608,23 @@ def trainer_start():
         if not clue_id and puzzle_number:
             annotated_data = load_annotated_puzzle(puzzle_number)
             if annotated_data:
-                success, message = import_puzzle_to_trainer(puzzle_number)
+                success, message, mismatches = import_puzzle_to_trainer(puzzle_number)
                 if success and clue_number and direction:
                     dir_suffix = 'a' if direction.lower() == 'across' else 'd'
                     clue_id = f'times-{puzzle_number}-{clue_number}{dir_suffix}'
                     clue_data = CLUES_DB.get(clue_id)
+                    # After import, verify the text matches
+                    if clue_data:
+                        annotation_text = clue_data.get('clue', {}).get('text', '').strip()
+                        clue_text_no_enum = re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip()
+                        if annotation_text != clue_text.strip() and annotation_text != clue_text_no_enum:
+                            print(f"WARNING: Post-import mismatch for {clue_id}")
+                            return jsonify({
+                                'error': 'Annotation mismatch detected',
+                                'message': f'Imported annotation for {clue_id} has different clue text.',
+                                'expected_text': clue_text_no_enum,
+                                'annotation_text': annotation_text
+                            }), 409
 
         if not clue_id or not clue_data:
             has_annotations = puzzle_number and find_annotated_puzzle_file(puzzle_number) is not None
@@ -684,6 +733,35 @@ def trainer_hypothesis():
             return jsonify({'error': 'Clue not found'}), 404
 
         result = training_handler.handle_hypothesis(clue_id, clue_data, answer)
+        result['clue_id'] = clue_id
+        return jsonify(result)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/trainer/solve-step', methods=['POST'])
+def trainer_solve_step():
+    """
+    Reveal the answer for the current step and advance to the next phase.
+    Used when user gives up on a step.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    clue_id = data.get('clue_id')
+    if not clue_id:
+        return jsonify({'error': 'clue_id required'}), 400
+
+    try:
+        clue_data = CLUES_DB.get(clue_id)
+        if not clue_data:
+            return jsonify({'error': 'Clue not found'}), 404
+
+        result = training_handler.solve_step(clue_id, clue_data)
         result['clue_id'] = clue_id
         return jsonify(result)
 

@@ -168,6 +168,39 @@ class TemplateTrainer {
         }
     }
 
+    async handleSolveStep() {
+        // Call server to reveal answer for current step
+        try {
+            const response = await fetch('/trainer/solve-step', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clue_id: this.clueId })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Show the revealed answer briefly, then update UI
+                this.feedback = {
+                    correct: true,
+                    message: data.message || `Answer revealed: ${data.revealed}`
+                };
+                this.render = data.render || this.render;
+                this.selectedIndices = [];
+                this.textInput = '';
+                this.stepTextInput = [];
+                this.hintVisible = false;
+                this.renderUI();
+            } else {
+                this.error = data.error || 'Could not reveal step';
+                this.renderError();
+            }
+        } catch (e) {
+            this.error = String(e);
+            this.renderError();
+        }
+    }
+
     // =========================================================================
     // EVENT HANDLERS (matching React handlers)
     // =========================================================================
@@ -325,7 +358,10 @@ class TemplateTrainer {
                     <p style="flex: 1; font-weight: 500; color: #374151;">
                         ${isTeaching ? this.render.actionPrompt : (this.render.panel?.instruction || this.render.actionPrompt || '')}
                     </p>
-                    ${this.renderHintButton()}
+                    <div style="display: flex; align-items: center; gap: 0.25rem;">
+                        ${this.renderHintButton()}
+                        ${this.renderSolveStepButton()}
+                    </div>
                     ${this.renderActionButton()}
                 </div>
                 ${this.renderHintContent()}
@@ -525,6 +561,21 @@ class TemplateTrainer {
         </button>`;
     }
 
+    // Solve step button - reveals answer for current step
+    renderSolveStepButton() {
+        // Only show for interactive phases (not teaching/none)
+        const inputMode = this.render?.inputMode;
+        if (!inputMode || inputMode === 'none') return '';
+
+        return `<button class="solve-step-button"
+                        style="background: none; border: none; font-size: 1.25rem;
+                               cursor: pointer; padding: 0.25rem; opacity: 0.5;
+                               transition: opacity 0.2s;"
+                        title="Reveal answer for this step">
+            🔓
+        </button>`;
+    }
+
     // Hint content - shown when lightbulb clicked
     renderHintContent() {
         if (!this.hintVisible || !this.render?.hint) return '';
@@ -615,6 +666,14 @@ class TemplateTrainer {
             hintBtn.addEventListener('click', () => {
                 this.hintVisible = !this.hintVisible;
                 this.renderUI();
+            });
+        }
+
+        // Solve step button listener
+        const solveStepBtn = this.container.querySelector('.solve-step-button');
+        if (solveStepBtn) {
+            solveStepBtn.addEventListener('click', () => {
+                this.handleSolveStep();
             });
         }
 
