@@ -836,6 +836,9 @@ class CrosswordPuzzle {
     }
 
     handleKeydown(e) {
+        // Allow browser shortcuts (Cmd+R, Ctrl+R, etc.) to work normally
+        if (e.metaKey || e.ctrlKey) return;
+
         const { row, col } = this.selectedCell;
         const { layout } = this.puzzle.grid;
 
