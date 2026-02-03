@@ -492,52 +492,56 @@ class TemplateTrainer {
         return answer.split('').map((letter, i) => {
             // Check if this position has a cross letter from the grid
             const crossLetter = crossLetters?.find(cl => cl.position === i);
-            // Show cross letter if it exists and answer is not yet complete/locked
-            const isCrossLetter = crossLetter?.letter && !isComplete && !isAnswerLocked;
+            const hasCrossLetter = crossLetter?.letter && !isComplete && !isAnswerLocked;
 
             // Determine what to display (from server state)
             let displayLetter = '';
             if (isComplete || isAnswerLocked) {
                 displayLetter = letter;
-            } else if (isCrossLetter) {
+            } else if (userAnswer[i]) {
+                // User-typed letter takes precedence over cross letter
+                displayLetter = userAnswer[i];
+            } else if (hasCrossLetter) {
                 displayLetter = crossLetter.letter;
-            } else {
-                displayLetter = userAnswer[i] || '';
             }
 
             // Add margin-right for word boundaries (space between words)
             const isWordEnd = wordBoundaries.includes(i);
             const marginRight = isWordEnd ? 'margin-right: 12px;' : '';
 
-            // Cross letters and completed answers are read-only
-            if (isCrossLetter || isComplete || isAnswerLocked) {
-                return `<div class="answer-box ${isCrossLetter ? 'cross-letter' : ''}"
+            // Completed/locked answers are read-only divs
+            if (isComplete || isAnswerLocked) {
+                return `<div class="answer-box"
                             data-position="${i}"
-                            style="width: 32px; height: 40px; border: 2px solid ${isCrossLetter ? '#3b82f6' : '#d1d5db'};
+                            style="width: 32px; height: 40px; border: 2px solid #d1d5db;
                                    border-radius: 4px; display: flex; align-items: center; justify-content: center;
                                    font-weight: bold; font-size: 1.25rem;
-                                   background: ${isCrossLetter ? '#eff6ff' : (isAnswerKnown ? '#f0fdf4' : 'white')};
+                                   background: ${isAnswerKnown ? '#f0fdf4' : 'white'};
                                    ${marginRight}">
                     ${displayLetter}
                 </div>`;
-            } else {
-                // Editable input for user entry
-                return `<input type="text"
-                               class="answer-box-input"
-                               data-position="${i}"
-                               maxlength="1"
-                               value="${displayLetter}"
-                               autocomplete="off"
-                               autocapitalize="characters"
-                               spellcheck="false"
-                               style="width: 32px; height: 40px; border: 2px solid #d1d5db;
-                                      border-radius: 4px; text-align: center;
-                                      font-weight: bold; font-size: 1.25rem;
-                                      color: #111827; background: white; outline: none;
-                                      text-transform: uppercase; caret-color: #2563eb;
-                                      ${marginRight}"
-                        />`;
             }
+
+            // All boxes are editable inputs - cross letters just have visual indicator
+            const borderColor = hasCrossLetter && !userAnswer[i] ? '#3b82f6' : '#d1d5db';
+            const bgColor = hasCrossLetter && !userAnswer[i] ? '#eff6ff' : 'white';
+
+            return `<input type="text"
+                           class="answer-box-input ${hasCrossLetter ? 'cross-letter' : ''}"
+                           data-position="${i}"
+                           data-has-cross="${hasCrossLetter ? 'true' : 'false'}"
+                           maxlength="1"
+                           value="${displayLetter}"
+                           autocomplete="off"
+                           autocapitalize="characters"
+                           spellcheck="false"
+                           style="width: 32px; height: 40px; border: 2px solid ${borderColor};
+                                  border-radius: 4px; text-align: center;
+                                  font-weight: bold; font-size: 1.25rem;
+                                  color: #111827; background: ${bgColor}; outline: none;
+                                  text-transform: uppercase; caret-color: #2563eb;
+                                  ${marginRight}"
+                    />`;
         }).join('');
     }
 
@@ -972,54 +976,47 @@ class TemplateTrainer {
         }
     }
 
-    // Navigation helpers for answer boxes (use server state)
+    // Navigation helpers for answer boxes
+    // All boxes are editable (including cross letters), so just find next empty or next box
     focusNextEmptyBox(currentPos) {
         const answer = (this.render?.answer || '').replace(/\s/g, '');
         const answerLength = answer.length;
-        const crossLetters = this.render?.crossLetters || [];
-        const userAnswer = this.render?.userAnswer || [];
+
+        // Find next empty box (check DOM value since it's more current than server state)
         for (let i = currentPos + 1; i < answerLength; i++) {
-            const crossLetter = crossLetters.find(cl => cl.position === i);
-            if (!crossLetter?.letter && !userAnswer[i]) {
-                const nextInput = this.container.querySelector(`.answer-box-input[data-position="${i}"]`);
-                if (nextInput) {
-                    nextInput.focus();
-                    return;
-                }
+            const nextInput = this.container.querySelector(`.answer-box-input[data-position="${i}"]`);
+            if (nextInput && !nextInput.value) {
+                nextInput.focus();
+                return;
             }
         }
-        // No empty box found, focus next editable
+        // No empty box found, just move to next box
         this.focusNextEditableBox(currentPos);
     }
 
     focusNextEditableBox(currentPos) {
         const answer = (this.render?.answer || '').replace(/\s/g, '');
         const answerLength = answer.length;
-        const crossLetters = this.render?.crossLetters || [];
+
+        // All boxes are editable now, just find next one
         for (let i = currentPos + 1; i < answerLength; i++) {
-            const crossLetter = crossLetters.find(cl => cl.position === i);
-            if (!crossLetter?.letter) {
-                const nextInput = this.container.querySelector(`.answer-box-input[data-position="${i}"]`);
-                if (nextInput) {
-                    nextInput.focus();
-                    nextInput.select();
-                    return;
-                }
+            const nextInput = this.container.querySelector(`.answer-box-input[data-position="${i}"]`);
+            if (nextInput) {
+                nextInput.focus();
+                nextInput.select();
+                return;
             }
         }
     }
 
     focusPreviousEditableBox(currentPos) {
-        const crossLetters = this.render?.crossLetters || [];
+        // All boxes are editable now
         for (let i = currentPos - 1; i >= 0; i--) {
-            const crossLetter = crossLetters.find(cl => cl.position === i);
-            if (!crossLetter?.letter) {
-                const prevInput = this.container.querySelector(`.answer-box-input[data-position="${i}"]`);
-                if (prevInput) {
-                    prevInput.focus();
-                    prevInput.select();
-                    return;
-                }
+            const prevInput = this.container.querySelector(`.answer-box-input[data-position="${i}"]`);
+            if (prevInput) {
+                prevInput.focus();
+                prevInput.select();
+                return;
             }
         }
     }
