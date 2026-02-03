@@ -381,13 +381,30 @@ def validate():
 
 
 # =============================================================================
-# TRAINER API PROXY
+# TRAINER API (Local - No Proxy)
 # =============================================================================
-# These endpoints proxy requests to the cryptic-trainer backend (port 5001)
+# Uses local training_handler.py ported from cryptic-trainer
 
-import requests
+import training_handler
 
-TRAINER_API_BASE = 'http://localhost:5001'
+# Load clues database
+CLUES_DB = {}
+CLUES_DB_PATH = os.path.join(os.path.dirname(__file__), 'clues_db.json')
+
+def load_clues_db():
+    """Load the clues database from JSON file."""
+    global CLUES_DB
+    try:
+        with open(CLUES_DB_PATH, 'r') as f:
+            data = json.load(f)
+            CLUES_DB = data.get('training_items', {})
+            print(f"Loaded {len(CLUES_DB)} clues from clues_db.json")
+    except Exception as e:
+        print(f"Warning: Could not load clues_db.json: {e}")
+        CLUES_DB = {}
+
+# Load on startup
+load_clues_db()
 
 # Directory containing annotated puzzle files (Times_XXXXX_v2.json)
 ANNOTATED_PUZZLES_DIR = os.path.join(os.path.dirname(__file__), '..', 'Times_Puzzle_Import', 'solved')
@@ -429,28 +446,29 @@ def load_annotated_puzzle(puzzle_number):
 
 def import_puzzle_to_trainer(puzzle_number):
     """
-    Import an annotated puzzle into the trainer database.
+    Import an annotated puzzle into the local clues database.
     Returns (success, message) tuple.
     """
+    global CLUES_DB
     puzzle_data = load_annotated_puzzle(puzzle_number)
     if not puzzle_data:
         return False, f'No annotated puzzle file found for puzzle {puzzle_number}'
 
     try:
-        response = requests.post(
-            f'{TRAINER_API_BASE}/clues/import',
-            json={'puzzle': puzzle_data, 'publicationId': 'times'},
-            timeout=30
-        )
+        saved = 0
+        skipped = 0
+        for clue_id, clue_data in puzzle_data.items():
+            if clue_id in CLUES_DB:
+                skipped += 1
+            else:
+                CLUES_DB[clue_id] = clue_data
+                saved += 1
 
-        if response.status_code == 200:
-            result = response.json()
-            return True, f"Imported {result.get('saved', 0)} clues, skipped {result.get('skipped', 0)}"
-        else:
-            return False, f'Import failed: {response.text}'
+        # Optionally persist to file (uncomment if needed)
+        # with open(CLUES_DB_PATH, 'w') as f:
+        #     json.dump({'version': 3, 'training_items': CLUES_DB}, f, indent=2)
 
-    except requests.exceptions.ConnectionError:
-        return False, 'Cannot connect to trainer service'
+        return True, f"Imported {saved} clues, skipped {skipped}"
     except Exception as e:
         return False, str(e)
 
@@ -516,125 +534,65 @@ def trainer_check_puzzle():
 def trainer_start():
     """
     Start a training session for a clue.
-    Proxies to cryptic-trainer API.
-
-    If the clue is not in the trainer database but annotated data exists,
-    it will auto-import the puzzle first.
+    Uses local training_handler (no proxy).
     """
     data = request.get_json()
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
     clue_text = data.get('clue_text', '')
-    enumeration = data.get('enumeration', '')
-    cross_letters = data.get('cross_letters', [])
-    puzzle_number = data.get('puzzle_number')  # Optional - for auto-import
-    clue_number = data.get('clue_number')  # Optional - e.g. "7" or "11"
-    direction = data.get('direction', '')  # Optional - "across" or "down"
+    puzzle_number = data.get('puzzle_number')
+    clue_number = data.get('clue_number')
+    direction = data.get('direction', '')
 
     try:
-        # First, try to find the clue in the trainer database
-        search_response = requests.get(
-            f'{TRAINER_API_BASE}/clues',
-            timeout=5
-        )
-
-        if search_response.status_code != 200:
-            return jsonify({'error': 'Trainer service unavailable'}), 503
-
-        response_data = search_response.json()
-        clues = response_data.get('items', []) if isinstance(response_data, dict) else response_data
-
-        # First, try to find by constructed ID (most reliable)
+        # Try to find by constructed ID (most reliable)
         clue_id = None
+        clue_data = None
+
         if puzzle_number and clue_number and direction:
             dir_suffix = 'a' if direction.lower() == 'across' else 'd'
             expected_id = f'times-{puzzle_number}-{clue_number}{dir_suffix}'
-            for clue in clues:
-                if clue.get('id') == expected_id:
-                    clue_id = expected_id
-                    break
+            if expected_id in CLUES_DB:
+                clue_id = expected_id
+                clue_data = CLUES_DB[expected_id]
 
-        # Fallback: try matching by text (for clues without puzzle context)
+        # Fallback: try matching by text
         if not clue_id:
-            # Normalize the clue text for comparison (remove enumeration)
             clue_text_no_enum = re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip()
-
-            for clue in clues:
-                clue_data = clue.get('clue', {})
-                trainer_clue_text = clue_data.get('text', '').strip()
-
-                if trainer_clue_text == clue_text.strip():
-                    clue_id = clue.get('id')
-                    break
-                if trainer_clue_text == clue_text_no_enum:
-                    clue_id = clue.get('id')
+            for cid, cdata in CLUES_DB.items():
+                trainer_clue_text = cdata.get('clue', {}).get('text', '').strip()
+                if trainer_clue_text == clue_text.strip() or trainer_clue_text == clue_text_no_enum:
+                    clue_id = cid
+                    clue_data = cdata
                     break
 
-        # If not found, try to auto-import the puzzle
+        # If not found, try to auto-import from annotated files
         if not clue_id and puzzle_number:
-            # Check if annotated data exists
             annotated_data = load_annotated_puzzle(puzzle_number)
             if annotated_data:
-                # Import the puzzle
                 success, message = import_puzzle_to_trainer(puzzle_number)
-                if success:
-                    # Now try to find the clue again by ID
-                    if clue_number and direction:
-                        dir_suffix = 'a' if direction.lower() == 'across' else 'd'
-                        clue_id = f'times-{puzzle_number}-{clue_number}{dir_suffix}'
+                if success and clue_number and direction:
+                    dir_suffix = 'a' if direction.lower() == 'across' else 'd'
+                    clue_id = f'times-{puzzle_number}-{clue_number}{dir_suffix}'
+                    clue_data = CLUES_DB.get(clue_id)
 
-                        # Verify it was imported
-                        verify_response = requests.get(
-                            f'{TRAINER_API_BASE}/clues',
-                            timeout=5
-                        )
-                        if verify_response.status_code == 200:
-                            verify_data = verify_response.json()
-                            verify_clues = verify_data.get('items', []) if isinstance(verify_data, dict) else verify_data
-                            found = any(c.get('id') == clue_id for c in verify_clues)
-                            if not found:
-                                clue_id = None
-
-        if not clue_id:
-            # Check if annotated data exists but wasn't imported
-            if puzzle_number:
-                has_annotations = find_annotated_puzzle_file(puzzle_number) is not None
-                if has_annotations:
-                    return jsonify({
-                        'error': 'Clue import failed',
-                        'message': 'Annotated data exists but could not be imported. Check the console for errors.',
-                        'has_annotations': True
-                    }), 500
-
+        if not clue_id or not clue_data:
+            has_annotations = puzzle_number and find_annotated_puzzle_file(puzzle_number) is not None
             return jsonify({
                 'error': 'Clue not found in trainer database',
                 'message': 'This clue has not been annotated for training.',
-                'has_annotations': False
+                'has_annotations': has_annotations
             }), 404
 
-        # Start training session - use clueId (camelCase) as expected by the API
-        start_response = requests.post(
-            f'{TRAINER_API_BASE}/training/start',
-            json={'clueId': clue_id, 'cross_letters': cross_letters},
-            timeout=10
-        )
+        # Start training session using local handler
+        training_handler.start_session(clue_id, clue_data)
+        render = training_handler.get_render(clue_id, clue_data)
 
-        if start_response.status_code != 200:
-            error_text = start_response.text
-            return jsonify({'error': f'Failed to start training session: {error_text}'}), 500
-
-        result = start_response.json()
+        result = render
         result['clue_id'] = clue_id
         return jsonify(result)
 
-    except requests.exceptions.ConnectionError:
-        return jsonify({
-            'error': 'Cannot connect to trainer service',
-            'message': 'Make sure cryptic-trainer server is running on port 5001'
-        }), 503
-    except requests.exceptions.Timeout:
-        return jsonify({'error': 'Trainer service timeout'}), 504
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -645,7 +603,7 @@ def trainer_start():
 def trainer_input():
     """
     Submit user input to the trainer.
-    Proxies to cryptic-trainer API.
+    Uses local training_handler (no proxy).
     """
     data = request.get_json()
     if not data:
@@ -658,20 +616,17 @@ def trainer_input():
         return jsonify({'error': 'Missing clue_id'}), 400
 
     try:
-        # API expects camelCase: clueId
-        response = requests.post(
-            f'{TRAINER_API_BASE}/training/input',
-            json={'clueId': clue_id, 'value': value},
-            timeout=10
-        )
+        clue_data = CLUES_DB.get(clue_id)
+        if not clue_data:
+            return jsonify({'error': 'Clue not found'}), 404
 
-        result = response.json()
+        result = training_handler.handle_input(clue_id, clue_data, value)
         result['clue_id'] = clue_id
         return jsonify(result)
 
-    except requests.exceptions.ConnectionError:
-        return jsonify({'error': 'Cannot connect to trainer service'}), 503
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -679,7 +634,7 @@ def trainer_input():
 def trainer_continue():
     """
     Continue to the next step in training.
-    Proxies to cryptic-trainer API.
+    Uses local training_handler (no proxy).
     """
     data = request.get_json()
     if not data:
@@ -691,20 +646,17 @@ def trainer_continue():
         return jsonify({'error': 'Missing clue_id'}), 400
 
     try:
-        # API expects camelCase: clueId
-        response = requests.post(
-            f'{TRAINER_API_BASE}/training/continue',
-            json={'clueId': clue_id},
-            timeout=10
-        )
+        clue_data = CLUES_DB.get(clue_id)
+        if not clue_data:
+            return jsonify({'error': 'Clue not found'}), 404
 
-        result = response.json()
+        result = training_handler.handle_continue(clue_id, clue_data)
         result['clue_id'] = clue_id
         return jsonify(result)
 
-    except requests.exceptions.ConnectionError:
-        return jsonify({'error': 'Cannot connect to trainer service'}), 503
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 

@@ -1,7 +1,15 @@
 # Grid Reader - Claude Context
 
+## IMPORTANT: Design Documentation
+
+**DO NOT IMPLEMENT WITHOUT CONSULTING:**
+1. `PLAN.md` - Full roadmap and architecture decisions
+2. `/Users/andrewmackenzie/.claude/plans/elegant-swimming-lollipop.md` - Active implementation plan
+
+**KEY CONSTRAINT: NO AI/LLM in this app.** Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
+
 ## What This Is
-Web-based Times Cryptic crossword solver. Import PDFs, solve interactively, get AI-assisted solving via cryptic-trainer integration.
+Web-based Times Cryptic crossword solver. Import PDFs, solve interactively, get step-by-step teaching via ported cryptic-trainer system.
 
 ## Quick Start
 ```bash
@@ -51,13 +59,19 @@ The app auto-detects storage backend:
 
 A status indicator (green LED = Supabase, yellow = local) shows in the header.
 
-### Trainer Integration Flow (Legacy)
-1. User clicks "Solve" → `crossword.js` calls `/trainer/start`
-2. Server looks up clue by ID (e.g., `times-29453-1a`)
-3. Auto-imports from `../Times_Puzzle_Import/solved/` if needed
-4. Proxies to cryptic-trainer `/training/start`
-5. `trainer.js` renders the training UI
+### Teaching Mode Flow (Phase 2)
+**Architecture:** Server-driven rendering, thin client
+
+1. User clicks "Solve" → `crossword.js` calls `/trainer/start` with clue_id
+2. Server loads clue with pre-annotated `steps` array from database
+3. `training_handler.py` merges raw step + STEP_TEMPLATE → render object
+4. `trainer.js` displays phases (tap_words, text input, teaching panels)
+5. User input validated via `handle_input()` against `expected` values
 6. On completion, answer auto-applies to grid
+
+**Step Types:** standard_definition, abbreviation, synonym, literal, anagram, reversal, deletion, letter_selection, hidden, container_verify, charade_verify, double_definition, literal_phrase
+
+**Data Source:** Steps come from pre-annotated `clues_db.json` format (NO AI generation)
 
 ## Recent Features
 - **Supabase integration**: Cloud database storage (Phase 1 complete)
@@ -110,10 +124,12 @@ See `PLAN.md` for full roadmap. Summary:
 - Auto-fallback to local storage
 - DB status indicator
 
-### Phase 2: LLM-Powered Teaching Mode (Next)
-- Replace pre-annotated clues with dynamic LLM solving
-- Constraint-based validation (anti-hallucination)
-- `/solve/*` endpoints
+### Phase 2: Interactive Teaching Mode (Next) - NO AI
+- Port `training_handler.py` from cryptic-trainer (STEP_TEMPLATES, get_render, handle_input)
+- Step data is PRE-ANNOTATED in imported JSON (clues_db.json format)
+- Templates decorate raw steps into interactive phases (tap_words, text, multiple_choice)
+- Remove proxy to cryptic-trainer; run locally
+- See `PLAN.md` for full architecture
 
 ### Phase 3: Vercel Deployment
 - Serverless Flask on Vercel

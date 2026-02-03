@@ -23,85 +23,82 @@ Replace file-based storage with Supabase PostgreSQL.
 
 ---
 
-### Phase 2: LLM-Powered Teaching Mode
-Preserve the step-by-step teaching experience, but use LLM to generate steps dynamically instead of requiring pre-annotated clues.
+### Phase 2: Interactive Teaching Mode (NO AI)
 
-**Critical Anti-Hallucination Architecture** (from cryptic-trainer DESIGN_SPEC.md):
+**CRITICAL:** No AI/LLM. Step data is pre-annotated in imported JSON. We port the cryptic-trainer teaching system.
 
-The current system prevents hallucination through:
-1. **Ground Truth Validation** - All answers validated against known correct values
-2. **Constraint-First Solving** - No AI guessing; uses lexicon lookups + pattern matching
-3. **Static Lexicons** - Small, auditable ABBREVS/SYNONYMS dictionaries
-4. **Learned Cache** - Only validated synonyms (confirmed during training) are persisted
+**Data Flow:**
+```
+clues_db.json (cryptic-trainer) → Import → Supabase clues table (with steps JSON)
+                                              ↓
+User clicks "Solve" → /trainer/start → training_handler.py → trainer.js renders phases
+```
 
-**Why this matters:** LLMs are creative and will always produce an answer, but often with flawed hypotheses. The system must VERIFY, not trust.
-
-**New Architecture:**
-
+**Architecture:**
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Phase 2 Solver Architecture                                 │
+│  Phase 2 Teaching Mode Architecture                         │
 ├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  1. LLM generates hypothesis + step breakdown                │
-│     (answer, definition, wordplay components)                │
-│                                                              │
-│  2. Constraint engine VALIDATES each step:                   │
-│     - Abbreviations checked against ABBREVS lexicon          │
-│     - Synonyms checked against SYNONYMS + learned cache      │
-│     - Letter math verified (fodder letters = result)         │
-│     - Container/charade operations verified algebraically    │
-│                                                              │
-│  3. If validation fails → LLM re-prompts or "Reveal" shows   │
-│     honest uncertainty ("Could not verify this step")        │
-│                                                              │
-│  4. Teaching UI unchanged - server-driven, thin client       │
-│                                                              │
+│                                                             │
+│  RAW STEP DATA (from imported JSON):                        │
+│  {"type": "abbreviation", "fodder": "five", "result": "V"}  │
+│                                                             │
+│  STEP TEMPLATES (90% generic, ported from cryptic-trainer): │
+│  - Phases: fodder → result → teaching                       │
+│  - Input modes: tap_words, text, multiple_choice, none      │
+│  - Panel text with {placeholders}                           │
+│  - onCorrect/onWrong feedback                               │
+│                                                             │
+│  DECORATION (get_render function):                          │
+│  Raw step + Template → Interactive UI render object         │
+│                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**API Design:**
+**Step Types (13):**
+- standard_definition, abbreviation, synonym, literal, literal_phrase
+- anagram, reversal, deletion, letter_selection, hidden
+- container_verify, charade_verify, double_definition
 
+**API Design (same as cryptic-trainer):**
 ```
-POST /solve/start
-{
-  "clue": "See boss bungle work (6)",
-  "enumeration": "6",
-  "cross_letters": [{"position": 2, "letter": "S"}]
-}
+POST /trainer/start {clue_id}
+  → start_session() → get_render() → {stepType, phaseId, inputMode, panel, ...}
 
-Response:
-{
-  "session_id": "abc123",
-  "render": { ... },  // First teaching step
-  "verified": true,   // All steps passed constraint validation
-  "confidence": 0.95
-}
+POST /trainer/input {clue_id, input}
+  → handle_input() → validate → advance phase/step → get_render()
+
+POST /trainer/continue {clue_id}
+  → advance_to_next() → get_render()
+
+POST /trainer/reveal {clue_id}
+  → reveal() → {complete: true, answer, highlights}
 
 POST /solve/input   // User submits tap/text/choice
 POST /solve/continue // Advance through teaching
 POST /solve/reveal  // Skip to answer + full breakdown
 ```
 
-**Key Constraint Checks:**
-- `ABBREVS` dict: {"golf": ["G"], "husband": ["H"], ...}
-- `SYNONYMS` dict: {"pity": ["RUTH"], "help": ["AID"], ...}
-- `LEARNED_SYNONYMS`: Validated during training, persisted
-- Letter count verification: sum(components) == answer length
-- Definition validation: must match in PHRASES/SYNONYMS tables
+**Files to Port from cryptic-trainer:**
+| Source | Destination | Purpose |
+|--------|-------------|---------|
+| `training_handler.py` STEP_TEMPLATES | `training_handler.py` (new) | 13 step type templates |
+| `training_handler.py` get_render() | Same file | Merge step + template |
+| `training_handler.py` handle_input() | Same file | Validate user input |
+| `teaching_hints.json` | `teaching_hints.json` | Expert hints |
+| `trainer.js` | Keep existing | UI rendering |
 
-**Changes:**
-- Port `ABBREVS`, `SYNONYMS`, `PHRASES` from cryptic-trainer
-- Port `LEARNED_SYNONYMS` persistence (learned_synonyms.json)
-- Create LLM interface (Anthropic + OpenAI)
-- Add `/solve/*` endpoints with constraint validation
-- Keep `trainer.js` UI (server-driven rendering unchanged)
-- Delete cryptic-trainer proxy code (self-contained)
+**Implementation Steps:**
+1. Port `training_handler.py` to Grid Reader (STEP_TEMPLATES, session mgmt, substitute_variables)
+2. Add `steps` JSONB column to clues table in Supabase
+3. Update `/trainer/*` endpoints to call local handler (remove proxy)
+4. Test with imported annotated clues
 
 **Validation:**
-- Teaching mode works on any clue (not just pre-annotated)
-- "Reveal" button shows answer + verified breakdown
-- Unverified steps show honest uncertainty
+- Import puzzle with annotated clues (clues_db.json format)
+- Click "Solve" on a clue with steps
+- Complete interactive teaching sequence
+- Answer auto-fills in grid on completion
 
 ---
 
@@ -111,7 +108,7 @@ Deploy to Vercel as serverless Flask app.
 **Changes:**
 - Add `vercel.json` configuration
 - Adapt Flask app for serverless (stateless)
-- Environment variables for Supabase + LLM keys
+- Environment variables for Supabase keys
 - Static assets served from Vercel
 
 **Validation:** App accessible at public Vercel URL
@@ -135,7 +132,7 @@ Add Supabase Auth for user accounts.
 Polish for public release.
 
 **Changes:**
-- Rate limiting on `/solve` endpoint
+- Rate limiting on `/trainer/*` endpoints
 - Input validation / sanitization
 - Usage tracking / analytics
 - Error handling improvements

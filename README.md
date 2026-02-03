@@ -9,6 +9,7 @@ A web-based tool for importing, solving, and learning to solve Times Cryptic cro
 - **PDF Import**: Upload Times Cryptic PDF files to extract grid and clues automatically
 - **Cloud Storage**: Puzzles stored in Supabase PostgreSQL (with local fallback)
 - **Interactive Grid**: Solve puzzles in the browser with keyboard navigation
+- **Guided Solving**: Step-by-step teaching mode for learning cryptic techniques
 - **Answer Validation**: Optionally provide an answers file to validate your solutions
 - **Progress Persistence**: Puzzle progress auto-saves to browser localStorage
 
@@ -48,9 +49,18 @@ A green status indicator shows when connected to Supabase cloud database.
 
 ### Controls
 
+- **Solve**: Opens guided teaching mode for selected clue (requires annotated clues)
 - **Check Answers**: Highlights incorrect cells (requires answers)
 - **Clear Grid**: Removes all entered letters
 - **Reveal All**: Shows the complete solution (requires answers)
+
+### Guided Solving (Teaching Mode)
+
+For clues with pre-annotated step data:
+1. Select a clue and click "Solve"
+2. Follow step-by-step guidance through the clue
+3. Learn cryptic techniques: abbreviations, anagrams, reversals, etc.
+4. Answer auto-fills in grid on completion
 
 ### Progress Saving
 
@@ -115,17 +125,18 @@ Or JSON (Times Puzzle Import format):
 | Phase | Status | Description |
 |-------|--------|-------------|
 | 1. Supabase Integration | ✅ Complete | Cloud database storage |
-| 2. LLM-Powered Solving | 🔜 Next | Replace trainer with `/solve/*` endpoints |
-| 3. Vercel Deployment | Planned | Serverless Flask deployment |
+| 2. Teaching Mode | ✅ Complete | Local step-by-step guided solving |
+| 3. Vercel Deployment | 🔜 Next | Serverless Flask deployment |
 | 4. User Authentication | Planned | Supabase Auth integration |
 | 5. Multi-User Features | Planned | Rate limiting, analytics |
 
 See [PLAN.md](PLAN.md) for detailed roadmap.
 
-## Technical Debt
+## Technical Notes
 
-Legacy trainer integration code (~1000 lines) will be removed in Phase 2.
-See [TECH_DEBT_AUDIT.md](TECH_DEBT_AUDIT.md) for full cleanup plan.
+- Teaching mode uses pre-annotated step data (no AI/LLM)
+- 30 clues pre-loaded in `clues_db.json`
+- See [TECH_DEBT_AUDIT.md](TECH_DEBT_AUDIT.md) for architecture details
 
 ## License
 

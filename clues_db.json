@@ -1,0 +1,3309 @@
+{
+  "version": 3,
+  "training_items": {
+    "times-29453-11a": {
+      "id": "times-29453-11a",
+      "clue": {
+        "number": "11A",
+        "text": "Come by five, do you mean?",
+        "enumeration": "5",
+        "answer": "VISIT",
+        "definition": [
+          {
+            "text": "Come by",
+            "position": "start"
+          }
+        ]
+      },
+      "words": [
+        "Come",
+        "by",
+        "five",
+        "do",
+        "you",
+        "mean"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0,
+              1
+            ],
+            "text": "Come by"
+          },
+          "position": "start"
+        },
+        {
+          "type": "abbreviation",
+          "fodder": {
+            "indices": [
+              2
+            ],
+            "text": "five"
+          },
+          "result": "V",
+          "hint": "Roman numeral V = 5"
+        },
+        {
+          "type": "literal_phrase",
+          "fodder": {
+            "indices": [
+              3,
+              4,
+              5
+            ],
+            "text": "do you mean?"
+          },
+          "result": "ISIT",
+          "letters_needed": 4,
+          "note": "The question 'do you mean?' reads as its spoken equivalent 'IS IT' - the phrase you'd say when asking for confirmation"
+        },
+        {
+          "type": "charade_verify",
+          "components": [
+            "V",
+            "ISIT"
+          ],
+          "result": "VISIT",
+          "letters_so_far": 5,
+          "letters_needed": 5
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "easy",
+          "hint": "'Come by' suggests dropping in on someone - find a common 5-letter word for this"
+        },
+        "wordplay": {
+          "rating": "easy",
+          "hint": "A Roman numeral followed by a conversational phrase that reads as spoken"
+        },
+        "overall": "easy",
+        "recommendedApproach": "wordplay"
+      },
+      "verified": true
+    },
+    "times-29453-1d": {
+      "id": "times-29453-1d",
+      "clue": {
+        "number": "1D",
+        "text": "See boss bungle work",
+        "enumeration": "6",
+        "answer": "BISHOP",
+        "definition": [
+          {
+            "text": "See boss",
+            "position": "start"
+          }
+        ]
+      },
+      "words": [
+        "See",
+        "boss",
+        "bungle",
+        "work"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0,
+              1
+            ],
+            "text": "See boss"
+          },
+          "position": "start"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              2
+            ],
+            "text": "bungle"
+          },
+          "result": "BISH",
+          "hint": "To 'bish' something is British slang for bungling it"
+        },
+        {
+          "type": "abbreviation",
+          "fodder": {
+            "indices": [
+              3
+            ],
+            "text": "work"
+          },
+          "result": "OP",
+          "hint": "OP = opus, a musical work or composition"
+        },
+        {
+          "type": "charade_verify",
+          "components": [
+            "BISH",
+            "OP"
+          ],
+          "result": "BISHOP",
+          "letters_so_far": 6,
+          "letters_needed": 6
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "medium",
+          "hint": "A 'see' is a diocese - who runs one?"
+        },
+        "wordplay": {
+          "rating": "easy",
+          "hint": "A slang word for making a mistake plus an abbreviation for a musical composition"
+        },
+        "overall": "medium",
+        "recommendedApproach": "wordplay"
+      },
+      "verified": true
+    },
+    "times-29453-6d": {
+      "id": "times-29453-6d",
+      "clue": {
+        "number": "6D",
+        "text": "Any number after dance party are starving",
+        "enumeration": "5",
+        "answer": "RAVEN",
+        "definition": [
+          {
+            "text": "are starving",
+            "position": "end"
+          }
+        ]
+      },
+      "words": [
+        "Any",
+        "number",
+        "after",
+        "dance",
+        "party",
+        "are",
+        "starving"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              5,
+              6
+            ],
+            "text": "are starving"
+          },
+          "position": "end"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              3,
+              4
+            ],
+            "text": "dance party"
+          },
+          "result": "RAVE",
+          "hint": "A rave is an all-night dance party"
+        },
+        {
+          "type": "abbreviation",
+          "fodder": {
+            "indices": [
+              0,
+              1
+            ],
+            "text": "any number"
+          },
+          "result": "N",
+          "hint": "N represents any number in mathematics"
+        },
+        {
+          "type": "charade_verify",
+          "indicator": {
+            "indices": [
+              2
+            ],
+            "text": "after"
+          },
+          "components": [
+            "RAVE",
+            "N"
+          ],
+          "result": "RAVEN",
+          "note": "N comes after RAVE",
+          "letters_so_far": 5,
+          "letters_needed": 5
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "hard",
+          "hint": "Think of an archaic verb meaning to be extremely hungry"
+        },
+        "wordplay": {
+          "rating": "easy",
+          "hint": "A type of party plus a mathematical variable"
+        },
+        "overall": "medium",
+        "recommendedApproach": "wordplay"
+      },
+      "verified": true
+    },
+    "times-29453-5d": {
+      "id": "times-29453-5d",
+      "clue": {
+        "number": "5D",
+        "text": "A lot of sharp turns, I'm afraid",
+        "enumeration": "3",
+        "answer": "EEK",
+        "definition": [
+          {
+            "text": "I'm afraid",
+            "position": "end"
+          }
+        ]
+      },
+      "words": [
+        "A",
+        "lot",
+        "of",
+        "sharp",
+        "turns",
+        "I'm",
+        "afraid"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              5,
+              6
+            ],
+            "text": "I'm afraid"
+          },
+          "position": "end"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              3
+            ],
+            "text": "sharp"
+          },
+          "result": "KEEN",
+          "hint": "Keen means sharp, as in a keen edge or keen intellect"
+        },
+        {
+          "type": "deletion",
+          "indicator": {
+            "indices": [
+              0,
+              1,
+              2
+            ],
+            "text": "a lot of"
+          },
+          "fodder": "KEEN",
+          "deletionType": "end",
+          "result": "KEE",
+          "note": "'A lot of' means take most of the word - remove final letter"
+        },
+        {
+          "type": "reversal",
+          "indicator": {
+            "indices": [
+              4
+            ],
+            "text": "turns"
+          },
+          "fodder": "KEE",
+          "result": "EEK"
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "easy",
+          "hint": "An exclamation of fright, often seen in comics"
+        },
+        "wordplay": {
+          "rating": "medium",
+          "hint": "Take most of a word meaning sharp/eager, then reverse it"
+        },
+        "overall": "medium",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
+    },
+    "times-29453-12a": {
+      "id": "times-29453-12a",
+      "clue": {
+        "number": "12A",
+        "text": "Concerning sight as head of office IT struggles with PC",
+        "enumeration": "5",
+        "answer": "OPTIC",
+        "definition": [
+          {
+            "text": "Concerning sight",
+            "position": "start"
+          }
+        ]
+      },
+      "words": [
+        "Concerning",
+        "sight",
+        "as",
+        "head",
+        "of",
+        "office",
+        "IT",
+        "struggles",
+        "with",
+        "PC"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0,
+              1
+            ],
+            "text": "Concerning sight"
+          },
+          "position": "start"
+        },
+        {
+          "type": "connector",
+          "fodder": {
+            "indices": [
+              2
+            ],
+            "text": "as"
+          },
+          "note": "Linking word"
+        },
+        {
+          "type": "letter_selection",
+          "indicator": {
+            "indices": [
+              3,
+              4
+            ],
+            "text": "head of"
+          },
+          "fodder": {
+            "indices": [
+              5
+            ],
+            "text": "office"
+          },
+          "extractionType": "first",
+          "result": "O"
+        },
+        {
+          "type": "literal",
+          "fodder": {
+            "indices": [
+              6
+            ],
+            "text": "IT"
+          },
+          "result": "IT"
+        },
+        {
+          "type": "literal",
+          "fodder": {
+            "indices": [
+              9
+            ],
+            "text": "PC"
+          },
+          "result": "PC"
+        },
+        {
+          "type": "anagram",
+          "indicator": {
+            "indices": [
+              7,
+              8
+            ],
+            "text": "struggles with"
+          },
+          "fodder": [
+            "O",
+            "IT",
+            "PC"
+          ],
+          "result": "OPTIC",
+          "letters_so_far": 5,
+          "letters_needed": 5
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "easy",
+          "hint": "Related to vision or the eye"
+        },
+        "wordplay": {
+          "rating": "medium",
+          "hint": "First letter of a word plus an anagram of some letters"
+        },
+        "overall": "medium",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
+    },
+    "times-29453-9d": {
+      "id": "times-29453-9d",
+      "clue": {
+        "number": "9D",
+        "text": "State coach for Turkish leader who's out to lunch?",
+        "enumeration": "10",
+        "answer": "MADAGASCAR",
+        "definition": [
+          {
+            "text": "State",
+            "position": "start"
+          }
+        ]
+      },
+      "words": [
+        "State",
+        "coach",
+        "for",
+        "Turkish",
+        "leader",
+        "who's",
+        "out",
+        "to",
+        "lunch"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0
+            ],
+            "text": "State"
+          },
+          "position": "start"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              6,
+              7,
+              8
+            ],
+            "text": "out to lunch"
+          },
+          "result": "MAD",
+          "hint": "'Out to lunch' is slang for crazy or mad"
+        },
+        {
+          "type": "abbreviation",
+          "fodder": {
+            "indices": [
+              3,
+              4
+            ],
+            "text": "Turkish leader"
+          },
+          "result": "AGA",
+          "hint": "An aga is a Turkish military commander or chief"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              1
+            ],
+            "text": "coach"
+          },
+          "result": "CAR",
+          "hint": "A coach is a type of vehicle/car, especially a horse-drawn one"
+        },
+        {
+          "type": "literal",
+          "fodder": {
+            "indices": [
+              5
+            ],
+            "text": "who's"
+          },
+          "result": "S",
+          "note": "The possessive 's from 'who's'"
+        },
+        {
+          "type": "charade_verify",
+          "components": [
+            "MAD",
+            "AGA",
+            "S",
+            "CAR"
+          ],
+          "result": "MADAGASCAR",
+          "note": "Reads as 'mad Aga's car' - a crazy Turkish leader's vehicle",
+          "letters_so_far": 10,
+          "letters_needed": 10
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "easy",
+          "hint": "An island nation off the coast of Africa"
+        },
+        "wordplay": {
+          "rating": "hard",
+          "hint": "The whole phrase sounds like a description of a crazy vehicle belonging to a Turkish commander"
+        },
+        "overall": "hard",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
+    },
+    "times-29453-13a": {
+      "id": "times-29453-13a",
+      "clue": {
+        "number": "13A",
+        "text": "Moderate movement also opposed to one referendum option",
+        "enumeration": "9",
+        "answer": "ANDANTINO",
+        "definition": [
+          {
+            "text": "Moderate movement",
+            "position": "start"
+          }
+        ]
+      },
+      "words": [
+        "Moderate",
+        "movement",
+        "also",
+        "opposed",
+        "to",
+        "one",
+        "referendum",
+        "option"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0,
+              1
+            ],
+            "text": "Moderate movement"
+          },
+          "position": "start"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              2
+            ],
+            "text": "also"
+          },
+          "result": "AND",
+          "hint": "'Also' links things together, like the word 'and'"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              3,
+              4
+            ],
+            "text": "opposed to"
+          },
+          "result": "ANTI",
+          "hint": "Anti- means opposed to or against"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              5,
+              6,
+              7
+            ],
+            "text": "one referendum option"
+          },
+          "result": "NO",
+          "hint": "In a referendum, one option is to vote 'No'"
+        },
+        {
+          "type": "charade_verify",
+          "components": [
+            "AND",
+            "ANTI",
+            "NO"
+          ],
+          "result": "ANDANTINO",
+          "letters_so_far": 9,
+          "letters_needed": 9
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "hard",
+          "hint": "A musical tempo marking - slower than allegro but not as slow as adagio"
+        },
+        "wordplay": {
+          "rating": "easy",
+          "hint": "Three common words/abbreviations joined together"
+        },
+        "overall": "medium",
+        "recommendedApproach": "wordplay"
+      },
+      "verified": true
+    },
+    "times-29453-2d": {
+      "id": "times-29453-2d",
+      "clue": {
+        "number": "2D",
+        "text": "Crooked old mater which strongly suggests criminal is mom",
+        "enumeration": "6",
+        "answer": "OMERTA",
+        "definition": [
+          {
+            "text": "which strongly suggests criminal is mom",
+            "position": "end"
+          }
+        ]
+      },
+      "words": [
+        "Crooked",
+        "old",
+        "mater",
+        "which",
+        "strongly",
+        "suggests",
+        "criminal",
+        "is",
+        "mom"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "text": "which strongly suggests criminal is mom"
+          },
+          "position": "end"
+        },
+        {
+          "type": "abbreviation",
+          "fodder": {
+            "indices": [
+              1
+            ],
+            "text": "old"
+          },
+          "result": "O",
+          "hint": "O is standard abbreviation for old (as in O.E. = Old English)"
+        },
+        {
+          "type": "literal",
+          "fodder": {
+            "indices": [
+              2
+            ],
+            "text": "mater"
+          },
+          "result": "MATER"
+        },
+        {
+          "type": "anagram",
+          "indicator": {
+            "indices": [
+              0
+            ],
+            "text": "Crooked"
+          },
+          "fodder": [
+            "O",
+            "MATER"
+          ],
+          "result": "OMERTA"
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "hard",
+          "hint": "The mafia code of silence - if you follow it, you keep quiet about crimes"
+        },
+        "wordplay": {
+          "rating": "easy",
+          "hint": "An abbreviation plus an anagram"
+        },
+        "overall": "medium",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
+    },
+    "times-29453-1a": {
+      "id": "times-29453-1a",
+      "clue": {
+        "number": "1A",
+        "text": "Cover up in shower not after nurses turn around",
+        "enumeration": "6",
+        "answer": "BROLLY",
+        "definition": [
+          {
+            "text": "Cover up in shower",
+            "position": "start"
+          }
+        ]
+      },
+      "words": [
+        "Cover",
+        "up",
+        "in",
+        "shower",
+        "not",
+        "after",
+        "nurses",
+        "turn",
+        "around"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "text": "Cover up in shower"
+          },
+          "position": "start"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              4,
+              5
+            ],
+            "text": "not after"
+          },
+          "result": "BY",
+          "hint": "If you're BY something (beside it), you're not AFTER it - cryptic wordplay"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              7,
+              8
+            ],
+            "text": "turn around"
+          },
+          "result": "ROLL",
+          "hint": "To roll is to turn around (like rolling over)"
+        },
+        {
+          "type": "container_verify",
+          "indicator": {
+            "indices": [
+              6
+            ],
+            "text": "nurses"
+          },
+          "outer": "BY",
+          "inner": "ROLL",
+          "result": "BROLLY",
+          "hint": "'nurses' = contains; BY wraps around ROLL: B + ROLL + Y = BROLLY"
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "easy",
+          "hint": "Something you use to stay dry when it rains"
+        },
+        "wordplay": {
+          "rating": "hard",
+          "hint": "A container operation with a reversal inside"
+        },
+        "overall": "medium",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
+    },
+    "times-29453-10a": {
+      "id": "times-29453-10a",
+      "clue": {
+        "number": "10A",
+        "text": "Flatter track takes very little time",
+        "enumeration": "5,4",
+        "answer": "SWEET TALK",
+        "definition": [
+          {
+            "text": "Flatter",
+            "position": "start"
+          }
+        ]
+      },
+      "words": [
+        "Flatter",
+        "track",
+        "takes",
+        "very",
+        "little",
+        "time"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0
+            ],
+            "text": "Flatter"
+          },
+          "position": "start"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              1
+            ],
+            "text": "track"
+          },
+          "result": "STALK",
+          "hint": "To stalk is to track or follow prey"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              3,
+              4
+            ],
+            "text": "very little"
+          },
+          "result": "WEE",
+          "hint": "Wee means very little or tiny (Scottish/informal)"
+        },
+        {
+          "type": "abbreviation",
+          "fodder": {
+            "indices": [
+              5
+            ],
+            "text": "time"
+          },
+          "result": "T",
+          "hint": "T is standard abbreviation for time"
+        },
+        {
+          "type": "container_verify",
+          "indicator": {
+            "indices": [
+              2
+            ],
+            "text": "takes"
+          },
+          "outer": "STALK",
+          "inner": "WEET",
+          "result": "SWEET TALK",
+          "hint": "STALK takes WEE+T = S(WEET)ALK = SWEET TALK"
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "easy",
+          "hint": "To cajole or flatter someone with charming words"
+        },
+        "wordplay": {
+          "rating": "medium",
+          "hint": "A word for tracking prey contains two small words"
+        },
+        "overall": "medium",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
+    },
+    "times-29453-8d": {
+      "id": "times-29453-8d",
+      "clue": {
+        "number": "8D",
+        "text": "But you must wear socks steamy in here",
+        "enumeration": "8",
+        "answer": "HOTHOUSE",
+        "definition": [
+          {
+            "text": "steamy in here",
+            "position": "end"
+          }
+        ]
+      },
+      "words": [
+        "But",
+        "you",
+        "must",
+        "wear",
+        "socks",
+        "steamy",
+        "in",
+        "here"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              5,
+              6,
+              7
+            ],
+            "text": "steamy in here"
+          },
+          "position": "end"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              1
+            ],
+            "text": "you"
+          },
+          "result": "THOU",
+          "hint": "Thou is archaic/biblical form of 'you'"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              4
+            ],
+            "text": "socks"
+          },
+          "result": "HOSE",
+          "hint": "Hose is another word for stockings/socks (hosiery)"
+        },
+        {
+          "type": "container_verify",
+          "indicator": {
+            "indices": [
+              2,
+              3
+            ],
+            "text": "must wear"
+          },
+          "outer": "HOSE",
+          "inner": "THOU",
+          "result": "HOTHOUSE",
+          "hint": "HOSE containing THOU = HO(THOU)SE = HOTHOUSE"
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "easy",
+          "hint": "A warm glass building for growing plants"
+        },
+        "wordplay": {
+          "rating": "medium",
+          "hint": "A container with an archaic pronoun inside footwear"
+        },
+        "overall": "medium",
+        "recommendedApproach": "definition"
+      },
+      "reported_issue": "Meta data issue. EVery synonym must have a verifiable hint\nSYNONYM: socks \u2192 HOSE\n'socks' = HOSE **Remember:** Synonyms are the bread and butter of cryptic wordplay.",
+      "verified": true
+    },
+    "times-29453-15a": {
+      "id": "times-29453-15a",
+      "clue": {
+        "number": "15A",
+        "text": "Live singer with a costume representative of her country",
+        "enumeration": "12",
+        "answer": "AMBASSADRESS",
+        "definition": [
+          {
+            "text": "representative of her country",
+            "position": "end"
+          }
+        ]
+      },
+      "words": [
+        "Live",
+        "singer",
+        "with",
+        "a",
+        "costume",
+        "representative",
+        "of",
+        "her",
+        "country"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              5,
+              6,
+              7,
+              8
+            ],
+            "text": "representative of her country"
+          },
+          "position": "end"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              0
+            ],
+            "text": "Live"
+          },
+          "result": "AM",
+          "hint": "'I am' means 'I live/exist'"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              1
+            ],
+            "text": "singer"
+          },
+          "result": "BASS",
+          "hint": "A bass is a type of singer (low male voice)"
+        },
+        {
+          "type": "literal",
+          "fodder": {
+            "indices": [
+              2,
+              3
+            ],
+            "text": "with a"
+          },
+          "result": "A"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              4
+            ],
+            "text": "costume"
+          },
+          "result": "DRESS",
+          "hint": "A dress is a costume or outfit"
+        },
+        {
+          "type": "charade_verify",
+          "components": [
+            "AM",
+            "BASS",
+            "A",
+            "DRESS"
+          ],
+          "result": "AMBASSADRESS",
+          "letters_so_far": 12,
+          "letters_needed": 12
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "medium",
+          "hint": "A female diplomat who represents her nation abroad"
+        },
+        "wordplay": {
+          "rating": "easy",
+          "hint": "Four common words/abbreviations joined together"
+        },
+        "overall": "medium",
+        "recommendedApproach": "wordplay"
+      },
+      "verified": true
+    },
+    "times-29453-24a": {
+      "id": "times-29453-24a",
+      "clue": {
+        "number": "24A",
+        "text": "Couple taken with second sight of Florence",
+        "enumeration": "5",
+        "answer": "DUOMO",
+        "definition": [
+          {
+            "text": "sight of Florence",
+            "position": "end"
+          }
+        ]
+      },
+      "words": [
+        "Couple",
+        "taken",
+        "with",
+        "second",
+        "sight",
+        "of",
+        "Florence"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              4,
+              5,
+              6
+            ],
+            "text": "sight of Florence"
+          },
+          "position": "end"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              0
+            ],
+            "text": "Couple"
+          },
+          "result": "DUO",
+          "hint": "A duo is a couple or pair"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              3
+            ],
+            "text": "second"
+          },
+          "result": "MO",
+          "hint": "A mo (moment) is a brief second of time"
+        },
+        {
+          "type": "charade_verify",
+          "indicator": {
+            "indices": [
+              1,
+              2
+            ],
+            "text": "taken with"
+          },
+          "components": [
+            "DUO",
+            "MO"
+          ],
+          "result": "DUOMO",
+          "letters_so_far": 5,
+          "letters_needed": 5
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "hard",
+          "hint": "A famous cathedral in an Italian city"
+        },
+        "wordplay": {
+          "rating": "easy",
+          "hint": "Two simple words joined together"
+        },
+        "overall": "medium",
+        "recommendedApproach": "wordplay"
+      },
+      "verified": true
+    },
+    "times-29453-25a": {
+      "id": "times-29453-25a",
+      "clue": {
+        "number": "25A",
+        "text": "Urge removal of line from silly speech",
+        "enumeration": "5",
+        "answer": "DRIVE",
+        "definition": [
+          {
+            "text": "Urge",
+            "position": "start"
+          }
+        ]
+      },
+      "words": [
+        "Urge",
+        "removal",
+        "of",
+        "line",
+        "from",
+        "silly",
+        "speech"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0
+            ],
+            "text": "Urge"
+          },
+          "position": "start"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              5,
+              6
+            ],
+            "text": "silly speech"
+          },
+          "result": "DRIVEL",
+          "hint": "Drivel is silly, nonsensical speech"
+        },
+        {
+          "type": "deletion",
+          "indicator": {
+            "indices": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "text": "removal of line from"
+          },
+          "fodder": "DRIVEL",
+          "deletionType": "specific",
+          "deleted": "L",
+          "result": "DRIVE",
+          "note": "L = line abbreviation"
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "easy",
+          "hint": "To push or propel forward, or a strong motivation"
+        },
+        "wordplay": {
+          "rating": "easy",
+          "hint": "Remove a letter from a word meaning nonsense"
+        },
+        "overall": "easy",
+        "recommendedApproach": "wordplay"
+      }
+    },
+    "times-29453-26d": {
+      "id": "times-29453-26d",
+      "clue": {
+        "number": "26D",
+        "text": "In Republican's absence conflicts happened",
+        "enumeration": "3",
+        "answer": "WAS",
+        "definition": [
+          {
+            "text": "happened",
+            "position": "end"
+          }
+        ]
+      },
+      "words": [
+        "In",
+        "Republican's",
+        "absence",
+        "conflicts",
+        "happened"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              4
+            ],
+            "text": "happened"
+          },
+          "position": "end"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              3
+            ],
+            "text": "conflicts"
+          },
+          "result": "WARS",
+          "hint": "Wars are armed conflicts"
+        },
+        {
+          "type": "deletion",
+          "indicator": {
+            "indices": [
+              0,
+              1,
+              2
+            ],
+            "text": "In Republican's absence"
+          },
+          "fodder": "WARS",
+          "deletionType": "specific",
+          "deleted": "R",
+          "result": "WAS",
+          "note": "R = Republican abbreviation"
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "easy",
+          "hint": "Past tense of 'is' - indicating something occurred"
+        },
+        "wordplay": {
+          "rating": "easy",
+          "hint": "Remove a letter from a word meaning conflicts"
+        },
+        "overall": "easy",
+        "recommendedApproach": "wordplay"
+      },
+      "verified": true
+    },
+    "times-29453-21d": {
+      "id": "times-29453-21d",
+      "clue": {
+        "number": "21D",
+        "text": "Sailor in the doldrums relatively okay for tobacco",
+        "enumeration": "3,3",
+        "answer": "LOW TAR",
+        "definition": [
+          {
+            "text": "relatively okay for tobacco",
+            "position": "end"
+          }
+        ]
+      },
+      "words": [
+        "Sailor",
+        "in",
+        "the",
+        "doldrums",
+        "relatively",
+        "okay",
+        "for",
+        "tobacco"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              4,
+              5,
+              6,
+              7
+            ],
+            "text": "relatively okay for tobacco"
+          },
+          "position": "end"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              1,
+              2,
+              3
+            ],
+            "text": "in the doldrums"
+          },
+          "result": "LOW",
+          "hint": "Being in the doldrums means feeling low or depressed"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              0
+            ],
+            "text": "Sailor"
+          },
+          "result": "TAR",
+          "hint": "Tar is old slang for a sailor (Jack Tar)"
+        },
+        {
+          "type": "charade_verify",
+          "components": [
+            "LOW",
+            "TAR"
+          ],
+          "result": "LOW TAR",
+          "letters_so_far": 6,
+          "letters_needed": 6
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "medium",
+          "hint": "A cigarette descriptor suggesting reduced harmful content"
+        },
+        "wordplay": {
+          "rating": "easy",
+          "hint": "Two simple words meaning depressed and sailor"
+        },
+        "overall": "easy",
+        "recommendedApproach": "wordplay"
+      },
+      "verified": true
+    },
+    "times-29453-7d": {
+      "id": "times-29453-7d",
+      "clue": {
+        "number": "7D",
+        "text": "Summits welcoming American patronage",
+        "enumeration": "8",
+        "answer": "AUSPICES",
+        "definition": [
+          {
+            "text": "patronage",
+            "position": "end"
+          }
+        ]
+      },
+      "words": [
+        "Summits",
+        "welcoming",
+        "American",
+        "patronage"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              3
+            ],
+            "text": "patronage"
+          },
+          "position": "end"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              0
+            ],
+            "text": "Summits"
+          },
+          "result": "APICES",
+          "hint": "Apices is plural of apex (summit/peak)"
+        },
+        {
+          "type": "abbreviation",
+          "fodder": {
+            "indices": [
+              2
+            ],
+            "text": "American"
+          },
+          "result": "US",
+          "hint": "US is abbreviation for United States (American)"
+        },
+        {
+          "type": "container_verify",
+          "indicator": {
+            "indices": [
+              1
+            ],
+            "text": "welcoming"
+          },
+          "outer": "APICES",
+          "inner": "US",
+          "result": "AUSPICES",
+          "hint": "APICES welcoming US = A(US)PICES = AUSPICES"
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "medium",
+          "hint": "Support or protection from a powerful person or organization"
+        },
+        "wordplay": {
+          "rating": "medium",
+          "hint": "A word for peaks contains an abbreviation"
+        },
+        "overall": "medium",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
+    },
+    "times-29453-4a": {
+      "id": "times-29453-4a",
+      "clue": {
+        "number": "4A",
+        "text": "Twit copying antique with pine mostly",
+        "enumeration": "8",
+        "answer": "REPROACH",
+        "definition": [
+          {
+            "text": "Twit",
+            "position": "start"
+          }
+        ]
+      },
+      "words": [
+        "Twit",
+        "copying",
+        "antique",
+        "with",
+        "pine",
+        "mostly"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0
+            ],
+            "text": "Twit"
+          },
+          "position": "start"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              1,
+              2
+            ],
+            "text": "copying antique"
+          },
+          "result": "REPRO",
+          "hint": "A repro is a reproduction or copy of an antique"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              4
+            ],
+            "text": "pine"
+          },
+          "result": "ACHE",
+          "hint": "To pine is to ache with longing"
+        },
+        {
+          "type": "deletion",
+          "indicator": {
+            "indices": [
+              5
+            ],
+            "text": "mostly"
+          },
+          "fodder": "ACHE",
+          "deletionType": "end",
+          "result": "ACH"
+        },
+        {
+          "type": "charade_verify",
+          "indicator": {
+            "indices": [
+              3
+            ],
+            "text": "with"
+          },
+          "components": [
+            "REPRO",
+            "ACH"
+          ],
+          "result": "REPROACH",
+          "letters_so_far": 8,
+          "letters_needed": 8
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "medium",
+          "hint": "To criticize or scold someone"
+        },
+        "wordplay": {
+          "rating": "easy",
+          "hint": "A word for copy plus most of a word for longing"
+        },
+        "overall": "medium",
+        "recommendedApproach": "wordplay"
+      },
+      "verified": true
+    },
+    "times-29453-18d": {
+      "id": "times-29453-18d",
+      "clue": {
+        "number": "18D",
+        "text": "Fugitives attempt to escape upset good egg",
+        "enumeration": "8",
+        "answer": "FLEETING",
+        "definition": [
+          {
+            "text": "Fugitives",
+            "position": "start"
+          }
+        ]
+      },
+      "words": [
+        "Fugitives",
+        "attempt",
+        "to",
+        "escape",
+        "upset",
+        "good",
+        "egg"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0
+            ],
+            "text": "Fugitives"
+          },
+          "position": "start"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              1,
+              2,
+              3
+            ],
+            "text": "attempt to escape"
+          },
+          "result": "FLEE",
+          "hint": "To flee is to attempt to escape"
+        },
+        {
+          "type": "abbreviation",
+          "fodder": {
+            "indices": [
+              5
+            ],
+            "text": "good"
+          },
+          "result": "G",
+          "hint": "G is abbreviation for good (as in G-rated)"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              6
+            ],
+            "text": "egg"
+          },
+          "result": "NIT",
+          "hint": "A nit is a louse egg"
+        },
+        {
+          "type": "reversal",
+          "indicator": {
+            "indices": [
+              4
+            ],
+            "text": "upset"
+          },
+          "fodder": "GNIT",
+          "result": "TING"
+        },
+        {
+          "type": "charade_verify",
+          "components": [
+            "FLEE",
+            "TING"
+          ],
+          "result": "FLEETING",
+          "letters_so_far": 8,
+          "letters_needed": 8
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "medium",
+          "hint": "Passing quickly, transient - like someone on the run"
+        },
+        "wordplay": {
+          "rating": "medium",
+          "hint": "A word for escape plus reversed letters"
+        },
+        "overall": "medium",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
+    },
+    "times-29453-23d": {
+      "id": "times-29453-23d",
+      "clue": {
+        "number": "23D",
+        "text": "Pretend authority raised undue spending limits",
+        "enumeration": "5",
+        "answer": "PSEUD",
+        "definition": [
+          {
+            "text": "Pretend authority",
+            "position": "start"
+          }
+        ]
+      },
+      "words": [
+        "Pretend",
+        "authority",
+        "raised",
+        "undue",
+        "spending",
+        "limits"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0,
+              1
+            ],
+            "text": "Pretend authority"
+          },
+          "position": "start"
+        },
+        {
+          "type": "hidden",
+          "indicator": {
+            "indices": [
+              2,
+              5
+            ],
+            "text": "raised ... limits"
+          },
+          "fodder": {
+            "indices": [
+              3,
+              4
+            ],
+            "text": "undue spending"
+          },
+          "result": "PSEUD",
+          "note": "Hidden reversed in 'unDUE SPending' \u2192 DUESP reversed = PSEUD"
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "medium",
+          "hint": "A pretentious person who claims expertise they don't have"
+        },
+        "wordplay": {
+          "rating": "hard",
+          "hint": "A hidden word, reversed in the clue"
+        },
+        "overall": "hard",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
+    },
+    "times-29453-28a": {
+      "id": "times-29453-28a",
+      "clue": {
+        "number": "28A",
+        "text": "Tsars like roughly level after revolution",
+        "enumeration": "6",
+        "answer": "CAESAR",
+        "definition": [
+          {
+            "text": "Tsars like",
+            "position": "start"
+          }
+        ]
+      },
+      "words": [
+        "Tsars",
+        "like",
+        "roughly",
+        "level",
+        "after",
+        "revolution"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0,
+              1
+            ],
+            "text": "Tsars like"
+          },
+          "position": "start"
+        },
+        {
+          "type": "abbreviation",
+          "fodder": {
+            "indices": [
+              2
+            ],
+            "text": "roughly"
+          },
+          "result": "CA",
+          "hint": "CA is abbreviation for circa (Latin for 'around/roughly')"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              3
+            ],
+            "text": "level"
+          },
+          "result": "RASE",
+          "hint": "Archaic spelling of 'raze' - to level/demolish a building"
+        },
+        {
+          "type": "reversal",
+          "indicator": {
+            "indices": [
+              4,
+              5
+            ],
+            "text": "after revolution"
+          },
+          "fodder": "RASE",
+          "result": "ESAR",
+          "hint": "'revolution' indicates reversal - letters turn around"
+        },
+        {
+          "type": "charade_verify",
+          "components": [
+            "CA",
+            "ESAR"
+          ],
+          "result": "CAESAR",
+          "letters_so_far": 6,
+          "letters_needed": 6
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "easy",
+          "hint": "A Roman emperor - Tsars took their title from this word"
+        },
+        "wordplay": {
+          "rating": "hard",
+          "hint": "An abbreviation plus a reversed word meaning to demolish"
+        },
+        "overall": "medium",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
+    },
+    "times-29453-3d": {
+      "id": "times-29453-3d",
+      "clue": {
+        "number": "3D",
+        "text": "One missing initially admitted to Electra with some upheaval?",
+        "enumeration": "9",
+        "answer": "LATECOMER",
+        "definition": [
+          {
+            "text": "One missing initially admitted to Electra with some upheaval?",
+            "position": "all"
+          }
+        ]
+      },
+      "words": [
+        "One",
+        "missing",
+        "initially",
+        "admitted",
+        "to",
+        "Electra",
+        "with",
+        "some",
+        "upheaval"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "text": "One missing initially admitted to Electra with some upheaval?"
+          },
+          "position": "all",
+          "hint": "&lit clue - entire clue describes someone arriving late to theatre"
+        },
+        {
+          "type": "letter_selection",
+          "indicator": {
+            "indices": [
+              2
+            ],
+            "text": "initially"
+          },
+          "fodder": {
+            "indices": [
+              0,
+              1
+            ],
+            "text": "One missing"
+          },
+          "extractionType": "first",
+          "result": "OM",
+          "hint": "First letters of 'One' and 'missing'"
+        },
+        {
+          "type": "literal",
+          "fodder": {
+            "indices": [
+              5
+            ],
+            "text": "Electra"
+          },
+          "result": "ELECTRA"
+        },
+        {
+          "type": "anagram",
+          "indicator": {
+            "indices": [
+              7,
+              8
+            ],
+            "text": "some upheaval"
+          },
+          "fodder": [
+            "OM",
+            "ELECTRA"
+          ],
+          "result": "LATECOMER",
+          "hint": "OM + ELECTRA (9 letters) rearranged = LATECOMER; 'admitted to' shows OM joins the anagram"
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "hard",
+          "hint": "An &lit clue - someone who arrives after the show has started"
+        },
+        "wordplay": {
+          "rating": "hard",
+          "hint": "Initial letters inserted into an anagram"
+        },
+        "overall": "hard",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
+    },
+    "times-29453-14d": {
+      "id": "times-29453-14d",
+      "clue": {
+        "number": "14D",
+        "text": "Photos I had mounted cover the inside of school",
+        "enumeration": "10",
+        "answer": "DISCIPLINE",
+        "definition": [
+          {
+            "text": "school",
+            "position": "end"
+          }
+        ]
+      },
+      "words": [
+        "Photos",
+        "I",
+        "had",
+        "mounted",
+        "cover",
+        "the",
+        "inside",
+        "of",
+        "school"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              8
+            ],
+            "text": "school"
+          },
+          "position": "end"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              0
+            ],
+            "text": "Photos"
+          },
+          "result": "PICS",
+          "hint": "Common informal word for photographs"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              1,
+              2
+            ],
+            "text": "I had"
+          },
+          "result": "ID",
+          "hint": "Contraction I'd = I had"
+        },
+        {
+          "type": "reversal",
+          "indicator": {
+            "indices": [
+              3
+            ],
+            "text": "mounted"
+          },
+          "fodder": "PICSID",
+          "result": "DISCIP",
+          "hint": "In down clue, 'mounted' indicates reversal - letters go up"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              4,
+              5,
+              6,
+              7
+            ],
+            "text": "cover the inside of"
+          },
+          "result": "LINE",
+          "hint": "To line a coat is to cover its inside"
+        },
+        {
+          "type": "charade_verify",
+          "components": [
+            "DISCIP",
+            "LINE"
+          ],
+          "result": "DISCIPLINE",
+          "letters_so_far": 10,
+          "letters_needed": 10
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "medium",
+          "hint": "To train or teach someone, often with strict methods"
+        },
+        "wordplay": {
+          "rating": "hard",
+          "hint": "Reversed elements plus a word for cover"
+        },
+        "overall": "hard",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
+    },
+    "times-29453-19a": {
+      "id": "times-29453-19a",
+      "clue": {
+        "number": "19A",
+        "text": "Are cold kisses coming inside only when it's dark?",
+        "enumeration": "5,7",
+        "answer": "SOLAR ECLIPSE",
+        "definition": [
+          {
+            "text": "when it's dark?",
+            "position": "end"
+          }
+        ]
+      },
+      "words": [
+        "Are",
+        "cold",
+        "kisses",
+        "coming",
+        "inside",
+        "only",
+        "when",
+        "it's",
+        "dark"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              6,
+              7,
+              8
+            ],
+            "text": "when it's dark?"
+          },
+          "position": "end"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              5
+            ],
+            "text": "only"
+          },
+          "result": "SOLE",
+          "hint": "Sole means only, as in 'the sole survivor'"
+        },
+        {
+          "type": "literal",
+          "fodder": {
+            "indices": [
+              0
+            ],
+            "text": "Are"
+          },
+          "result": "ARE",
+          "hint": "The word 'are' provides the letters A-R-E"
+        },
+        {
+          "type": "abbreviation",
+          "fodder": {
+            "indices": [
+              1
+            ],
+            "text": "cold"
+          },
+          "result": "C",
+          "hint": "Standard abbreviation C = cold (weather notation)"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              2
+            ],
+            "text": "kisses"
+          },
+          "result": "LIPS",
+          "hint": "You kiss with your lips"
+        },
+        {
+          "type": "container_verify",
+          "indicator": {
+            "indices": [
+              3,
+              4
+            ],
+            "text": "coming inside"
+          },
+          "outer": "SOLE",
+          "inner": "ARECLIPS",
+          "result": "SOLAR ECLIPSE",
+          "hint": "SOLE splits as SOL + E with ARECLIPS inside: SOL + (ARE+C+LIPS) + E = SOLAR ECLIPSE"
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "medium",
+          "hint": "An astronomical event that temporarily blocks sunlight"
+        },
+        "wordplay": {
+          "rating": "hard",
+          "hint": "Multiple elements contained inside a word"
+        },
+        "overall": "hard",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
+    },
+    "times-29453-16d": {
+      "id": "times-29453-16d",
+      "clue": {
+        "number": "16D",
+        "text": "Arab robe ad has misrepresented with superior beauty",
+        "enumeration": "9",
+        "answer": "DISHDASHA",
+        "definition": [
+          {
+            "text": "Arab robe",
+            "position": "start"
+          }
+        ]
+      },
+      "words": [
+        "Arab",
+        "robe",
+        "ad",
+        "has",
+        "misrepresented",
+        "with",
+        "superior",
+        "beauty"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0,
+              1
+            ],
+            "text": "Arab robe"
+          },
+          "position": "start"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              7
+            ],
+            "text": "beauty"
+          },
+          "result": "DISH",
+          "hint": "A dish is slang for an attractive person (a beauty)"
+        },
+        {
+          "type": "literal",
+          "fodder": {
+            "indices": [
+              2,
+              3
+            ],
+            "text": "ad has"
+          },
+          "result": "ADHAS"
+        },
+        {
+          "type": "anagram",
+          "indicator": {
+            "indices": [
+              4
+            ],
+            "text": "misrepresented"
+          },
+          "fodder": [
+            "ADHAS"
+          ],
+          "result": "DASHA"
+        },
+        {
+          "type": "charade_verify",
+          "indicator": {
+            "indices": [
+              5,
+              6
+            ],
+            "text": "with superior"
+          },
+          "components": [
+            "DISH",
+            "DASHA"
+          ],
+          "result": "DISHDASHA",
+          "letters_so_far": 9,
+          "letters_needed": 9,
+          "note": "DISH above DASHA (down clue - superior)"
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "hard",
+          "hint": "A traditional long garment worn in Middle Eastern countries"
+        },
+        "wordplay": {
+          "rating": "medium",
+          "hint": "A word meaning attractive plus an anagram"
+        },
+        "overall": "hard",
+        "recommendedApproach": "wordplay"
+      },
+      "verified": true
+    },
+    "times-29453-17d": {
+      "id": "times-29453-17d",
+      "clue": {
+        "number": "17D",
+        "text": "Embankment architect lengthened with cob?",
+        "enumeration": "5,3",
+        "answer": "ASWAN DAM",
+        "definition": [
+          {
+            "text": "Embankment",
+            "position": "start"
+          }
+        ]
+      },
+      "words": [
+        "Embankment",
+        "architect",
+        "lengthened",
+        "with",
+        "cob"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0
+            ],
+            "text": "Embankment"
+          },
+          "position": "start"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              1
+            ],
+            "text": "architect"
+          },
+          "result": "ADAM",
+          "hint": "Robert Adam was a famous British architect"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              4
+            ],
+            "text": "cob?"
+          },
+          "result": "SWAN",
+          "hint": "A cob is a male swan"
+        },
+        {
+          "type": "container_verify",
+          "indicator": {
+            "indices": [
+              2,
+              3
+            ],
+            "text": "lengthened with"
+          },
+          "outer": "ADAM",
+          "inner": "SWAN",
+          "result": "ASWAN DAM",
+          "hint": "A(SWAN)DAM = ASWAN DAM"
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "medium",
+          "hint": "A famous structure on the Nile river"
+        },
+        "wordplay": {
+          "rating": "hard",
+          "hint": "A famous architect's name with a bird inserted"
+        },
+        "overall": "hard",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
+    },
+    "times-29453-22a": {
+      "id": "times-29453-22a",
+      "clue": {
+        "number": "22A",
+        "text": "Friend taking minute to finish piano exam out of time",
+        "enumeration": "9",
+        "answer": "ATEMPORAL",
+        "definition": [
+          {
+            "text": "out of time",
+            "position": "end"
+          }
+        ]
+      },
+      "words": [
+        "Friend",
+        "taking",
+        "minute",
+        "to",
+        "finish",
+        "piano",
+        "exam",
+        "out",
+        "of",
+        "time"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              7,
+              8,
+              9
+            ],
+            "text": "out of time"
+          },
+          "position": "end"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              0
+            ],
+            "text": "Friend"
+          },
+          "result": "MATE",
+          "hint": "Informal word for friend, buddy"
+        },
+        {
+          "type": "letter_selection",
+          "indicator": {
+            "indices": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "text": "taking minute to finish"
+          },
+          "fodder": {
+            "indices": [
+              0
+            ],
+            "text": "Friend"
+          },
+          "result": "ATEM",
+          "hint": "M (minute) moves to the finish/end: MATE \u2192 ATE + M \u2192 ATEM"
+        },
+        {
+          "type": "abbreviation",
+          "fodder": {
+            "indices": [
+              5
+            ],
+            "text": "piano"
+          },
+          "result": "P",
+          "hint": "Musical dynamic marking p = piano (soft)"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              6
+            ],
+            "text": "exam"
+          },
+          "result": "ORAL",
+          "hint": "A spoken exam is an oral"
+        },
+        {
+          "type": "charade_verify",
+          "components": [
+            "ATEM",
+            "P",
+            "ORAL"
+          ],
+          "result": "ATEMPORAL",
+          "letters_so_far": 9,
+          "letters_needed": 9
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "hard",
+          "hint": "Existing outside of time, timeless"
+        },
+        "wordplay": {
+          "rating": "hard",
+          "hint": "A word rearranged internally plus abbreviations"
+        },
+        "overall": "hard",
+        "recommendedApproach": "definition"
+      },
+      "reported_issue": "Looks wrong:\n\nLETTER SELECTION: Friend \u2192 ATEM\n'taking minute to finish' from 'Friend' = ATEM **Remember:** Selection indicators (head of, finally, heart of) pinpoint exact letters."
+    },
+    "times-29453-27a": {
+      "id": "times-29453-27a",
+      "clue": {
+        "number": "27A",
+        "text": "See dogma remade as massive hit",
+        "enumeration": "8",
+        "answer": "MEGADOSE",
+        "definition": [
+          {
+            "text": "massive hit",
+            "position": "end"
+          }
+        ]
+      },
+      "words": [
+        "See",
+        "dogma",
+        "remade",
+        "as",
+        "massive",
+        "hit"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              4,
+              5
+            ],
+            "text": "massive hit"
+          },
+          "position": "end"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              0
+            ],
+            "text": "See"
+          },
+          "result": "SEE",
+          "hint": "A see is a bishop's diocese or seat of authority"
+        },
+        {
+          "type": "literal",
+          "fodder": {
+            "indices": [
+              1
+            ],
+            "text": "dogma"
+          },
+          "result": "DOGMA"
+        },
+        {
+          "type": "connector",
+          "word": {
+            "indices": [
+              3
+            ],
+            "text": "as"
+          },
+          "role": "links fodder to definition"
+        },
+        {
+          "type": "anagram",
+          "indicator": {
+            "indices": [
+              2
+            ],
+            "text": "remade"
+          },
+          "fodder": [
+            "SEE",
+            "DOGMA"
+          ],
+          "result": "MEGADOSE",
+          "hint": "SEEDOGMA rearranged = MEGADOSE"
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "medium",
+          "hint": "A very large amount of something, especially medicine"
+        },
+        "wordplay": {
+          "rating": "easy",
+          "hint": "An anagram of visible letters"
+        },
+        "overall": "medium",
+        "recommendedApproach": "wordplay"
+      },
+      "verified": true
+    },
+    "times-29453-20d": {
+      "id": "times-29453-20d",
+      "clue": {
+        "number": "20D",
+        "text": "Turn bench back to street exposed to blasts",
+        "enumeration": "9",
+        "answer": "WINDSWEPT",
+        "definition": [
+          {
+            "text": "exposed to blasts",
+            "position": "end"
+          }
+        ]
+      },
+      "words": [
+        "Turn",
+        "bench",
+        "back",
+        "to",
+        "street",
+        "exposed",
+        "to",
+        "blasts"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              5,
+              6,
+              7
+            ],
+            "text": "exposed to blasts"
+          },
+          "position": "end"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              0
+            ],
+            "text": "Turn"
+          },
+          "result": "WIND",
+          "hint": "To wind a handle is to turn it"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              1
+            ],
+            "text": "bench"
+          },
+          "result": "PEW",
+          "hint": "A pew is a church bench"
+        },
+        {
+          "type": "reversal",
+          "indicator": {
+            "indices": [
+              2
+            ],
+            "text": "back"
+          },
+          "fodder": "PEW",
+          "result": "WEP",
+          "hint": "'back' indicates reversal"
+        },
+        {
+          "type": "abbreviation",
+          "fodder": {
+            "indices": [
+              4
+            ],
+            "text": "street"
+          },
+          "result": "ST",
+          "hint": "Standard abbreviation for street"
+        },
+        {
+          "type": "container_verify",
+          "indicator": {
+            "indices": [
+              3
+            ],
+            "text": "to"
+          },
+          "inner": "WEP",
+          "outer": "ST",
+          "result": "SWEPT",
+          "hint": "WEP goes into ST: S + WEP + T = SWEPT"
+        },
+        {
+          "type": "charade_verify",
+          "components": [
+            "WIND",
+            "SWEPT"
+          ],
+          "result": "WINDSWEPT",
+          "letters_so_far": 9,
+          "letters_needed": 9
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "easy",
+          "hint": "Describing a place battered by strong winds"
+        },
+        "wordplay": {
+          "rating": "medium",
+          "hint": "A word for rotate plus reversed seating plus an abbreviation"
+        },
+        "overall": "medium",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
+    },
+    "times-29453-26a": {
+      "id": "times-29453-26a",
+      "clue": {
+        "number": "26A",
+        "text": "Turn bench back to street exposed to blasts",
+        "enumeration": "9",
+        "answer": "WINDSWEPT",
+        "definition": [
+          {
+            "text": "exposed to blasts",
+            "position": "end"
+          }
+        ]
+      },
+      "words": [
+        "Turn",
+        "bench",
+        "back",
+        "to",
+        "street",
+        "exposed",
+        "to",
+        "blasts"
+      ],
+      "steps": [
+        {
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              5,
+              6,
+              7
+            ],
+            "text": "exposed to blasts"
+          },
+          "position": "end"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              0
+            ],
+            "text": "Turn"
+          },
+          "result": "WIND",
+          "hint": "To wind a handle is to turn it"
+        },
+        {
+          "type": "synonym",
+          "fodder": {
+            "indices": [
+              1
+            ],
+            "text": "bench"
+          },
+          "result": "PEW",
+          "hint": "A pew is a church bench"
+        },
+        {
+          "type": "reversal",
+          "indicator": {
+            "indices": [
+              2
+            ],
+            "text": "back"
+          },
+          "fodder": "PEW",
+          "result": "WEP",
+          "hint": "'back' indicates reversal"
+        },
+        {
+          "type": "abbreviation",
+          "fodder": {
+            "indices": [
+              4
+            ],
+            "text": "street"
+          },
+          "result": "ST",
+          "hint": "Standard abbreviation for street"
+        },
+        {
+          "type": "container_verify",
+          "indicator": {
+            "indices": [
+              3
+            ],
+            "text": "to"
+          },
+          "inner": "WEP",
+          "outer": "ST",
+          "result": "SWEPT",
+          "hint": "WEP goes into ST: S + WEP + T = SWEPT"
+        },
+        {
+          "type": "charade_verify",
+          "components": [
+            "WIND",
+            "SWEPT"
+          ],
+          "result": "WINDSWEPT",
+          "letters_so_far": 9,
+          "letters_needed": 9
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "easy",
+          "hint": "Describing a place battered by strong winds"
+        },
+        "wordplay": {
+          "rating": "medium",
+          "hint": "A word for rotate plus reversed seating plus an abbreviation"
+        },
+        "overall": "medium",
+        "recommendedApproach": "definition"
+      }
+    }
+  },
+  "import_logs": {
+    "1769967875-29453": {
+      "id": "1769967875-29453",
+      "timestamp": 1769967875,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 29,
+        "skipped": 0,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1769968578-29453": {
+      "id": "1769968578-29453",
+      "timestamp": 1769968578,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 29,
+        "skipped": 0,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770048643-29453": {
+      "id": "1770048643-29453",
+      "timestamp": 1770048643,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 1,
+        "skipped": 29,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770048856-29453": {
+      "id": "1770048856-29453",
+      "timestamp": 1770048856,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770049073-29453": {
+      "id": "1770049073-29453",
+      "timestamp": 1770049073,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770049344-29453": {
+      "id": "1770049344-29453",
+      "timestamp": 1770049344,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770050959-29453": {
+      "id": "1770050959-29453",
+      "timestamp": 1770050959,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770051200-29453": {
+      "id": "1770051200-29453",
+      "timestamp": 1770051200,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770051954-29453": {
+      "id": "1770051954-29453",
+      "timestamp": 1770051954,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770052289-29453": {
+      "id": "1770052289-29453",
+      "timestamp": 1770052289,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770053589-29453": {
+      "id": "1770053589-29453",
+      "timestamp": 1770053589,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770053752-29453": {
+      "id": "1770053752-29453",
+      "timestamp": 1770053752,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770053950-29453": {
+      "id": "1770053950-29453",
+      "timestamp": 1770053950,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770054046-29453": {
+      "id": "1770054046-29453",
+      "timestamp": 1770054046,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770054306-29453": {
+      "id": "1770054306-29453",
+      "timestamp": 1770054306,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770054699-29453": {
+      "id": "1770054699-29453",
+      "timestamp": 1770054699,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770054785-29453": {
+      "id": "1770054785-29453",
+      "timestamp": 1770054785,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770055176-29453": {
+      "id": "1770055176-29453",
+      "timestamp": 1770055176,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770055698-29453": {
+      "id": "1770055698-29453",
+      "timestamp": 1770055698,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    },
+    "1770059130-29453": {
+      "id": "1770059130-29453",
+      "timestamp": 1770059130,
+      "publicationId": "times",
+      "puzzleFile": "unknown",
+      "puzzleNumber": "29453",
+      "summary": {
+        "saved": 0,
+        "skipped": 30,
+        "failed": 0
+      },
+      "errors": []
+    }
+  },
+  "settings": {
+    "letterChecking": true,
+    "adminFilters": {
+      "showOnlyUnverified": true,
+      "showOnlyWithIssues": false
+    }
+  }
+}
