@@ -188,6 +188,57 @@ HOME → Select Publication (Dojo) → Publication Page → Training/Solver/Manu
 
 ---
 
+## Key Architecture Change: Puzzle-Based vs Clue-Based
+
+**cryptic-trainer (old model):** Clue-based
+- Individual clues stored in `clues_db.json`
+- Training queue is a flat list of clues
+- No puzzle context (clue 1A exists independently)
+- Cross letters not naturally available
+
+**Grid Reader (new model):** Puzzle-based
+- Puzzles are the primary entity (grid + all clues together)
+- Users import and solve complete puzzles
+- Clues exist within puzzle context
+- Cross letters naturally available from grid state
+- Progress tracked per puzzle, not per clue
+
+**Data Model Comparison:**
+
+```
+OLD (clue-based):
+clues_db.json = {
+  "times-29453-1a": { clue, answer, steps, ... },
+  "times-29453-4a": { clue, answer, steps, ... },
+  ...
+}
+
+NEW (puzzle-based):
+puzzles table = {
+  id, series, number, date, grid_layout, ...
+}
+clues table = {
+  id, puzzle_id, number, direction, text, enumeration, answer, ...
+}
+user_progress table = {
+  user_id, puzzle_id, grid_state, selected_cell, ...
+}
+```
+
+**Benefits of Puzzle-Based:**
+1. **Natural cross-letter support** - Grid state provides intersecting letters
+2. **Puzzle-level progress** - Track completion %, time spent per puzzle
+3. **Import workflow** - PDF → complete puzzle, not individual clues
+4. **Leaderboards** - Compare puzzle solve times
+5. **Coherent UX** - Users think in puzzles, not isolated clues
+
+**Migration Path:**
+- cryptic-trainer's annotated clues can still be imported
+- Map `times-29453-1a` → puzzle `times/29453`, clue `1A`
+- Step templates and validation logic unchanged
+
+---
+
 ## Key Assets to Port from cryptic-trainer
 
 | Asset | Source | Purpose |
