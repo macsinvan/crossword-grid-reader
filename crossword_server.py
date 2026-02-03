@@ -771,6 +771,39 @@ def trainer_solve_step():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/trainer/reveal', methods=['POST'])
+def trainer_reveal():
+    """
+    Reveal the full answer and complete the training session.
+    Used when user gives up entirely.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    clue_id = data.get('clue_id')
+    if not clue_id:
+        return jsonify({'error': 'clue_id required'}), 400
+
+    try:
+        clue_data = CLUES_DB.get(clue_id)
+        if not clue_data:
+            return jsonify({'error': 'Clue not found'}), 404
+
+        answer = clue_data.get('clue', {}).get('answer', '')
+
+        return jsonify({
+            'success': True,
+            'complete': True,
+            'answer': answer
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("Starting Crossword Server...")
     print("Open http://localhost:8080 in your browser")

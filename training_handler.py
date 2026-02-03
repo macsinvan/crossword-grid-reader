@@ -1334,6 +1334,15 @@ def get_render(clue_id, clue):
 
     phase = phases[session["phase_index"]]
 
+    # Skip text input for final answer if answer is already known
+    if session.get("answer_known") and phase.get("inputMode") == "text":
+        step_type = step.get("type", "")
+        # For charade_verify or solve phases asking for the final answer, auto-advance
+        if step_type == "charade_verify" or phase.get("id") == "solve":
+            expected = step.get("result", answer).upper().replace(" ", "")
+            handle_input(clue_id, clue, expected)
+            return get_render(clue_id, clue)
+
     # Build render
     render = {
         "stepIndex": session["step_index"],

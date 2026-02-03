@@ -222,7 +222,8 @@ class CrosswordPuzzle {
             return;
         }
 
-        const letters = this.templateTrainer.render.answer.toUpperCase().split('');
+        // Remove spaces from answer before applying to grid
+        const letters = this.templateTrainer.render.answer.toUpperCase().replace(/\s/g, '').split('');
         const cells = this.trainerWordData.cells;
 
         cells.forEach(({ r, c }, i) => {

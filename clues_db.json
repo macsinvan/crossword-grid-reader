@@ -1466,12 +1466,12 @@
       "id": "times-29453-21d",
       "clue": {
         "number": "21D",
-        "text": "Sailor in the doldrums relatively okay for tobacco",
+        "text": "Sailor in the doldrums relatively OK for tobacco?",
         "enumeration": "3,3",
         "answer": "LOW TAR",
         "definition": [
           {
-            "text": "relatively okay for tobacco",
+            "text": "relatively OK for tobacco?",
             "position": "end"
           }
         ]
@@ -1482,9 +1482,9 @@
         "the",
         "doldrums",
         "relatively",
-        "okay",
+        "OK",
         "for",
-        "tobacco"
+        "tobacco?"
       ],
       "steps": [
         {
@@ -1496,7 +1496,7 @@
               6,
               7
             ],
-            "text": "relatively okay for tobacco"
+            "text": "relatively OK for tobacco?"
           },
           "position": "end"
         },

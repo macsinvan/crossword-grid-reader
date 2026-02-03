@@ -201,6 +201,37 @@ class TemplateTrainer {
         }
     }
 
+    async handleSolve() {
+        // Give up - reveal full answer and complete training
+        try {
+            const response = await fetch('/trainer/reveal', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clue_id: this.clueId })
+            });
+
+            const data = await response.json();
+
+            if (data.success || data.complete) {
+                // Set render to complete state with answer
+                this.render = {
+                    complete: true,
+                    answer: data.answer || this.render?.answer || this.answer
+                };
+                // Trigger onComplete callback to apply answer to grid and close
+                if (this.onComplete) {
+                    this.onComplete();
+                }
+            } else {
+                this.error = data.error || 'Could not reveal answer';
+                this.renderError();
+            }
+        } catch (e) {
+            this.error = String(e);
+            this.renderError();
+        }
+    }
+
     // =========================================================================
     // EVENT HANDLERS (matching React handlers)
     // =========================================================================
@@ -375,6 +406,11 @@ class TemplateTrainer {
                 ${this.renderTeachingPanel()}
                 ${this.renderLearnings()}
             </div>
+
+            <!-- SECTION 5: SOLVE BUTTON -->
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end;">
+                ${this.renderSolveButton()}
+            </div>
         `;
 
         this.container.innerHTML = html;
@@ -407,8 +443,11 @@ class TemplateTrainer {
     }
 
     renderAnswerBoxes() {
-        const answer = this.render?.answer || this.answer || '';
+        const rawAnswer = this.render?.answer || this.answer || '';
+        // Filter out spaces - answer boxes only show letters
+        const answer = rawAnswer.replace(/\s/g, '');
         const isComplete = this.render?.complete;
+        const isAnswerKnown = this.render?.answerKnown || false;
         // Only lock boxes if user typed correct answer in THIS session (tracked locally)
         const isAnswerLocked = this.answerLocked || false;
 
@@ -576,6 +615,17 @@ class TemplateTrainer {
         </button>`;
     }
 
+    // Solve button - reveals full answer and completes training
+    renderSolveButton() {
+        return `<button class="solve-button"
+                        style="padding: 0.5rem 1rem; background: #dc2626; color: white;
+                               font-weight: 500; border-radius: 0.5rem; border: none;
+                               cursor: pointer; font-size: 0.875rem;"
+                        title="Give up and reveal the answer">
+            Solve
+        </button>`;
+    }
+
     // Hint content - shown when lightbulb clicked
     renderHintContent() {
         if (!this.hintVisible || !this.render?.hint) return '';
@@ -674,6 +724,14 @@ class TemplateTrainer {
         if (solveStepBtn) {
             solveStepBtn.addEventListener('click', () => {
                 this.handleSolveStep();
+            });
+        }
+
+        // Solve button (give up and reveal full answer)
+        const solveBtn = this.container.querySelector('.solve-button');
+        if (solveBtn) {
+            solveBtn.addEventListener('click', () => {
+                this.handleSolve();
             });
         }
 
@@ -939,7 +997,9 @@ class TemplateTrainer {
 
     // Answer validation
     checkAnswerComplete() {
-        const answer = (this.render?.answer || this.answer || '').toUpperCase();
+        const rawAnswer = (this.render?.answer || this.answer || '').toUpperCase();
+        // Strip spaces from answer - boxes don't include spaces
+        const answer = rawAnswer.replace(/\s/g, '');
         const answerLength = answer.length;
 
         // Build the complete user answer including cross letters
@@ -953,15 +1013,16 @@ class TemplateTrainer {
             }
         }
 
-        // Check if all boxes are filled
-        if (userFullAnswer.length !== answerLength || userFullAnswer.includes('')) {
+        // Check if all boxes are filled (no empty strings)
+        if (userFullAnswer.length !== answerLength) {
             return; // Not complete yet
         }
 
-        // Remove any blanks
-        const filledAnswer = userFullAnswer.replace(/\s/g, '');
-        if (filledAnswer.length < answerLength) {
-            return; // Still has empty boxes
+        // Check for any unfilled positions
+        for (let i = 0; i < answerLength; i++) {
+            if (!userFullAnswer[i] || userFullAnswer[i] === ' ') {
+                return; // Still has empty boxes
+            }
         }
 
         // Check if correct
