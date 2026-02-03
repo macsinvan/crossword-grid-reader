@@ -2,22 +2,24 @@
 
 A web-based tool for importing, solving, and learning to solve Times Cryptic crossword puzzles from PDF files.
 
-> **Developers**: See [CLAUDE.md](CLAUDE.md) for architecture, key files, and development context.
+> **Developers**: See [CLAUDE.md](CLAUDE.md) for architecture and [TECH_DEBT_AUDIT.md](TECH_DEBT_AUDIT.md) for cleanup plan.
 
 ## Features
 
 - **PDF Import**: Upload Times Cryptic PDF files to extract grid and clues automatically
-- **Puzzle Storage**: Store imported puzzles organized by series (e.g., "Times Cryptic")
+- **Cloud Storage**: Puzzles stored in Supabase PostgreSQL (with local fallback)
 - **Interactive Grid**: Solve puzzles in the browser with keyboard navigation
 - **Answer Validation**: Optionally provide an answers file to validate your solutions
-- **Guided Solving**: Click "Solve" on any clue for AI-assisted solving (requires cryptic-trainer)
 - **Progress Persistence**: Puzzle progress auto-saves to browser localStorage
 
 ## Quick Start
 
 ```bash
 # Install dependencies
-pip install opencv-python numpy pyyaml flask pdfplumber Pillow requests
+pip install -r requirements.txt
+
+# Set up environment (copy and edit with your Supabase credentials)
+cp .env.example .env
 
 # Start the server
 python crossword_server.py
@@ -25,7 +27,7 @@ python crossword_server.py
 
 Open http://localhost:8080
 
-For guided solving, also run cryptic-trainer on port 5001 (see [CLAUDE.md](CLAUDE.md)).
+A green status indicator shows when connected to Supabase cloud database.
 
 ## Usage
 
@@ -49,24 +51,10 @@ For guided solving, also run cryptic-trainer on port 5001 (see [CLAUDE.md](CLAUD
 - **Check Answers**: Highlights incorrect cells (requires answers)
 - **Clear Grid**: Removes all entered letters
 - **Reveal All**: Shows the complete solution (requires answers)
-- **Solve**: Opens guided solving for current clue (requires cryptic-trainer)
 
 ### Progress Saving
 
 Your progress auto-saves to browser localStorage and survives page refresh.
-
-## Guided Solving
-
-Click **Solve** on any clue to open the trainer:
-
-1. **Clue Display**: Shows the full clue with tappable words
-2. **Answer Boxes**: Shows progress with cross letters highlighted
-3. **Step-by-step Guidance**: Walks through definition, indicators, and wordplay
-4. **Auto-Apply**: Solved answers automatically fill the grid
-
-**Requirements**:
-- cryptic-trainer server running on port 5001
-- Annotated clue data in `../Times_Puzzle_Import/solved/`
 
 ## File Formats
 
@@ -100,13 +88,11 @@ Or JSON (Times Puzzle Import format):
 - `POST /puzzles/<series>/<number>/answers` - Add answers
 - `DELETE /puzzles/<series>/<number>` - Delete puzzle
 
+### Status
+- `GET /status` - Check database connection status
+
 ### Validation
 - `POST /validate` - Check answers against solution
-
-### Trainer (requires cryptic-trainer)
-- `POST /trainer/start` - Start training session
-- `POST /trainer/input` - Submit user input
-- `POST /trainer/continue` - Next step
 
 ## Common Issues
 
@@ -114,19 +100,32 @@ Or JSON (Times Puzzle Import format):
 - Ensure PDF contains a clear grid image
 - Grid should be roughly square (aspect ratio 0.8-1.2)
 
-### "Clue not found in trainer database"
-Place annotated files in `../Times_Puzzle_Import/solved/` named `Times_XXXXX_v2.json`
-
-### Cannot connect to trainer
-```bash
-cd ../cryptic-trainer/cryptic_trainer_bundle
-python3 server.py
-```
+### Supabase connection failed
+- Check `.env` file has correct `SUPABASE_URL` and `SUPABASE_ANON_KEY`
+- Run migrations in Supabase SQL Editor (see `migrations/001_initial_schema.sql`)
+- App falls back to local file storage if Supabase unavailable
 
 ## Supported Formats
 
 - **Times Cryptic** (15x15 grid)
 - **Times Quick Cryptic** (13x13 grid)
+
+## Development Roadmap
+
+| Phase | Status | Description |
+|-------|--------|-------------|
+| 1. Supabase Integration | ✅ Complete | Cloud database storage |
+| 2. LLM-Powered Solving | 🔜 Next | Replace trainer with `/solve/*` endpoints |
+| 3. Vercel Deployment | Planned | Serverless Flask deployment |
+| 4. User Authentication | Planned | Supabase Auth integration |
+| 5. Multi-User Features | Planned | Rate limiting, analytics |
+
+See [PLAN.md](PLAN.md) for detailed roadmap.
+
+## Technical Debt
+
+Legacy trainer integration code (~1000 lines) will be removed in Phase 2.
+See [TECH_DEBT_AUDIT.md](TECH_DEBT_AUDIT.md) for full cleanup plan.
 
 ## License
 
