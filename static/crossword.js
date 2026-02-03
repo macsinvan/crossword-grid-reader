@@ -111,8 +111,9 @@ class CrosswordPuzzle {
 
         // Keyboard input
         document.addEventListener('keydown', (e) => {
-            // Don't intercept keyboard when typing in the trainer input
-            if (e.target.id === 'trainer-text-input') {
+            // Don't intercept keyboard when typing in trainer inputs
+            if (e.target.id === 'trainer-text-input' ||
+                e.target.classList.contains('answer-box-input')) {
                 return;
             }
             if (this.puzzle && this.selectedCell) {

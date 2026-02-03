@@ -29,6 +29,8 @@ class TemplateTrainer {
         this.selectedIndices = [];
         this.textInput = '';
         this.feedback = null;
+        this.userAnswer = [];  // Track letters typed in answer boxes
+        this.answerLocked = false;  // Lock boxes after correct answer typed
 
         // Parse enumeration to get letter count
         this.letterCount = this.enumeration.split(/[^0-9]+/).filter(Boolean)
@@ -49,6 +51,9 @@ class TemplateTrainer {
     // which calls /trainer/start. This method is called but the initial render state
     // is already set by crossword.js, so we just render the UI.
     async startSession() {
+        // Reset user answer for new session
+        this.userAnswer = [];
+
         // The session was already started by openTrainer() in crossword.js
         // which sets this.render before creating the TemplateTrainer instance
         // If render is already set, just render the UI
@@ -365,15 +370,52 @@ class TemplateTrainer {
 
     renderAnswerBoxes() {
         const answer = this.render?.answer || this.answer || '';
+        const isComplete = this.render?.complete;
+        // Only lock boxes if user typed correct answer in THIS session (tracked locally)
+        const isAnswerLocked = this.answerLocked || false;
+
         return answer.split('').map((letter, i) => {
             // Check if this position has a cross letter from the grid
             const crossLetter = this.crossLetters?.find(cl => cl.position === i);
-            const displayLetter = this.render?.complete ? letter : (crossLetter?.letter || '');
-            const isCrossLetter = !this.render?.complete && crossLetter?.letter;
+            const isCrossLetter = !isComplete && !isAnswerLocked && crossLetter?.letter;
 
-            return `<div style="width: 32px; height: 40px; border: 2px solid ${isCrossLetter ? '#3b82f6' : '#d1d5db'}; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.25rem; background: ${isCrossLetter ? '#eff6ff' : 'white'};">
-                ${displayLetter}
-            </div>`;
+            // Determine what to display
+            let displayLetter = '';
+            if (isComplete || isAnswerLocked) {
+                displayLetter = letter;
+            } else if (isCrossLetter) {
+                displayLetter = crossLetter.letter;
+            } else {
+                displayLetter = this.userAnswer[i] || '';
+            }
+
+            // Cross letters and completed answers are read-only
+            if (isCrossLetter || isComplete || isAnswerLocked) {
+                return `<div class="answer-box ${isCrossLetter ? 'cross-letter' : ''}"
+                            data-position="${i}"
+                            style="width: 32px; height: 40px; border: 2px solid ${isCrossLetter ? '#3b82f6' : '#d1d5db'};
+                                   border-radius: 4px; display: flex; align-items: center; justify-content: center;
+                                   font-weight: bold; font-size: 1.25rem;
+                                   background: ${isCrossLetter ? '#eff6ff' : (isAnswerKnown ? '#f0fdf4' : 'white')};">
+                    ${displayLetter}
+                </div>`;
+            } else {
+                // Editable input for user entry
+                return `<input type="text"
+                               class="answer-box-input"
+                               data-position="${i}"
+                               maxlength="1"
+                               value="${displayLetter}"
+                               autocomplete="off"
+                               autocapitalize="characters"
+                               spellcheck="false"
+                               style="width: 32px; height: 40px; border: 2px solid #d1d5db;
+                                      border-radius: 4px; text-align: center;
+                                      font-weight: bold; font-size: 1.25rem;
+                                      color: #111827; background: white; outline: none;
+                                      text-transform: uppercase; caret-color: #2563eb;"
+                        />`;
+            }
         }).join('');
     }
 
@@ -573,6 +615,213 @@ class TemplateTrainer {
                     this.handleSubmit();
                 }
             });
+        }
+
+        // Answer box input listeners (for interactive answer entry)
+        const answerInputs = this.container.querySelectorAll('.answer-box-input');
+        console.log('[Trainer] Found answer inputs:', answerInputs.length);
+
+        answerInputs.forEach(input => {
+            // Handle input (letter typed)
+            input.addEventListener('input', (e) => {
+                const pos = parseInt(e.target.dataset.position, 10);
+                const letter = e.target.value.toUpperCase().slice(-1); // Take last char if multiple
+                console.log('[Trainer] Input at pos', pos, ':', letter, 'raw value:', e.target.value);
+                e.target.value = letter;
+                this.userAnswer[pos] = letter;
+
+                // Auto-advance to next empty box
+                if (letter) {
+                    this.focusNextEmptyBox(pos);
+                }
+
+                // Check if answer is complete and correct
+                this.checkAnswerComplete();
+            });
+
+            // Handle keyboard navigation
+            input.addEventListener('keydown', (e) => {
+                const pos = parseInt(e.target.dataset.position, 10);
+
+                if (e.key === 'Backspace' && !e.target.value) {
+                    // Move to previous editable box on backspace when empty
+                    e.preventDefault();
+                    this.focusPreviousEditableBox(pos);
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    this.focusPreviousEditableBox(pos);
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    this.focusNextEditableBox(pos);
+                } else if (e.key === 'Tab' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.focusNextEditableBox(pos);
+                }
+            });
+
+            // Visual feedback on focus
+            input.addEventListener('focus', () => {
+                input.style.borderColor = '#2563eb';
+                input.style.boxShadow = '0 0 0 2px rgba(37, 99, 235, 0.2)';
+            });
+
+            input.addEventListener('blur', () => {
+                input.style.borderColor = '#d1d5db';
+                input.style.boxShadow = 'none';
+            });
+        });
+
+        // Auto-focus first empty answer box
+        const firstEmptyBox = this.container.querySelector('.answer-box-input:not([value])') ||
+                              this.container.querySelector('.answer-box-input');
+        if (firstEmptyBox) {
+            firstEmptyBox.focus();
+        }
+    }
+
+    // Navigation helpers for answer boxes
+    focusNextEmptyBox(currentPos) {
+        const answer = this.render?.answer || this.answer || '';
+        const answerLength = answer.length;
+        for (let i = currentPos + 1; i < answerLength; i++) {
+            const crossLetter = this.crossLetters?.find(cl => cl.position === i);
+            if (!crossLetter?.letter && !this.userAnswer[i]) {
+                const nextInput = this.container.querySelector(`.answer-box-input[data-position="${i}"]`);
+                if (nextInput) {
+                    nextInput.focus();
+                    return;
+                }
+            }
+        }
+        // No empty box found, focus next editable
+        this.focusNextEditableBox(currentPos);
+    }
+
+    focusNextEditableBox(currentPos) {
+        const answer = this.render?.answer || this.answer || '';
+        const answerLength = answer.length;
+        for (let i = currentPos + 1; i < answerLength; i++) {
+            const crossLetter = this.crossLetters?.find(cl => cl.position === i);
+            if (!crossLetter?.letter) {
+                const nextInput = this.container.querySelector(`.answer-box-input[data-position="${i}"]`);
+                if (nextInput) {
+                    nextInput.focus();
+                    nextInput.select();
+                    return;
+                }
+            }
+        }
+    }
+
+    focusPreviousEditableBox(currentPos) {
+        for (let i = currentPos - 1; i >= 0; i--) {
+            const crossLetter = this.crossLetters?.find(cl => cl.position === i);
+            if (!crossLetter?.letter) {
+                const prevInput = this.container.querySelector(`.answer-box-input[data-position="${i}"]`);
+                if (prevInput) {
+                    prevInput.focus();
+                    prevInput.select();
+                    return;
+                }
+            }
+        }
+    }
+
+    // Answer validation
+    checkAnswerComplete() {
+        const answer = (this.render?.answer || this.answer || '').toUpperCase();
+        const answerLength = answer.length;
+
+        // Build the complete user answer including cross letters
+        let userFullAnswer = '';
+        for (let i = 0; i < answerLength; i++) {
+            const crossLetter = this.crossLetters?.find(cl => cl.position === i);
+            if (crossLetter?.letter) {
+                userFullAnswer += crossLetter.letter.toUpperCase();
+            } else {
+                userFullAnswer += (this.userAnswer[i] || '').toUpperCase();
+            }
+        }
+
+        // Check if all boxes are filled
+        if (userFullAnswer.length !== answerLength || userFullAnswer.includes('')) {
+            return; // Not complete yet
+        }
+
+        // Remove any blanks
+        const filledAnswer = userFullAnswer.replace(/\s/g, '');
+        if (filledAnswer.length < answerLength) {
+            return; // Still has empty boxes
+        }
+
+        // Check if correct
+        if (userFullAnswer === answer) {
+            this.onAnswerCorrect();
+        } else {
+            this.onAnswerIncorrect(userFullAnswer);
+        }
+    }
+
+    onAnswerCorrect() {
+        // Lock the answer boxes (they'll be re-rendered as divs)
+        this.answerLocked = true;
+
+        // Visual feedback - green borders on existing inputs before re-render
+        this.container.querySelectorAll('.answer-box-input').forEach(input => {
+            input.style.borderColor = '#22c55e';
+            input.style.background = '#f0fdf4';
+            input.disabled = true;
+        });
+
+        // Notify server that answer is known (forms hypothesis)
+        this.submitAnswerHypothesis();
+    }
+
+    onAnswerIncorrect(userAnswer) {
+        // Brief red flash feedback, then reset
+        this.container.querySelectorAll('.answer-box-input').forEach(input => {
+            input.style.borderColor = '#ef4444';
+            input.style.background = '#fef2f2';
+        });
+
+        // Reset after brief delay
+        setTimeout(() => {
+            this.container.querySelectorAll('.answer-box-input').forEach(input => {
+                input.style.borderColor = '#d1d5db';
+                input.style.background = 'white';
+            });
+        }, 500);
+    }
+
+    async submitAnswerHypothesis() {
+        try {
+            const response = await fetch('/trainer/hypothesis', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clue_id: this.clueId,
+                    answer: this.render?.answer || this.answer
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Server acknowledged hypothesis - update render state
+                this.render = data.render || data;
+                this.render.answerKnown = true;
+
+                // Show feedback message
+                this.feedback = {
+                    correct: true,
+                    message: "Correct! Now let's verify with the wordplay..."
+                };
+
+                // Re-render to show verification steps
+                this.renderUI();
+            }
+        } catch (e) {
+            console.error('Failed to submit hypothesis:', e);
         }
     }
 }

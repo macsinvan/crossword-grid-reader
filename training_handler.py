@@ -2142,3 +2142,45 @@ def get_all_learnings(clue):
             })
 
     return learnings
+
+
+def handle_hypothesis(clue_id, clue, answer):
+    """
+    Handle user submitting an answer hypothesis from the answer boxes.
+
+    If the answer matches, we:
+    1. Set answer_known = True in the session
+    2. Add a learning breadcrumb
+    3. Return success with current render state
+
+    If wrong, return error.
+    """
+    session = _sessions.get(clue_id)
+    if not session:
+        return {"success": False, "error": "No session"}
+
+    expected_answer = clue.get("clue", {}).get("answer", "").upper()
+    user_answer = (answer or "").upper().replace(" ", "")
+
+    if user_answer == expected_answer.replace(" ", ""):
+        # Correct! Mark answer as known
+        session["answer_known"] = True
+
+        # Add learning breadcrumb
+        session["learnings"].append({
+            "title": f"HYPOTHESIS: {expected_answer}",
+            "text": "Answer entered correctly. Now verifying with wordplay..."
+        })
+
+        return {
+            "success": True,
+            "message": "Correct! Now let's verify with the wordplay...",
+            "answerKnown": True,
+            "render": get_render(clue_id, clue)
+        }
+    else:
+        return {
+            "success": False,
+            "error": "Incorrect answer",
+            "message": "That's not quite right. Try again or continue with the training steps."
+        }

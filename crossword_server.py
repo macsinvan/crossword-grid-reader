@@ -660,6 +660,39 @@ def trainer_continue():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/trainer/hypothesis', methods=['POST'])
+def trainer_hypothesis():
+    """
+    Submit an answer hypothesis from the answer boxes.
+    If correct, marks answer_known=True in the session.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    clue_id = data.get('clue_id')
+    answer = data.get('answer')
+
+    if not clue_id:
+        return jsonify({'error': 'Missing clue_id'}), 400
+    if not answer:
+        return jsonify({'error': 'Missing answer'}), 400
+
+    try:
+        clue_data = CLUES_DB.get(clue_id)
+        if not clue_data:
+            return jsonify({'error': 'Clue not found'}), 404
+
+        result = training_handler.handle_hypothesis(clue_id, clue_data, answer)
+        result['clue_id'] = clue_id
+        return jsonify(result)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("Starting Crossword Server...")
     print("Open http://localhost:8080 in your browser")
