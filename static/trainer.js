@@ -105,7 +105,12 @@ class TemplateTrainer {
             const response = await fetch('/trainer/input', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clue_id: this.clueId, value: value })
+                body: JSON.stringify({
+                    clue_id: this.clueId,
+                    value: value,
+                    crossLetters: this.render?.crossLetters || [],
+                    enumeration: this.render?.enumeration || this.enumeration
+                })
             });
 
             const data = await response.json();
@@ -144,7 +149,11 @@ class TemplateTrainer {
             const response = await fetch('/trainer/continue', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clue_id: this.clueId })
+                body: JSON.stringify({
+                    clue_id: this.clueId,
+                    crossLetters: this.render?.crossLetters || [],
+                    enumeration: this.render?.enumeration || this.enumeration
+                })
             });
 
             const data = await response.json();
@@ -174,7 +183,11 @@ class TemplateTrainer {
             const response = await fetch('/trainer/solve-step', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clue_id: this.clueId })
+                body: JSON.stringify({
+                    clue_id: this.clueId,
+                    crossLetters: this.render?.crossLetters || [],
+                    enumeration: this.render?.enumeration || this.enumeration
+                })
             });
 
             const data = await response.json();
@@ -207,7 +220,11 @@ class TemplateTrainer {
             const response = await fetch('/trainer/reveal', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clue_id: this.clueId })
+                body: JSON.stringify({
+                    clue_id: this.clueId,
+                    crossLetters: this.render?.crossLetters || [],
+                    enumeration: this.render?.enumeration || this.enumeration
+                })
             });
 
             const data = await response.json();
@@ -452,14 +469,26 @@ class TemplateTrainer {
         // Only lock boxes if user typed correct answer in THIS session (tracked locally)
         const isAnswerLocked = this.answerLocked || false;
 
-        // Debug: log cross letters
-        if (this.crossLetters?.length > 0) {
-            console.log('[Trainer] Cross letters:', this.crossLetters);
+        // Get cross letters and enumeration from server render state (dumb client)
+        const crossLetters = this.render?.crossLetters || [];
+        const enumeration = this.render?.enumeration || this.enumeration || '';
+
+        // Parse enumeration to get word boundaries (e.g., "5,7" -> [5, 7] means gap after position 4)
+        const wordLengths = enumeration.split(/[,\-\s]+/).map(n => parseInt(n, 10)).filter(n => !isNaN(n));
+        const wordBoundaries = [];
+        let pos = 0;
+        for (let i = 0; i < wordLengths.length - 1; i++) {
+            pos += wordLengths[i];
+            wordBoundaries.push(pos - 1); // Position of last letter before gap
         }
+
+        // Debug: log cross letters and word boundaries
+        console.log('[Trainer] Cross letters from server:', crossLetters);
+        console.log('[Trainer] Enumeration from server:', enumeration, '-> word boundaries after positions:', wordBoundaries);
 
         return answer.split('').map((letter, i) => {
             // Check if this position has a cross letter from the grid
-            const crossLetter = this.crossLetters?.find(cl => cl.position === i);
+            const crossLetter = crossLetters?.find(cl => cl.position === i);
             // Show cross letter if it exists and answer is not yet complete/locked
             const isCrossLetter = crossLetter?.letter && !isComplete && !isAnswerLocked;
 
@@ -473,6 +502,10 @@ class TemplateTrainer {
                 displayLetter = this.userAnswer[i] || '';
             }
 
+            // Add margin-right for word boundaries (space between words)
+            const isWordEnd = wordBoundaries.includes(i);
+            const marginRight = isWordEnd ? 'margin-right: 12px;' : '';
+
             // Cross letters and completed answers are read-only
             if (isCrossLetter || isComplete || isAnswerLocked) {
                 return `<div class="answer-box ${isCrossLetter ? 'cross-letter' : ''}"
@@ -480,7 +513,8 @@ class TemplateTrainer {
                             style="width: 32px; height: 40px; border: 2px solid ${isCrossLetter ? '#3b82f6' : '#d1d5db'};
                                    border-radius: 4px; display: flex; align-items: center; justify-content: center;
                                    font-weight: bold; font-size: 1.25rem;
-                                   background: ${isCrossLetter ? '#eff6ff' : (isAnswerKnown ? '#f0fdf4' : 'white')};">
+                                   background: ${isCrossLetter ? '#eff6ff' : (isAnswerKnown ? '#f0fdf4' : 'white')};
+                                   ${marginRight}">
                     ${displayLetter}
                 </div>`;
             } else {
@@ -497,7 +531,8 @@ class TemplateTrainer {
                                       border-radius: 4px; text-align: center;
                                       font-weight: bold; font-size: 1.25rem;
                                       color: #111827; background: white; outline: none;
-                                      text-transform: uppercase; caret-color: #2563eb;"
+                                      text-transform: uppercase; caret-color: #2563eb;
+                                      ${marginRight}"
                         />`;
             }
         }).join('');
@@ -1082,7 +1117,9 @@ class TemplateTrainer {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     clue_id: this.clueId,
-                    answer: this.render?.answer || this.answer
+                    answer: this.render?.answer || this.answer,
+                    crossLetters: this.render?.crossLetters || [],
+                    enumeration: this.render?.enumeration || this.enumeration
                 })
             });
 

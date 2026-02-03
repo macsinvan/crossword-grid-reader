@@ -633,6 +633,8 @@ def trainer_start():
     puzzle_number = data.get('puzzle_number')
     clue_number = data.get('clue_number')
     direction = data.get('direction', '')
+    cross_letters = data.get('cross_letters', [])
+    enumeration = data.get('enumeration', '')
 
     try:
         # Try to find by constructed ID (most reliable)
@@ -708,6 +710,9 @@ def trainer_start():
 
         result = render
         result['clue_id'] = clue_id
+        # Pass through cross_letters and enumeration for dumb client rendering
+        result['crossLetters'] = cross_letters
+        result['enumeration'] = enumeration or clue_data.get('clue', {}).get('enumeration', '')
         return jsonify(result)
 
     except Exception as e:
@@ -728,6 +733,8 @@ def trainer_input():
 
     clue_id = data.get('clue_id')
     value = data.get('value')
+    cross_letters = data.get('crossLetters', [])
+    enumeration = data.get('enumeration', '')
 
     if not clue_id:
         return jsonify({'error': 'Missing clue_id'}), 400
@@ -739,6 +746,8 @@ def trainer_input():
 
         result = training_handler.handle_input(clue_id, clue_data, value)
         result['clue_id'] = clue_id
+        result['crossLetters'] = cross_letters
+        result['enumeration'] = enumeration or clue_data.get('clue', {}).get('enumeration', '')
         return jsonify(result)
 
     except Exception as e:
@@ -758,6 +767,8 @@ def trainer_continue():
         return jsonify({'error': 'No data provided'}), 400
 
     clue_id = data.get('clue_id')
+    cross_letters = data.get('crossLetters', [])
+    enumeration = data.get('enumeration', '')
 
     if not clue_id:
         return jsonify({'error': 'Missing clue_id'}), 400
@@ -769,6 +780,8 @@ def trainer_continue():
 
         result = training_handler.handle_continue(clue_id, clue_data)
         result['clue_id'] = clue_id
+        result['crossLetters'] = cross_letters
+        result['enumeration'] = enumeration or clue_data.get('clue', {}).get('enumeration', '')
         return jsonify(result)
 
     except Exception as e:
@@ -789,6 +802,8 @@ def trainer_hypothesis():
 
     clue_id = data.get('clue_id')
     answer = data.get('answer')
+    cross_letters = data.get('crossLetters', [])
+    enumeration = data.get('enumeration', '')
 
     if not clue_id:
         return jsonify({'error': 'Missing clue_id'}), 400
@@ -802,6 +817,8 @@ def trainer_hypothesis():
 
         result = training_handler.handle_hypothesis(clue_id, clue_data, answer)
         result['clue_id'] = clue_id
+        result['crossLetters'] = cross_letters
+        result['enumeration'] = enumeration or clue_data.get('clue', {}).get('enumeration', '')
         return jsonify(result)
 
     except Exception as e:
@@ -821,6 +838,8 @@ def trainer_solve_step():
         return jsonify({'error': 'No data provided'}), 400
 
     clue_id = data.get('clue_id')
+    cross_letters = data.get('crossLetters', [])
+    enumeration = data.get('enumeration', '')
     if not clue_id:
         return jsonify({'error': 'clue_id required'}), 400
 
@@ -831,6 +850,8 @@ def trainer_solve_step():
 
         result = training_handler.solve_step(clue_id, clue_data)
         result['clue_id'] = clue_id
+        result['crossLetters'] = cross_letters
+        result['enumeration'] = enumeration or clue_data.get('clue', {}).get('enumeration', '')
         return jsonify(result)
 
     except Exception as e:
@@ -850,6 +871,8 @@ def trainer_reveal():
         return jsonify({'error': 'No data provided'}), 400
 
     clue_id = data.get('clue_id')
+    cross_letters = data.get('crossLetters', [])
+    enumeration = data.get('enumeration', '')
     if not clue_id:
         return jsonify({'error': 'clue_id required'}), 400
 
@@ -861,6 +884,8 @@ def trainer_reveal():
         # Skip to final teaching step and get render
         result = training_handler.reveal_answer(clue_id, clue_data)
         result['clue_id'] = clue_id
+        result['crossLetters'] = cross_letters
+        result['enumeration'] = enumeration or clue_data.get('clue', {}).get('enumeration', '')
         return jsonify(result)
 
     except Exception as e:
