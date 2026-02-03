@@ -273,7 +273,13 @@ class TemplateTrainer {
         } else if (this.render.inputMode === 'multiple_choice') {
             value = optionIndex !== undefined ? optionIndex : 0;
         } else {
-            value = (this.render.stepTextInput || []).join('');
+            // Get text from DOM inputs (local state, not server state)
+            const stepInputs = this.container.querySelectorAll('.step-text-input');
+            if (stepInputs.length > 0) {
+                value = Array.from(stepInputs).map(input => input.value || '').join('');
+            } else {
+                value = '';
+            }
         }
 
         this.submitInput(value);
@@ -312,7 +318,13 @@ class TemplateTrainer {
         } else if (this.render?.inputMode === 'multiple_choice') {
             return false; // Multiple choice submits immediately on click
         } else if (this.render?.inputMode === 'text') {
-            return (this.render?.stepTextInput || []).join('').trim().length > 0;
+            // Get text from DOM inputs (local state, not server state)
+            const stepInputs = this.container.querySelectorAll('.step-text-input');
+            if (stepInputs.length > 0) {
+                const value = Array.from(stepInputs).map(input => input.value || '').join('');
+                return value.trim().length > 0;
+            }
+            return false;
         }
         return false;
     }
@@ -804,20 +816,22 @@ class TemplateTrainer {
             });
         });
 
-        // Answer box input listeners (for interactive answer entry) - update via server
+        // Answer box input listeners (for interactive answer entry)
+        // Typing updates server state, but we DON'T re-render on every keystroke
+        // Server validates when complete and returns answerLocked=true
         const answerInputs = this.container.querySelectorAll('.answer-box-input');
         console.log('[Trainer] Found answer inputs:', answerInputs.length);
 
         answerInputs.forEach(input => {
-            // Handle input (letter typed) - update server state
+            // Handle input (letter typed)
             input.addEventListener('input', (e) => {
                 const pos = parseInt(e.target.dataset.position, 10);
                 const letter = e.target.value.toUpperCase().slice(-1); // Take last char if multiple
                 console.log('[Trainer] Input at pos', pos, ':', letter);
                 e.target.value = letter;
 
-                // Update server state (server will check if answer is complete)
-                this.updateUIState('type_answer', { position: pos, letter: letter });
+                // Update server state WITHOUT triggering full re-render
+                this.updateAnswerLetterSilent(pos, letter);
 
                 // Auto-advance to next empty box (immediate UI feedback)
                 if (letter) {
@@ -864,18 +878,19 @@ class TemplateTrainer {
             firstEmptyBox.focus();
         }
 
-        // Step text input listeners (crossword-style boxes for text mode) - update via server
+        // Step text input listeners (crossword-style boxes for text mode)
+        // Typing updates server state silently (no re-render), validates on Check button
         const stepTextInputs = this.container.querySelectorAll('.step-text-input');
         if (stepTextInputs.length > 0) {
             stepTextInputs.forEach(input => {
-                // Handle input (letter typed) - update server state
+                // Handle input (letter typed)
                 input.addEventListener('input', (e) => {
                     const pos = parseInt(e.target.dataset.position, 10);
                     const letter = e.target.value.toUpperCase().slice(-1);
                     e.target.value = letter;
 
-                    // Update server state
-                    this.updateUIState('type_step', { position: pos, letter: letter });
+                    // Update server state silently (no re-render)
+                    this.updateStepLetterSilent(pos, letter);
 
                     // Auto-advance to next box (immediate UI feedback)
                     if (letter) {
@@ -1009,8 +1024,59 @@ class TemplateTrainer {
         }
     }
 
-    // Server-side answer validation is handled by update_ui_state('type_answer')
-    // When server detects correct answer, it sets answerLocked=true in render state
+    // Update step text letter on server WITHOUT triggering re-render
+    async updateStepLetterSilent(position, letter) {
+        try {
+            await fetch('/trainer/ui-state', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clue_id: this.clueId,
+                    action: 'type_step',
+                    position: position,
+                    letter: letter,
+                    crossLetters: this.render?.crossLetters || [],
+                    enumeration: this.render?.enumeration || this.enumeration
+                })
+            });
+            // Don't update render or re-render - just sync state
+        } catch (e) {
+            console.error('Silent step update failed:', e);
+        }
+    }
+
+    // Update answer letter on server WITHOUT triggering re-render
+    // Server tracks state and checks if answer is complete
+    async updateAnswerLetterSilent(position, letter) {
+        try {
+            const response = await fetch('/trainer/ui-state', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clue_id: this.clueId,
+                    action: 'type_answer',
+                    position: position,
+                    letter: letter,
+                    crossLetters: this.render?.crossLetters || [],
+                    enumeration: this.render?.enumeration || this.enumeration
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                // Update our render state (for reference) but DON'T re-render
+                this.render = result;
+
+                // Only re-render if server says answer is now locked (correct answer entered)
+                if (result.answerLocked) {
+                    console.log('[Trainer] Answer correct! Submitting hypothesis...');
+                    this.submitAnswerHypothesis();
+                }
+            }
+        } catch (e) {
+            console.error('Silent update failed:', e);
+        }
+    }
 
     async submitAnswerHypothesis() {
         try {

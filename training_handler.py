@@ -2597,6 +2597,7 @@ def update_ui_state(clue_id, clue, action, data):
     elif action == "type_answer":
         position = data.get("position")
         letter = data.get("letter", "").upper()
+        cross_letters = data.get("crossLetters", [])
         if position is not None:
             user_answer = session.get("user_answer", [])
             # Extend list if needed
@@ -2605,8 +2606,18 @@ def update_ui_state(clue_id, clue, action, data):
             user_answer[position] = letter[:1] if letter else ""
             session["user_answer"] = user_answer
 
-            # Check if answer is complete and correct
-            user_full = "".join(user_answer).upper()
+            # Check if answer is complete and correct (including cross letters)
+            full_answer = []
+            for i in range(len(answer)):
+                cross = next((cl for cl in cross_letters if cl.get("position") == i), None)
+                if cross and cross.get("letter"):
+                    full_answer.append(cross["letter"].upper())
+                elif i < len(user_answer) and user_answer[i]:
+                    full_answer.append(user_answer[i].upper())
+                else:
+                    full_answer.append("")
+
+            user_full = "".join(full_answer)
             if len(user_full) == len(answer) and user_full == answer:
                 session["answer_locked"] = True
 
