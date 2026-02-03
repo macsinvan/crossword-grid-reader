@@ -8,6 +8,44 @@
 
 ---
 
+## CRITICAL: Stateless Client Architecture
+
+**The trainer UI is a DUMB RENDERING LAYER with ZERO STATE.**
+
+This is a non-negotiable architectural constraint. Violations cause bugs and must be immediately refactored.
+
+### What This Means
+
+| Belongs on SERVER | Does NOT belong on CLIENT |
+|-------------------|---------------------------|
+| `session["selected_indices"]` | `this.selectedIndices` |
+| `session["user_answer"]` | `this.userAnswer` |
+| `session["hint_visible"]` | `this.hintVisible` |
+| `session["step_text_input"]` | `this.stepTextInput` |
+| `session["answer_locked"]` | `this.answerLocked` |
+
+### Client Responsibilities (ONLY these)
+1. Call server endpoints (`/trainer/start`, `/trainer/input`, `/trainer/ui-state`)
+2. Receive `render` object from server
+3. Display exactly what `render` contains
+4. Attach event handlers that call server on user interaction
+5. Ephemeral feedback (flash messages that disappear) - OK to track locally
+
+### Server Responsibilities
+1. Maintain ALL session state in `training_handler._sessions[clue_id]`
+2. Process user input and update state
+3. Return complete `render` object with everything client needs to display
+4. Include: `words`, `selectedIndices`, `userAnswer`, `hintVisible`, `answerLocked`, `crossLetters`, `enumeration`, etc.
+
+### Why This Matters
+- Server is source of truth - no sync bugs
+- Client can be refreshed without losing state
+- Testing is easier (just test API responses)
+- Debugging is easier (inspect session state)
+- Future: session state can persist to database
+
+---
+
 ## Incremental Phases
 
 ### Phase 1: Supabase Database Integration
@@ -253,11 +291,10 @@ user_progress table = {
 | Validation logic | `training_handler.py` | Constraint-based answer checking |
 
 **Design Principles to Preserve:**
-1. **Server-driven rendering** - UI has zero phase logic
-2. **Thin client** - All business logic on server
-3. **Constraint-first validation** - No AI guessing for grading
-4. **Hypothesis-driven solving** - Definition → hypothesis → verify wordplay
-5. **Two-path verification** - Answer must work via definition AND wordplay
+1. **Stateless client** - See "CRITICAL: Stateless Client Architecture" section above
+2. **Constraint-first validation** - No AI guessing for grading
+3. **Hypothesis-driven solving** - Definition → hypothesis → verify wordplay
+4. **Two-path verification** - Answer must work via definition AND wordplay
 
 ---
 

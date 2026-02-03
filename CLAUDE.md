@@ -20,6 +20,15 @@
 - [ ] No Python server errors
 
 ### 3. Key Constraints
+
+**STATELESS CLIENT ARCHITECTURE**
+The trainer UI (`trainer.js`) is a **dumb rendering layer with ZERO state**:
+- ALL state lives on the server (session dict in `training_handler.py`)
+- Client receives a `render` object and displays it - nothing more
+- User interactions call server endpoints which return updated `render` objects
+- Client has no local variables for: selections, input values, visibility flags, etc.
+- If you're tempted to add `this.foo = ...` in trainer.js, STOP - it belongs on the server
+
 **NO AI/LLM in this app.** Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
 
 ## What This Is
