@@ -1,12 +1,26 @@
 # Grid Reader - Claude Context
 
-## IMPORTANT: Design Documentation
+## IMPORTANT: Implementation Rules
 
+### 1. Design Documentation Required
 **DO NOT IMPLEMENT WITHOUT CONSULTING:**
 1. `PLAN.md` - Full roadmap and architecture decisions
 2. `/Users/andrewmackenzie/.claude/plans/elegant-swimming-lollipop.md` - Active implementation plan
 
-**KEY CONSTRAINT: NO AI/LLM in this app.** Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
+### 2. Verification Required
+**EVERY PLAN MUST:**
+1. **Start with verification strategy** - Define how you will test the feature works
+2. **End with verification completed** - Actually test in browser, not just API calls
+
+**Verification Checklist:**
+- [ ] Server starts without errors
+- [ ] UI loads at http://127.0.0.1:8080/
+- [ ] Feature works end-to-end in browser (click through the UI)
+- [ ] No JavaScript console errors
+- [ ] No Python server errors
+
+### 3. Key Constraints
+**NO AI/LLM in this app.** Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
 
 ## What This Is
 Web-based Times Cryptic crossword solver. Import PDFs, solve interactively, get step-by-step teaching via ported cryptic-trainer system.

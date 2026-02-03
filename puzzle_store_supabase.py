@@ -103,18 +103,37 @@ class PuzzleStoreSupabase:
 
         # Save clues
         clues_data = puzzle_data.get('clues', {})
-        numbering = grid.get('numbering', [])
+
+        # Get numbering from puzzle_data.numbering (across/down structure)
+        # or from grid.numbering (flat list structure)
+        numbering_data = puzzle_data.get('numbering', {})
+        grid_numbering = grid.get('numbering', [])
 
         # Build clue position map from numbering
         clue_positions = {}
-        for num_info in numbering:
-            num = num_info.get('number')
-            row = num_info.get('row')
-            col = num_info.get('col')
-            if num_info.get('across'):
+
+        # Handle structured numbering (across/down lists with row/col)
+        if numbering_data:
+            for num_info in numbering_data.get('across', []):
+                num = num_info.get('number')
+                row = num_info.get('row')
+                col = num_info.get('col')
                 clue_positions[f"{num}across"] = (row, col)
-            if num_info.get('down'):
+            for num_info in numbering_data.get('down', []):
+                num = num_info.get('number')
+                row = num_info.get('row')
+                col = num_info.get('col')
                 clue_positions[f"{num}down"] = (row, col)
+        # Handle flat numbering list (from grid.numbering)
+        elif grid_numbering:
+            for num_info in grid_numbering:
+                num = num_info.get('number')
+                row = num_info.get('row')
+                col = num_info.get('col')
+                if num_info.get('across'):
+                    clue_positions[f"{num}across"] = (row, col)
+                if num_info.get('down'):
+                    clue_positions[f"{num}down"] = (row, col)
 
         # Delete existing clues for this puzzle
         self.client.table('clues').delete().eq('puzzle_id', puzzle_id).execute()
@@ -226,25 +245,69 @@ class PuzzleStoreSupabase:
                     'answer': clue['answer'],
                 })
 
-        # Build numbering from clues
-        numbering = []
-        seen_numbers = set()
-        for clue in clues_result.data or []:
-            num = clue['number']
-            if num not in seen_numbers:
-                seen_numbers.add(num)
-                num_info = {
-                    'number': num,
-                    'row': clue['start_row'],
-                    'col': clue['start_col'],
-                }
-                # Check if this number has across/down
-                for c in clues_result.data:
-                    if c['number'] == num:
-                        num_info[c['direction']] = True
-                numbering.append(num_info)
+        # Get grid dimensions
+        grid_size = puzzle['grid_size']
+        grid_layout = puzzle['grid_layout']
+        rows = len(grid_layout) if grid_layout else grid_size
+        cols = len(grid_layout[0]) if grid_layout and grid_layout[0] else grid_size
 
-        # Build response matching file-based format
+        # Build cellNumbers and numbering by scanning the grid layout
+        # A cell gets a number if it's white and starts an across or down word
+        cell_numbers = {}
+        numbering_across = []
+        numbering_down = []
+        clue_number = 1
+
+        for r in range(rows):
+            for c in range(cols):
+                if grid_layout[r][c] == '#':
+                    continue  # Black cell
+
+                # Check if this cell starts an across word
+                starts_across = (c == 0 or grid_layout[r][c-1] == '#') and \
+                               (c < cols - 1 and grid_layout[r][c+1] != '#')
+
+                # Check if this cell starts a down word
+                starts_down = (r == 0 or grid_layout[r-1][c] == '#') and \
+                             (r < rows - 1 and grid_layout[r+1][c] != '#')
+
+                if starts_across or starts_down:
+                    # JavaScript uses 1-indexed "row,col" keys
+                    key = f"{r + 1},{c + 1}"
+                    cell_numbers[key] = clue_number
+
+                    # Calculate word length and add to numbering
+                    if starts_across:
+                        # Count across length
+                        length = 0
+                        cc = c
+                        while cc < cols and grid_layout[r][cc] != '#':
+                            length += 1
+                            cc += 1
+                        numbering_across.append({
+                            'number': clue_number,
+                            'row': r + 1,  # 1-indexed for JS
+                            'col': c + 1,
+                            'length': length
+                        })
+
+                    if starts_down:
+                        # Count down length
+                        length = 0
+                        rr = r
+                        while rr < rows and grid_layout[rr][c] != '#':
+                            length += 1
+                            rr += 1
+                        numbering_down.append({
+                            'number': clue_number,
+                            'row': r + 1,  # 1-indexed for JS
+                            'col': c + 1,
+                            'length': length
+                        })
+
+                    clue_number += 1
+
+        # Build response matching file-based format expected by crossword.js
         response = {
             'puzzle': {
                 'series': series,
@@ -253,9 +316,14 @@ class PuzzleStoreSupabase:
                 'date': puzzle['date'],
                 'title': puzzle['title'],
                 'grid': {
-                    'size': puzzle['grid_size'],
-                    'layout': puzzle['grid_layout'],
-                    'numbering': sorted(numbering, key=lambda x: x['number']),
+                    'rows': rows,
+                    'cols': cols,
+                    'layout': grid_layout,
+                    'cellNumbers': cell_numbers,
+                },
+                'numbering': {
+                    'across': numbering_across,
+                    'down': numbering_down,
                 },
                 'clues': clues,
             },

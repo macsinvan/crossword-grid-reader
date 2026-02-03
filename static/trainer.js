@@ -16,6 +16,7 @@ class TemplateTrainer {
         this.clueText = options.clueText;
         this.enumeration = options.enumeration;
         this.answer = options.answer;
+        this.crossLetters = options.crossLetters || [];
         this.onComplete = options.onComplete;
         this.onBack = options.onBack;
 
@@ -105,7 +106,8 @@ class TemplateTrainer {
             if (data.success !== false) {
                 if (data.correct) {
                     // Correct - update render state and clear selections (React lines 296-302)
-                    this.render = data.render;
+                    // Note: Server returns render data flat, not under data.render
+                    this.render = data.render || data;
                     this.selectedIndices = [];
                     this.textInput = '';
                     this.feedback = null;
@@ -139,7 +141,8 @@ class TemplateTrainer {
             const data = await response.json();
 
             if (data.success !== false) {
-                this.render = data.render;
+                // Note: Server returns render data flat, not under data.render
+                this.render = data.render || data;
                 this.selectedIndices = [];
                 this.textInput = '';
                 this.feedback = null;
@@ -271,8 +274,8 @@ class TemplateTrainer {
 
         // If complete, auto-apply answer and close (no button required)
         if (isComplete) {
-            if (this.options.onComplete) {
-                this.options.onComplete();
+            if (this.onComplete) {
+                this.onComplete();
             }
             return;
         }
@@ -362,11 +365,16 @@ class TemplateTrainer {
 
     renderAnswerBoxes() {
         const answer = this.render?.answer || this.answer || '';
-        return answer.split('').map((letter, i) => `
-            <div style="width: 32px; height: 40px; border: 2px solid #d1d5db; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.25rem; background: white;">
-                ${this.render?.complete ? letter : ''}
-            </div>
-        `).join('');
+        return answer.split('').map((letter, i) => {
+            // Check if this position has a cross letter from the grid
+            const crossLetter = this.crossLetters?.find(cl => cl.position === i);
+            const displayLetter = this.render?.complete ? letter : (crossLetter?.letter || '');
+            const isCrossLetter = !this.render?.complete && crossLetter?.letter;
+
+            return `<div style="width: 32px; height: 40px; border: 2px solid ${isCrossLetter ? '#3b82f6' : '#d1d5db'}; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.25rem; background: ${isCrossLetter ? '#eff6ff' : 'white'};">
+                ${displayLetter}
+            </div>`;
+        }).join('');
     }
 
     renderActionButton() {

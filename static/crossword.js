@@ -184,7 +184,8 @@ class CrosswordPuzzle {
                 clueId: data.clue_id,
                 clueText: wordData.clueText,
                 enumeration: wordData.enumeration,
-                answer: data.render?.answer || '',
+                answer: data.answer || '',
+                crossLetters: wordData.crossLetters,
                 onComplete: () => {
                     this.applyTrainerAnswer();
                     this.closeTrainer();
@@ -192,8 +193,8 @@ class CrosswordPuzzle {
                 onBack: () => this.closeTrainer()
             });
 
-            // Store the initial render state
-            this.templateTrainer.render = data.render;
+            // Store the initial render state (data IS the render object, not data.render)
+            this.templateTrainer.render = data;
             this.templateTrainer.loading = false;
             this.templateTrainer.renderUI();
 
