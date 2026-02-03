@@ -29,6 +29,12 @@ The trainer UI (`trainer.js`) is a **dumb rendering layer with ZERO state**:
 - Client has no local variables for: selections, input values, visibility flags, etc.
 - If you're tempted to add `this.foo = ...` in trainer.js, STOP - it belongs on the server
 
+**Exception: Silent server sync for typing**
+Answer/step input boxes sync to server on each keystroke BUT don't trigger re-render (to preserve focus). Only re-render when server sets `answerLocked=true`.
+
+**Step state resets on advance**
+When `step_index` increments, `reset_step_ui_state()` clears: `hint_visible`, `selected_indices`, `step_text_input`. Answer boxes persist across steps.
+
 **NO AI/LLM in this app.** Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
 
 ## What This Is
