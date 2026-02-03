@@ -160,7 +160,10 @@ class CrosswordPuzzle {
                 clueText: wordData.clueText,
                 enumeration: wordData.enumeration,
                 answer: data.render?.answer || '',
-                onComplete: () => this.applyTrainerAnswer(),
+                onComplete: () => {
+                    this.applyTrainerAnswer();
+                    this.closeTrainer();
+                },
                 onBack: () => this.closeTrainer()
             });
 

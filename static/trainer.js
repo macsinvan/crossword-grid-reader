@@ -269,9 +269,11 @@ class TemplateTrainer {
         const isComplete = this.render.complete;
         const isTeaching = this.render.phaseId === 'teaching';
 
-        // If complete, show solved view (React lines 461-574)
+        // If complete, auto-apply answer and close (no button required)
         if (isComplete) {
-            this.renderComplete();
+            if (this.options.onComplete) {
+                this.options.onComplete();
+            }
             return;
         }
 
