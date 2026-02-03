@@ -39,6 +39,25 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
 
 
+def normalize_quotes(text):
+    """Normalize curly quotes to straight quotes for comparison.
+
+    PDFs often contain curly quotes (' ' " ") while annotations use straight quotes (' ").
+    This function normalizes both to straight quotes for reliable comparison.
+    """
+    if not text:
+        return text
+    # Curly single quotes to straight
+    text = text.replace('\u2018', "'")  # LEFT SINGLE QUOTATION MARK
+    text = text.replace('\u2019', "'")  # RIGHT SINGLE QUOTATION MARK
+    text = text.replace('\u201a', "'")  # SINGLE LOW-9 QUOTATION MARK
+    # Curly double quotes to straight
+    text = text.replace('\u201c', '"')  # LEFT DOUBLE QUOTATION MARK
+    text = text.replace('\u201d', '"')  # RIGHT DOUBLE QUOTATION MARK
+    text = text.replace('\u201e', '"')  # DOUBLE LOW-9 QUOTATION MARK
+    return text
+
+
 def convert_times_json_to_yaml_format(times_data, puzzle_number=None):
     """
     Convert Times puzzle JSON format to the YAML format expected by CrosswordGridProcessor.
@@ -647,9 +666,11 @@ def trainer_start():
             if expected_id in CLUES_DB:
                 candidate_data = CLUES_DB[expected_id]
                 # Verify clue text matches to detect annotation mismatches
-                annotation_text = candidate_data.get('clue', {}).get('text', '').strip()
-                clue_text_no_enum = re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip()
-                if annotation_text == clue_text.strip() or annotation_text == clue_text_no_enum:
+                # Normalize quotes (PDF uses curly, annotations use straight)
+                annotation_text = normalize_quotes(candidate_data.get('clue', {}).get('text', '').strip())
+                clue_text_normalized = normalize_quotes(clue_text.strip())
+                clue_text_no_enum = normalize_quotes(re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip())
+                if annotation_text == clue_text_normalized or annotation_text == clue_text_no_enum:
                     clue_id = expected_id
                     clue_data = candidate_data
                 else:
@@ -666,10 +687,11 @@ def trainer_start():
 
         # Fallback: try matching by text
         if not clue_id:
-            clue_text_no_enum = re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip()
+            clue_text_normalized = normalize_quotes(clue_text.strip())
+            clue_text_no_enum = normalize_quotes(re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip())
             for cid, cdata in CLUES_DB.items():
-                trainer_clue_text = cdata.get('clue', {}).get('text', '').strip()
-                if trainer_clue_text == clue_text.strip() or trainer_clue_text == clue_text_no_enum:
+                trainer_clue_text = normalize_quotes(cdata.get('clue', {}).get('text', '').strip())
+                if trainer_clue_text == clue_text_normalized or trainer_clue_text == clue_text_no_enum:
                     clue_id = cid
                     clue_data = cdata
                     break
@@ -685,9 +707,10 @@ def trainer_start():
                     clue_data = CLUES_DB.get(clue_id)
                     # After import, verify the text matches
                     if clue_data:
-                        annotation_text = clue_data.get('clue', {}).get('text', '').strip()
-                        clue_text_no_enum = re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip()
-                        if annotation_text != clue_text.strip() and annotation_text != clue_text_no_enum:
+                        annotation_text = normalize_quotes(clue_data.get('clue', {}).get('text', '').strip())
+                        clue_text_normalized = normalize_quotes(clue_text.strip())
+                        clue_text_no_enum = normalize_quotes(re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip())
+                        if annotation_text != clue_text_normalized and annotation_text != clue_text_no_enum:
                             print(f"WARNING: Post-import mismatch for {clue_id}")
                             return jsonify({
                                 'error': 'Annotation mismatch detected',
