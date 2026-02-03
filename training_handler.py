@@ -1573,6 +1573,40 @@ def get_render(clue_id, clue):
         if options:
             render["options"] = options
 
+    # Build hint for interactive phases (not teaching/none)
+    if phase.get("inputMode") in ["tap_words", "text", "multiple_choice"]:
+        hint = None
+
+        # Try step-level hint first
+        if step.get("hint"):
+            hint = substitute_variables(str(step["hint"]), step, session, clue)
+
+        # Fallback to onWrong message
+        if not hint:
+            on_wrong_msg = phase.get("onWrong", {}).get("message", "")
+            if on_wrong_msg:
+                hint = substitute_variables(on_wrong_msg, step, session, clue)
+
+        # Fallback to teaching_hints.json for specific step types
+        step_type = step.get("type", "")
+        if not hint and step_type == "abbreviation":
+            fodder_text = ""
+            if "fodder" in step:
+                f = step["fodder"]
+                fodder_text = f.get("text", "") if isinstance(f, dict) else str(f)
+            if fodder_text:
+                hint = get_teaching_hint("abbreviations", fodder_text, "")
+
+        if not hint and step_type == "synonym":
+            fodder_text = ""
+            if "fodder" in step:
+                f = step["fodder"]
+                fodder_text = f.get("text", "") if isinstance(f, dict) else str(f)
+            if fodder_text:
+                hint = get_teaching_hint("synonyms", fodder_text, "")
+
+        render["hint"] = hint if hint else None
+
     return render
 
 def build_wordplay_teaching(step, clue):

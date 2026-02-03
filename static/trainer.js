@@ -31,6 +31,8 @@ class TemplateTrainer {
         this.feedback = null;
         this.userAnswer = [];  // Track letters typed in answer boxes
         this.answerLocked = false;  // Lock boxes after correct answer typed
+        this.stepTextInput = [];  // Track letters typed in step text input boxes
+        this.hintVisible = false;  // Toggle hint visibility
 
         // Parse enumeration to get letter count
         this.letterCount = this.enumeration.split(/[^0-9]+/).filter(Boolean)
@@ -115,6 +117,8 @@ class TemplateTrainer {
                     this.render = data.render || data;
                     this.selectedIndices = [];
                     this.textInput = '';
+                    this.stepTextInput = [];
+                    this.hintVisible = false;
                     this.feedback = null;
                     this.renderUI();
                 } else {
@@ -150,6 +154,8 @@ class TemplateTrainer {
                 this.render = data.render || data;
                 this.selectedIndices = [];
                 this.textInput = '';
+                this.stepTextInput = [];
+                this.hintVisible = false;
                 this.feedback = null;
                 this.renderUI();
             } else {
@@ -319,8 +325,10 @@ class TemplateTrainer {
                     <p style="flex: 1; font-weight: 500; color: #374151;">
                         ${isTeaching ? this.render.actionPrompt : (this.render.panel?.instruction || this.render.actionPrompt || '')}
                     </p>
+                    ${this.renderHintButton()}
                     ${this.renderActionButton()}
                 </div>
+                ${this.renderHintContent()}
             </div>
 
             <!-- SECTION 4: DETAILS (React lines 677-780) -->
@@ -344,18 +352,12 @@ class TemplateTrainer {
         const stepType = this.render?.stepType;
         const isFinalAnswerStep = stepType === 'anagram_solve' || stepType === 'double_definition';
 
-        // Text input for intermediate steps (React lines 608-616)
+        // Text input for intermediate steps - crossword-style boxes
         if (this.render?.inputMode === 'text' && !isTeaching && !isFinalAnswerStep) {
             const expectedLength = typeof this.render?.expected === 'string' ? this.render.expected.length : 5;
             return `
-                <div style="display: flex; gap: 4px; justify-content: center;">
-                    <input type="text"
-                        id="trainer-text-input"
-                        maxlength="${expectedLength}"
-                        value="${this.textInput}"
-                        placeholder=""
-                        style="width: ${Math.max(expectedLength * 36, 100)}px; padding: 0.75rem; font-size: 1.25rem; font-weight: bold; text-transform: uppercase; text-align: center; border: 2px solid #d1d5db; border-radius: 0.5rem; outline: none;"
-                    />
+                <div style="display: flex; gap: 4px; justify-content: center; flex-wrap: wrap;">
+                    ${this.renderTextInputBoxes(expectedLength)}
                 </div>
             `;
         }
@@ -416,6 +418,26 @@ class TemplateTrainer {
                                       text-transform: uppercase; caret-color: #2563eb;"
                         />`;
             }
+        }).join('');
+    }
+
+    renderTextInputBoxes(expectedLength) {
+        return Array(expectedLength).fill('').map((_, i) => {
+            const displayLetter = this.stepTextInput[i] || '';
+            return `<input type="text"
+                           class="step-text-input"
+                           data-position="${i}"
+                           maxlength="1"
+                           value="${displayLetter}"
+                           autocomplete="off"
+                           autocapitalize="characters"
+                           spellcheck="false"
+                           style="width: 32px; height: 40px; border: 2px solid #d1d5db;
+                                  border-radius: 4px; text-align: center;
+                                  font-weight: bold; font-size: 1.25rem;
+                                  color: #111827; background: white; outline: none;
+                                  text-transform: uppercase; caret-color: #2563eb;"
+                    />`;
         }).join('');
     }
 
@@ -485,6 +507,33 @@ class TemplateTrainer {
                 </h3>
             </div>
             <p style="color: #854d0e; white-space: pre-line;">${this.render.panel.instruction}</p>
+        </div>`;
+    }
+
+    // Hint button - lightbulb icon to reveal hints
+    renderHintButton() {
+        if (!this.render?.hint) return '';
+
+        const opacity = this.hintVisible ? '1' : '0.5';
+
+        return `<button class="hint-button"
+                        style="background: none; border: none; font-size: 1.5rem;
+                               cursor: pointer; padding: 0.25rem; opacity: ${opacity};
+                               transition: opacity 0.2s;"
+                        title="${this.hintVisible ? 'Hide hint' : 'Show hint'}">
+            💡
+        </button>`;
+    }
+
+    // Hint content - shown when lightbulb clicked
+    renderHintContent() {
+        if (!this.hintVisible || !this.render?.hint) return '';
+
+        return `<div class="hint-content"
+                     style="background: #fef3c7; border: 1px solid #fbbf24;
+                            border-radius: 0.5rem; padding: 0.75rem; margin-top: 0.5rem;
+                            color: #92400e; font-size: 0.9rem;">
+            💡 ${this.render.hint}
         </div>`;
     }
 
@@ -560,6 +609,15 @@ class TemplateTrainer {
     }
 
     attachEventListeners() {
+        // Hint button listener
+        const hintBtn = this.container.querySelector('.hint-button');
+        if (hintBtn) {
+            hintBtn.addEventListener('click', () => {
+                this.hintVisible = !this.hintVisible;
+                this.renderUI();
+            });
+        }
+
         // Word tap listeners
         this.container.querySelectorAll('[data-word-index]').forEach(el => {
             el.addEventListener('click', () => {
@@ -676,6 +734,99 @@ class TemplateTrainer {
                               this.container.querySelector('.answer-box-input');
         if (firstEmptyBox) {
             firstEmptyBox.focus();
+        }
+
+        // Step text input listeners (crossword-style boxes for text mode)
+        const stepTextInputs = this.container.querySelectorAll('.step-text-input');
+        if (stepTextInputs.length > 0) {
+            stepTextInputs.forEach(input => {
+                // Handle input (letter typed)
+                input.addEventListener('input', (e) => {
+                    const pos = parseInt(e.target.dataset.position, 10);
+                    const letter = e.target.value.toUpperCase().slice(-1);
+                    e.target.value = letter;
+                    this.stepTextInput[pos] = letter;
+
+                    // Update textInput as combined string for submission
+                    this.textInput = this.stepTextInput.join('');
+
+                    // Auto-advance to next box
+                    if (letter) {
+                        this.focusNextStepTextBox(pos);
+                    }
+
+                    // Update Check button state
+                    this.updateCheckButtonState();
+                });
+
+                // Handle keyboard navigation
+                input.addEventListener('keydown', (e) => {
+                    const pos = parseInt(e.target.dataset.position, 10);
+
+                    if (e.key === 'Backspace' && !e.target.value) {
+                        e.preventDefault();
+                        this.focusPreviousStepTextBox(pos);
+                    } else if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        this.focusPreviousStepTextBox(pos);
+                    } else if (e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        this.focusNextStepTextBox(pos);
+                    } else if (e.key === 'Tab' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.focusNextStepTextBox(pos);
+                    } else if (e.key === 'Enter' && this.canSubmit()) {
+                        e.preventDefault();
+                        this.handleSubmit();
+                    }
+                });
+
+                // Visual feedback on focus
+                input.addEventListener('focus', () => {
+                    input.style.borderColor = '#2563eb';
+                    input.style.boxShadow = '0 0 0 2px rgba(37, 99, 235, 0.2)';
+                });
+
+                input.addEventListener('blur', () => {
+                    input.style.borderColor = '#d1d5db';
+                    input.style.boxShadow = 'none';
+                });
+            });
+
+            // Auto-focus first step text input
+            const firstStepInput = this.container.querySelector('.step-text-input');
+            if (firstStepInput) {
+                firstStepInput.focus();
+            }
+        }
+    }
+
+    // Navigation helpers for step text input boxes
+    focusNextStepTextBox(currentPos) {
+        const nextInput = this.container.querySelector(`.step-text-input[data-position="${currentPos + 1}"]`);
+        if (nextInput) {
+            nextInput.focus();
+        }
+    }
+
+    focusPreviousStepTextBox(currentPos) {
+        if (currentPos > 0) {
+            const prevInput = this.container.querySelector(`.step-text-input[data-position="${currentPos - 1}"]`);
+            if (prevInput) {
+                prevInput.focus();
+                prevInput.select();
+            }
+        }
+    }
+
+    updateCheckButtonState() {
+        const checkBtn = this.container.querySelector('[data-action="submit"]');
+        if (checkBtn) {
+            const canSubmit = this.canSubmit();
+            checkBtn.disabled = !canSubmit;
+            checkBtn.style.background = canSubmit ? '#2563eb' : '#e5e7eb';
+            checkBtn.style.color = canSubmit ? 'white' : '#9ca3af';
+            checkBtn.style.cursor = canSubmit ? 'pointer' : 'not-allowed';
         }
     }
 

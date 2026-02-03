@@ -113,7 +113,8 @@ class CrosswordPuzzle {
         document.addEventListener('keydown', (e) => {
             // Don't intercept keyboard when typing in trainer inputs
             if (e.target.id === 'trainer-text-input' ||
-                e.target.classList.contains('answer-box-input')) {
+                e.target.classList.contains('answer-box-input') ||
+                e.target.classList.contains('step-text-input')) {
                 return;
             }
             if (this.puzzle && this.selectedCell) {
