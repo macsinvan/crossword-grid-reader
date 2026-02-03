@@ -24,13 +24,19 @@ import yaml
 
 from crossword_processor import CrosswordGridProcessor
 from pdf_processor import process_times_pdf
-from puzzle_store import PuzzleStore
+
+# Use Supabase if configured, otherwise fall back to file-based storage
+try:
+    from puzzle_store_supabase import get_puzzle_store
+    puzzle_store = get_puzzle_store()
+    print(f"Using puzzle store: {type(puzzle_store).__name__}")
+except Exception as e:
+    print(f"Supabase not available ({e}), using file-based storage")
+    from puzzle_store import PuzzleStore
+    puzzle_store = PuzzleStore(os.path.join(os.path.dirname(__file__), 'puzzles'))
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
-
-# Initialize puzzle store
-puzzle_store = PuzzleStore(os.path.join(os.path.dirname(__file__), 'puzzles'))
 
 
 def convert_times_json_to_yaml_format(times_data, puzzle_number=None):
@@ -244,6 +250,19 @@ def process_pdf_and_store(pdf_file, answers_file=None):
 def index():
     """Serve the main page"""
     return render_template('index.html')
+
+
+@app.route('/status')
+def status():
+    """Return server status including database backend type."""
+    store_type = type(puzzle_store).__name__
+    is_supabase = store_type == 'PuzzleStoreSupabase'
+
+    return jsonify({
+        'storage_backend': 'supabase' if is_supabase else 'local',
+        'store_type': store_type,
+        'connected': True
+    })
 
 
 @app.route('/upload', methods=['POST'])

@@ -5,11 +5,13 @@ Web-based Times Cryptic crossword solver. Import PDFs, solve interactively, get 
 
 ## Quick Start
 ```bash
-# Terminal 1: Trainer API (optional, for guided solving)
-cd ../cryptic-trainer/cryptic_trainer_bundle && python3 server.py  # port 5001
+# Ensure .env file exists with Supabase credentials (see .env.example)
 
-# Terminal 2: Grid Reader
+# Terminal: Grid Reader
 python3 crossword_server.py  # port 8080
+
+# Optional: Trainer API (for guided solving - legacy)
+cd ../cryptic-trainer/cryptic_trainer_bundle && python3 server.py  # port 5001
 ```
 Open http://localhost:8080
 
@@ -18,24 +20,38 @@ Open http://localhost:8080
 | File | Purpose |
 |------|---------|
 | `crossword_server.py` | Flask server (port 8080), proxies to trainer |
+| `puzzle_store_supabase.py` | Supabase database storage (Phase 1) |
+| `puzzle_store.py` | Local file-based storage (fallback) |
 | `static/crossword.js` | Grid UI, keyboard nav, localStorage persistence |
 | `static/trainer.js` | TemplateTrainer (ported from React) |
 | `pdf_processor.py` | PDF parsing, grid/clue extraction |
 | `crossword_processor.py` | Grid structure detection |
-| `puzzle_store.py` | Puzzle storage in `puzzles/` directory |
 | `templates/index.html` | Web UI (bump `?v=N` for cache busting) |
+| `migrations/001_initial_schema.sql` | Supabase database schema |
 
 ## Architecture
 
 ```
-Grid Reader (8080) ──proxy──► cryptic-trainer (5001)
+Grid Reader (8080)
      │
      ├── crossword.js (grid UI, persistence)
      ├── trainer.js (solving UI)
-     └── crossword_server.py (Flask, /trainer/* proxy)
+     ├── crossword_server.py (Flask)
+     │        │
+     │        ├── puzzle_store_supabase.py → Supabase PostgreSQL (cloud)
+     │        └── puzzle_store.py → Local files (fallback)
+     │
+     └──proxy──► cryptic-trainer (5001) [optional, legacy]
 ```
 
-### Trainer Integration Flow
+### Database Backend
+The app auto-detects storage backend:
+- **Supabase** (preferred): If `SUPABASE_URL` and `SUPABASE_ANON_KEY` are set in `.env`
+- **Local files**: Falls back to `puzzles/` directory if Supabase not configured
+
+A status indicator (green LED = Supabase, yellow = local) shows in the header.
+
+### Trainer Integration Flow (Legacy)
 1. User clicks "Solve" → `crossword.js` calls `/trainer/start`
 2. Server looks up clue by ID (e.g., `times-29453-1a`)
 3. Auto-imports from `../Times_Puzzle_Import/solved/` if needed
@@ -44,15 +60,32 @@ Grid Reader (8080) ──proxy──► cryptic-trainer (5001)
 6. On completion, answer auto-applies to grid
 
 ## Recent Features
+- **Supabase integration**: Cloud database storage (Phase 1 complete)
+- **DB status indicator**: Shows connection status in header
 - **Progress persistence**: localStorage auto-saves puzzle progress (survives refresh)
 - **Auto-apply answers**: Trainer answers auto-fill grid when solved (no button)
 - **Keyboard shortcuts**: Cmd+R etc. work (not intercepted by grid)
 
 ## Storage
+
+### Supabase Tables (Phase 1)
+- `publications` - Times, Guardian, Telegraph, Express
+- `puzzles` - Primary entity (grid + metadata)
+- `clues` - Belong to puzzles
+- `user_progress` - Per-puzzle progress tracking
+
+### Local Fallback
 Puzzles stored in `puzzles/{series}/{number}/`:
 - `puzzle.json` - grid, clues
 - `original.pdf` - source PDF
 - `answers.json` - optional answers
+
+## Environment Variables
+Create `.env` file (see `.env.example`):
+```
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+```
 
 ## Common Commands
 ```bash
@@ -64,45 +97,31 @@ git push                                  # Push to main
 ## Cache Busting
 When changing JS/CSS files, bump version in `templates/index.html`:
 ```html
-<script src="/static/crossword.js?v=13"></script>
+<script src="/static/crossword.js?v=14"></script>
 ```
 
-## TODO
+## Development Roadmap
 
-### Replace trainer integration with simple LLM solve
+See `PLAN.md` for full roadmap. Summary:
 
-**Current state (deprecated/experimental):** The trainer integration is complex and fragile:
-- Requires pre-annotated clues in a separate database
-- Maintains session state on the cryptic-trainer server
-- State easily gets out of sync between browser and server
-- Ported React UI adds complexity
+### Phase 1: Supabase Database Integration ✓ Complete
+- Supabase PostgreSQL backend
+- Publications, puzzles, clues, user_progress tables
+- Auto-fallback to local storage
+- DB status indicator
 
-**Target architecture:** Single `/solve` endpoint:
+### Phase 2: LLM-Powered Teaching Mode (Next)
+- Replace pre-annotated clues with dynamic LLM solving
+- Constraint-based validation (anti-hallucination)
+- `/solve/*` endpoints
 
-```
-POST /solve
-{
-  "clue": "See boss bungle work (6)",
-  "enumeration": "6",
-  "cross_letters": [{"position": 2, "letter": "S"}]
-}
+### Phase 3: Vercel Deployment
+- Serverless Flask on Vercel
+- Environment variables for keys
 
-Response:
-{
-  "answer": "BISHOP",
-  "confidence": 0.95,
-  "explanation": "Definition: 'See boss' (BISHOP runs a diocese/see). Wordplay: bungle=BISH + work=OP"
-}
-```
+### Phase 4: User Authentication
+- Supabase Auth (Google OAuth + email/password)
+- Row-level security
 
-**Benefits:**
-- Single server - no cryptic-trainer dependency
-- No session state to manage
-- No pre-annotation required
-- Works on any clue
-
-**Implementation:**
-- Copy LLM solving logic from cryptic-trainer
-- Delete trainer.js and proxy code
-- Add `/solve` endpoint
-- Simple UI: "Solving..." → answer + explanation
+### Phase 5: Multi-User Features
+- Rate limiting, analytics, polish

@@ -24,6 +24,31 @@ class CrosswordPuzzle {
 
         this.initEventListeners();
         this.loadPuzzleList();
+        this.checkDbStatus();
+    }
+
+    async checkDbStatus() {
+        const statusEl = document.getElementById('db-status');
+        try {
+            const response = await fetch('/status');
+            const data = await response.json();
+
+            statusEl.classList.remove('connected', 'local', 'error');
+
+            if (data.storage_backend === 'supabase') {
+                statusEl.classList.add('connected');
+                statusEl.querySelector('.status-text').textContent = 'Supabase';
+                statusEl.title = 'Connected to Supabase cloud database';
+            } else {
+                statusEl.classList.add('local');
+                statusEl.querySelector('.status-text').textContent = 'Local';
+                statusEl.title = 'Using local file storage';
+            }
+        } catch (error) {
+            statusEl.classList.add('error');
+            statusEl.querySelector('.status-text').textContent = 'Error';
+            statusEl.title = 'Could not check database status';
+        }
     }
 
     initEventListeners() {

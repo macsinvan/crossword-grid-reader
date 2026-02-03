@@ -4,12 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crossword Puzzle</title>
-    <link rel="stylesheet" href="/static/crossword.css?v=10">
+    <link rel="stylesheet" href="/static/crossword.css?v=11">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Crossword Puzzle</h1>
+            <div class="header-row">
+                <h1>Crossword Puzzle</h1>
+                <div class="db-status" id="db-status" title="Checking connection...">
+                    <span class="status-led"></span>
+                    <span class="status-text">...</span>
+                </div>
+            </div>
             <p class="subtitle" id="puzzle-info"></p>
         </header>
 
@@ -148,6 +154,6 @@
     </div>
 
     <script src="/static/trainer.js?v=11"></script>
-    <script src="/static/crossword.js?v=13"></script>
+    <script src="/static/crossword.js?v=14"></script>
 </body>
 </html>
