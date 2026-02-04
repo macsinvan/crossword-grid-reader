@@ -1139,7 +1139,7 @@ def build_container_verify_phases(step, clue):
 
 _sessions = {}  # clue_id -> session state
 
-def start_session(clue_id, clue):
+def start_session(clue_id, clue, cross_letters=None, enumeration=None):
     """Initialize a new training session."""
     _sessions[clue_id] = {
         "clue_id": clue_id,
@@ -1154,7 +1154,10 @@ def start_session(clue_id, clue):
         "user_answer": [],  # Letters typed in answer boxes
         "step_text_input": [],  # Letters typed in step input boxes
         "hint_visible": False,  # Whether hint is shown
-        "answer_locked": False  # Whether answer boxes are locked (correct answer typed)
+        "answer_locked": False,  # Whether answer boxes are locked (correct answer typed)
+        # Grid context (passed from client, stored for all renders)
+        "cross_letters": cross_letters or [],
+        "enumeration": enumeration or clue.get("clue", {}).get("enumeration", "")
     }
     return get_render(clue_id, clue)
 
@@ -1346,13 +1349,25 @@ def get_render(clue_id, clue):
 
     # Check if complete
     if session["step_index"] >= len(steps):
+        # Build breakdown for summary display
+        breakdown, techniques, definition = build_breakdown(steps)
         return {
             "complete": True,
             "highlights": session["highlights"],
             "answer": answer,
             "actionPrompt": "Solved!",
             "learnings": session.get("learnings", []),
-            "inputMode": "none"
+            "inputMode": "none",
+            # Include UI state for answer display
+            "userAnswer": session.get("user_answer", []),
+            "answerLocked": session.get("answer_locked", False),
+            "crossLetters": session.get("cross_letters", []),
+            "enumeration": enumeration,
+            "words": clue.get("words", []),
+            # Summary/breakdown data
+            "breakdown": breakdown,
+            "techniques": techniques,
+            "definition": definition
         }
 
     # Handle clue type identification step (step_index == -1)
@@ -1398,7 +1413,10 @@ def get_render(clue_id, clue):
         "userAnswer": session.get("user_answer", []),
         "stepTextInput": session.get("step_text_input", []),
         "hintVisible": session.get("hint_visible", False),
-        "answerLocked": session.get("answer_locked", False)
+        "answerLocked": session.get("answer_locked", False),
+        # Grid context (stored in session)
+        "crossLetters": session.get("cross_letters", []),
+        "enumeration": session.get("enumeration", enumeration)
     }
 
     # Add step progress (for showing "Step 1 of 3" in UI)
@@ -1871,6 +1889,16 @@ def handle_input(clue_id, clue, value):
                 "render": get_render(clue_id, clue)
             }
 
+        # Check if step result matches final answer (auto-populate when wordplay produces answer)
+        # Do this BEFORE advancing phase, so answer is populated when going to teaching phase
+        if phase_id == "result":
+            step_result = step.get("result", "").upper().replace(" ", "")
+            final_answer = clue.get("clue", {}).get("answer", "").upper().replace(" ", "")
+            if step_result and step_result == final_answer and not session.get("answer_locked"):
+                # Auto-populate and lock the answer
+                session["user_answer"] = list(final_answer)
+                session["answer_locked"] = True
+
         # Advance to next phase
         session["phase_index"] += 1
         if session["phase_index"] >= len(phases):
@@ -2010,6 +2038,14 @@ def handle_continue(clue_id, clue):
     # Advance to next phase
     session["phase_index"] += 1
     if session["phase_index"] >= len(phases):
+        # Check if the completed step's result matches the final answer
+        step_result = step.get("result", "").upper()
+        final_answer = clue.get("clue", {}).get("answer", "").upper()
+        if step_result and step_result == final_answer and not session.get("answer_locked"):
+            # Auto-populate and lock the answer
+            session["user_answer"] = list(final_answer)
+            session["answer_locked"] = True
+
         session["step_index"] += 1
         session["phase_index"] = 0
         reset_step_ui_state(session)  # Clear hint, selections, etc.
@@ -2370,27 +2406,16 @@ def solve_step(clue_id, clue):
     }
 
 
-def reveal_answer(clue_id, clue):
+def build_breakdown(steps):
     """
-    Reveal the full answer and skip to the final teaching/summary step.
-    Used when user gives up entirely.
+    Build breakdown array showing how the answer is constructed.
+    Used for summary page display.
 
-    Returns a clean summary with:
-    - breakdown: visual chain showing how answer is constructed
-    - techniques: list of techniques used (no redundant text)
+    Returns:
+        tuple: (breakdown list, techniques list, definition string or None)
     """
-    session = _sessions.get(clue_id)
-    if not session:
-        # Start a session if none exists
-        start_session(clue_id, clue)
-        session = _sessions.get(clue_id)
-
-    steps = clue.get("steps", [])
-    answer = clue.get("clue", {}).get("answer", "")
-
-    # Build breakdown chain (visual formula) and techniques list
-    breakdown = []  # Steps in the transformation chain
-    techniques = []  # Unique techniques used
+    breakdown = []
+    techniques = []
     definition = None
 
     for step in steps:
@@ -2519,6 +2544,42 @@ def reveal_answer(clue_id, clue):
             })
             if "Letter selection" not in [t["name"] for t in techniques]:
                 techniques.append({"name": "Letter selection", "icon": "🔤"})
+
+        elif step_type == "literal":
+            fodder = get_fodder_text(step)
+            result = step.get("result", fodder)  # literal: fodder IS the result
+            breakdown.append({
+                "type": "literal",
+                "from": fodder,
+                "to": result,
+                "icon": "📝"
+            })
+            if "Literal" not in [t["name"] for t in techniques]:
+                techniques.append({"name": "Literal", "icon": "📝"})
+
+    return breakdown, techniques, definition
+
+
+def reveal_answer(clue_id, clue):
+    """
+    Reveal the full answer and skip to the final teaching/summary step.
+    Used when user gives up entirely.
+
+    Returns a clean summary with:
+    - breakdown: visual chain showing how answer is constructed
+    - techniques: list of techniques used (no redundant text)
+    """
+    session = _sessions.get(clue_id)
+    if not session:
+        # Start a session if none exists
+        start_session(clue_id, clue)
+        session = _sessions.get(clue_id)
+
+    steps = clue.get("steps", [])
+    answer = clue.get("clue", {}).get("answer", "")
+
+    # Use helper to build breakdown
+    breakdown, techniques, definition = build_breakdown(steps)
 
     # Build legacy learnings for backward compatibility (but cleaner)
     learnings = []

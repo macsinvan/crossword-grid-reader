@@ -361,17 +361,9 @@ class TemplateTrainer {
         const isComplete = this.render.complete;
         const isTeaching = this.render.phaseId === 'teaching';
 
-        // If complete, auto-apply answer and close (no button required)
-        if (isComplete) {
-            if (this.onComplete) {
-                this.onComplete();
-            }
-            return;
-        }
-
-        // If answer was revealed (Solve button), show the complete/summary view
-        // This lets user see the learnings before applying to grid
-        if (this.render.revealed) {
+        // If complete (natural completion or revealed), show summary page
+        // User clicks "Apply to Grid" button to close
+        if (isComplete || this.render.revealed) {
             this.renderComplete();
             return;
         }

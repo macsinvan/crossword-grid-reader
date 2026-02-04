@@ -6,6 +6,9 @@
 
 ## IMPORTANT: Implementation Rules
 
+### 0. NO CODING WITHOUT A DESIGN SPEC
+**If a feature is not documented in the design spec, DO NOT implement it.** Ask for the specification first.
+
 ### 1. Design Documentation Required
 **DO NOT IMPLEMENT WITHOUT CONSULTING:**
 1. `PLAN.md` - Full roadmap and architecture decisions
