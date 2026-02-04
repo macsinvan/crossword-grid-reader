@@ -527,7 +527,102 @@ Server checks file modification time on each `/trainer/start` request. If change
 
 ---
 
-## 10. Development Phases
+## 10. Mobile Responsive Design
+
+### 10.1 Grid Scaling Strategy
+
+The crossword grid scales to fit any screen width using CSS Grid with fractional units (`1fr`), not fixed pixel sizes.
+
+**Key Techniques:**
+1. **CSS Grid with `1fr` columns**: JavaScript sets `grid-template-columns: repeat(15, 1fr)` instead of fixed pixel widths
+2. **`aspect-ratio: 1` on cells**: Cells maintain square shape at any size
+3. **`clamp()` for font sizes**: `font-size: clamp(0.8rem, 2.5vw, 1.4rem)` scales between min/max
+4. **Viewport-based grid width**: `width: calc(100vw - 26px)` accounts for padding/borders
+
+**Why NOT fixed pixel sizes:**
+- Fixed sizes (e.g., `40px`) don't adapt to different screen widths
+- Media queries with fixed breakpoints require guessing device sizes
+- Viewport units (`vw`) automatically scale to any screen
+
+### 10.2 CSS Structure
+
+```css
+/* Base cell - no fixed dimensions */
+.cell {
+    aspect-ratio: 1;
+    font-size: clamp(0.8rem, 2.5vw, 1.4rem);
+    /* ... other styles */
+}
+
+/* Desktop - fixed width for consistency */
+.crossword-grid {
+    width: 616px; /* 15 cells × 40px + gaps + border */
+}
+
+/* Tablet (≤800px) */
+@media (max-width: 800px) {
+    .crossword-grid {
+        width: 100%;
+        max-width: 500px;
+    }
+}
+
+/* Mobile (≤600px) */
+@media (max-width: 600px) {
+    body { padding: 8px; }
+    .puzzle-section { padding: 4px; }
+
+    .crossword-grid {
+        /* Fill screen minus padding: body 8×2 + section 4×2 + border 2 = 26px */
+        width: calc(100vw - 26px) !important;
+        max-width: calc(100vw - 26px) !important;
+    }
+
+    .cell-number {
+        font-size: clamp(6px, 1.5vw, 10px);
+    }
+}
+```
+
+### 10.3 JavaScript Grid Rendering
+
+```javascript
+// crossword.js - renderGrid()
+gridEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+// NOT: `repeat(${cols}, 40px)` - this breaks responsive scaling
+```
+
+### 10.4 Trainer Modal on Mobile
+
+```css
+@media (max-width: 768px) {
+    .trainer-modal-wrapper {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+    }
+
+    /* Larger touch targets */
+    .answer-box, .answer-box-input {
+        width: 44px !important;
+        height: 52px !important;
+    }
+}
+```
+
+### 10.5 Key Measurements
+
+| Screen Width | Grid Width | Cell Size (approx) |
+|--------------|------------|-------------------|
+| 390px (iPhone) | 364px | 24px |
+| 500px | 474px | 31px |
+| 800px | 500px (max) | 33px |
+| >800px | 616px | 40px |
+
+---
+
+## 11. Development Phases
 
 ### Phase 1: Supabase Database Integration ✓
 - Supabase PostgreSQL backend
@@ -608,3 +703,6 @@ The following bugs and features were implemented during development:
 10. **OCR Validation**: Spell-checking for PDF import
 11. **Annotation Mismatch Fixes**: Align clues_db.json with puzzle text
 12. **Multi-word Answer Fixes**: Handle spaces in answers
+13. **Mobile Responsive Grid**: CSS Grid with `1fr` units, `aspect-ratio: 1` cells, viewport-based sizing
+14. **Cross Letters in Solve Phase**: Fixed `isFinalAnswerStep` condition to include `phaseId === 'solve'`
+15. **Duplicate Hypothesis Fix**: Prevent duplicate HYPOTHESIS entries in learnings

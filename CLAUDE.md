@@ -119,6 +119,20 @@ A status indicator (green LED = Supabase, yellow = local) shows in the header.
 - **Progress persistence**: localStorage auto-saves puzzle progress (survives refresh)
 - **Auto-apply answers**: Trainer answers auto-fill grid when solved (no button)
 - **Keyboard shortcuts**: Cmd+R etc. work (not intercepted by grid)
+- **Mobile responsive grid**: Scales to fit any screen width (see SPEC.md §10)
+- **Local network access**: Server binds to `0.0.0.0` for testing on mobile devices
+
+## Mobile Design Principles
+
+**Grid uses CSS Grid with `1fr` units, NOT fixed pixel sizes.** This allows the grid to scale automatically to any screen width.
+
+Key implementation details:
+- `crossword.js` sets `grid-template-columns: repeat(N, 1fr)`
+- Cells use `aspect-ratio: 1` to stay square
+- Mobile breakpoint at 600px uses `width: calc(100vw - 26px)` to fill screen
+- Font sizes use `clamp()` for fluid scaling
+
+See `SPEC.md` Section 10 for full details.
 
 ## Storage
 
