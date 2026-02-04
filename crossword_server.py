@@ -762,15 +762,13 @@ def trainer_start():
                 'has_annotations': has_annotations
             }), 404
 
-        # Start training session using local handler
-        training_handler.start_session(clue_id, clue_data)
+        # Start training session using local handler (store cross_letters and enumeration in session)
+        enum = enumeration or clue_data.get('clue', {}).get('enumeration', '')
+        training_handler.start_session(clue_id, clue_data, cross_letters, enum)
         render = training_handler.get_render(clue_id, clue_data)
 
         result = render
         result['clue_id'] = clue_id
-        # Pass through cross_letters and enumeration for dumb client rendering
-        result['crossLetters'] = cross_letters
-        result['enumeration'] = enumeration or clue_data.get('clue', {}).get('enumeration', '')
         return jsonify(result)
 
     except Exception as e:

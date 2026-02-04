@@ -704,6 +704,19 @@ class TemplateTrainer {
     // Solved view - Summary page with breadcrumbs
     renderComplete() {
         const learnings = this.render.learnings || [];
+        const difficulty = this.render.difficulty || {};
+        const definition = this.render.definition || '';
+        const defRating = difficulty.definition?.rating || '';
+        const wpRating = difficulty.wordplay?.rating || '';
+        const defHint = difficulty.definition?.hint || '';
+
+        // Convert rating to stars
+        const ratingToStars = (rating) => {
+            if (rating === 'easy') return '⭐';
+            if (rating === 'medium') return '⭐⭐';
+            if (rating === 'hard') return '⭐⭐⭐';
+            return '';
+        };
 
         const html = `
             <!-- HEADER: Congratulations + Answer -->
@@ -712,6 +725,26 @@ class TemplateTrainer {
                     🎉 ${this.answer}
                 </div>
             </div>
+
+            <!-- PLAIN ENGLISH SUMMARY -->
+            ${definition || defHint ? `
+                <div style="background: #f0fdf4; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; padding: 1rem;">
+                    <div style="font-size: 1rem; font-weight: 600; color: #166534; margin-bottom: 0.5rem;">
+                        ${definition} = ${this.answer}
+                    </div>
+                    ${defHint ? `
+                        <div style="font-size: 0.875rem; color: #4b5563; margin-bottom: 0.75rem;">
+                            ${defHint}
+                        </div>
+                    ` : ''}
+                    ${defRating || wpRating ? `
+                        <div style="display: flex; gap: 1.5rem; font-size: 0.8rem; color: #6b7280;">
+                            ${defRating ? `<span>Definition: ${ratingToStars(defRating)}</span>` : ''}
+                            ${wpRating ? `<span>Wordplay: ${ratingToStars(wpRating)}</span>` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            ` : ''}
 
             <!-- BREADCRUMBS: All solve steps -->
             <div style="background: white; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; padding: 1rem;">

@@ -1351,6 +1351,8 @@ def get_render(clue_id, clue):
     if session["step_index"] >= len(steps):
         # Build breakdown for summary display
         breakdown, techniques, definition = build_breakdown(steps)
+        # Get difficulty ratings for summary
+        difficulty = clue.get("difficulty", {})
         return {
             "complete": True,
             "highlights": session["highlights"],
@@ -1367,7 +1369,9 @@ def get_render(clue_id, clue):
             # Summary/breakdown data
             "breakdown": breakdown,
             "techniques": techniques,
-            "definition": definition
+            "definition": definition,
+            # Difficulty ratings for plain English summary
+            "difficulty": difficulty
         }
 
     # Handle clue type identification step (step_index == -1)
@@ -2623,6 +2627,9 @@ def reveal_answer(clue_id, clue):
                 "color": "GREEN"
             })
 
+    # Get difficulty ratings for summary
+    difficulty = clue.get("difficulty", {})
+
     return {
         "success": True,
         "revealed": True,
@@ -2637,7 +2644,8 @@ def reveal_answer(clue_id, clue):
         "techniques": techniques,  # New: unique techniques used
         "learnings": learnings,  # Legacy format for backward compatibility
         "highlights": highlights,
-        "words": clue.get("words", [])
+        "words": clue.get("words", []),
+        "difficulty": difficulty  # Difficulty ratings for plain English summary
     }
 
 

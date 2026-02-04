@@ -1351,18 +1351,16 @@
           "type": "deletion",
           "indicator": {
             "indices": [
-              1,
-              2,
-              3,
-              4
+              1
             ],
-            "text": "removal of line from"
+            "text": "removal",
+            "hint": "removal is a common deletion indicator"
           },
           "fodder": "DRIVEL",
           "deletionType": "specific",
           "deleted": "L",
           "result": "DRIVE",
-          "note": "L = line abbreviation"
+          "hint": "L is a common abbreviation for 'line'"
         }
       ],
       "metadata": {
