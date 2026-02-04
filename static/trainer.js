@@ -431,9 +431,11 @@ class TemplateTrainer {
     renderInputArea() {
         const isTeaching = this.render?.phaseId === 'teaching';
         const stepType = this.render?.stepType;
-        const isFinalAnswerStep = stepType === 'anagram_solve' || stepType === 'double_definition';
+        const phaseId = this.render?.phaseId;
+        // Final answer steps should use answer boxes (with cross letters), not step text boxes
+        const isFinalAnswerStep = stepType === 'anagram_solve' || stepType === 'double_definition' || phaseId === 'solve';
 
-        // Text input for intermediate steps - crossword-style boxes
+        // Text input for intermediate steps - crossword-style boxes (no cross letters)
         if (this.render?.inputMode === 'text' && !isTeaching && !isFinalAnswerStep) {
             const expectedLength = typeof this.render?.expected === 'string' ? this.render.expected.length : 5;
             return `
