@@ -2722,15 +2722,14 @@
           "position": "end"
         },
         {
-          "type": "synonym",
+          "type": "literal",
           "fodder": {
             "indices": [
               0
             ],
             "text": "See"
           },
-          "result": "SEE",
-          "hint": "A see is a bishop's diocese or seat of authority"
+          "result": "SEE"
         },
         {
           "type": "literal",
