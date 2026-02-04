@@ -11,7 +11,9 @@
 
 ### 1. Design Documentation Required
 **DO NOT IMPLEMENT WITHOUT CONSULTING:**
-1. `/Users/andrewmackenzie/.claude/plans/elegant-swimming-lollipop.md` - **Technical Specification** (reproducible app spec)
+1. `SPEC.md` - **Technical Specification** (reproducible app spec)
+
+**All design documents MUST be in the working directory and tracked in the repo.**
 
 ### 2. Verification Required
 **EVERY PLAN MUST:**
