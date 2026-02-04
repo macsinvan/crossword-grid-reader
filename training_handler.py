@@ -1878,11 +1878,14 @@ def handle_input(clue_id, clue, value):
 
         # Check if this is a solve phase (definition approach)
         if phase_id == "solve" and step["type"] == "standard_definition":
-            # User solved from definition - add hypothesis breadcrumb to learnings
+            # User solved from definition - add hypothesis breadcrumb to learnings (if not already added)
             answer = clue.get("clue", {}).get("answer", "")
-            session["learnings"].append({
-                "title": f"HYPOTHESIS: {answer}"
-            })
+            hypothesis_title = f"HYPOTHESIS: {answer}"
+            # Avoid duplicate hypothesis entries
+            if not any(l.get("title") == hypothesis_title for l in session["learnings"]):
+                session["learnings"].append({
+                    "title": hypothesis_title
+                })
             # Advance past the standard_definition step to the next step
             session["step_index"] += 1
             session["phase_index"] = 0
@@ -2295,11 +2298,13 @@ def handle_hypothesis(clue_id, clue, answer):
         # Correct! Mark answer as known
         session["answer_known"] = True
 
-        # Add learning breadcrumb
-        session["learnings"].append({
-            "title": f"HYPOTHESIS: {expected_answer}",
-            "text": "Answer entered correctly. Now verifying with wordplay..."
-        })
+        # Add learning breadcrumb (avoid duplicates)
+        hypothesis_title = f"HYPOTHESIS: {expected_answer}"
+        if not any(l.get("title") == hypothesis_title for l in session["learnings"]):
+            session["learnings"].append({
+                "title": hypothesis_title,
+                "text": "Answer entered correctly. Now verifying with wordplay..."
+            })
 
         return {
             "success": True,

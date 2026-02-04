@@ -990,4 +990,5 @@ def trainer_ui_state():
 if __name__ == '__main__':
     print("Starting Crossword Server...")
     print("Open http://localhost:8080 in your browser")
-    app.run(debug=True, port=8080)
+    print("Or from other devices on your network: http://<your-ip>:8080")
+    app.run(debug=True, port=8080, host='0.0.0.0')

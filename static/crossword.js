@@ -599,8 +599,9 @@ class CrosswordPuzzle {
 
         const { rows, cols, layout, cellNumbers } = this.puzzle.grid;
 
-        gridEl.style.gridTemplateColumns = `repeat(${cols}, 40px)`;
-        gridEl.style.gridTemplateRows = `repeat(${rows}, 40px)`;
+        // Use 1fr so CSS can control cell sizing responsively
+        gridEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 
         for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
