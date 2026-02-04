@@ -406,9 +406,10 @@ def validate():
 
 import training_handler
 
-# Load clues database
+# Load clues database with auto-reload on file change
 CLUES_DB = {}
 CLUES_DB_PATH = os.path.join(os.path.dirname(__file__), 'clues_db.json')
+CLUES_DB_MTIME = 0  # Last modification time of the file
 
 
 def validate_clue_annotation(clue_id, clue_data):
@@ -446,16 +447,31 @@ def validate_clue_annotation(clue_id, clue_data):
     return errors
 
 
-def load_clues_db():
-    """Load the clues database from JSON file and validate."""
-    global CLUES_DB
+def load_clues_db(force=False):
+    """Load the clues database from JSON file and validate.
+
+    Auto-reloads if file has been modified since last load.
+    Set force=True to reload regardless of modification time.
+    """
+    global CLUES_DB, CLUES_DB_MTIME
+
+    try:
+        current_mtime = os.path.getmtime(CLUES_DB_PATH)
+    except OSError:
+        return  # File doesn't exist
+
+    # Skip if file hasn't changed (unless forced)
+    if not force and current_mtime == CLUES_DB_MTIME:
+        return
+
     try:
         with open(CLUES_DB_PATH, 'r') as f:
             data = json.load(f)
             CLUES_DB = data.get('training_items', {})
-            print(f"Loaded {len(CLUES_DB)} clues from clues_db.json")
+            CLUES_DB_MTIME = current_mtime
+            print(f"Loaded {len(CLUES_DB)} clues from clues_db.json (mtime: {current_mtime})")
 
-            # Validate all clues on startup
+            # Validate all clues on load
             validation_errors = []
             for clue_id, clue_data in CLUES_DB.items():
                 errors = validate_clue_annotation(clue_id, clue_data)
@@ -473,8 +489,20 @@ def load_clues_db():
         print(f"Warning: Could not load clues_db.json: {e}")
         CLUES_DB = {}
 
+
+def maybe_reload_clues_db():
+    """Check if clues_db.json has been modified and reload if needed."""
+    try:
+        current_mtime = os.path.getmtime(CLUES_DB_PATH)
+        if current_mtime != CLUES_DB_MTIME:
+            print(f"[Auto-reload] clues_db.json changed, reloading...")
+            load_clues_db(force=True)
+    except OSError:
+        pass  # File doesn't exist
+
+
 # Load on startup
-load_clues_db()
+load_clues_db(force=True)
 
 # Directory containing annotated puzzle files (Times_XXXXX_v2.json)
 ANNOTATED_PUZZLES_DIR = os.path.join(os.path.dirname(__file__), '..', 'Times_Puzzle_Import', 'solved')
@@ -644,6 +672,9 @@ def trainer_start():
     Start a training session for a clue.
     Uses local training_handler (no proxy).
     """
+    # Auto-reload clues_db.json if it has changed
+    maybe_reload_clues_db()
+
     data = request.get_json()
     if not data:
         return jsonify({'error': 'No data provided'}), 400
@@ -656,6 +687,10 @@ def trainer_start():
     enumeration = data.get('enumeration', '')
 
     try:
+        # Debug: log what we received
+        print(f"[trainer_start] puzzle_number={puzzle_number}, clue_number={clue_number}, direction={direction}")
+        print(f"[trainer_start] clue_text={clue_text[:50]}..." if clue_text else "[trainer_start] clue_text=None")
+
         # Try to find by constructed ID (most reliable)
         clue_id = None
         clue_data = None

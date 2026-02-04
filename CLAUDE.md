@@ -1,5 +1,9 @@
 # Grid Reader - Claude Context
 
+## Communication Rules
+
+**When I ask a direct question, answer it directly. Never take my question as a request to take action.**
+
 ## IMPORTANT: Implementation Rules
 
 ### 1. Design Documentation Required
@@ -36,6 +40,9 @@ Answer/step input boxes sync to server on each keystroke BUT don't trigger re-re
 When `step_index` increments, `reset_step_ui_state()` clears: `hint_visible`, `selected_indices`, `step_text_input`. Answer boxes persist across steps.
 
 **NO AI/LLM in this app.** Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
+
+**Auto-reload clues_db.json**
+The server checks file modification time on each `/trainer/start` request. If `clues_db.json` has changed, it reloads automatically - no server restart needed.
 
 ## What This Is
 Web-based Times Cryptic crossword solver. Import PDFs, solve interactively, get step-by-step teaching via ported cryptic-trainer system.
