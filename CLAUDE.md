@@ -11,8 +11,7 @@
 
 ### 1. Design Documentation Required
 **DO NOT IMPLEMENT WITHOUT CONSULTING:**
-1. `PLAN.md` - Full roadmap and architecture decisions
-2. `/Users/andrewmackenzie/.claude/plans/elegant-swimming-lollipop.md` - Active implementation plan
+1. `/Users/andrewmackenzie/.claude/plans/elegant-swimming-lollipop.md` - **Technical Specification** (reproducible app spec)
 
 ### 2. Verification Required
 **EVERY PLAN MUST:**
