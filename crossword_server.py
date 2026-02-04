@@ -952,6 +952,43 @@ def trainer_reveal():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/trainer/solved-view', methods=['POST'])
+def trainer_solved_view():
+    """
+    Get the solved view for a clue - shows full breakdown immediately.
+    No step-by-step interaction, just the final summary.
+    """
+    # Auto-reload clues_db.json if it has changed
+    maybe_reload_clues_db()
+
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    clue_id = data.get('clue_id')
+    cross_letters = data.get('crossLetters', [])
+    enumeration = data.get('enumeration', '')
+    if not clue_id:
+        return jsonify({'error': 'clue_id required'}), 400
+
+    try:
+        clue_data = CLUES_DB.get(clue_id)
+        if not clue_data:
+            return jsonify({'error': 'Clue not found'}), 404
+
+        # Get solved view from training handler
+        result = training_handler.get_solved_view(clue_id, clue_data)
+        result['clue_id'] = clue_id
+        result['crossLetters'] = cross_letters
+        result['enumeration'] = enumeration or clue_data.get('clue', {}).get('enumeration', '')
+        return jsonify(result)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/trainer/ui-state', methods=['POST'])
 def trainer_ui_state():
     """

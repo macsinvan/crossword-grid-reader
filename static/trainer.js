@@ -358,6 +358,12 @@ class TemplateTrainer {
     renderUI() {
         if (!this.render) return;
 
+        // Check for solved_view mode (exploration-based UX)
+        if (this.render.mode === 'solved_view') {
+            this.renderSolvedView();
+            return;
+        }
+
         const isComplete = this.render.complete;
         const isTeaching = this.render.phaseId === 'teaching';
 
@@ -431,9 +437,11 @@ class TemplateTrainer {
     renderInputArea() {
         const isTeaching = this.render?.phaseId === 'teaching';
         const stepType = this.render?.stepType;
-        const isFinalAnswerStep = stepType === 'anagram_solve' || stepType === 'double_definition';
+        const phaseId = this.render?.phaseId;
+        // Final answer steps should use answer boxes (with cross letters), not step text boxes
+        const isFinalAnswerStep = stepType === 'anagram_solve' || stepType === 'double_definition' || phaseId === 'solve';
 
-        // Text input for intermediate steps - crossword-style boxes
+        // Text input for intermediate steps - crossword-style boxes (no cross letters)
         if (this.render?.inputMode === 'text' && !isTeaching && !isFinalAnswerStep) {
             const expectedLength = typeof this.render?.expected === 'string' ? this.render.expected.length : 5;
             return `
@@ -732,6 +740,93 @@ class TemplateTrainer {
             </div>
 
             <!-- UPDATE GRID BUTTON -->
+            <div style="background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 0 0 0.75rem 0.75rem; padding: 1rem; display: flex; justify-content: center;">
+                <button data-action="complete" style="padding: 0.625rem 2rem; background: #16a34a; color: white; font-weight: 600; border-radius: 0.5rem; border: none; cursor: pointer; font-size: 0.9375rem;">
+                    Update Grid
+                </button>
+            </div>
+        `;
+
+        this.container.innerHTML = html;
+        this.attachEventListeners();
+    }
+
+    /**
+     * Render the solved view - shows full breakdown immediately with no interaction.
+     * This is the "exploration mode" UX where users see the answer breakdown upfront.
+     */
+    renderSolvedView() {
+        const answer = this.render.answer || this.answer || '';
+        const clueText = this.render.clueText || this.clueText || '';
+        const enumeration = this.render.enumeration || this.enumeration || '';
+        const definition = this.render.definition || '';
+        const definitionHint = this.render.definitionHint || '';
+        const learnings = this.render.learnings || [];
+        const words = this.render.words || [];
+
+        // Build highlighted clue words
+        const highlights = this.render.highlights || [];
+        const getHighlightColor = (index) => {
+            for (const h of highlights) {
+                if (h.indices && h.indices.includes(index)) {
+                    switch (h.color) {
+                        case 'GREEN': return '#16a34a';
+                        case 'BLUE': return '#2563eb';
+                        case 'YELLOW': return '#ca8a04';
+                        default: return null;
+                    }
+                }
+            }
+            return null;
+        };
+
+        const html = `
+            <!-- SECTION 1: CLUE TEXT with highlights -->
+            <div style="background: white; border-radius: 0.75rem 0.75rem 0 0; border: 1px solid #e5e7eb; border-bottom: none; padding: 1rem;">
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 1.25rem; font-family: serif; line-height: 1.625;">
+                    ${words.map((word, index) => {
+                        const bgColor = getHighlightColor(index);
+                        return `<span style="padding: 0.125rem 0.375rem; border-radius: 0.25rem; ${bgColor ? `background-color: ${bgColor}; color: white;` : ''}">${word}</span>`;
+                    }).join('')}
+                    <span style="color: #9ca3af;">(${enumeration})</span>
+                </div>
+            </div>
+
+            <!-- SECTION 2: ANSWER DISPLAY -->
+            <div style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); padding: 1.25rem; text-align: center;">
+                <div style="font-size: 1.75rem; font-weight: bold; color: white; letter-spacing: 0.1em; font-family: monospace;">
+                    ${answer}
+                </div>
+            </div>
+
+            <!-- SECTION 3: DEFINITION -->
+            ${definition ? `
+            <div style="background: white; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; padding: 1rem;">
+                <div style="font-size: 0.875rem; color: #6b7280; text-transform: uppercase; margin-bottom: 0.25rem;">Definition</div>
+                <div style="font-size: 1rem; color: #374151;">"${definition}" = ${answer}</div>
+                ${definitionHint ? `<div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem; font-style: italic;">${definitionHint}</div>` : ''}
+            </div>
+            ` : ''}
+
+            <!-- SECTION 4: BREAKDOWN STEPS -->
+            <div style="background: white; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; padding: 1rem;">
+                ${learnings.length > 0 ? `
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        ${learnings.map(item => `
+                            <div style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.5rem; background: #f8fafc; border-radius: 0.375rem; font-size: 0.9rem;">
+                                <span>🎓</span>
+                                <span>${item.title || item.text || ''}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : `
+                    <div style="text-align: center; color: #6b7280; padding: 1rem;">
+                        Clue breakdown complete!
+                    </div>
+                `}
+            </div>
+
+            <!-- SECTION 5: UPDATE GRID BUTTON -->
             <div style="background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 0 0 0.75rem 0.75rem; padding: 1rem; display: flex; justify-content: center;">
                 <button data-action="complete" style="padding: 0.625rem 2rem; background: #16a34a; color: white; font-weight: 600; border-radius: 0.5rem; border: none; cursor: pointer; font-size: 0.9375rem;">
                     Update Grid
