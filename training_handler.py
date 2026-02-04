@@ -2459,22 +2459,40 @@ def build_breakdown(steps):
                 techniques.append({"name": "Abbreviation", "icon": "✂️"})
 
         elif step_type == "anagram":
-            indicator = step.get("indicator", {}).get("text", "")
+            template = step.get("template", "")
+            indicator_obj = step.get("indicator", {})
+            indicator = indicator_obj.get("text", "") if isinstance(indicator_obj, dict) else ""
+            pieces = step.get("pieces", [])
             fodder_raw = step.get("fodder", {})
-            if isinstance(fodder_raw, list):
-                fodder = " + ".join(str(f) for f in fodder_raw)
-            elif isinstance(fodder_raw, dict):
-                fodder = fodder_raw.get("text", "")
-            else:
-                fodder = str(fodder_raw)
             result = step.get("result", "")
-            breakdown.append({
-                "type": "anagram",
-                "from": fodder,
-                "to": result,
-                "indicator": indicator,
-                "icon": "🔀"
-            })
+            assembly = step.get("assembly", "")
+
+            if template == "anagram_with_fodder_pieces":
+                # New format with pieces
+                breakdown.append({
+                    "type": "anagram",
+                    "template": template,
+                    "indicator": indicator,
+                    "pieces": pieces,
+                    "to": result,
+                    "assembly": assembly,
+                    "icon": "🔀"
+                })
+            else:
+                # Old format
+                if isinstance(fodder_raw, list):
+                    fodder = " + ".join(str(f) for f in fodder_raw)
+                elif isinstance(fodder_raw, dict):
+                    fodder = fodder_raw.get("text", "")
+                else:
+                    fodder = str(fodder_raw)
+                breakdown.append({
+                    "type": "anagram",
+                    "from": fodder,
+                    "to": result,
+                    "indicator": indicator,
+                    "icon": "🔀"
+                })
             if "Anagram" not in [t["name"] for t in techniques]:
                 techniques.append({"name": "Anagram", "icon": "🔀"})
 
@@ -2506,6 +2524,63 @@ def build_breakdown(steps):
             if "Container" not in [t["name"] for t in techniques]:
                 techniques.append({"name": "Container", "icon": "📦"})
 
+        elif step_type == "container":
+            # New format with template reference
+            template = step.get("template", "")
+            indicator = step.get("indicator", {})
+            outer_obj = step.get("outer", {})
+            inner_obj = step.get("inner", {})
+            result = step.get("result", "")
+            assembly = step.get("assembly", "")
+
+            # Extract outer component
+            if isinstance(outer_obj, dict):
+                outer_fodder = outer_obj.get("fodder", {}).get("text", "")
+                outer_result = outer_obj.get("result", "")
+                outer_reasoning = outer_obj.get("reasoning", "")
+            else:
+                outer_fodder = ""
+                outer_result = outer_obj
+                outer_reasoning = ""
+
+            # Extract inner component - may have pieces for charade_inner template
+            if isinstance(inner_obj, dict):
+                if "pieces" in inner_obj:
+                    # Inner is a charade of pieces
+                    inner_breakdown = inner_obj  # Pass the whole object
+                else:
+                    inner_fodder = inner_obj.get("fodder", {}).get("text", "")
+                    inner_result = inner_obj.get("result", "")
+                    inner_reasoning = inner_obj.get("reasoning", "")
+                    inner_breakdown = {
+                        "fodder": inner_fodder,
+                        "result": inner_result,
+                        "reasoning": inner_reasoning
+                    }
+            else:
+                inner_breakdown = {
+                    "fodder": "",
+                    "result": inner_obj,
+                    "reasoning": ""
+                }
+
+            breakdown.append({
+                "type": "container",
+                "template": template,
+                "indicator": indicator.get("text", ""),
+                "outer": {
+                    "fodder": outer_fodder,
+                    "result": outer_result,
+                    "reasoning": outer_reasoning
+                },
+                "inner": inner_breakdown,
+                "to": result,
+                "assembly": assembly,
+                "icon": "📦"
+            })
+            if "Container" not in [t["name"] for t in techniques]:
+                techniques.append({"name": "Container", "icon": "📦"})
+
         elif step_type == "charade_verify":
             components = step.get("components", [])
             result = step.get("result", "")
@@ -2518,13 +2593,53 @@ def build_breakdown(steps):
             if "Charade" not in [t["name"] for t in techniques]:
                 techniques.append({"name": "Charade", "icon": "🔗"})
 
-        elif step_type == "hidden":
-            fodder = get_fodder_text(step)
+        elif step_type == "charade":
+            # New format with template reference
+            template = step.get("template", "")
+            parts = step.get("parts", [])
+            result = step.get("result", "")
+            assembly = step.get("assembly", "")
+            breakdown.append({
+                "type": "charade",
+                "template": template,
+                "parts": parts,
+                "to": result,
+                "assembly": assembly,
+                "icon": "🔗"
+            })
+            if "Charade" not in [t["name"] for t in techniques]:
+                techniques.append({"name": "Charade", "icon": "🔗"})
+
+        elif step_type == "transformation_chain":
+            # New format: transformation chain with template
+            template = step.get("template", "")
+            chain_steps = step.get("steps", [])
             result = step.get("result", "")
             breakdown.append({
+                "type": "transformation_chain",
+                "template": template,
+                "steps": chain_steps,
+                "to": result,
+                "icon": "🔄"
+            })
+            if "Transformation" not in [t["name"] for t in techniques]:
+                techniques.append({"name": "Transformation", "icon": "🔄"})
+
+        elif step_type == "hidden":
+            template = step.get("template", "")
+            fodder = get_fodder_text(step)
+            result = step.get("result", "")
+            indicator = step.get("indicator", {}).get("text", "") if isinstance(step.get("indicator"), dict) else ""
+            hidden_letters = step.get("hidden_letters", "")
+            reasoning = step.get("reasoning", "")
+            breakdown.append({
                 "type": "hidden",
+                "template": template,
                 "from": fodder,
                 "to": result,
+                "indicator": indicator,
+                "hidden_letters": hidden_letters,
+                "reasoning": reasoning,
                 "icon": "👁️"
             })
             if "Hidden word" not in [t["name"] for t in techniques]:
@@ -2594,15 +2709,290 @@ def reveal_answer(clue_id, clue):
     learnings = []
     for item in breakdown:
         if item["type"] == "charade":
-            learnings.append({
-                "title": f"{item['icon']} {' + '.join(item['parts'])} = {item['to']}",
-                "text": ""
-            })
+            template = item.get("template", "")
+            parts = item.get("parts", [])
+            result = item.get("to", "")
+            assembly = item.get("assembly", "")
+
+            if template == "charade_with_parts":
+                # New format: render each part with its transformation
+                learnings.append({
+                    "title": "🔗 CHARADE: Parts join together",
+                    "text": ""
+                })
+                for part in parts:
+                    if isinstance(part, dict):
+                        part_fodder = part.get("fodder", {}).get("text", "")
+                        part_result = part.get("result", "")
+                        reasoning = part.get("reasoning", "")
+                        part_display = f"   \"{part_fodder}\" → {part_result}"
+                        if reasoning:
+                            part_display += f" ({reasoning})"
+                        learnings.append({
+                            "title": part_display,
+                            "text": ""
+                        })
+                    else:
+                        # Old format (string)
+                        learnings.append({
+                            "title": f"   {part}",
+                            "text": ""
+                        })
+                # Assembly
+                learnings.append({
+                    "title": f"   {assembly} ✓",
+                    "text": ""
+                })
+            else:
+                # Old charade format - require template
+                if isinstance(parts[0], str):
+                    raise ValueError(f"Charade type requires a valid template. Got template='{template}' with parts={parts}")
+                else:
+                    raise ValueError(f"Charade type requires a valid template. Got template='{template}' for charade with parts={parts}")
+        elif item["type"] == "transformation_chain":
+            # Transformation chain - render each step in the chain
+            template = item.get("template", "")
+            chain_steps = item.get("steps", [])
+            result = item.get("to", "")
+
+            if template == "transformation_chain":
+                learnings.append({
+                    "title": "🔄 TRANSFORMATION CHAIN: Word transforms through steps",
+                    "text": ""
+                })
+                for step in chain_steps:
+                    step_type = step.get("type", "")
+                    fodder = step.get("fodder", "")
+                    if isinstance(fodder, dict):
+                        fodder_text = fodder.get("text", "")
+                    else:
+                        fodder_text = fodder
+                    step_result = step.get("result", "")
+                    reasoning = step.get("reasoning", "")
+                    indicator = step.get("indicator", {})
+                    indicator_text = indicator.get("text", "") if isinstance(indicator, dict) else ""
+
+                    if step_type == "synonym":
+                        step_display = f"   \"{fodder_text}\" → {step_result}"
+                    elif step_type == "deletion":
+                        step_display = f"   \"{indicator_text}\" removes from {fodder_text} → {step_result}"
+                    elif step_type == "reversal":
+                        step_display = f"   \"{indicator_text}\" reverses {fodder_text} → {step_result}"
+                    else:
+                        step_display = f"   {fodder_text} → {step_result}"
+
+                    if reasoning:
+                        step_display += f" ({reasoning})"
+                    learnings.append({
+                        "title": step_display,
+                        "text": ""
+                    })
+                learnings.append({
+                    "title": f"   → {result} ✓",
+                    "text": ""
+                })
+            else:
+                raise ValueError(f"Transformation chain requires a valid template. Got template='{template}'")
         elif item["type"] == "container":
-            learnings.append({
-                "title": f"{item['icon']} {item['inner']} inside {item['outer']} = {item['to']}",
-                "text": ""
-            })
+            # Container - render based on template
+            template = item.get("template", "")
+            outer = item.get("outer", {})
+            inner = item.get("inner", {})
+            indicator = item.get("indicator", "")
+            answer = item.get("to", "")
+
+            # Handle both new format (dict) and old format (string)
+            if isinstance(outer, dict):
+                outer_fodder = outer.get("fodder", "")
+                outer_result = outer.get("result", "")
+                outer_reasoning = outer.get("reasoning", "")
+            else:
+                outer_fodder = ""
+                outer_result = outer
+                outer_reasoning = ""
+
+            if isinstance(inner, dict):
+                inner_fodder = inner.get("fodder", "")
+                inner_result = inner.get("result", "")
+                inner_reasoning = inner.get("reasoning", "")
+            else:
+                inner_fodder = ""
+                inner_result = inner
+                inner_reasoning = ""
+
+            if template == "insertion_with_two_synonyms":
+                # Step 1: Indicator tells us the structure
+                learnings.append({
+                    "title": f"📦 CONTAINER: \"{indicator}\" tells us A takes B inside (A {indicator} B)",
+                    "text": ""
+                })
+
+                # Step 2: Literal attempt - show it fails
+                outer_words = outer_fodder.upper().split()
+                inner_words = inner_fodder.upper().split()
+                if len(outer_words) >= 2:
+                    literal_attempt = f"{outer_words[0]} + {' '.join(inner_words)} + {outer_words[-1]}"
+                else:
+                    literal_attempt = f"{outer_fodder.upper()} + {inner_fodder.upper()}"
+                learnings.append({
+                    "title": f"   Literal attempt:\n   A = \"{outer_fodder}\", B = \"{inner_fodder}\"\n   → {literal_attempt} = ❌ doesn't work",
+                    "text": ""
+                })
+
+                # Step 3: Need synonyms - show what they are
+                synonym_text = f"   Need synonyms:\n   A: \"{outer_fodder}\" → {outer_result}"
+                if outer_reasoning:
+                    synonym_text += f" ({outer_reasoning})"
+                synonym_text += f"\n   B: \"{inner_fodder}\" → {inner_result}"
+                if inner_reasoning:
+                    synonym_text += f" ({inner_reasoning})"
+                learnings.append({
+                    "title": synonym_text,
+                    "text": ""
+                })
+
+                # Step 4: Assembly with synonyms
+                assembly = item.get("assembly", f"{outer_result[0]} + {inner_result} + {outer_result[1:]} = {answer}")
+                learnings.append({
+                    "title": f"   Assembly with synonyms:\n   {assembly} ✓",
+                    "text": ""
+                })
+            elif template == "insertion_with_one_synonym_outer":
+                # Container where outer requires synonym, inner is explicit
+                learnings.append({
+                    "title": f"📦 CONTAINER: \"{indicator}\" tells us A takes B inside",
+                    "text": ""
+                })
+                # Inner explicit
+                learnings.append({
+                    "title": f"   B: \"{inner_fodder}\" → {inner_result} ({inner_reasoning})",
+                    "text": ""
+                })
+                # Outer synonym
+                learnings.append({
+                    "title": f"   A: \"{outer_fodder}\" → {outer_result} ({outer_reasoning})",
+                    "text": ""
+                })
+                # Assembly
+                assembly = item.get("assembly", "")
+                learnings.append({
+                    "title": f"   Assembly: {assembly} ✓",
+                    "text": ""
+                })
+            elif template == "insertion_with_charade_inner":
+                # Container where inner is built from charade pieces
+                learnings.append({
+                    "title": f"📦 CONTAINER: \"{indicator}\" tells us A takes B inside",
+                    "text": ""
+                })
+                # Outer synonym
+                learnings.append({
+                    "title": f"   A: \"{outer_fodder}\" → {outer_result} ({outer_reasoning})",
+                    "text": ""
+                })
+                # Inner pieces
+                learnings.append({
+                    "title": "   B built from pieces:",
+                    "text": ""
+                })
+                inner_obj = item.get("inner", {})
+                inner_pieces = inner_obj.get("pieces", []) if isinstance(inner_obj, dict) else []
+                for piece in inner_pieces:
+                    piece_fodder = piece.get("fodder", {})
+                    fodder_text = piece_fodder.get("text", "") if isinstance(piece_fodder, dict) else str(piece_fodder)
+                    piece_result = piece.get("result", "")
+                    reasoning = piece.get("reasoning", "")
+                    piece_display = f"      \"{fodder_text}\" → {piece_result}"
+                    if reasoning:
+                        piece_display += f" ({reasoning})"
+                    learnings.append({
+                        "title": piece_display,
+                        "text": ""
+                    })
+                inner_assembly = inner_obj.get("assembly", "") if isinstance(inner_obj, dict) else ""
+                learnings.append({
+                    "title": f"   B: {inner_assembly}",
+                    "text": ""
+                })
+                # Final assembly
+                assembly = item.get("assembly", "")
+                learnings.append({
+                    "title": f"   Assembly: {assembly} ✓",
+                    "text": ""
+                })
+            else:
+                # No fallback - require explicit template
+                raise ValueError(f"Container type requires a valid template. Got template='{template}' for container with outer={outer}, inner={inner}")
+        elif item["type"] == "anagram":
+            # Anagram - render based on template
+            template = item.get("template", "")
+            indicator = item.get("indicator", "")
+            pieces = item.get("pieces", [])
+            result = item.get("to", "")
+            assembly = item.get("assembly", "")
+
+            if template == "anagram_with_fodder_pieces":
+                learnings.append({
+                    "title": "🔀 ANAGRAM: Pieces combine then rearrange",
+                    "text": ""
+                })
+                fodder_parts = []
+                for piece in pieces:
+                    piece_fodder = piece.get("fodder", {})
+                    fodder_text = piece_fodder.get("text", "") if isinstance(piece_fodder, dict) else str(piece_fodder)
+                    piece_result = piece.get("result", "")
+                    reasoning = piece.get("reasoning", "")
+                    fodder_parts.append(piece_result)
+                    piece_display = f"   \"{fodder_text}\" → {piece_result}"
+                    if reasoning:
+                        piece_display += f" ({reasoning})"
+                    learnings.append({
+                        "title": piece_display,
+                        "text": ""
+                    })
+                fodder_combined = " + ".join(fodder_parts)
+                learnings.append({
+                    "title": f"   \"{indicator}\" rearranges {fodder_combined} → {result}",
+                    "text": ""
+                })
+                learnings.append({
+                    "title": f"   → {result} ✓",
+                    "text": ""
+                })
+            else:
+                # Old format - show simple anagram display
+                fodder = item.get("from", "")
+                learnings.append({
+                    "title": f"🔀 \"{indicator}\" rearranges {fodder} → {result}",
+                    "text": ""
+                })
+        elif item["type"] == "hidden":
+            # Hidden word - render based on template
+            template = item.get("template", "")
+            indicator = item.get("indicator", "")
+            fodder = item.get("from", "")
+            result = item.get("to", "")
+            hidden_letters = item.get("hidden_letters", "")
+
+            if template == "hidden_reversed":
+                learnings.append({
+                    "title": f"👁️↩️ HIDDEN REVERSED: \"{indicator}\" reveals answer hidden backwards",
+                    "text": ""
+                })
+                learnings.append({
+                    "title": f"   In \"{fodder}\" find: {hidden_letters}",
+                    "text": ""
+                })
+                learnings.append({
+                    "title": f"   Reversed: {hidden_letters} → {result} ✓",
+                    "text": ""
+                })
+            else:
+                # Standard hidden word
+                learnings.append({
+                    "title": f"👁️ \"{indicator}\" reveals {result} hidden in \"{fodder}\"",
+                    "text": ""
+                })
         else:
             learnings.append({
                 "title": f"{item['icon']} {item.get('from', '')} → {item['to']}",
@@ -2651,6 +3041,373 @@ def reveal_answer(clue_id, clue):
         "highlights": highlights,
         "words": clue.get("words", []),
         "difficulty": difficulty  # Difficulty ratings for plain English summary
+    }
+
+
+def get_solved_view(clue_id, clue):
+    """
+    Get the solved view for a clue - shows full breakdown immediately.
+    No step-by-step interaction, just a static summary display.
+
+    This is used for the "exploration mode" UX where users see the
+    answer breakdown upfront and can explore any step.
+    """
+    steps = clue.get("steps", [])
+    answer = clue.get("clue", {}).get("answer", "")
+    clue_text = clue.get("clue", {}).get("text", "")
+    enumeration = clue.get("clue", {}).get("enumeration", "")
+
+    # Use helper to build breakdown (same as reveal_answer)
+    breakdown, techniques, definition = build_breakdown(steps)
+
+    # Build learnings from breakdown for display
+    learnings = []
+    for item in breakdown:
+        if item["type"] == "charade":
+            template = item.get("template", "")
+            parts = item.get("parts", [])
+            result = item.get("to", "")
+            assembly = item.get("assembly", "")
+
+            if template == "charade_with_parts":
+                # New format: render each part with its transformation
+                learnings.append({
+                    "title": "🔗 CHARADE: Parts join together",
+                    "text": ""
+                })
+                for part in parts:
+                    if isinstance(part, dict):
+                        part_fodder = part.get("fodder", {}).get("text", "")
+                        part_result = part.get("result", "")
+                        part_type = part.get("type", "")
+                        reasoning = part.get("reasoning", "")
+                        part_display = f"   \"{part_fodder}\" → {part_result}"
+                        if reasoning:
+                            part_display += f" ({reasoning})"
+                        learnings.append({
+                            "title": part_display,
+                            "text": ""
+                        })
+                    else:
+                        # Old format (string)
+                        learnings.append({
+                            "title": f"   {part}",
+                            "text": ""
+                        })
+                # Assembly
+                learnings.append({
+                    "title": f"   {assembly} ✓",
+                    "text": ""
+                })
+            else:
+                # Old charade format - require template
+                if isinstance(parts[0], str):
+                    # Old format without template - error out
+                    raise ValueError(f"Charade type requires a valid template. Got template='{template}' with parts={parts}")
+                else:
+                    raise ValueError(f"Charade type requires a valid template. Got template='{template}' for charade with parts={parts}")
+        elif item["type"] == "transformation_chain":
+            # Transformation chain - render each step in the chain
+            template = item.get("template", "")
+            chain_steps = item.get("steps", [])
+            result = item.get("to", "")
+
+            if template == "transformation_chain":
+                learnings.append({
+                    "title": "🔄 TRANSFORMATION CHAIN: Word transforms through steps",
+                    "text": ""
+                })
+                for step in chain_steps:
+                    step_type = step.get("type", "")
+                    fodder = step.get("fodder", "")
+                    if isinstance(fodder, dict):
+                        fodder_text = fodder.get("text", "")
+                    else:
+                        fodder_text = fodder
+                    step_result = step.get("result", "")
+                    reasoning = step.get("reasoning", "")
+                    indicator = step.get("indicator", {})
+                    indicator_text = indicator.get("text", "") if isinstance(indicator, dict) else ""
+
+                    if step_type == "synonym":
+                        step_display = f"   \"{fodder_text}\" → {step_result}"
+                    elif step_type == "deletion":
+                        step_display = f"   \"{indicator_text}\" removes from {fodder_text} → {step_result}"
+                    elif step_type == "reversal":
+                        step_display = f"   \"{indicator_text}\" reverses {fodder_text} → {step_result}"
+                    else:
+                        step_display = f"   {fodder_text} → {step_result}"
+
+                    if reasoning:
+                        step_display += f" ({reasoning})"
+                    learnings.append({
+                        "title": step_display,
+                        "text": ""
+                    })
+                learnings.append({
+                    "title": f"   → {result} ✓",
+                    "text": ""
+                })
+            else:
+                raise ValueError(f"Transformation chain requires a valid template. Got template='{template}'")
+        elif item["type"] == "container":
+            # Container - render based on template
+            template = item.get("template", "")
+            outer = item.get("outer", {})
+            inner = item.get("inner", {})
+            indicator = item.get("indicator", "")
+            answer = item.get("to", "")
+
+            # Handle both new format (dict) and old format (string)
+            if isinstance(outer, dict):
+                outer_fodder = outer.get("fodder", "")
+                outer_result = outer.get("result", "")
+                outer_reasoning = outer.get("reasoning", "")
+            else:
+                outer_fodder = ""
+                outer_result = outer
+                outer_reasoning = ""
+
+            if isinstance(inner, dict):
+                inner_fodder = inner.get("fodder", "")
+                inner_result = inner.get("result", "")
+                inner_reasoning = inner.get("reasoning", "")
+            else:
+                inner_fodder = ""
+                inner_result = inner
+                inner_reasoning = ""
+
+            if template == "insertion_with_two_synonyms":
+                # Step 1: Indicator tells us the structure
+                learnings.append({
+                    "title": f"📦 CONTAINER: \"{indicator}\" tells us A takes B inside (A {indicator} B)",
+                    "text": ""
+                })
+
+                # Step 2: Literal attempt - show it fails
+                outer_words = outer_fodder.upper().split()
+                inner_words = inner_fodder.upper().split()
+                if len(outer_words) >= 2:
+                    literal_attempt = f"{outer_words[0]} + {' '.join(inner_words)} + {outer_words[-1]}"
+                else:
+                    literal_attempt = f"{outer_fodder.upper()} + {inner_fodder.upper()}"
+                learnings.append({
+                    "title": f"   Literal attempt:\n   A = \"{outer_fodder}\", B = \"{inner_fodder}\"\n   → {literal_attempt} = ❌ doesn't work",
+                    "text": ""
+                })
+
+                # Step 3: Need synonyms - show what they are
+                synonym_text = f"   Need synonyms:\n   A: \"{outer_fodder}\" → {outer_result}"
+                if outer_reasoning:
+                    synonym_text += f" ({outer_reasoning})"
+                synonym_text += f"\n   B: \"{inner_fodder}\" → {inner_result}"
+                if inner_reasoning:
+                    synonym_text += f" ({inner_reasoning})"
+                learnings.append({
+                    "title": synonym_text,
+                    "text": ""
+                })
+
+                # Step 4: Assembly with synonyms
+                assembly = item.get("assembly", f"{outer_result[0]} + {inner_result} + {outer_result[1:]} = {answer}")
+                learnings.append({
+                    "title": f"   Assembly with synonyms:\n   {assembly} ✓",
+                    "text": ""
+                })
+            elif template == "insertion_with_one_synonym_outer":
+                # Container where outer requires synonym, inner is explicit
+                learnings.append({
+                    "title": f"📦 CONTAINER: \"{indicator}\" tells us A takes B inside",
+                    "text": ""
+                })
+                # Inner explicit
+                learnings.append({
+                    "title": f"   B: \"{inner_fodder}\" → {inner_result} ({inner_reasoning})",
+                    "text": ""
+                })
+                # Outer synonym
+                learnings.append({
+                    "title": f"   A: \"{outer_fodder}\" → {outer_result} ({outer_reasoning})",
+                    "text": ""
+                })
+                # Assembly
+                assembly = item.get("assembly", "")
+                learnings.append({
+                    "title": f"   Assembly: {assembly} ✓",
+                    "text": ""
+                })
+            elif template == "insertion_with_charade_inner":
+                # Container where inner is built from charade pieces
+                learnings.append({
+                    "title": f"📦 CONTAINER: \"{indicator}\" tells us A takes B inside",
+                    "text": ""
+                })
+                # Outer synonym
+                learnings.append({
+                    "title": f"   A: \"{outer_fodder}\" → {outer_result} ({outer_reasoning})",
+                    "text": ""
+                })
+                # Inner pieces
+                learnings.append({
+                    "title": "   B built from pieces:",
+                    "text": ""
+                })
+                inner_obj = item.get("inner", {})
+                inner_pieces = inner_obj.get("pieces", []) if isinstance(inner_obj, dict) else []
+                for piece in inner_pieces:
+                    piece_fodder = piece.get("fodder", {})
+                    fodder_text = piece_fodder.get("text", "") if isinstance(piece_fodder, dict) else str(piece_fodder)
+                    piece_result = piece.get("result", "")
+                    reasoning = piece.get("reasoning", "")
+                    piece_display = f"      \"{fodder_text}\" → {piece_result}"
+                    if reasoning:
+                        piece_display += f" ({reasoning})"
+                    learnings.append({
+                        "title": piece_display,
+                        "text": ""
+                    })
+                inner_assembly = inner_obj.get("assembly", "") if isinstance(inner_obj, dict) else ""
+                learnings.append({
+                    "title": f"   B: {inner_assembly}",
+                    "text": ""
+                })
+                # Final assembly
+                assembly = item.get("assembly", "")
+                learnings.append({
+                    "title": f"   Assembly: {assembly} ✓",
+                    "text": ""
+                })
+            else:
+                # No fallback - require explicit template
+                raise ValueError(f"Container type requires a valid template. Got template='{template}' for container with outer={outer}, inner={inner}")
+        elif item["type"] == "anagram":
+            # Anagram - render based on template
+            template = item.get("template", "")
+            indicator = item.get("indicator", "")
+            pieces = item.get("pieces", [])
+            result = item.get("to", "")
+            assembly = item.get("assembly", "")
+
+            if template == "anagram_with_fodder_pieces":
+                learnings.append({
+                    "title": "🔀 ANAGRAM: Pieces combine then rearrange",
+                    "text": ""
+                })
+                fodder_parts = []
+                for piece in pieces:
+                    piece_fodder = piece.get("fodder", {})
+                    fodder_text = piece_fodder.get("text", "") if isinstance(piece_fodder, dict) else str(piece_fodder)
+                    piece_result = piece.get("result", "")
+                    piece_type = piece.get("type", "")
+                    reasoning = piece.get("reasoning", "")
+                    fodder_parts.append(piece_result)
+                    piece_display = f"   \"{fodder_text}\" → {piece_result}"
+                    if reasoning:
+                        piece_display += f" ({reasoning})"
+                    learnings.append({
+                        "title": piece_display,
+                        "text": ""
+                    })
+                fodder_combined = " + ".join(fodder_parts)
+                learnings.append({
+                    "title": f"   \"{indicator}\" rearranges {fodder_combined} → {result}",
+                    "text": ""
+                })
+                learnings.append({
+                    "title": f"   → {result} ✓",
+                    "text": ""
+                })
+            else:
+                # Old format - show simple anagram display
+                fodder = item.get("from", "")
+                learnings.append({
+                    "title": f"🔀 \"{indicator}\" rearranges {fodder} → {result}",
+                    "text": ""
+                })
+        elif item["type"] == "hidden":
+            # Hidden word - render based on template
+            template = item.get("template", "")
+            indicator = item.get("indicator", "")
+            fodder = item.get("from", "")
+            result = item.get("to", "")
+            hidden_letters = item.get("hidden_letters", "")
+            reasoning = item.get("reasoning", "")
+
+            if template == "hidden_reversed":
+                learnings.append({
+                    "title": f"👁️↩️ HIDDEN REVERSED: \"{indicator}\" reveals answer hidden backwards",
+                    "text": ""
+                })
+                learnings.append({
+                    "title": f"   In \"{fodder}\" find: {hidden_letters}",
+                    "text": ""
+                })
+                learnings.append({
+                    "title": f"   Reversed: {hidden_letters} → {result} ✓",
+                    "text": ""
+                })
+            else:
+                # Standard hidden word
+                learnings.append({
+                    "title": f"👁️ \"{indicator}\" reveals {result} hidden in \"{fodder}\"",
+                    "text": ""
+                })
+        else:
+            learnings.append({
+                "title": f"{item['icon']} {item.get('from', '')} → {item['to']}",
+                "text": ""
+            })
+
+    # Build highlights for all wordplay parts
+    highlights = []
+    for step in steps:
+        if "fodder" in step and isinstance(step["fodder"], dict):
+            highlights.append({
+                "indices": step["fodder"].get("indices", []),
+                "color": "BLUE"
+            })
+        if "indicator" in step and isinstance(step["indicator"], dict):
+            highlights.append({
+                "indices": step["indicator"].get("indices", []),
+                "color": "YELLOW"
+            })
+        if "expected" in step and isinstance(step["expected"], dict):
+            highlights.append({
+                "indices": step["expected"].get("indices", []),
+                "color": "GREEN"
+            })
+        # Handle new container format with nested outer/inner
+        if "outer" in step and isinstance(step["outer"], dict):
+            outer_fodder = step["outer"].get("fodder", {})
+            if isinstance(outer_fodder, dict) and "indices" in outer_fodder:
+                highlights.append({
+                    "indices": outer_fodder.get("indices", []),
+                    "color": "BLUE"
+                })
+        if "inner" in step and isinstance(step["inner"], dict):
+            inner_fodder = step["inner"].get("fodder", {})
+            if isinstance(inner_fodder, dict) and "indices" in inner_fodder:
+                highlights.append({
+                    "indices": inner_fodder.get("indices", []),
+                    "color": "BLUE"
+                })
+
+    # Get definition hint if available
+    definition_hint = clue.get("difficulty", {}).get("definition", {}).get("hint", "")
+
+    return {
+        "success": True,
+        "mode": "solved_view",  # Tells client to use solved view renderer
+        "clueText": clue_text,
+        "answer": answer,
+        "enumeration": enumeration,
+        "definition": definition,
+        "definitionHint": definition_hint,
+        "breakdown": breakdown,
+        "techniques": techniques,
+        "learnings": learnings,
+        "highlights": highlights,
+        "words": clue.get("words", [])
     }
 
 

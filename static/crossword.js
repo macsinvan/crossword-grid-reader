@@ -153,18 +153,20 @@ class CrosswordPuzzle {
         // Get puzzle number for clue lookup
         const puzzleNumber = this.currentPuzzleInfo?.number || this.puzzle?.number;
 
-        // First, start the session via API to get the clue_id
+        // Build clue_id from puzzle number and clue reference
+        // Format: times-{puzzle}-{number}{direction} (lowercase, dashes)
+        const directionSuffix = wordData.direction === 'across' ? 'a' : 'd';
+        const clueId = `times-${puzzleNumber}-${wordData.clueNumber}${directionSuffix}`;
+
+        // Use solved-view endpoint to get the full breakdown immediately
         try {
-            const response = await fetch('/trainer/start', {
+            const response = await fetch('/trainer/solved-view', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    clue_text: wordData.clueText,
-                    enumeration: wordData.enumeration,
-                    cross_letters: wordData.crossLetters,
-                    puzzle_number: puzzleNumber,
-                    clue_number: wordData.clueNumber,
-                    direction: wordData.direction
+                    clue_id: clueId,
+                    crossLetters: wordData.crossLetters,
+                    enumeration: wordData.enumeration
                 })
             });
 
@@ -195,7 +197,7 @@ class CrosswordPuzzle {
                 onBack: () => this.closeTrainer()
             });
 
-            // Store the initial render state (data IS the render object, not data.render)
+            // Store the render state (solved_view mode)
             this.templateTrainer.render = data;
             this.templateTrainer.loading = false;
             this.templateTrainer.renderUI();
