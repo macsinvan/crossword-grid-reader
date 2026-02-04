@@ -48,18 +48,16 @@ When `step_index` increments, `reset_step_ui_state()` clears: `hint_visible`, `s
 **Auto-reload clues_db.json**
 The server checks file modification time on each `/trainer/start` request. If `clues_db.json` has changed, it reloads automatically - no server restart needed.
 
+**Error out, don't fallback**
+Don't build in silent fallbacks that get forgotten and cause confusion. Error out explicitly instead.
+
 ## What This Is
-Web-based Times Cryptic crossword solver. Import PDFs, solve interactively, get step-by-step teaching via ported cryptic-trainer system.
+Web-based Times Cryptic crossword solver. Import PDFs, solve interactively, get step-by-step teaching via template-based step display system.
 
 ## Quick Start
 ```bash
 # Ensure .env file exists with Supabase credentials (see .env.example)
-
-# Terminal: Grid Reader
 python3 crossword_server.py  # port 8080
-
-# Optional: Trainer API (for guided solving - legacy)
-cd ../cryptic-trainer/cryptic_trainer_bundle && python3 server.py  # port 5001
 ```
 Open http://localhost:8080
 
@@ -67,15 +65,17 @@ Open http://localhost:8080
 
 | File | Purpose |
 |------|---------|
-| `crossword_server.py` | Flask server (port 8080), proxies to trainer |
-| `puzzle_store_supabase.py` | Supabase database storage (Phase 1) |
-| `puzzle_store.py` | Local file-based storage (fallback) |
+| `crossword_server.py` | Flask server (port 8080) |
+| `training_handler.py` | Teaching mode logic: STEP_TEMPLATES, get_render(), handle_input() |
+| `step_display_templates.py` | Template definitions for step types |
+| `clues_db.json` | Pre-annotated clue database (30 clues with template metadata) |
+| `static/trainer.js` | Stateless trainer UI (renders server state) |
 | `static/crossword.js` | Grid UI, keyboard nav, localStorage persistence |
-| `static/trainer.js` | TemplateTrainer (ported from React) |
+| `puzzle_store_supabase.py` | Supabase database storage |
+| `puzzle_store.py` | Local file-based storage (fallback) |
 | `pdf_processor.py` | PDF parsing, grid/clue extraction |
 | `crossword_processor.py` | Grid structure detection |
 | `templates/index.html` | Web UI (bump `?v=N` for cache busting) |
-| `migrations/001_initial_schema.sql` | Supabase database schema |
 
 ## Architecture
 
@@ -83,13 +83,14 @@ Open http://localhost:8080
 Grid Reader (8080)
      │
      ├── crossword.js (grid UI, persistence)
-     ├── trainer.js (solving UI)
+     ├── trainer.js (stateless teaching UI)
      ├── crossword_server.py (Flask)
      │        │
-     │        ├── puzzle_store_supabase.py → Supabase PostgreSQL (cloud)
+     │        ├── training_handler.py (teaching logic)
+     │        ├── puzzle_store_supabase.py → Supabase PostgreSQL
      │        └── puzzle_store.py → Local files (fallback)
      │
-     └──proxy──► cryptic-trainer (5001) [optional, legacy]
+     └── clues_db.json (30 annotated clues)
 ```
 
 ### Database Backend
@@ -99,44 +100,110 @@ The app auto-detects storage backend:
 
 A status indicator (green LED = Supabase, yellow = local) shows in the header.
 
-### Teaching Mode Flow (Phase 2)
-**Architecture:** Server-driven rendering, thin client
+## Teaching Mode (Template-Based Step Display)
+
+### Architecture
+Server-driven rendering with thin client:
 
 1. User clicks "Solve" → `crossword.js` calls `/trainer/start` with clue_id
-2. Server loads clue with pre-annotated `steps` array from database
+2. Server loads clue with pre-annotated `steps` array from `clues_db.json`
 3. `training_handler.py` merges raw step + STEP_TEMPLATE → render object
 4. `trainer.js` displays phases (tap_words, text input, teaching panels)
 5. User input validated via `handle_input()` against `expected` values
 6. On completion, answer auto-applies to grid
 
-**Step Types:** standard_definition, abbreviation, synonym, literal, anagram, reversal, deletion, letter_selection, hidden, container_verify, charade_verify, double_definition, literal_phrase
+### Template System
+Templates define how each step type is displayed:
 
-**Data Source:** Steps come from pre-annotated `clues_db.json` format (NO AI generation)
+**Step Templates** (in `training_handler.py`):
+- `charade_with_parts` - Multi-part wordplay assembly
+- `anagram_with_fodder_pieces` - Anagram with letter mixing
+- `insertion_with_two_synonyms` - Container clues (A inside B)
+- `insertion_with_charade_inner` - Container with charade components
+- `transformation_chain` - Multi-step transformations
 
-## Recent Features
-- **Supabase integration**: Cloud database storage (Phase 1 complete)
-- **DB status indicator**: Shows connection status in header
-- **Progress persistence**: localStorage auto-saves puzzle progress (survives refresh)
-- **Auto-apply answers**: Trainer answers auto-fill grid when solved (no button)
-- **Keyboard shortcuts**: Cmd+R etc. work (not intercepted by grid)
-- **Mobile responsive grid**: Scales to fit any screen width (see SPEC.md §10)
-- **Local network access**: Server binds to `0.0.0.0` for testing on mobile devices
+**Part Types** (within templates):
+- `synonym` - Word meaning another
+- `abbreviation` - Standard abbrev (piano=P, five=V)
+- `literal` - Word used as-is
+- `literal_phrase` - Phrase read literally
+- `synonym_then_deletion` - Synonym with letter removal
+- `synonym_then_reversal` - Synonym reversed
+- `abbreviation_synonym_reversed` - Abbrev of reversed synonym
+- `letter_selection` - First/last/middle letters
+- `hidden` - Hidden word in phrase
+
+### Step Types (in clues_db.json)
+- `standard_definition` - Definition identification
+- `charade` - Parts assembled in sequence
+- `anagram` - Letters rearranged
+- `container` - One word inside another
+- `reversal` - Word reversed
+- `deletion` - Letter(s) removed
+- `hidden` - Answer hidden in clue text
+- `double_definition` - Two definitions
+- `transformation_chain` - Multiple operations
+
+### Clue Metadata Format
+```json
+{
+  "id": "times-29453-4a",
+  "clue": {"number": "4A", "text": "...", "answer": "REPROACH"},
+  "words": ["Twit", "copying", "antique", ...],
+  "steps": [
+    {
+      "type": "standard_definition",
+      "expected": {"indices": [0], "text": "Twit"},
+      "position": "start"
+    },
+    {
+      "type": "charade",
+      "template": "charade_with_parts",
+      "parts": [
+        {
+          "fodder": {"indices": [1, 2], "text": "copying antique"},
+          "result": "REPRO",
+          "type": "synonym",
+          "reasoning": "A repro is a reproduction"
+        }
+      ],
+      "result": "REPROACH",
+      "assembly": "REPRO + ACH = REPROACH"
+    }
+  ]
+}
+```
+
+## Current State
+
+### Completed Features
+- ✅ Supabase integration (Phase 1)
+- ✅ Template-based step display system (Phase 2)
+- ✅ 30 clues fully annotated with templates
+- ✅ Mobile responsive grid
+- ✅ Progress persistence (localStorage)
+- ✅ Auto-apply answers to grid
+
+### Data
+- 30 annotated clues from Times puzzle 29453
+- All step types have working templates
+- clues_db.json auto-reloads on change
 
 ## Mobile Design Principles
 
-**Grid uses CSS Grid with `1fr` units, NOT fixed pixel sizes.** This allows the grid to scale automatically to any screen width.
+**Grid uses CSS Grid with `1fr` units, NOT fixed pixel sizes.**
 
-Key implementation details:
+Key implementation:
 - `crossword.js` sets `grid-template-columns: repeat(N, 1fr)`
 - Cells use `aspect-ratio: 1` to stay square
-- Mobile breakpoint at 600px uses `width: calc(100vw - 26px)` to fill screen
+- Mobile breakpoint at 600px uses `width: calc(100vw - 26px)`
 - Font sizes use `clamp()` for fluid scaling
 
 See `SPEC.md` Section 10 for full details.
 
 ## Storage
 
-### Supabase Tables (Phase 1)
+### Supabase Tables
 - `publications` - Times, Guardian, Telegraph, Express
 - `puzzles` - Primary entity (grid + metadata)
 - `clues` - Belong to puzzles
@@ -157,35 +224,29 @@ SUPABASE_ANON_KEY=your-anon-key
 
 ## Common Commands
 ```bash
-git status && git diff                    # Check changes
-git add <files> && git commit -m "msg"    # Commit
-git push                                  # Push to main
+# Start server
+python3 crossword_server.py
+
+# Git workflow
+git status && git diff
+git add <files> && git commit -m "msg"
+git push
+
+# Validate clues_db.json
+python3 -c "import json; json.load(open('clues_db.json')); print('Valid')"
 ```
 
 ## Cache Busting
 When changing JS/CSS files, bump version in `templates/index.html`:
 ```html
-<script src="/static/crossword.js?v=14"></script>
+<script src="/static/crossword.js?v=21"></script>
 ```
 
 ## Development Roadmap
 
-See `PLAN.md` for full roadmap. Summary:
-
-### Phase 1: Supabase Database Integration ✓ Complete
-- Supabase PostgreSQL backend
-- Publications, puzzles, clues, user_progress tables
-- Auto-fallback to local storage
-- DB status indicator
-
-### Phase 2: Interactive Teaching Mode (Next) - NO AI
-- Port `training_handler.py` from cryptic-trainer (STEP_TEMPLATES, get_render, handle_input)
-- Step data is PRE-ANNOTATED in imported JSON (clues_db.json format)
-- Templates decorate raw steps into interactive phases (tap_words, text, multiple_choice)
-- Remove proxy to cryptic-trainer; run locally
-- See `PLAN.md` for full architecture
-
-### Phase 3: Vercel Deployment
+### Phase 1: Supabase Database Integration ✅ Complete
+### Phase 2: Template-Based Teaching Mode ✅ Complete
+### Phase 3: Vercel Deployment (Next)
 - Serverless Flask on Vercel
 - Environment variables for keys
 
@@ -195,3 +256,12 @@ See `PLAN.md` for full roadmap. Summary:
 
 ### Phase 5: Multi-User Features
 - Rate limiting, analytics, polish
+
+See `PLAN.md` for full roadmap.
+
+## Worktrees
+This repo uses git worktrees:
+- `/Users/andrewmackenzie/Desktop/Grid Reader` - main branch
+- `/Users/andrewmackenzie/Desktop/Grid Reader/upbeat-driscoll` - upbeat-driscoll branch
+
+To switch work between branches, cd to the appropriate directory.
