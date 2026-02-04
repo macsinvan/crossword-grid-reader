@@ -2722,26 +2722,6 @@
           "position": "end"
         },
         {
-          "type": "literal",
-          "fodder": {
-            "indices": [
-              0
-            ],
-            "text": "See"
-          },
-          "result": "SEE"
-        },
-        {
-          "type": "literal",
-          "fodder": {
-            "indices": [
-              1
-            ],
-            "text": "dogma"
-          },
-          "result": "DOGMA"
-        },
-        {
           "type": "connector",
           "word": {
             "indices": [
