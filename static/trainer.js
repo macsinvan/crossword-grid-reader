@@ -285,6 +285,49 @@ class TemplateTrainer {
         this.submitInput(value);
     }
 
+    // Handle step menu item click - navigate to selected step
+    handleMenuItemClick(stepIndex) {
+        fetch('/trainer/menu-select', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                clue_id: this.clueId,
+                step_index: stepIndex,
+                crossLetters: this.crossLetters,
+                enumeration: this.enumeration
+            })
+        })
+        .then(r => r.json())
+        .then(renderObj => {
+            this.render = renderObj;
+            this.renderUI();
+        })
+        .catch(err => {
+            console.error('Error selecting menu item:', err);
+        });
+    }
+
+    // Handle return to menu button click
+    handleBackToMenu() {
+        fetch('/trainer/return-menu', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                clue_id: this.clueId,
+                crossLetters: this.crossLetters,
+                enumeration: this.enumeration
+            })
+        })
+        .then(r => r.json())
+        .then(renderObj => {
+            this.render = renderObj;
+            this.renderUI();
+        })
+        .catch(err => {
+            console.error('Error returning to menu:', err);
+        });
+    }
+
     // =========================================================================
     // RENDERING HELPERS
     // =========================================================================
@@ -364,6 +407,12 @@ class TemplateTrainer {
             return;
         }
 
+        // Check for step menu mode
+        if (this.render.mode === 'step_menu') {
+            this.renderStepMenu();
+            return;
+        }
+
         const isComplete = this.render.complete;
         const isTeaching = this.render.phaseId === 'teaching';
 
@@ -376,6 +425,18 @@ class TemplateTrainer {
 
         // Build main UI (React lines 577-782)
         const html = `
+            <!-- HEADER: Back to Menu Button -->
+            <div style="margin-bottom: 0.75rem;">
+                <button onclick="trainer.handleBackToMenu()"
+                        style="padding: 0.5rem 1rem; background: #f3f4f6; border: 1px solid #d1d5db;
+                               border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem;
+                               color: #374151; transition: background 0.2s;"
+                        onmouseover="this.style.background='#e5e7eb'"
+                        onmouseout="this.style.background='#f3f4f6'">
+                    ← Back to Steps
+                </button>
+            </div>
+
             <!-- SECTION 1: CLUE WORDS (React lines 579-601) -->
             <div style="background: white; border-radius: 0.75rem 0.75rem 0 0; border: 1px solid #e5e7eb; border-bottom: none; padding: 1rem; min-height: 100px;">
                 <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 1.25rem; font-family: serif; line-height: 1.625;">
@@ -782,6 +843,109 @@ class TemplateTrainer {
 
         this.container.innerHTML = html;
         this.attachEventListeners();
+    }
+
+    /**
+     * Render the step menu - overview showing all steps with status indicators.
+     */
+    renderStepMenu() {
+        const r = this.render;
+        const clueText = r.clueText || this.clueText || '';
+        const enumeration = r.enumeration || this.enumeration || '';
+
+        const statusIcons = {
+            'pending': '⭕',
+            'in_progress': '🔄',
+            'completed': '✓'
+        };
+
+        const statusColors = {
+            'pending': '#9ca3af',      // gray
+            'in_progress': '#3b82f6',   // blue
+            'completed': '#22c55e'      // green
+        };
+
+        const html = `
+            <div class="step-menu-container" style="padding: 1.5rem; max-width: 800px; margin: 0 auto;">
+                <!-- Header: Clue Text -->
+                <div class="menu-header" style="margin-bottom: 1.5rem;">
+                    <h2 style="font-size: 1.25rem; font-weight: 600; color: #1f2937; margin: 0 0 0.5rem 0;">
+                        ${clueText}
+                    </h2>
+                    <p style="color: #6b7280; font-size: 0.875rem;">
+                        ${enumeration}
+                    </p>
+                </div>
+
+                <!-- Answer Boxes -->
+                <div class="menu-answer-section" style="margin: 1.5rem 0; padding: 1rem; background: #f9fafb; border-radius: 0.5rem;">
+                    ${this.renderAnswerBoxes()}
+                </div>
+
+                <!-- Steps List -->
+                <div class="steps-list" style="margin-top: 1.5rem;">
+                    <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #6b7280;">
+                        Steps to solve:
+                    </h3>
+                    ${(r.menuItems || []).map(item => `
+                        <div class="step-item ${item.status}"
+                             data-step-index="${item.index}"
+                             style="display: flex; align-items: center; padding: 1rem; margin-bottom: 0.75rem;
+                                    background: ${item.status === 'completed' ? '#f0fdf4' : item.status === 'in_progress' ? '#eff6ff' : 'white'};
+                                    border: 2px solid ${item.status === 'completed' ? '#22c55e' : item.status === 'in_progress' ? '#3b82f6' : '#e5e7eb'};
+                                    border-radius: 0.5rem; cursor: pointer; transition: all 0.2s;">
+                            <span class="status-icon" style="font-size: 1.25rem; margin-right: 0.75rem;">
+                                ${statusIcons[item.status]}
+                            </span>
+                            <span class="step-number" style="font-weight: 600; margin-right: 0.5rem; color: ${statusColors[item.status]};">
+                                ${item.index + 1}.
+                            </span>
+                            <span class="step-title" style="flex: 1; color: ${statusColors[item.status]};">
+                                ${item.title}
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <!-- Action Prompt -->
+                <div class="menu-actions" style="margin-top: 1.5rem; text-align: center;">
+                    <p class="action-prompt" style="color: #6b7280; font-size: 0.875rem;">
+                        ${r.actionPrompt || 'Click any step to begin'}
+                    </p>
+                </div>
+            </div>
+        `;
+
+        this.container.innerHTML = html;
+
+        // Attach click handlers to step items
+        const stepItems = this.container.querySelectorAll('.step-item');
+        stepItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const stepIndex = parseInt(item.getAttribute('data-step-index'));
+                this.handleMenuItemClick(stepIndex);
+            });
+
+            // Hover effect
+            item.addEventListener('mouseenter', () => {
+                if (item.classList.contains('completed')) {
+                    item.style.background = '#dcfce7';
+                } else if (item.classList.contains('in_progress')) {
+                    item.style.background = '#dbeafe';
+                } else {
+                    item.style.background = '#f9fafb';
+                }
+            });
+            item.addEventListener('mouseleave', () => {
+                if (item.classList.contains('completed')) {
+                    item.style.background = '#f0fdf4';
+                } else if (item.classList.contains('in_progress')) {
+                    item.style.background = '#eff6ff';
+                } else {
+                    item.style.background = 'white';
+                }
+            });
+        });
     }
 
     /**

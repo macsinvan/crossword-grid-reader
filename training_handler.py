@@ -1143,12 +1143,13 @@ def start_session(clue_id, clue, cross_letters=None, enumeration=None):
     """Initialize a new training session."""
     _sessions[clue_id] = {
         "clue_id": clue_id,
-        "step_index": -1,  # Start at -1 for clue type identification step
+        "step_index": -2,  # Start at -2 for step menu, -1 for clue type, 0+ for steps
         "phase_index": 0,
         "highlights": [],
         "learnings": [],
         "answer_known": False,  # True if user solved from definition (now reviewing wordplay)
         "found_indicators": [],  # Track which indicator indices have been found (any order)
+        "completed_steps": [],  # Track completed step indices for status indicators
         # UI state (server-driven, client is dumb)
         "selected_indices": [],  # Words selected in tap_words mode
         "user_answer": [],  # Letters typed in answer boxes
@@ -1337,6 +1338,47 @@ def substitute_variables(text, step, session, clue=None):
 
     return text
 
+def _build_menu_render(session, clue):
+    """
+    Builds menu view showing all steps with status indicators.
+    Template-driven: generates step titles from clue metadata.
+    """
+    steps_data = clue.get("steps", [])
+    menu_items = []
+
+    for idx, step in enumerate(steps_data):
+        # Generate title from assembly field (template-driven)
+        title = step.get("assembly", step.get("type", f"Step {idx + 1}"))
+
+        # Determine status: pending, in_progress, completed
+        if idx in session["completed_steps"]:
+            status = "completed"
+        elif idx == session.get("current_menu_selection", -1):
+            status = "in_progress"
+        else:
+            status = "pending"
+
+        menu_items.append({
+            "index": idx,
+            "title": title,
+            "type": step.get("type", ""),
+            "status": status
+        })
+
+    return {
+        "mode": "step_menu",
+        "inputMode": "none",
+        "menuItems": menu_items,
+        "words": clue.get("words", []),
+        "answer": clue.get("clue", {}).get("answer", ""),
+        "userAnswer": session.get("user_answer", []),
+        "enumeration": session.get("enumeration", ""),
+        "crossLetters": session.get("cross_letters", []),
+        "answerLocked": session.get("answer_locked", False),
+        "actionPrompt": "Click any step to begin",
+        "button": {"label": "Start", "action": "start_first_step"}
+    }
+
 def get_render(clue_id, clue):
     """Build render object for current state."""
     session = _sessions.get(clue_id)
@@ -1373,6 +1415,10 @@ def get_render(clue_id, clue):
             # Difficulty ratings for plain English summary
             "difficulty": difficulty
         }
+
+    # Handle step menu (step_index == -2)
+    if session["step_index"] == -2:
+        return _build_menu_render(session, clue)
 
     # Handle clue type identification step (step_index == -1)
     if session["step_index"] == -1:
@@ -1715,6 +1761,36 @@ def build_wordplay_teaching(step, clue):
     return "\n".join(lines)
 
 # =============================================================================
+# MENU NAVIGATION
+# =============================================================================
+
+def handle_menu_selection(clue_id, clue, step_index):
+    """
+    Jump to selected step from menu.
+    """
+    session = get_session(clue_id)
+    if not session:
+        return {"error": "No session"}
+
+    session["step_index"] = step_index
+    session["phase_index"] = 0
+    reset_step_ui_state(session)
+
+    return get_render(clue_id, clue)
+
+def return_to_menu(clue_id, clue):
+    """
+    Return to step menu from any step.
+    """
+    session = get_session(clue_id)
+    if not session:
+        return {"error": "No session"}
+
+    session["step_index"] = -2
+    session["phase_index"] = 0
+    return get_render(clue_id, clue)
+
+# =============================================================================
 # INPUT HANDLING
 # =============================================================================
 
@@ -2052,6 +2128,11 @@ def handle_continue(clue_id, clue):
             # Auto-populate and lock the answer
             session["user_answer"] = list(final_answer)
             session["answer_locked"] = True
+
+        # Mark step as completed before advancing
+        current_step = session["step_index"]
+        if current_step >= 0 and current_step not in session["completed_steps"]:
+            session["completed_steps"].append(current_step)
 
         session["step_index"] += 1
         session["phase_index"] = 0

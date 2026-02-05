@@ -1024,6 +1024,71 @@ def trainer_ui_state():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/trainer/menu-select', methods=['POST'])
+def trainer_menu_select():
+    """Select a step from the menu."""
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    clue_id = data.get('clue_id')
+    step_index = data.get('step_index')
+    cross_letters = data.get('crossLetters', [])
+    enumeration = data.get('enumeration', '')
+
+    if clue_id is None:
+        return jsonify({'error': 'Missing clue_id'}), 400
+    if step_index is None:
+        return jsonify({'error': 'Missing step_index'}), 400
+
+    try:
+        clue_data = CLUES_DB.get(clue_id)
+        if not clue_data:
+            return jsonify({'error': 'Clue not found'}), 404
+
+        result = training_handler.handle_menu_selection(clue_id, clue_data, step_index)
+        result['clue_id'] = clue_id
+        result['crossLetters'] = cross_letters
+        result['enumeration'] = enumeration or clue_data.get('clue', {}).get('enumeration', '')
+        return jsonify(result)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/trainer/return-menu', methods=['POST'])
+def trainer_return_menu():
+    """Return to menu from any step."""
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    clue_id = data.get('clue_id')
+    cross_letters = data.get('crossLetters', [])
+    enumeration = data.get('enumeration', '')
+
+    if not clue_id:
+        return jsonify({'error': 'Missing clue_id'}), 400
+
+    try:
+        clue_data = CLUES_DB.get(clue_id)
+        if not clue_data:
+            return jsonify({'error': 'Clue not found'}), 404
+
+        result = training_handler.return_to_menu(clue_id, clue_data)
+        result['clue_id'] = clue_id
+        result['crossLetters'] = cross_letters
+        result['enumeration'] = enumeration or clue_data.get('clue', {}).get('enumeration', '')
+        return jsonify(result)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("Starting Crossword Server...")
     print("Open http://localhost:8080 in your browser")
