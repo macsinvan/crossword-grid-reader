@@ -1,0 +1,47 @@
+{
+  "version": "1.0",
+  "description": "Render template definitions stored EXTERNAL TO CODE. These define HOW to present each step type - phases, input modes, prompts, panel formatting. They accept clue step template data as input.",
+  "templates": {
+    "standard_definition": {
+      "description": "Generic presentation logic for definition identification steps",
+      "phases": [
+        {
+          "id": "select",
+          "actionPrompt": "Tap the definition words",
+          "intro": {
+            "title": "Find the Definition",
+            "text": "Every standard cryptic clue has a 'straight' definition — a normal dictionary meaning of the answer.\n\nKey insight: The definition is ALWAYS at the very start OR the very end of the clue. Never in the middle!",
+            "example": "Ignore the misleading surface story. Focus on the start and end — which phrase could define a word?"
+          },
+          "panel": {
+            "title": "FIND THE DEFINITION",
+            "instruction": "Tap the definition words. Remember: it's always at the start or end of the clue."
+          },
+          "inputMode": "tap_words",
+          "onCorrect": {
+            "highlight": {
+              "color": "GREEN",
+              "role": "definition"
+            }
+          },
+          "onWrong": {
+            "message": "Hint: The definition is always at the very start OR very end — never in the middle."
+          }
+        },
+        {
+          "id": "teaching",
+          "actionPrompt": "Continue to next step",
+          "panel": {
+            "title": "DEFINITION FOUND: {definition_text}",
+            "instruction": "Good! The definition, '{definition_text}', is at the {position} of the clue."
+          },
+          "inputMode": "none",
+          "button": {
+            "label": "Continue →",
+            "action": "next_step"
+          }
+        }
+      ]
+    }
+  }
+}

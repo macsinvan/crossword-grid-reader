@@ -330,12 +330,13 @@ This is why we control the metadata format completely. We're not constrained by 
 
 ### 4.2.2 Clue Step Templates → Render Templates (The Two-Layer System)
 
-**Critical Architecture:** Each step `type` in clue metadata maps 1:1 to a render template in `training_handler.py`.
+**Critical Architecture:** Each step `type` in clue metadata maps 1:1 to a render template.
 
-**IMPORTANT: Templates Stored External to Code**
-- **Clue Step Template Schemas:** Stored in `clue_step_templates.json` (NOT in code)
-- **Render Templates:** Stored in `training_handler.py` (code)
-- **Why separate:** Template schemas must be version-controlled, machine-readable, and reusable independent of implementation code
+**IMPORTANT: ALL Templates Stored EXTERNAL TO CODE**
+- **Clue Step Template Schemas:** Stored in `clue_step_templates.json` (EXTERNAL TO CODE)
+- **Render Templates:** Stored in `render_templates.json` (EXTERNAL TO CODE)
+- **Why external:** Templates must be version-controlled, machine-readable, and reusable independent of implementation code
+- **Implementation:** `training_handler.py` loads these template files at runtime
 
 **IMPORTANT: Thin Stateless Client**
 The client (`trainer.js`) has ZERO state and ZERO logic. It receives a complete `render` object from the server and displays it. The render object contains EVERYTHING needed: what to show, what input mode, what colors, what text. The client never decides anything—it's a pure rendering layer.
@@ -355,11 +356,12 @@ LAYER 1: Clue Step Template
            │
            │ 1:1 mapping ↓
            │
-LAYER 2: Render Template (in training_handler.py - CODE)
+LAYER 2: Render Template (in render_templates.json - EXTERNAL TO CODE)
   └─ Generic step type information
   └─ Accepts clue step data as input
   └─ Defines how to present in teaching mode
-  └─ Example: STEP_TEMPLATES["synonym"] = {
+  └─ Loaded by training_handler.py at runtime
+  └─ Example: render_templates.json → templates → synonym → {
        "phases": [
          {"id": "fodder", "inputMode": "tap_words", ...},
          {"id": "result", "inputMode": "text", ...},

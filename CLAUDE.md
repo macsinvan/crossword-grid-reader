@@ -68,9 +68,10 @@ Open http://localhost:8080
 | File | Purpose |
 |------|---------|
 | `crossword_server.py` | Flask server (port 8080) |
-| `training_handler.py` | Teaching mode logic: STEP_TEMPLATES, get_render(), handle_input() |
+| `training_handler.py` | Teaching mode logic: loads templates, get_render(), handle_input() |
+| `clue_step_templates.json` | **EXTERNAL TO CODE** - Clue step template schemas (WHAT data from clue) |
+| `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
 | `step_display_templates.py` | Display flow templates for complex step types (container, charade) |
-| `clue_step_templates.json` | **AUTHORITATIVE** schema definitions for clue step templates |
 | `clues_db.json` | Pre-annotated clue database (30 clues with template metadata) |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
 | `static/crossword.js` | Grid UI, keyboard nav, localStorage persistence |

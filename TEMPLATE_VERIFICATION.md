@@ -13,10 +13,12 @@ Verify that both clue metadata templates and render templates have everything ne
 - **We control this:** This is our custom schema, optimized for data extraction from clues
 - **Documentation:** SPEC.md Appendix B, CLAUDE.md line 73
 
-**Render Templates (Code):**
-- **Location:** `training_handler.py` → `STEP_TEMPLATES` dictionary
-- **Purpose:** Generic presentation logic - phases, input modes, prompts
-- **Documentation:** SPEC.md Section 5.1, CLAUDE.md line 71
+**Render Templates (EXTERNAL TO CODE):**
+- **Authoritative Source:** `render_templates.json`
+- **Purpose:** Generic presentation logic - phases, input modes, prompts. Defines HOW to present each step type.
+- **Contents:** Phases, input modes, action prompts, panel formatting for each template type
+- **Used by:** `training_handler.py` loads and uses these templates
+- **Documentation:** SPEC.md Section 5.1, CLAUDE.md
 
 **Display Flow Templates:**
 - **Location:** `step_display_templates.py` → `CONTAINER_TEMPLATES` dictionary
