@@ -996,7 +996,7 @@ class TemplateTrainer {
                                         ${(r.words || []).map((word, wordIdx) => {
                                             const availableIndices = item.available_indices || [];
                                             if (availableIndices.length === 0 || availableIndices.includes(wordIdx)) {
-                                                return \`<span class="clue-word" data-word-idx="\${wordIdx}" data-item-idx="\${idx}" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;">\${word}</span>\`;
+                                                return '<span class="clue-word" data-word-idx="' + wordIdx + '" data-item-idx="' + idx + '" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;">' + word + '</span>';
                                             }
                                             return '';
                                         }).join('')}
@@ -1005,15 +1005,9 @@ class TemplateTrainer {
                                         <div style="flex: 1;">
                                             <p style="color: #374151; margin-bottom: 0.5rem;">Click on the clue words to ${item.title.toLowerCase()}.</p>
                                         </div>
-                                        ${item.hint ? \`<button class="hint-toggle" data-item-idx="\${idx}"
-                                                style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;"
-                                                title="Show hint">
-                                            💡
-                                        </button>\` : ''}
+                                        ${item.hint ? '<button class="hint-toggle" data-item-idx="' + idx + '" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;" title="Show hint">💡</button>' : ''}
                                     </div>
-                                    ${item.hint ? \`<div class="hint-content" data-item-idx="\${idx}" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;">
-                                        <p style="color: #92400e; font-size: 0.875rem; margin: 0;">\${item.hint}</p>
-                                    </div>\` : ''}`
+                                    ${item.hint ? '<div class="hint-content" data-item-idx="' + idx + '" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;"><p style="color: #92400e; font-size: 0.875rem; margin: 0;">' + item.hint + '</p></div>' : ''}`
                                 }
                             </div>
                         </div>
