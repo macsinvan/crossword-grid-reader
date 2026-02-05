@@ -1372,24 +1372,115 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
         inner_fodder = inner.get("fodder", {}).get("text", "") if isinstance(inner, dict) else ""
 
         if template == "insertion_with_two_synonyms":
+            outer_result = outer.get("result", "")
+            inner_result = inner.get("result", "")
+            assembly = step.get("assembly", "")
             return [
-                {"index": f"{base_index}.1", "title": "Identify Container Indicator", "type": "container_indicator", "step_data": step, "sub_step": "indicator", "expected_indices": indicator.get("indices", [])},
-                {"index": f"{base_index}.2", "title": "Identify Outer Word", "type": "container_outer", "step_data": step, "sub_step": "outer", "expected_indices": outer.get("fodder", {}).get("indices", [])},
-                {"index": f"{base_index}.3", "title": "Identify Inner Word", "type": "container_inner", "step_data": step, "sub_step": "inner", "expected_indices": inner.get("fodder", {}).get("indices", [])},
-                {"index": f"{base_index}.4", "title": "Assemble", "type": "container_assembly", "step_data": step, "sub_step": "assembly"}
+                {
+                    "index": f"{base_index}.1",
+                    "title": "Identify Container Indicator",
+                    "type": "container_indicator",
+                    "step_data": step,
+                    "sub_step": "indicator",
+                    "expected_indices": indicator.get("indices", []),
+                    "hint": "Container indicators suggest one thing goes inside another. Look for words like 'in', 'within', 'holding', 'containing', or words that suggest insertion or lengthening."
+                },
+                {
+                    "index": f"{base_index}.2",
+                    "title": "Identify Outer Word",
+                    "type": "container_outer",
+                    "step_data": step,
+                    "sub_step": "outer",
+                    "expected_indices": outer.get("fodder", {}).get("indices", []),
+                    "hint": f"This word will become the outer container. Its synonym ({outer_result}) will hold something inside it."
+                },
+                {
+                    "index": f"{base_index}.3",
+                    "title": "Identify Inner Word",
+                    "type": "container_inner",
+                    "step_data": step,
+                    "sub_step": "inner",
+                    "expected_indices": inner.get("fodder", {}).get("indices", []),
+                    "hint": f"This word will be inserted inside. Its synonym ({inner_result}) goes into the outer word."
+                },
+                {
+                    "index": f"{base_index}.4",
+                    "title": "Assemble",
+                    "type": "container_assembly",
+                    "step_data": step,
+                    "sub_step": "assembly",
+                    "hint": f"Combine the synonyms according to the container structure: {assembly}"
+                }
             ]
         elif template == "insertion_with_one_synonym_outer":
+            outer_result = outer.get("result", "")
+            assembly = step.get("assembly", "")
             return [
-                {"index": f"{base_index}.1", "title": "Identify Container Indicator", "type": "container_indicator", "step_data": step, "sub_step": "indicator", "expected_indices": indicator.get("indices", [])},
-                {"index": f"{base_index}.2", "title": "Identify Outer Synonym", "type": "container_outer", "step_data": step, "sub_step": "outer", "expected_indices": outer.get("fodder", {}).get("indices", [])},
-                {"index": f"{base_index}.3", "title": "Assemble", "type": "container_assembly", "step_data": step, "sub_step": "assembly"}
+                {
+                    "index": f"{base_index}.1",
+                    "title": "Identify Container Indicator",
+                    "type": "container_indicator",
+                    "step_data": step,
+                    "sub_step": "indicator",
+                    "expected_indices": indicator.get("indices", []),
+                    "hint": "Container indicators suggest one thing goes inside another. Look for words like 'in', 'within', 'holding', 'containing'."
+                },
+                {
+                    "index": f"{base_index}.2",
+                    "title": "Identify Outer Synonym",
+                    "type": "container_outer",
+                    "step_data": step,
+                    "sub_step": "outer",
+                    "expected_indices": outer.get("fodder", {}).get("indices", []),
+                    "hint": f"This word's synonym ({outer_result}) will be the outer container."
+                },
+                {
+                    "index": f"{base_index}.3",
+                    "title": "Assemble",
+                    "type": "container_assembly",
+                    "step_data": step,
+                    "sub_step": "assembly",
+                    "hint": f"Combine according to: {assembly}"
+                }
             ]
         elif template == "insertion_with_charade_inner":
+            outer_result = outer.get("result", "")
+            assembly = step.get("assembly", "")
             return [
-                {"index": f"{base_index}.1", "title": "Identify Container Indicator", "type": "container_indicator", "step_data": step, "sub_step": "indicator", "expected_indices": indicator.get("indices", [])},
-                {"index": f"{base_index}.2", "title": "Identify Outer Word", "type": "container_outer", "step_data": step, "sub_step": "outer", "expected_indices": outer.get("fodder", {}).get("indices", [])},
-                {"index": f"{base_index}.3", "title": "Build Inner Charade", "type": "container_inner_charade", "step_data": step, "sub_step": "inner"},
-                {"index": f"{base_index}.4", "title": "Assemble", "type": "container_assembly", "step_data": step, "sub_step": "assembly"}
+                {
+                    "index": f"{base_index}.1",
+                    "title": "Identify Container Indicator",
+                    "type": "container_indicator",
+                    "step_data": step,
+                    "sub_step": "indicator",
+                    "expected_indices": indicator.get("indices", []),
+                    "hint": "Container indicators suggest one thing goes inside another. Look for words that suggest insertion."
+                },
+                {
+                    "index": f"{base_index}.2",
+                    "title": "Identify Outer Word",
+                    "type": "container_outer",
+                    "step_data": step,
+                    "sub_step": "outer",
+                    "expected_indices": outer.get("fodder", {}).get("indices", []),
+                    "hint": f"This word ({outer_result}) will be the outer container holding the charade inside."
+                },
+                {
+                    "index": f"{base_index}.3",
+                    "title": "Build Inner Charade",
+                    "type": "container_inner_charade",
+                    "step_data": step,
+                    "sub_step": "inner",
+                    "hint": "Build the inner part by combining multiple wordplay elements."
+                },
+                {
+                    "index": f"{base_index}.4",
+                    "title": "Assemble",
+                    "type": "container_assembly",
+                    "step_data": step,
+                    "sub_step": "assembly",
+                    "hint": f"Combine according to: {assembly}"
+                }
             ]
         else:
             return [{"index": base_index, "title": f"Identify Container" + (f" ({ind_text})" if ind_text else ""), "type": step_type, "step_data": step}]
