@@ -16,7 +16,7 @@ This document specifies the Grid Reader application at a level of detail suffici
 
 ### 1.2 Key Principles
 1. **Progressive Discovery Teaching**: This is a TEACHING app, not a solution viewer. Users should DISCOVER the clue breakdown step-by-step through guided interaction, NOT see the full decode revealed upfront. Each step requires user engagement before revealing the next insight.
-2. **Template-Based Architecture**: All clues are represented using 13 predefined step templates that can be combined to construct ANY cryptic clue. This enables both human teaching AND future automated annotation (a solver that generates metadata from cold clues).
+2. **Template-Based Architecture**: All clues are represented using predefined step templates (13 core + 6 helper = 19 total) that can be combined to construct ANY cryptic clue. Each metadata step type maps 1:1 to a render template. This enables both human teaching AND future automated annotation (a solver that generates metadata from cold clues).
 3. **Stateless Client Architecture**: The trainer UI (`trainer.js`) is a dumb rendering layer with ZERO local state. ALL state lives on the server in `training_handler.py`.
 4. **No AI/LLM**: Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
 5. **Server-Driven Rendering**: Client receives a `render` object and displays it - nothing more.
@@ -122,7 +122,7 @@ This defeats the purpose of teaching. The user sees the answer without thinking.
 ├─────────────────────────────────────────────────────────────┤
 │  training_handler.py                                        │
 │  ├── _sessions dict    (all UI state)                       │
-│  ├── STEP_TEMPLATES    (13 step types)                      │
+│  ├── STEP_TEMPLATES    (19 render templates)                │
 │  ├── get_render()      (build render object)                │
 │  └── handle_input()    (validate & advance)                 │
 └─────────────────────────────────────────────────────────────┘
@@ -170,10 +170,11 @@ This defeats the purpose of teaching. The user sees the answer without thinking.
 **Key Principle:** We control this metadata format completely. It's our own design, optimized for interactive teaching.
 
 **Template-Based Architecture:**
-- The metadata uses **predefined step templates** (13 types) that can be combined to construct ANY cryptic clue
-- Each step has a `type` field that maps to a template in `training_handler.py`
-- Templates define the interactive phases (fodder → result → teaching)
+- The metadata uses **predefined step templates** (13 core + 6 helper = 19 total) that can be combined to construct ANY cryptic clue
+- Each step has a `type` field that maps 1:1 to a render template in `training_handler.py`
+- Render templates define the interactive phases (fodder → result → teaching)
 - By mixing templates, we can represent any cryptic mechanism
+- See section 4.2.2 for the complete metadata → render template mapping
 
 **Example: Simple Deletion Clue**
 ```json
@@ -220,7 +221,9 @@ This defeats the purpose of teaching. The user sees the answer without thinking.
 **Template Reusability:**
 The same `synonym` template can be reused across thousands of clues. We just provide different `fodder` and `result` values. This makes annotating new clues efficient.
 
-**Available Step Templates (13 types):**
+**Core Step Templates (13 types for annotation):**
+
+These are the primary templates used when annotating clues in `clues_db.json`:
 
 | Template Type | Purpose | Example |
 |---------------|---------|---------|
@@ -237,6 +240,17 @@ The same `synonym` template can be reused across thousands of clues. We just pro
 | `container_verify` | One part inside another | AD(A)M → ADAM |
 | `charade_verify` | Combine parts in order | RE + PRO + ACH → REPROACH |
 | `double_definition` | Two definitions | "bark" = tree covering & dog sound |
+
+**Additional Helper Templates (6 types):**
+In addition to the 13 core templates above, there are 6 helper/discovery templates for more advanced workflows:
+- `container` - Container clue discovery phase
+- `clue_type_identify` - Let user identify clue type
+- `wordplay_overview` - Explain wordplay mechanism
+- `deletion_discover` - Discovery phase for deletions
+- `alternation_discover` - Discovery phase for alternations
+- `connector` - Explain linking/connector words
+
+**Total:** 19 render templates in `training_handler.py` (see section 4.2.2 for complete inventory).
 
 **Composability Example:**
 A complex clue like "Embankment architect lengthened with cob? (5,3)" uses:
@@ -287,11 +301,12 @@ OUTPUT (generated metadata):
 ```
 
 **Why Templates Make This Possible:**
-1. **Finite Set:** Only 13 templates to generate (not infinite variations)
+1. **Finite Set:** Only 19 render templates to generate from (not infinite variations)
 2. **Deterministic:** Each template has clear input/output structure
 3. **Composable:** Complex clues are just combinations of simple templates
 4. **Reusable:** Same templates work for thousands of clues
 5. **Validatable:** Generated metadata follows exact schema
+6. **1:1 Mapping:** Each metadata step type maps to exactly one render template
 
 **Design Implication:**
 Every template must be:
@@ -300,6 +315,106 @@ Every template must be:
 - **Unambiguous:** No ambiguity in what constitutes this step type
 
 This is why we control the metadata format completely. We're not constrained by external schemas—we design it to be both human-teachable AND machine-generatable.
+
+### 4.2.2 Metadata → Render Template Mapping
+
+**Critical Architecture:** Each step `type` in clue metadata maps to a render template in `training_handler.py`.
+
+**The Two-Layer System:**
+
+```
+LAYER 1: Clue Metadata (clues_db.json)
+  └─ Step: {"type": "synonym", "fodder": {...}, "result": "DRIVEL"}
+       │
+       │ Maps to ↓
+       │
+LAYER 2: Render Template (training_handler.py)
+  └─ STEP_TEMPLATES["synonym"] = {
+       "phases": [
+         {"id": "fodder", "inputMode": "tap_words", ...},
+         {"id": "result", "inputMode": "text", ...},
+         {"id": "teaching", "inputMode": "none", ...}
+       ]
+     }
+```
+
+**How It Works:**
+
+1. **Metadata defines WHAT** (content/data):
+   - Which words to tap
+   - Expected answer
+   - Reasoning text
+
+2. **Render template defines HOW** (interaction/UI):
+   - How many phases
+   - Input modes (tap_words, text, multiple_choice, none)
+   - Action prompts
+   - Teaching panel content
+
+**Example: Synonym Step**
+
+Metadata in `clues_db.json`:
+```json
+{
+  "type": "synonym",
+  "fodder": {"text": "silly speech", "indices": [5, 6]},
+  "result": "DRIVEL",
+  "reasoning": "Silly speech = DRIVEL"
+}
+```
+
+Render template in `training_handler.py`:
+```python
+"synonym": {
+    "phases": [
+        {
+            "id": "fodder",
+            "inputMode": "tap_words",
+            "actionPrompt": "Tap the words that need to be converted to a synonym"
+        },
+        {
+            "id": "result",
+            "inputMode": "text",
+            "actionPrompt": "What's the synonym?"
+        },
+        {
+            "id": "teaching",
+            "inputMode": "none",
+            "panel": "Synonym\n{fodder.text} = {result}\n{reasoning}"
+        }
+    ]
+}
+```
+
+**Template Inventory (19 render templates in training_handler.py):**
+
+| Metadata Type | Render Template | Purpose |
+|---------------|----------------|---------|
+| `standard_definition` | `standard_definition` | Find definition |
+| `synonym` | `synonym` | Word → synonym |
+| `abbreviation` | `abbreviation` | Word → abbreviation |
+| `literal` | `literal` | Word as-is |
+| `literal_phrase` | `literal_phrase` | Phrase literally |
+| `anagram` | `anagram` | Rearrange letters |
+| `reversal` | `reversal` | Reverse word |
+| `deletion` | `deletion` | Remove letter(s) |
+| `letter_selection` | `letter_selection` | First/last/middle |
+| `hidden` | `hidden` | Hidden word |
+| `container_verify` | `container_verify` | One inside another |
+| `charade_verify` | `charade_verify` | Combine parts |
+| `double_definition` | `double_definition` | Two definitions |
+| `container` | `container` | Container discovery |
+| `clue_type_identify` | `clue_type_identify` | Identify clue type |
+| `wordplay_overview` | `wordplay_overview` | Wordplay explanation |
+| `deletion_discover` | `deletion_discover` | Deletion discovery |
+| `alternation_discover` | `alternation_discover` | Alternation discovery |
+| `connector` | `connector` | Linking words |
+
+**Why This Separation Matters:**
+1. **Reusability:** Same template works for thousands of different clues
+2. **Maintainability:** Update UI behavior once, affects all clues using that template
+3. **Validation:** Template defines what inputs are expected and valid
+4. **Future-proofing:** Can change templates without re-annotating clues
 
 ### 4.3 Session State (server-side)
 ```python
@@ -323,7 +438,11 @@ _sessions[clue_id] = {
 
 ## 5. Training Flow
 
-### 5.1 Step Types (13 types)
+### 5.1 Step Types (19 render templates)
+
+**See section 4.2.2 for the complete metadata → render template mapping.**
+
+The system has 19 render templates in `training_handler.py`. The most commonly used core templates for basic clue annotation are:
 
 | Type | Phases | Description |
 |------|--------|-------------|
@@ -855,7 +974,8 @@ gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 
 ### Phase 2: Interactive Teaching Mode ✓
 - Ported training_handler.py from cryptic-trainer
-- 13 step types with templates
+- 19 render templates (13 core + 6 helper)
+- 1:1 mapping between metadata step types and render templates
 - Server-driven rendering
 - Summary page with breadcrumbs
 
@@ -882,7 +1002,7 @@ gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 - Validates template system completeness
 
 **Why This Matters:**
-Currently, clues must be manually annotated in `clues_db.json`. The solver will automate this process, allowing us to rapidly expand the teaching library. The template-based architecture makes this possible because we only need to generate from 13 predefined patterns, not infinite variations.
+Currently, clues must be manually annotated in `clues_db.json`. The solver will automate this process, allowing us to rapidly expand the teaching library. The template-based architecture makes this possible because we only need to generate from a finite set of 19 render templates (13 core + 6 helper), not infinite variations. Each generated metadata step type maps 1:1 to an existing render template.
 
 ---
 

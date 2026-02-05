@@ -112,26 +112,49 @@ Server-driven rendering with thin client:
 5. User input validated via `handle_input()` against `expected` values
 6. On completion, answer auto-applies to grid
 
-### Template System
-Templates define how each step type is displayed:
+### Template System: Two-Layer Architecture
 
-**Step Templates** (in `training_handler.py`):
-- `charade_with_parts` - Multi-part wordplay assembly
-- `anagram_with_fodder_pieces` - Anagram with letter mixing
-- `insertion_with_two_synonyms` - Container clues (A inside B)
-- `insertion_with_charade_inner` - Container with charade components
-- `transformation_chain` - Multi-step transformations
+**CRITICAL:** Each step type in clue metadata maps 1:1 to a render template.
 
-**Part Types** (within templates):
-- `synonym` - Word meaning another
-- `abbreviation` - Standard abbrev (piano=P, five=V)
+**Clue Metadata (clues_db.json)** defines WHAT (content/data):
+- Step type identifier
+- Which words to interact with (indices)
+- Expected answers
+- Reasoning text
+
+**Render Templates (training_handler.py)** define HOW (interaction/UI):
+- Phases to step through
+- Input modes (tap_words, text, multiple_choice, none)
+- Action prompts
+- Teaching panel formatting
+
+**Example Mapping:**
+```
+Metadata:   {"type": "synonym", "fodder": {...}, "result": "DRIVEL"}
+              ↓
+Template:   STEP_TEMPLATES["synonym"] = {phases: [fodder, result, teaching]}
+```
+
+**Available Render Templates (19 in training_handler.py):**
+- `standard_definition` - Definition identification
+- `synonym` - Word → synonym
+- `abbreviation` - Word → abbreviation
 - `literal` - Word used as-is
 - `literal_phrase` - Phrase read literally
-- `synonym_then_deletion` - Synonym with letter removal
-- `synonym_then_reversal` - Synonym reversed
-- `abbreviation_synonym_reversed` - Abbrev of reversed synonym
+- `anagram` - Rearrange letters
+- `reversal` - Reverse word
+- `deletion` - Remove letter(s)
 - `letter_selection` - First/last/middle letters
 - `hidden` - Hidden word in phrase
+- `container_verify` - One part inside another
+- `charade_verify` - Combine parts in order
+- `double_definition` - Two definitions
+- `container` - Container clue discovery
+- `clue_type_identify` - Identify clue type
+- `wordplay_overview` - Wordplay explanation
+- `deletion_discover` - Deletion discovery
+- `alternation_discover` - Alternation discovery
+- `connector` - Linking words
 
 ### Step Types (in clues_db.json)
 - `standard_definition` - Definition identification
