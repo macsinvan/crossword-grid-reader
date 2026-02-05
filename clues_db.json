@@ -2458,10 +2458,9 @@
           "template": "insertion_with_two_synonyms",
           "indicator": {
             "indices": [
-              2,
-              3
+              2
             ],
-            "text": "lengthened with"
+            "text": "lengthened"
           },
           "outer": {
             "fodder": {

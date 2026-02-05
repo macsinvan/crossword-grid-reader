@@ -1373,21 +1373,21 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
 
         if template == "insertion_with_two_synonyms":
             return [
-                {"index": f"{base_index}.1", "title": f"Identify Container ({ind_text})", "type": "container_indicator", "step_data": step, "sub_step": "indicator"},
-                {"index": f"{base_index}.2", "title": f"Identify Literal ({outer_fodder})", "type": "container_outer", "step_data": step, "sub_step": "outer"},
-                {"index": f"{base_index}.3", "title": f"Identify Implied Synonym ({inner_fodder})", "type": "container_inner", "step_data": step, "sub_step": "inner"},
+                {"index": f"{base_index}.1", "title": "Identify Container Indicator", "type": "container_indicator", "step_data": step, "sub_step": "indicator", "expected_indices": indicator.get("indices", [])},
+                {"index": f"{base_index}.2", "title": "Identify Outer Word", "type": "container_outer", "step_data": step, "sub_step": "outer", "expected_indices": outer.get("fodder", {}).get("indices", [])},
+                {"index": f"{base_index}.3", "title": "Identify Inner Word", "type": "container_inner", "step_data": step, "sub_step": "inner", "expected_indices": inner.get("fodder", {}).get("indices", [])},
                 {"index": f"{base_index}.4", "title": "Assemble", "type": "container_assembly", "step_data": step, "sub_step": "assembly"}
             ]
         elif template == "insertion_with_one_synonym_outer":
             return [
-                {"index": f"{base_index}.1", "title": f"Identify Container ({ind_text})", "type": "container_indicator", "step_data": step, "sub_step": "indicator"},
-                {"index": f"{base_index}.2", "title": f"Identify Synonym ({outer_fodder})", "type": "container_outer", "step_data": step, "sub_step": "outer"},
+                {"index": f"{base_index}.1", "title": "Identify Container Indicator", "type": "container_indicator", "step_data": step, "sub_step": "indicator", "expected_indices": indicator.get("indices", [])},
+                {"index": f"{base_index}.2", "title": "Identify Outer Synonym", "type": "container_outer", "step_data": step, "sub_step": "outer", "expected_indices": outer.get("fodder", {}).get("indices", [])},
                 {"index": f"{base_index}.3", "title": "Assemble", "type": "container_assembly", "step_data": step, "sub_step": "assembly"}
             ]
         elif template == "insertion_with_charade_inner":
             return [
-                {"index": f"{base_index}.1", "title": f"Identify Container ({ind_text})", "type": "container_indicator", "step_data": step, "sub_step": "indicator"},
-                {"index": f"{base_index}.2", "title": f"Identify Outer ({outer_fodder})", "type": "container_outer", "step_data": step, "sub_step": "outer"},
+                {"index": f"{base_index}.1", "title": "Identify Container Indicator", "type": "container_indicator", "step_data": step, "sub_step": "indicator", "expected_indices": indicator.get("indices", [])},
+                {"index": f"{base_index}.2", "title": "Identify Outer Word", "type": "container_outer", "step_data": step, "sub_step": "outer", "expected_indices": outer.get("fodder", {}).get("indices", [])},
                 {"index": f"{base_index}.3", "title": "Build Inner Charade", "type": "container_inner_charade", "step_data": step, "sub_step": "inner"},
                 {"index": f"{base_index}.4", "title": "Assemble", "type": "container_assembly", "step_data": step, "sub_step": "assembly"}
             ]
