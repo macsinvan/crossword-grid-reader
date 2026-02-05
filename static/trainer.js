@@ -1149,9 +1149,8 @@ class TemplateTrainer {
                             let completionMessage = '';
 
                             if (stepType === 'standard_definition') {
-                                const answer = this.render?.answer || '';
-                                const answerLength = answer.replace(/\s/g, '').length;
-                                completionMessage = `DEFINITION: <strong>${definitionText}</strong> found at the ${position} of the clue.<br><br>Can you find a ${answerLength}-letter word meaning ${definitionText}?`;
+                                const enumeration = this.render?.enumeration || '';
+                                completionMessage = `DEFINITION: <strong>${definitionText}</strong> found at the ${position} of the clue.<br><br>Can you find a word (${enumeration}) meaning ${definitionText}?`;
                             } else if (stepType === 'container_indicator') {
                                 completionMessage = `CONTAINER INDICATOR: <strong>${definitionText}</strong>`;
                             } else if (stepType === 'container_outer') {
