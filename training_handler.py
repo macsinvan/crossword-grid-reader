@@ -1491,13 +1491,53 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
         parts = step.get("parts", [])
 
         if template == "charade_with_parts":
+            assembly = step.get("assembly", "")
             items = []
+
+            # Step 1: Identify wordplay indicators (result: None for charade)
+            items.append({
+                "index": f"{base_index}.1",
+                "title": "Identify Wordplay Indicators",
+                "type": "wordplay_identification",
+                "step_data": step,
+                "sub_step": "identify_indicators",
+                "hint": "Look for wordplay indicators: anagram (mixed, confused), container (in, within, holding), reversal (back, returning). If none found, it's a simple Charade."
+            })
+
+            # Step 2: Try raw assembly (shows it doesn't work)
+            items.append({
+                "index": f"{base_index}.2",
+                "title": "Try Raw Assembly",
+                "type": "charade_raw_assembly",
+                "step_data": step,
+                "sub_step": "raw_assembly",
+                "hint": "Try combining the words directly to see if they form the answer."
+            })
+
+            # Steps 3+: Transform each part
             for i, part in enumerate(parts, 1):
                 if isinstance(part, dict):
                     fodder_text = part.get("fodder", {}).get("text", "") if isinstance(part.get("fodder"), dict) else str(part.get("fodder", ""))
                     part_type = part.get("type", "transform")
-                    items.append({"index": f"{base_index}.{i}", "title": f"Transform Part {i} ({fodder_text})", "type": f"charade_part_{part_type}", "step_data": step, "sub_step": f"part_{i}"})
-            items.append({"index": f"{base_index}.{len(parts)+1}", "title": "Assemble Parts", "type": "charade_assembly", "step_data": step, "sub_step": "assembly"})
+                    items.append({
+                        "index": f"{base_index}.{i+2}",
+                        "title": f"Transform Part {i}",
+                        "type": f"charade_part_{part_type}",
+                        "step_data": step,
+                        "sub_step": f"part_{i}",
+                        "expected_indices": part.get("fodder", {}).get("indices", []),
+                        "hint": f"Find a {part_type} for this word."
+                    })
+
+            # Final step: Assemble with transformations
+            items.append({
+                "index": f"{base_index}.{len(parts)+3}",
+                "title": "Assemble",
+                "type": "charade_assembly",
+                "step_data": step,
+                "sub_step": "assembly",
+                "hint": f"Combine the transformed parts: {assembly}"
+            })
             return items
         else:
             return [{"index": base_index, "title": "Assemble", "type": step_type, "step_data": step}]
