@@ -952,7 +952,13 @@ class TemplateTrainer {
                             <div class="step-expanded" data-item-idx="${idx}" data-expected="${JSON.stringify(item.expected_indices || [])}" style="display: none; padding: 1rem; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 0.5rem 0.5rem;">
                                 <!-- Clue Words -->
                                 <div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">
-                                    ${(r.words || []).map((word, wordIdx) => `<span class="clue-word" data-word-idx="${wordIdx}" data-item-idx="${idx}" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;">${word}</span>`).join('')}
+                                    ${(r.words || []).map((word, wordIdx) => {
+                                        const availableIndices = item.available_indices || [];
+                                        if (availableIndices.length === 0 || availableIndices.includes(wordIdx)) {
+                                            return `<span class="clue-word" data-word-idx="${wordIdx}" data-item-idx="${idx}" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;">${word}</span>`;
+                                        }
+                                        return '';
+                                    }).join('')}
                                 </div>
                                 <div style="display: flex; align-items: start; gap: 0.5rem;">
                                     <div style="flex: 1;">

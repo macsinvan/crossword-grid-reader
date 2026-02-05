@@ -1461,6 +1461,8 @@ def _build_menu_render(session, clue):
     """
     steps_data = clue.get("steps", [])
     menu_items = []
+    all_word_indices = set(range(len(clue.get("words", []))))
+    used_indices = set()
 
     for idx, step in enumerate(steps_data):
         # Expand step into atomic menu items
@@ -1470,7 +1472,34 @@ def _build_menu_render(session, clue):
             # Determine status based on completed steps
             # For now, all atomic steps start as pending
             item["status"] = "pending"
+
+            # Compute available word indices (all words except already used)
+            item["available_indices"] = sorted(list(all_word_indices - used_indices))
+
             menu_items.append(item)
+
+        # After each step, mark its indices as used
+        # Collect all indices referenced in this step
+        step_indices = set()
+        if step.get("type") == "standard_definition":
+            step_indices.update(step.get("expected", {}).get("indices", []))
+        elif step.get("type") == "container":
+            if "indicator" in step:
+                step_indices.update(step.get("indicator", {}).get("indices", []))
+            if "outer" in step:
+                step_indices.update(step.get("outer", {}).get("fodder", {}).get("indices", []))
+            if "inner" in step:
+                step_indices.update(step.get("inner", {}).get("fodder", {}).get("indices", []))
+        elif step.get("type") == "charade":
+            for part in step.get("parts", []):
+                if isinstance(part, dict) and "fodder" in part:
+                    step_indices.update(part.get("fodder", {}).get("indices", []))
+        elif step.get("type") == "anagram":
+            for piece in step.get("pieces", []):
+                if isinstance(piece, dict):
+                    step_indices.update(piece.get("indices", []))
+
+        used_indices.update(step_indices)
 
     return {
         "mode": "step_menu",
