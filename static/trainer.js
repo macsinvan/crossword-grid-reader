@@ -940,22 +940,40 @@ class TemplateTrainer {
                     <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #6b7280;">
                         Steps to solve:
                     </h3>
-                    ${(r.menuItems || []).map(item => `
-                        <div class="step-item ${item.status}"
-                             data-step-index="${item.index}"
-                             style="display: flex; align-items: center; padding: 1rem; margin-bottom: 0.75rem;
-                                    background: ${item.status === 'completed' ? '#f0fdf4' : item.status === 'in_progress' ? '#eff6ff' : 'white'};
-                                    border: 2px solid ${item.status === 'completed' ? '#22c55e' : item.status === 'in_progress' ? '#3b82f6' : '#e5e7eb'};
-                                    border-radius: 0.5rem; cursor: pointer; transition: all 0.2s;">
-                            <span class="status-icon" style="font-size: 1.25rem; margin-right: 0.75rem;">
-                                ${statusIcons[item.status]}
-                            </span>
-                            <span class="step-number" style="font-weight: 600; margin-right: 0.5rem; color: ${statusColors[item.status]};">
-                                ${typeof item.index === 'number' ? (item.index + 1) : item.index}.
-                            </span>
-                            <span class="step-title" style="flex: 1; color: ${statusColors[item.status]};">
-                                ${item.title}
-                            </span>
+                    ${(r.menuItems || []).map((item, idx) => `
+                        <div class="step-item-wrapper" style="margin-bottom: 0.75rem;">
+                            <div class="step-item ${item.status}"
+                                 data-step-index="${item.index}"
+                                 data-item-idx="${idx}"
+                                 style="display: flex; align-items: center; padding: 1rem;
+                                        background: ${item.status === 'completed' ? '#f0fdf4' : item.status === 'in_progress' ? '#eff6ff' : 'white'};
+                                        border: 2px solid ${item.status === 'completed' ? '#22c55e' : item.status === 'in_progress' ? '#3b82f6' : '#e5e7eb'};
+                                        border-radius: 0.5rem; cursor: pointer; transition: all 0.2s;">
+                                <span class="status-icon" style="font-size: 1.25rem; margin-right: 0.75rem;">
+                                    ${statusIcons[item.status]}
+                                </span>
+                                <span class="step-number" style="font-weight: 600; margin-right: 0.5rem; color: ${statusColors[item.status]};">
+                                    ${typeof item.index === 'number' ? (item.index + 1) : item.index}.
+                                </span>
+                                <span class="step-title" style="flex: 1; color: ${statusColors[item.status]};">
+                                    ${item.title}
+                                </span>
+                            </div>
+                            <div class="step-expanded" data-item-idx="${idx}" style="display: none; padding: 1rem; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 0.5rem 0.5rem;">
+                                <div style="display: flex; align-items: start; gap: 0.5rem;">
+                                    <div style="flex: 1;">
+                                        <p style="color: #374151; margin-bottom: 0.5rem;">Click on the clue words to identify the ${item.title.toLowerCase()}.</p>
+                                    </div>
+                                    <button class="hint-toggle" data-item-idx="${idx}"
+                                            style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;"
+                                            title="Show hint">
+                                        💡
+                                    </button>
+                                </div>
+                                <div class="hint-content" data-item-idx="${idx}" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;">
+                                    <p style="color: #92400e; font-size: 0.875rem; margin: 0;">Hint will be shown here</p>
+                                </div>
+                            </div>
                         </div>
                     `).join('')}
                 </div>
@@ -971,12 +989,25 @@ class TemplateTrainer {
 
         this.container.innerHTML = html;
 
-        // Attach click handlers to step items
+        // Attach click handlers to step items - toggle expand/collapse
         const stepItems = this.container.querySelectorAll('.step-item');
         stepItems.forEach(item => {
             item.addEventListener('click', () => {
-                const stepIndex = parseInt(item.getAttribute('data-step-index'));
-                this.handleMenuItemClick(stepIndex);
+                const itemIdx = item.getAttribute('data-item-idx');
+                const expandedSection = this.container.querySelector(`.step-expanded[data-item-idx="${itemIdx}"]`);
+
+                // Toggle this step's expanded section
+                if (expandedSection.style.display === 'none') {
+                    // Collapse all other expanded sections
+                    this.container.querySelectorAll('.step-expanded').forEach(section => {
+                        section.style.display = 'none';
+                    });
+                    // Expand this one
+                    expandedSection.style.display = 'block';
+                } else {
+                    // Collapse this one
+                    expandedSection.style.display = 'none';
+                }
             });
 
             // Hover effect
@@ -996,6 +1027,24 @@ class TemplateTrainer {
                     item.style.background = '#eff6ff';
                 } else {
                     item.style.background = 'white';
+                }
+            });
+        });
+
+        // Attach click handlers to hint toggle buttons
+        const hintToggles = this.container.querySelectorAll('.hint-toggle');
+        hintToggles.forEach(toggle => {
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent step collapse
+                const itemIdx = toggle.getAttribute('data-item-idx');
+                const hintContent = this.container.querySelector(`.hint-content[data-item-idx="${itemIdx}"]`);
+
+                if (hintContent.style.display === 'none') {
+                    hintContent.style.display = 'block';
+                    toggle.style.opacity = '1';
+                } else {
+                    hintContent.style.display = 'none';
+                    toggle.style.opacity = '0.6';
                 }
             });
         });
