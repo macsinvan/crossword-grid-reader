@@ -1387,7 +1387,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 },
                 {
                     "index": f"{base_index}.2",
-                    "title": "Transform Outer Word",
+                    "title": "Identify Outer Word",
                     "type": "container_outer",
                     "step_data": step,
                     "sub_step": "outer",
@@ -1396,7 +1396,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 },
                 {
                     "index": f"{base_index}.3",
-                    "title": "Transform Inner Word",
+                    "title": "Identify Inner Word",
                     "type": "container_inner",
                     "step_data": step,
                     "sub_step": "inner",
@@ -1427,7 +1427,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 },
                 {
                     "index": f"{base_index}.2",
-                    "title": "Transform Outer Word",
+                    "title": "Identify Outer Synonym",
                     "type": "container_outer",
                     "step_data": step,
                     "sub_step": "outer",
@@ -1458,7 +1458,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 },
                 {
                     "index": f"{base_index}.2",
-                    "title": "Transform Outer Word",
+                    "title": "Identify Outer Word",
                     "type": "container_outer",
                     "step_data": step,
                     "sub_step": "outer",
