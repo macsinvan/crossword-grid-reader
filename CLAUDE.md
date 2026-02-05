@@ -211,16 +211,38 @@ Render Template:      STEP_TEMPLATES["synonym"] = {phases: [fodder, result, teac
 }
 ```
 
-## TODO
+## Step Menu Overview (Completed)
 
-### Phase 2.1: Step Menu Overview (Next)
-- [ ] Implement step menu overview screen as first screen when clicking "Solve"
-- [ ] Show all steps as clickable menu items with status indicators (⭕/🔄/✓)
-- [ ] Display answer boxes at top of menu (always visible, editable for hypothesis)
-- [ ] Navigate to individual step detail views when user clicks a step
-- [ ] Return to menu after completing each step with updated status
-- [ ] Generate step titles from clue_data["steps"] with type and optional label
-- [ ] Only show full solution on summary page after all steps completed
+When clicking "Solve", users see a step menu with inline expansion:
+
+**Display:**
+- All steps shown as clickable menu items with status indicators (⭕ pending / ✓ completed)
+- Answer boxes at top (always visible, editable for hypothesis testing)
+- Reveal button for quick access to full solution
+
+**Interaction:**
+- Clicking a step expands it inline (no navigation away)
+- Expanded section shows clue words as clickable elements
+- Correct selections turn green, incorrect flash red
+- Auto-generated contextual hints available via 💡 button
+- Completion auto-detected when all expected words selected
+
+**Completion Display:**
+- Step collapses automatically after 500ms
+- Title replaced with result: "DEFINITION: {text} found at the {position} of the clue"
+- Status icon changes to ✓
+- Step styled with green background/border
+
+**Template Expansion:**
+Templates with multiple atomic steps expand automatically:
+- `insertion_with_two_synonyms` → 4 steps (indicator, outer literal, inner synonym, assembly)
+- `insertion_with_one_synonym_outer` → 4 steps
+- `insertion_with_charade_inner` → Multiple steps
+- `charade_with_parts` → Steps for each part + assembly
+- `anagram_with_fodder_pieces` → Fodder identification + anagram
+- `transformation_chain` → Step for each transformation
+
+## TODO
 
 ### Phase 6: Automated Clue Annotation (Future)
 - [ ] Build solver that takes cold clues (+ optional answer) and generates metadata
@@ -237,10 +259,16 @@ Render Template:      STEP_TEMPLATES["synonym"] = {phases: [fodder, result, teac
 ### Completed Features
 - ✅ Supabase integration (Phase 1)
 - ✅ Template-based step display system (Phase 2)
+- ✅ Step menu overview with inline expansion (Phase 2.1)
+- ✅ Interactive word selection with validation
+- ✅ Auto-completion detection and clean result display
+- ✅ Template expansion for complex step types
+- ✅ Dynamic hint generation
 - ✅ 30 clues fully annotated with templates
 - ✅ Mobile responsive grid
 - ✅ Progress persistence (localStorage)
 - ✅ Auto-apply answers to grid
+- ✅ Reveal button for quick solution access
 
 ### Data
 - 30 annotated clues from Times puzzle 29453
