@@ -29,13 +29,15 @@
 
 ### 3. Key Constraints
 
-**STATELESS CLIENT ARCHITECTURE**
-The trainer UI (`trainer.js`) is a **dumb rendering layer with ZERO state**:
+**STATELESS CLIENT ARCHITECTURE** (See SPEC.md Section 4.4 for complete explanation)
+The trainer UI (`trainer.js`) is a **thin, stateless rendering layer with ZERO state**:
 - ALL state lives on the server (session dict in `training_handler.py`)
-- Client receives a `render` object and displays it - nothing more
+- Client receives a complete `render` object and displays it - nothing more
+- Client makes NO decisions, has NO logic, stores NO variables
 - User interactions call server endpoints which return updated `render` objects
-- Client has no local variables for: selections, input values, visibility flags, etc.
+- Client has no local variables for: selections, input values, visibility flags, progress, etc.
 - If you're tempted to add `this.foo = ...` in trainer.js, STOP - it belongs on the server
+- The client is a pure view layer—it only knows how to render what the server tells it
 
 **Exception: Silent server sync for typing**
 Answer/step input boxes sync to server on each keystroke BUT don't trigger re-render (to preserve focus). Only re-render when server sets `answerLocked=true`.
@@ -103,26 +105,36 @@ A status indicator (green LED = Supabase, yellow = local) shows in the header.
 ## Teaching Mode (Template-Based Step Display)
 
 ### Architecture
-Server-driven rendering with thin client:
+Server-driven rendering with **thin stateless client**:
 
+**CRITICAL: Client Has ZERO State**
+- `trainer.js` is a dumb rendering layer with NO local state
+- ALL state lives on server in `training_handler._sessions[clue_id]`
+- Client only renders what server sends, sends input back, repeats
+- No client-side variables for: selections, answers, visibility, progress
+
+**Flow:**
 1. User clicks "Solve" → `crossword.js` calls `/trainer/start` with clue_id
 2. Server loads clue with pre-annotated `steps` array from `clues_db.json`
-3. `training_handler.py` merges raw step + STEP_TEMPLATE → render object
-4. `trainer.js` displays phases (tap_words, text input, teaching panels)
-5. User input validated via `handle_input()` against `expected` values
+3. `training_handler.py` merges raw step + STEP_TEMPLATE → complete `render` object
+4. `trainer.js` displays exactly what `render` specifies (no decisions, no logic)
+5. User input sent to server → validated via `handle_input()` → new `render` returned
 6. On completion, answer auto-applies to grid
 
 ### Template System: Two-Layer Architecture
 
-**CRITICAL:** Each step type in clue metadata maps 1:1 to a render template.
+**CRITICAL:** Each clue step template (metadata) maps 1:1 to a render template (code).
 
-**Clue Metadata (clues_db.json)** defines WHAT (content/data):
+**LAYER 1: Clue Step Template (clues_db.json)** - Clue-specific data only:
 - Step type identifier
-- Which words to interact with (indices)
-- Expected answers
-- Reasoning text
+- Which words from THIS clue to interact with (indices)
+- Expected answers for THIS clue
+- Reasoning text for THIS clue
+- Schema compatible with render template
 
-**Render Templates (training_handler.py)** define HOW (interaction/UI):
+**LAYER 2: Render Template (training_handler.py)** - Generic presentation logic:
+- Accepts clue step data as input
+- Defines how to present in teaching mode
 - Phases to step through
 - Input modes (tap_words, text, multiple_choice, none)
 - Action prompts
@@ -130,9 +142,9 @@ Server-driven rendering with thin client:
 
 **Example Mapping:**
 ```
-Metadata:   {"type": "synonym", "fodder": {...}, "result": "DRIVEL"}
-              ↓
-Template:   STEP_TEMPLATES["synonym"] = {phases: [fodder, result, teaching]}
+Clue Step Template:   {"type": "synonym", "fodder": {...}, "result": "DRIVEL"}
+                                ↓ 1:1 mapping
+Render Template:      STEP_TEMPLATES["synonym"] = {phases: [fodder, result, teaching]}
 ```
 
 **Available Render Templates (19 in training_handler.py):**

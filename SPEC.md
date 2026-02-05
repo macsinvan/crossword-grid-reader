@@ -17,7 +17,7 @@ This document specifies the Grid Reader application at a level of detail suffici
 ### 1.2 Key Principles
 1. **Progressive Discovery Teaching**: This is a TEACHING app, not a solution viewer. Users should DISCOVER the clue breakdown step-by-step through guided interaction, NOT see the full decode revealed upfront. Each step requires user engagement before revealing the next insight.
 2. **Template-Based Architecture**: All clues are represented using predefined step templates (13 core + 6 helper = 19 total) that can be combined to construct ANY cryptic clue. Each metadata step type maps 1:1 to a render template. This enables both human teaching AND future automated annotation (a solver that generates metadata from cold clues).
-3. **Stateless Client Architecture**: The trainer UI (`trainer.js`) is a dumb rendering layer with ZERO local state. ALL state lives on the server in `training_handler.py`.
+3. **Stateless Client Architecture**: The trainer UI (`trainer.js`) is a **thin, stateless rendering layer with ZERO local state**. ALL state lives on the server in `training_handler.py`. The client only renders what the server sends—it never decides what to show or maintain any state variables.
 4. **No AI/LLM**: Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
 5. **Server-Driven Rendering**: Client receives a `render` object and displays it - nothing more.
 
@@ -99,14 +99,26 @@ This defeats the purpose of teaching. The user sees the answer without thinking.
 
 ## 3. System Architecture
 
+**Critical Principle: Thin Stateless Client**
+
+The trainer UI is a **dumb rendering layer**. It has ZERO logic, ZERO decisions, ZERO state. It only:
+1. Receives `render` object from server
+2. Displays exactly what `render` says
+3. Sends user input back to server
+4. Repeats
+
+ALL intelligence lives on the server. The client is a pure view layer.
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      Browser (Client)                        │
+│                Browser (Client) - NO STATE                   │
 ├─────────────────────────────────────────────────────────────┤
 │  crossword.js          │  trainer.js                        │
-│  - Grid UI             │  - Stateless render of phases      │
+│  - Grid UI             │  - THIN STATELESS RENDERER         │
 │  - Keyboard navigation │  - Receives render object          │
-│  - localStorage cache  │  - Sends user input to server      │
+│  - localStorage cache  │  - Displays what server sends      │
+│                        │  - Sends user input to server      │
+│                        │  - NO decisions, NO state          │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -316,20 +328,28 @@ Every template must be:
 
 This is why we control the metadata format completely. We're not constrained by external schemas—we design it to be both human-teachable AND machine-generatable.
 
-### 4.2.2 Metadata → Render Template Mapping
+### 4.2.2 Clue Step Templates → Render Templates (The Two-Layer System)
 
-**Critical Architecture:** Each step `type` in clue metadata maps to a render template in `training_handler.py`.
+**Critical Architecture:** Each step `type` in clue metadata maps 1:1 to a render template in `training_handler.py`.
+
+**IMPORTANT: Thin Stateless Client**
+The client (`trainer.js`) has ZERO state and ZERO logic. It receives a complete `render` object from the server and displays it. The render object contains EVERYTHING needed: what to show, what input mode, what colors, what text. The client never decides anything—it's a pure rendering layer.
 
 **The Two-Layer System:**
 
 ```
-LAYER 1: Clue Metadata (clues_db.json)
-  └─ Step: {"type": "synonym", "fodder": {...}, "result": "DRIVEL"}
+LAYER 1: Clue Step Template (in clues_db.json)
+  └─ Clue-specific data only
+  └─ Schema compatible with render template
+  └─ Example: {"type": "synonym", "fodder": {...}, "result": "DRIVEL"}
        │
-       │ Maps to ↓
+       │ 1:1 mapping ↓
        │
-LAYER 2: Render Template (training_handler.py)
-  └─ STEP_TEMPLATES["synonym"] = {
+LAYER 2: Render Template (in training_handler.py)
+  └─ Generic step type information
+  └─ Accepts clue step data as input
+  └─ Defines how to present in teaching mode
+  └─ Example: STEP_TEMPLATES["synonym"] = {
        "phases": [
          {"id": "fodder", "inputMode": "tap_words", ...},
          {"id": "result", "inputMode": "text", ...},
@@ -338,32 +358,47 @@ LAYER 2: Render Template (training_handler.py)
      }
 ```
 
+**Terminology:**
+
+1. **Clue Step Template** (metadata in `clues_db.json`):
+   - Clue-specific information ONLY
+   - Schema must be compatible with corresponding render template
+   - Contains: which words, expected answers, reasoning text, indices
+   - Example: `{"type": "synonym", "fodder": {"text": "silly speech", "indices": [5,6]}, "result": "DRIVEL"}`
+
+2. **Render Template** (code in `training_handler.py`):
+   - Generic information about the step type
+   - Accepts clue step template data as input
+   - Defines how to present to user in teaching mode
+   - Contains: phases, input modes, prompts, panel formatting
+   - Example: `STEP_TEMPLATES["synonym"]` with phases array
+
 **How It Works:**
 
-1. **Metadata defines WHAT** (content/data):
-   - Which words to tap
-   - Expected answer
-   - Reasoning text
+1. **Clue Step Template defines WHAT** (clue-specific data):
+   - Which specific words from this clue to tap
+   - Expected answer for this specific clue
+   - Reasoning text for this specific clue
 
-2. **Render template defines HOW** (interaction/UI):
-   - How many phases
-   - Input modes (tap_words, text, multiple_choice, none)
-   - Action prompts
-   - Teaching panel content
+2. **Render Template defines HOW** (generic presentation logic):
+   - How many phases to step through
+   - What input modes (tap_words, text, multiple_choice, none)
+   - What action prompts to show
+   - How to format the teaching panel
 
 **Example: Synonym Step**
 
-Metadata in `clues_db.json`:
+**Clue Step Template** (clue-specific data in `clues_db.json`):
 ```json
 {
-  "type": "synonym",
-  "fodder": {"text": "silly speech", "indices": [5, 6]},
-  "result": "DRIVEL",
-  "reasoning": "Silly speech = DRIVEL"
+  "type": "synonym",  // Identifies which render template to use
+  "fodder": {"text": "silly speech", "indices": [5, 6]},  // THIS clue's words
+  "result": "DRIVEL",  // THIS clue's expected answer
+  "reasoning": "Silly speech = DRIVEL"  // THIS clue's explanation
 }
 ```
 
-Render template in `training_handler.py`:
+**Render Template** (generic presentation logic in `training_handler.py`):
 ```python
 "synonym": {
     "phases": [
@@ -388,8 +423,8 @@ Render template in `training_handler.py`:
 
 **Template Inventory (19 render templates in training_handler.py):**
 
-| Metadata Type | Render Template | Purpose |
-|---------------|----------------|---------|
+| Clue Step Type (metadata) | Render Template (code) | Purpose |
+|----------------------------|------------------------|---------|
 | `standard_definition` | `standard_definition` | Find definition |
 | `synonym` | `synonym` | Word → synonym |
 | `abbreviation` | `abbreviation` | Word → abbreviation |
@@ -415,6 +450,7 @@ Render template in `training_handler.py`:
 2. **Maintainability:** Update UI behavior once, affects all clues using that template
 3. **Validation:** Template defines what inputs are expected and valid
 4. **Future-proofing:** Can change templates without re-annotating clues
+5. **Thin Client:** Client has no state—everything comes from server's render object
 
 ### 4.3 Session State (server-side)
 ```python
@@ -431,6 +467,83 @@ _sessions[clue_id] = {
     "selected_indices": [],    # Selected word indices (tap_words)
     "step_text_input": [],     # Letters in step input boxes
     "hint_visible": False      # Hint panel shown
+}
+```
+
+---
+
+## 4.4 Stateless Client Architecture (Critical Principle)
+
+**The Golden Rule: Client Has ZERO State**
+
+The trainer UI (`trainer.js`) is intentionally designed as a **thin, stateless rendering layer**. This is a non-negotiable architectural constraint.
+
+**What the Client Does NOT Have:**
+- ❌ No state variables (`this.selectedIndices`, `this.userAnswer`, `this.hintVisible`, etc.)
+- ❌ No decision logic (doesn't decide what to show next)
+- ❌ No business logic (doesn't validate answers)
+- ❌ No step progression logic (doesn't know when to advance)
+- ❌ No template knowledge (doesn't know how steps work)
+
+**What the Client ONLY Does:**
+- ✅ Receives complete `render` object from server
+- ✅ Displays exactly what `render` specifies (text, colors, inputs, panels)
+- ✅ Attaches event handlers that send user input to server
+- ✅ Receives new `render` object from server
+- ✅ Replaces entire UI with new render
+- ✅ Repeats
+
+**Server is Source of Truth:**
+ALL state lives in `training_handler._sessions[clue_id]`:
+- Current step index
+- Current phase index
+- User's answers
+- Word selections
+- Hint visibility
+- Breadcrumbs (learnings)
+- Answer locked status
+
+**Why This Matters:**
+1. **No Sync Bugs:** Server is single source of truth—no client/server drift
+2. **Refreshable:** Browser refresh doesn't lose state (can reload from server)
+3. **Testable:** Just test API responses—no client logic to test
+4. **Debuggable:** Inspect session state on server—no hidden client state
+5. **Future-Proof:** Can persist session state to database without client changes
+6. **Multi-Device:** Same session could be resumed on different device
+
+**Anti-Pattern to Avoid:**
+```javascript
+// ❌ WRONG - Client maintaining state
+class Trainer {
+  constructor() {
+    this.selectedIndices = [];  // NO! State belongs on server
+    this.hintVisible = false;   // NO! State belongs on server
+  }
+
+  selectWord(index) {
+    this.selectedIndices.push(index);  // NO! Server decides this
+  }
+}
+```
+
+**Correct Pattern:**
+```javascript
+// ✅ CORRECT - Client only renders
+class Trainer {
+  render(renderObj) {
+    // Display exactly what renderObj specifies
+    this.displayWords(renderObj.words);
+    this.highlightIndices(renderObj.highlights);
+    this.showActionPrompt(renderObj.actionPrompt);
+    // No state stored—just pure rendering
+  }
+
+  onWordClick(index) {
+    // Send to server, get new renderObj back
+    fetch('/trainer/input', {body: {input: [index]}})
+      .then(r => r.json())
+      .then(renderObj => this.render(renderObj));
+  }
 }
 ```
 
@@ -470,25 +583,34 @@ The system has 19 render templates in `training_handler.py`. The most commonly u
 | `none` | Read teaching panel | No validation, just "Continue" |
 
 ### 5.3 Render Object Structure
+
+**The Complete Truth:** This object contains EVERYTHING the client needs to render the UI. The client has NO other data sources, NO local state, NO decision-making logic.
+
 ```json
 {
   "stepIndex": 1,
   "phaseIndex": 0,
   "stepType": "synonym",
   "phaseId": "fodder",
-  "inputMode": "tap_words",
-  "actionPrompt": "Tap the word(s) that mean 'silly speech'",
-  "highlights": [{"indices": [0], "color": "GREEN"}],
-  "learnings": [{"title": "DEFINITION FOUND: Urge", "text": ""}],
-  "words": ["Urge", "removal", "of", "line", "from", "silly", "speech"],
-  "answer": "DRIVE",
-  "userAnswer": ["D", "", "", "", ""],
-  "answerLocked": false,
-  "crossLetters": [{"position": 0, "letter": "D"}],
-  "enumeration": "5",
-  "hint": "Look for words describing foolish talk"
+  "inputMode": "tap_words",  // Client reads this to know what UI to show
+  "actionPrompt": "Tap the word(s) that mean 'silly speech'",  // Client displays this exactly
+  "highlights": [{"indices": [0], "color": "GREEN"}],  // Client applies these colors
+  "learnings": [{"title": "DEFINITION FOUND: Urge", "text": ""}],  // Client lists these
+  "words": ["Urge", "removal", "of", "line", "from", "silly", "speech"],  // Client displays these
+  "answer": "DRIVE",  // Client knows the target answer
+  "userAnswer": ["D", "", "", "", ""],  // Client shows these in boxes
+  "answerLocked": false,  // Client uses this to disable/enable boxes
+  "crossLetters": [{"position": 0, "letter": "D"}],  // Client renders these as locked
+  "enumeration": "5",  // Client shows this
+  "hint": "Look for words describing foolish talk"  // Client shows this if toggled
 }
 ```
+
+**Client Behavior:**
+- Receives this object via `/trainer/start`, `/trainer/input`, `/trainer/continue` endpoints
+- Renders exactly what the object specifies—no interpretation, no decisions
+- When user interacts, sends raw input to server, receives new render object
+- Replaces entire UI state with new render object
 
 ---
 
