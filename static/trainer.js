@@ -240,6 +240,35 @@ class TemplateTrainer {
         }
     }
 
+    async handleRevealSolve() {
+        // Reveal - show full decoded solution immediately
+        try {
+            const response = await fetch('/trainer/solved-view', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clue_id: this.clueId,
+                    crossLetters: this.render?.crossLetters || [],
+                    enumeration: this.render?.enumeration || this.enumeration
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Show solved view with full breakdown
+                this.render = data;
+                this.renderUI();
+            } else {
+                this.error = data.error || 'Could not show solution';
+                this.renderError();
+            }
+        } catch (e) {
+            this.error = String(e);
+            this.renderError();
+        }
+    }
+
     // =========================================================================
     // EVENT HANDLERS (matching React handlers)
     // =========================================================================
@@ -518,7 +547,10 @@ class TemplateTrainer {
                 <div style="display: flex; gap: 4px; flex-wrap: wrap;">
                     ${this.renderAnswerBoxes()}
                 </div>
-                ${this.renderSolveButton()}
+                <div style="display: flex; gap: 4px;">
+                    ${this.renderRevealButton()}
+                    ${this.renderSolveButton()}
+                </div>
             </div>
         `;
     }
@@ -741,6 +773,20 @@ class TemplateTrainer {
         </button>`;
     }
 
+    // Reveal button - shows full decoded solution immediately
+    renderRevealButton() {
+        return `<button class="reveal-button"
+                        style="padding: 0.25rem 0.5rem; background: none; color: #3b82f6;
+                               font-weight: 500; border-radius: 0.25rem; border: 1px solid #3b82f6;
+                               cursor: pointer; font-size: 0.75rem; opacity: 0.8;
+                               transition: opacity 0.2s, background 0.2s;"
+                        title="Show full decoded solution"
+                        onmouseover="this.style.opacity='1'; this.style.background='#eff6ff';"
+                        onmouseout="this.style.opacity='0.8'; this.style.background='none';">
+            Reveal
+        </button>`;
+    }
+
     // Hint content - shown when lightbulb clicked
     renderHintContent() {
         const hintVisible = this.render?.hintVisible || false;
@@ -879,7 +925,14 @@ class TemplateTrainer {
 
                 <!-- Answer Boxes -->
                 <div class="menu-answer-section" style="margin: 1.5rem 0; padding: 1rem; background: #f9fafb; border-radius: 0.5rem;">
-                    ${this.renderAnswerBoxes()}
+                    <div style="display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap;">
+                        <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                            ${this.renderAnswerBoxes()}
+                        </div>
+                        <div style="display: flex; gap: 4px;">
+                            ${this.renderRevealButton()}
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Steps List -->
@@ -946,6 +999,14 @@ class TemplateTrainer {
                 }
             });
         });
+
+        // Reveal button in step menu
+        const revealBtn = this.container.querySelector('.reveal-button');
+        if (revealBtn) {
+            revealBtn.addEventListener('click', () => {
+                this.handleRevealSolve();
+            });
+        }
     }
 
     /**
@@ -1057,6 +1118,14 @@ class TemplateTrainer {
         if (solveBtn) {
             solveBtn.addEventListener('click', () => {
                 this.handleSolve();
+            });
+        }
+
+        // Reveal button (show full decoded solution)
+        const revealBtn = this.container.querySelector('.reveal-button');
+        if (revealBtn) {
+            revealBtn.addEventListener('click', () => {
+                this.handleRevealSolve();
             });
         }
 

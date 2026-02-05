@@ -1338,79 +1338,102 @@ def substitute_variables(text, step, session, clue=None):
 
     return text
 
+def _expand_step_to_menu_items(step, base_index):
+    """
+    Expand a complex step (e.g., container with template) into atomic menu items.
+    Returns list of menu item dictionaries.
+    """
+    step_type = step.get("type", "")
+
+    # Atomic steps - return single item
+    if step_type == "standard_definition":
+        return [{
+            "index": base_index,
+            "title": "Identify Definition",
+            "type": step_type,
+            "step_data": step
+        }]
+
+    # Container with template - expand into atomic steps
+    elif step_type == "container":
+        template = step.get("template", "")
+        indicator = step.get("indicator", {})
+        ind_text = indicator.get("text", "") if isinstance(indicator, dict) else ""
+
+        if template == "insertion_with_two_synonyms":
+            # Expand into atomic teaching steps
+            outer = step.get("outer", {})
+            inner = step.get("inner", {})
+            outer_fodder = outer.get("fodder", {}).get("text", "")
+            inner_fodder = inner.get("fodder", {}).get("text", "")
+
+            return [
+                {
+                    "index": f"{base_index}.1",
+                    "title": f"Identify Container ({ind_text})",
+                    "type": "container_indicator",
+                    "step_data": step,
+                    "sub_step": "indicator"
+                },
+                {
+                    "index": f"{base_index}.2",
+                    "title": f"Identify Literal ({outer_fodder})",
+                    "type": "container_outer",
+                    "step_data": step,
+                    "sub_step": "outer"
+                },
+                {
+                    "index": f"{base_index}.3",
+                    "title": f"Identify Implied Synonym ({inner_fodder})",
+                    "type": "container_inner",
+                    "step_data": step,
+                    "sub_step": "inner"
+                },
+                {
+                    "index": f"{base_index}.4",
+                    "title": "Assemble",
+                    "type": "container_assembly",
+                    "step_data": step,
+                    "sub_step": "assembly"
+                }
+            ]
+        else:
+            # Unknown container template - return single item
+            return [{
+                "index": base_index,
+                "title": f"Identify Container" + (f" ({ind_text})" if ind_text else ""),
+                "type": step_type,
+                "step_data": step
+            }]
+
+    # Default: return single item
+    else:
+        title = step_type.replace("_", " ").title()
+        return [{
+            "index": base_index,
+            "title": title,
+            "type": step_type,
+            "step_data": step
+        }]
+
 def _build_menu_render(session, clue):
     """
     Builds menu view showing all steps with status indicators.
     Template-driven: generates step titles from step types and data.
+    Auto-expands template-based steps into atomic menu items.
     """
     steps_data = clue.get("steps", [])
     menu_items = []
 
     for idx, step in enumerate(steps_data):
-        step_type = step.get("type", "")
+        # Expand step into atomic menu items
+        expanded_items = _expand_step_to_menu_items(step, idx)
 
-        # Generate menu title based on step type (task format)
-        if step_type == "standard_definition":
-            title = "Identify Definition"
-
-        elif step_type == "wordplay_overview":
-            title = "Identify Wordplay Indicator"
-
-        elif step_type == "synonym":
-            fodder = get_fodder_text(step)
-            title = f"Identify Synonym ({fodder})"
-
-        elif step_type == "abbreviation":
-            fodder = get_fodder_text(step)
-            title = f"Identify Abbreviation ({fodder})"
-
-        elif step_type == "anagram":
-            indicator = step.get("indicator", {})
-            ind_text = indicator.get("text", "") if isinstance(indicator, dict) else ""
-            title = f"Solve Anagram" + (f" ({ind_text})" if ind_text else "")
-
-        elif step_type == "container":
-            indicator = step.get("indicator", {})
-            ind_text = indicator.get("text", "") if isinstance(indicator, dict) else ""
-            title = f"Identify Container" + (f" ({ind_text})" if ind_text else "")
-
-        elif step_type == "charade" or step_type == "charade_verify":
-            assembly = step.get("assembly", "")
-            title = f"Assemble" + (f": {assembly}" if assembly else "")
-
-        elif step_type == "hidden":
-            title = "Find Hidden Word"
-
-        elif step_type == "transformation_chain":
-            title = "Apply Transformations"
-
-        elif step_type == "deletion_discover":
-            title = "Apply Deletion"
-
-        elif step_type == "container_verify":
-            title = "Verify Container"
-
-        elif step_type == "alternation_discover":
-            title = "Apply Alternation"
-
-        else:
-            # Fallback: use type as title
-            title = step_type.replace("_", " ").title()
-
-        # Determine status: pending, in_progress, completed
-        if idx in session["completed_steps"]:
-            status = "completed"
-        elif idx == session.get("current_menu_selection", -1):
-            status = "in_progress"
-        else:
-            status = "pending"
-
-        menu_items.append({
-            "index": idx,
-            "title": title,
-            "type": step.get("type", ""),
-            "status": status
-        })
+        for item in expanded_items:
+            # Determine status based on completed steps
+            # For now, all atomic steps start as pending
+            item["status"] = "pending"
+            menu_items.append(item)
 
     return {
         "mode": "step_menu",
