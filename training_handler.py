@@ -1392,7 +1392,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "step_data": step,
                     "sub_step": "outer",
                     "expected_indices": outer.get("fodder", {}).get("indices", []),
-                    "hint": f"This word will become the outer container. Its synonym ({outer_result}) will hold something inside it."
+                    "hint": "Outer word gets lengthened by the inner word."
                 },
                 {
                     "index": f"{base_index}.3",
@@ -1401,7 +1401,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "step_data": step,
                     "sub_step": "inner",
                     "expected_indices": inner.get("fodder", {}).get("indices", []),
-                    "hint": f"This word will be inserted inside. Its synonym ({inner_result}) goes into the outer word."
+                    "hint": "This word goes inside to lengthen the outer word."
                 },
                 {
                     "index": f"{base_index}.4",
@@ -1409,7 +1409,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "type": "container_assembly",
                     "step_data": step,
                     "sub_step": "assembly",
-                    "hint": f"Combine the synonyms according to the container structure: {assembly}"
+                    "hint": f"Find synonyms for the outer and inner words, then combine them: {assembly}"
                 }
             ]
         elif template == "insertion_with_one_synonym_outer":

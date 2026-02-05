@@ -1,4 +1,4 @@
-Exception ignored in: <function SyncGoTrueClient.__del__ at 0xfe4652811f30>
+Exception ignored in: <function SyncGoTrueClient.__del__ at 0xfcdedd475f30>
 Traceback (most recent call last):
   File "/sessions/clever-happy-brown/.local/lib/python3.10/site-packages/supabase_auth/_sync/gotrue_client.py", line 1288, in __del__
     if self._refresh_token_timer:
@@ -17,10 +17,10 @@ WARNING: This is a development server. Do not use it in a production deployment.
  * Running on http://127.0.0.1:8080
 Press CTRL+C to quit
  * Restarting with stat
-Exception ignored in: <function SyncGoTrueClient.__del__ at 0xe242153f1f30>
+Exception ignored in: <function SyncGoTrueClient.__del__ at 0xef7cbb791f30>
 Traceback (most recent call last):
   File "/sessions/clever-happy-brown/.local/lib/python3.10/site-packages/supabase_auth/_sync/gotrue_client.py", line 1288, in __del__
     if self._refresh_token_timer:
 AttributeError: 'SyncSupabaseAuthClient' object has no attribute '_refresh_token_timer'
  * Debugger is active!
- * Debugger PIN: 581-643-467
+ * Debugger PIN: 167-662-609
