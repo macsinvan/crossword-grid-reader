@@ -951,8 +951,8 @@ def build_standard_definition_phases(step, clue):
     recommended_approach = difficulty.get("recommendedApproach", "wordplay")
 
     if recommended_approach == "definition":
-        # Get hint from difficulty.definition.hint if available
-        definition_hint = difficulty.get("definition", {}).get("hint", "")
+        # Get hint from step (new schema)
+        definition_hint = step.get("hint", "")
 
         # Standard intro paragraph explaining the strategy
         strategy_intro = "Clues can be solved by starting with the wordplay or the definition. Skilled solvers often hypothesize an answer based on the definition, then verify it using the wordplay."
@@ -1341,14 +1341,61 @@ def substitute_variables(text, step, session, clue=None):
 def _build_menu_render(session, clue):
     """
     Builds menu view showing all steps with status indicators.
-    Template-driven: generates step titles from clue metadata.
+    Template-driven: generates step titles from step types and data.
     """
     steps_data = clue.get("steps", [])
     menu_items = []
 
     for idx, step in enumerate(steps_data):
-        # Generate title from assembly field (template-driven)
-        title = step.get("assembly", step.get("type", f"Step {idx + 1}"))
+        step_type = step.get("type", "")
+
+        # Generate menu title based on step type (task format)
+        if step_type == "standard_definition":
+            title = "Identify Definition"
+
+        elif step_type == "wordplay_overview":
+            title = "Identify Wordplay Indicator"
+
+        elif step_type == "synonym":
+            fodder = get_fodder_text(step)
+            title = f"Identify Synonym ({fodder})"
+
+        elif step_type == "abbreviation":
+            fodder = get_fodder_text(step)
+            title = f"Identify Abbreviation ({fodder})"
+
+        elif step_type == "anagram":
+            indicator = step.get("indicator", {})
+            ind_text = indicator.get("text", "") if isinstance(indicator, dict) else ""
+            title = f"Solve Anagram" + (f" ({ind_text})" if ind_text else "")
+
+        elif step_type == "container":
+            indicator = step.get("indicator", {})
+            ind_text = indicator.get("text", "") if isinstance(indicator, dict) else ""
+            title = f"Identify Container" + (f" ({ind_text})" if ind_text else "")
+
+        elif step_type == "charade" or step_type == "charade_verify":
+            assembly = step.get("assembly", "")
+            title = f"Assemble" + (f": {assembly}" if assembly else "")
+
+        elif step_type == "hidden":
+            title = "Find Hidden Word"
+
+        elif step_type == "transformation_chain":
+            title = "Apply Transformations"
+
+        elif step_type == "deletion_discover":
+            title = "Apply Deletion"
+
+        elif step_type == "container_verify":
+            title = "Verify Container"
+
+        elif step_type == "alternation_discover":
+            title = "Apply Alternation"
+
+        else:
+            # Fallback: use type as title
+            title = step_type.replace("_", " ").title()
 
         # Determine status: pending, in_progress, completed
         if idx in session["completed_steps"]:
@@ -1385,6 +1432,9 @@ def get_render(clue_id, clue):
     if not session:
         return {"error": "No session"}
 
+    # DEBUG: Log session state
+    print(f"[DEBUG get_render] clue_id={clue_id}, step_index={session['step_index']}")
+
     steps = clue.get("steps", [])
     answer = clue.get("clue", {}).get("answer", "")
     enumeration = clue.get("clue", {}).get("enumeration", "")
@@ -1418,7 +1468,10 @@ def get_render(clue_id, clue):
 
     # Handle step menu (step_index == -2)
     if session["step_index"] == -2:
+        print(f"[DEBUG] Returning step menu mode")
         return _build_menu_render(session, clue)
+    else:
+        print(f"[DEBUG] NOT returning step menu, step_index={session['step_index']}")
 
     # Handle clue type identification step (step_index == -1)
     if session["step_index"] == -1:
@@ -1520,7 +1573,7 @@ def get_render(clue_id, clue):
     if step["type"] == "standard_definition" and phase["id"] == "teaching":
         definition_text = step.get("expected", {}).get("text", "")
         position = step.get("position", "")
-        definition_hint = clue.get("difficulty", {}).get("definition", {}).get("hint", "")
+        definition_hint = step.get("hint", "")
 
         instruction = f"Good! The definition, '{definition_text}', is at the {position} of the clue."
         if definition_hint:
@@ -2152,7 +2205,7 @@ def get_all_learnings(clue):
         if step_type == "standard_definition":
             definition_text = step.get("expected", {}).get("text", "")
             position = step.get("position", "")
-            definition_hint = clue.get("difficulty", {}).get("definition", {}).get("hint", "")
+            definition_hint = step.get("hint", "")
 
             text = f"\"{definition_text}\" is the definition (at {position})."
             if definition_hint:
@@ -3473,8 +3526,12 @@ def get_solved_view(clue_id, clue):
                     "color": "BLUE"
                 })
 
-    # Get definition hint if available
-    definition_hint = clue.get("difficulty", {}).get("definition", {}).get("hint", "")
+    # Get definition hint from standard_definition step (new schema)
+    definition_hint = ""
+    for step in steps:
+        if step.get("type") == "standard_definition":
+            definition_hint = step.get("hint", "")
+            break
 
     return {
         "success": True,

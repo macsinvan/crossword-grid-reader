@@ -27,24 +27,41 @@
         {
           "type": "standard_definition",
           "expected": {
-            "indices": [0, 1],
+            "indices": [
+              0,
+              1
+            ],
             "text": "Come by"
           },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "'Come by' suggests dropping in on someone - find a common 5-letter word for this",
+          "difficulty": "Easy"
         },
         {
           "type": "charade",
           "template": "charade_with_parts",
           "parts": [
             {
-              "fodder": {"indices": [2], "text": "five"},
+              "fodder": {
+                "indices": [
+                  2
+                ],
+                "text": "five"
+              },
               "result": "V",
               "type": "abbreviation",
               "reasoning": "Roman numeral V = 5"
             },
             {
-              "fodder": {"indices": [3, 4, 5], "text": "do you mean?"},
+              "fodder": {
+                "indices": [
+                  3,
+                  4,
+                  5
+                ],
+                "text": "do you mean?"
+              },
               "result": "ISIT",
               "type": "literal_phrase",
               "reasoning": "The question 'do you mean?' reads as 'IS IT'"
@@ -97,24 +114,39 @@
         {
           "type": "standard_definition",
           "expected": {
-            "indices": [0, 1],
+            "indices": [
+              0,
+              1
+            ],
             "text": "See boss"
           },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "A 'see' is a diocese - who runs one?",
+          "difficulty": "Medium"
         },
         {
           "type": "charade",
           "template": "charade_with_parts",
           "parts": [
             {
-              "fodder": {"indices": [2], "text": "bungle"},
+              "fodder": {
+                "indices": [
+                  2
+                ],
+                "text": "bungle"
+              },
               "result": "BISH",
               "type": "synonym",
               "reasoning": "To 'bish' something is British slang for bungling it"
             },
             {
-              "fodder": {"indices": [3], "text": "work"},
+              "fodder": {
+                "indices": [
+                  3
+                ],
+                "text": "work"
+              },
               "result": "OP",
               "type": "abbreviation",
               "reasoning": "OP = opus, a musical work or composition"
@@ -170,25 +202,47 @@
         {
           "type": "standard_definition",
           "expected": {
-            "indices": [5, 6],
+            "indices": [
+              5,
+              6
+            ],
             "text": "are starving"
           },
           "position": "end",
-          "explicit": true
+          "explicit": true,
+          "hint": "Think of an archaic verb meaning to be extremely hungry",
+          "difficulty": "Hard"
         },
         {
           "type": "charade",
           "template": "charade_with_parts",
-          "indicator": {"indices": [2], "text": "after"},
+          "indicator": {
+            "indices": [
+              2
+            ],
+            "text": "after"
+          },
           "parts": [
             {
-              "fodder": {"indices": [3, 4], "text": "dance party"},
+              "fodder": {
+                "indices": [
+                  3,
+                  4
+                ],
+                "text": "dance party"
+              },
               "result": "RAVE",
               "type": "synonym",
               "reasoning": "A rave is an all-night dance party"
             },
             {
-              "fodder": {"indices": [0, 1], "text": "any number"},
+              "fodder": {
+                "indices": [
+                  0,
+                  1
+                ],
+                "text": "any number"
+              },
               "result": "N",
               "type": "abbreviation",
               "reasoning": "N represents any number in mathematics"
@@ -245,31 +299,53 @@
         {
           "type": "standard_definition",
           "expected": {
-            "indices": [5, 6],
+            "indices": [
+              5,
+              6
+            ],
             "text": "I'm afraid"
           },
           "position": "end",
-          "explicit": true
+          "explicit": true,
+          "hint": "An exclamation of fright, often seen in comics",
+          "difficulty": "Easy"
         },
         {
           "type": "transformation_chain",
           "template": "transformation_chain",
           "steps": [
             {
-              "fodder": {"indices": [3], "text": "sharp"},
+              "fodder": {
+                "indices": [
+                  3
+                ],
+                "text": "sharp"
+              },
               "result": "KEEN",
               "type": "synonym",
               "reasoning": "Keen means sharp, as in a keen edge"
             },
             {
-              "indicator": {"indices": [0, 1, 2], "text": "a lot of"},
+              "indicator": {
+                "indices": [
+                  0,
+                  1,
+                  2
+                ],
+                "text": "a lot of"
+              },
               "fodder": "KEEN",
               "result": "KEE",
               "type": "deletion",
               "reasoning": "'A lot of' means take most - remove final letter"
             },
             {
-              "indicator": {"indices": [4], "text": "turns"},
+              "indicator": {
+                "indices": [
+                  4
+                ],
+                "text": "turns"
+              },
               "fodder": "KEE",
               "result": "EEK",
               "type": "reversal",
@@ -328,38 +404,64 @@
         {
           "type": "standard_definition",
           "expected": {
-            "indices": [0, 1],
+            "indices": [
+              0,
+              1
+            ],
             "text": "Concerning sight"
           },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "Related to vision or the eye",
+          "difficulty": "Easy"
         },
         {
           "type": "anagram",
           "template": "anagram_with_fodder_pieces",
-          "indicator": {"indices": [7, 8], "text": "struggles with"},
+          "indicator": {
+            "indices": [
+              7,
+              8
+            ],
+            "text": "struggles with"
+          },
           "pieces": [
             {
-              "fodder": {"indices": [5], "text": "office"},
+              "fodder": {
+                "indices": [
+                  5
+                ],
+                "text": "office"
+              },
               "result": "O",
               "type": "letter_selection",
               "reasoning": "'head of' = first letter of office"
             },
             {
-              "fodder": {"indices": [6], "text": "IT"},
+              "fodder": {
+                "indices": [
+                  6
+                ],
+                "text": "IT"
+              },
               "result": "IT",
               "type": "literal",
               "reasoning": "IT used as-is"
             },
             {
-              "fodder": {"indices": [9], "text": "PC"},
+              "fodder": {
+                "indices": [
+                  9
+                ],
+                "text": "PC"
+              },
               "result": "PC",
               "type": "literal",
               "reasoning": "PC used as-is"
             }
           ],
           "result": "OPTIC",
-          "assembly": "O + IT + PC → (anagram) → OPTIC",
+          "assembly": "O + IT + PC \u2192 (anagram) \u2192 OPTIC",
           "letters_so_far": 5,
           "letters_needed": 5
         }
@@ -412,36 +514,63 @@
         {
           "type": "standard_definition",
           "expected": {
-            "indices": [0],
+            "indices": [
+              0
+            ],
             "text": "State"
           },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "An island nation off the coast of Africa",
+          "difficulty": "Easy"
         },
         {
           "type": "charade",
           "template": "charade_with_parts",
           "parts": [
             {
-              "fodder": {"indices": [6, 7, 8], "text": "out to lunch"},
+              "fodder": {
+                "indices": [
+                  6,
+                  7,
+                  8
+                ],
+                "text": "out to lunch"
+              },
               "result": "MAD",
               "type": "synonym",
               "reasoning": "'Out to lunch' is slang for crazy or mad"
             },
             {
-              "fodder": {"indices": [3, 4], "text": "Turkish leader"},
+              "fodder": {
+                "indices": [
+                  3,
+                  4
+                ],
+                "text": "Turkish leader"
+              },
               "result": "AGA",
               "type": "abbreviation",
               "reasoning": "An aga is a Turkish military commander"
             },
             {
-              "fodder": {"indices": [5], "text": "who's"},
+              "fodder": {
+                "indices": [
+                  5
+                ],
+                "text": "who's"
+              },
               "result": "S",
               "type": "literal",
               "reasoning": "The possessive 's from 'who's'"
             },
             {
-              "fodder": {"indices": [1], "text": "coach"},
+              "fodder": {
+                "indices": [
+                  1
+                ],
+                "text": "coach"
+              },
               "result": "CAR",
               "type": "synonym",
               "reasoning": "A coach is a type of vehicle/car"
@@ -498,30 +627,53 @@
         {
           "type": "standard_definition",
           "expected": {
-            "indices": [0, 1],
+            "indices": [
+              0,
+              1
+            ],
             "text": "Moderate movement"
           },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "A musical tempo marking - slower than allegro but not as slow as adagio",
+          "difficulty": "Hard"
         },
         {
           "type": "charade",
           "template": "charade_with_parts",
           "parts": [
             {
-              "fodder": {"indices": [2], "text": "also"},
+              "fodder": {
+                "indices": [
+                  2
+                ],
+                "text": "also"
+              },
               "result": "AND",
               "type": "synonym",
               "reasoning": "'Also' links things together, like 'and'"
             },
             {
-              "fodder": {"indices": [3, 4], "text": "opposed to"},
+              "fodder": {
+                "indices": [
+                  3,
+                  4
+                ],
+                "text": "opposed to"
+              },
               "result": "ANTI",
               "type": "synonym",
               "reasoning": "Anti- means opposed to or against"
             },
             {
-              "fodder": {"indices": [5, 6, 7], "text": "one referendum option"},
+              "fodder": {
+                "indices": [
+                  5,
+                  6,
+                  7
+                ],
+                "text": "one referendum option"
+              },
               "result": "NO",
               "type": "synonym",
               "reasoning": "In a referendum, one option is to vote 'No'"
@@ -554,7 +706,7 @@
       "id": "times-29453-2d",
       "clue": {
         "number": "2D",
-        "text": "Crooked old mater — which strongly suggests criminal is mum",
+        "text": "Crooked old mater \u2014 which strongly suggests criminal is mum",
         "enumeration": "6",
         "answer": "OMERTA",
         "definition": [
@@ -579,32 +731,56 @@
         {
           "type": "standard_definition",
           "expected": {
-            "indices": [3, 4, 5, 6, 7, 8],
+            "indices": [
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
             "text": "which strongly suggests criminal is mom"
           },
           "position": "end",
-          "explicit": true
+          "explicit": true,
+          "hint": "The mafia code of silence - if you follow it, you keep quiet about crimes",
+          "difficulty": "Hard"
         },
         {
           "type": "anagram",
           "template": "anagram_with_fodder_pieces",
-          "indicator": {"indices": [0], "text": "Crooked"},
+          "indicator": {
+            "indices": [
+              0
+            ],
+            "text": "Crooked"
+          },
           "pieces": [
             {
-              "fodder": {"indices": [1], "text": "old"},
+              "fodder": {
+                "indices": [
+                  1
+                ],
+                "text": "old"
+              },
               "result": "O",
               "type": "abbreviation",
               "reasoning": "O is standard abbreviation for old"
             },
             {
-              "fodder": {"indices": [2], "text": "mater"},
+              "fodder": {
+                "indices": [
+                  2
+                ],
+                "text": "mater"
+              },
               "result": "MATER",
               "type": "literal",
               "reasoning": "mater used as-is"
             }
           ],
           "result": "OMERTA",
-          "assembly": "O + MATER → (anagram) → OMERTA"
+          "assembly": "O + MATER \u2192 (anagram) \u2192 OMERTA"
         }
       ],
       "metadata": {
@@ -655,22 +831,34 @@
         {
           "type": "standard_definition",
           "expected": {
-            "indices": [0, 1, 2, 3],
+            "indices": [
+              0,
+              1,
+              2,
+              3
+            ],
             "text": "Cover up in shower"
           },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "Something you use to stay dry when it rains",
+          "difficulty": "Easy"
         },
         {
           "type": "container",
           "template": "insertion_with_two_synonyms",
           "indicator": {
-            "indices": [6],
+            "indices": [
+              6
+            ],
             "text": "nurses"
           },
           "outer": {
             "fodder": {
-              "indices": [4, 5],
+              "indices": [
+                4,
+                5
+              ],
               "text": "not after"
             },
             "result": "BY",
@@ -678,7 +866,10 @@
           },
           "inner": {
             "fodder": {
-              "indices": [7, 8],
+              "indices": [
+                7,
+                8
+              ],
               "text": "turn around"
             },
             "result": "ROLL",
@@ -733,31 +924,56 @@
         {
           "type": "standard_definition",
           "expected": {
-            "indices": [0],
+            "indices": [
+              0
+            ],
             "text": "Flatter"
           },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "To cajole or flatter someone with charming words",
+          "difficulty": "Easy"
         },
         {
           "type": "container",
           "template": "insertion_with_charade_inner",
-          "indicator": {"indices": [2], "text": "takes"},
+          "indicator": {
+            "indices": [
+              2
+            ],
+            "text": "takes"
+          },
           "outer": {
-            "fodder": {"indices": [1], "text": "track"},
+            "fodder": {
+              "indices": [
+                1
+              ],
+              "text": "track"
+            },
             "result": "STALK",
             "reasoning": "To stalk is to track or follow prey"
           },
           "inner": {
             "pieces": [
               {
-                "fodder": {"indices": [3, 4], "text": "very little"},
+                "fodder": {
+                  "indices": [
+                    3,
+                    4
+                  ],
+                  "text": "very little"
+                },
                 "result": "WEE",
                 "type": "synonym",
                 "reasoning": "Wee means very little or tiny"
               },
               {
-                "fodder": {"indices": [5], "text": "time"},
+                "fodder": {
+                  "indices": [
+                    5
+                  ],
+                  "text": "time"
+                },
                 "result": "T",
                 "type": "abbreviation",
                 "reasoning": "T is standard abbreviation for time"
@@ -817,23 +1033,45 @@
         {
           "type": "standard_definition",
           "expected": {
-            "indices": [0, 1, 2],
+            "indices": [
+              0,
+              1,
+              2
+            ],
             "text": "Steamy in here"
           },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "A warm glass building for growing plants",
+          "difficulty": "Easy"
         },
         {
           "type": "container",
           "template": "insertion_with_two_synonyms",
-          "indicator": {"indices": [5, 6], "text": "must wear"},
+          "indicator": {
+            "indices": [
+              5,
+              6
+            ],
+            "text": "must wear"
+          },
           "outer": {
-            "fodder": {"indices": [7], "text": "socks"},
+            "fodder": {
+              "indices": [
+                7
+              ],
+              "text": "socks"
+            },
             "result": "HOSE",
             "reasoning": "Hose is another word for stockings/socks"
           },
           "inner": {
-            "fodder": {"indices": [4], "text": "you"},
+            "fodder": {
+              "indices": [
+                4
+              ],
+              "text": "you"
+            },
             "result": "THOU",
             "reasoning": "Thou is archaic/biblical form of 'you'"
           },
@@ -890,36 +1128,64 @@
         {
           "type": "standard_definition",
           "expected": {
-            "indices": [5, 6, 7, 8],
+            "indices": [
+              5,
+              6,
+              7,
+              8
+            ],
             "text": "representative of her country"
           },
           "position": "end",
-          "explicit": true
+          "explicit": true,
+          "hint": "A female diplomat who represents her nation abroad",
+          "difficulty": "Medium"
         },
         {
           "type": "charade",
           "template": "charade_with_parts",
           "parts": [
             {
-              "fodder": {"indices": [0], "text": "Live"},
+              "fodder": {
+                "indices": [
+                  0
+                ],
+                "text": "Live"
+              },
               "result": "AM",
               "type": "synonym",
               "reasoning": "'I am' means 'I live/exist'"
             },
             {
-              "fodder": {"indices": [1], "text": "singer"},
+              "fodder": {
+                "indices": [
+                  1
+                ],
+                "text": "singer"
+              },
               "result": "BASS",
               "type": "synonym",
               "reasoning": "A bass is a type of singer (low male voice)"
             },
             {
-              "fodder": {"indices": [2, 3], "text": "with a"},
+              "fodder": {
+                "indices": [
+                  2,
+                  3
+                ],
+                "text": "with a"
+              },
               "result": "A",
               "type": "literal",
               "reasoning": "The letter A"
             },
             {
-              "fodder": {"indices": [4], "text": "costume"},
+              "fodder": {
+                "indices": [
+                  4
+                ],
+                "text": "costume"
+              },
               "result": "DRESS",
               "type": "synonym",
               "reasoning": "A dress is a costume or outfit"
@@ -974,22 +1240,41 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [4, 5, 6], "text": "sight of Florence"},
+          "expected": {
+            "indices": [
+              4,
+              5,
+              6
+            ],
+            "text": "sight of Florence"
+          },
           "position": "end",
-          "explicit": true
+          "explicit": true,
+          "hint": "A famous cathedral in an Italian city",
+          "difficulty": "Hard"
         },
         {
           "type": "charade",
           "template": "charade_with_parts",
           "parts": [
             {
-              "fodder": {"indices": [0], "text": "Couple"},
+              "fodder": {
+                "indices": [
+                  0
+                ],
+                "text": "Couple"
+              },
               "result": "DUO",
               "type": "synonym",
               "reasoning": "A duo is a couple or pair"
             },
             {
-              "fodder": {"indices": [3], "text": "second"},
+              "fodder": {
+                "indices": [
+                  3
+                ],
+                "text": "second"
+              },
               "result": "MO",
               "type": "synonym",
               "reasoning": "A mo (moment) is a brief second of time"
@@ -1044,22 +1329,43 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [0], "text": "Urge"},
+          "expected": {
+            "indices": [
+              0
+            ],
+            "text": "Urge"
+          },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "To push or propel forward, or a strong motivation",
+          "difficulty": "Easy"
         },
         {
           "type": "transformation_chain",
           "template": "transformation_chain",
           "steps": [
             {
-              "fodder": {"indices": [5, 6], "text": "silly speech"},
+              "fodder": {
+                "indices": [
+                  5,
+                  6
+                ],
+                "text": "silly speech"
+              },
               "result": "DRIVEL",
               "type": "synonym",
               "reasoning": "Drivel is silly, nonsensical speech"
             },
             {
-              "indicator": {"indices": [1, 2, 3, 4], "text": "removal of line from"},
+              "indicator": {
+                "indices": [
+                  1,
+                  2,
+                  3,
+                  4
+                ],
+                "text": "removal of line from"
+              },
               "fodder": "DRIVEL",
               "result": "DRIVE",
               "type": "deletion",
@@ -1111,22 +1417,41 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [4], "text": "happened"},
+          "expected": {
+            "indices": [
+              4
+            ],
+            "text": "happened"
+          },
           "position": "end",
-          "explicit": true
+          "explicit": true,
+          "hint": "Past tense of 'is' - indicating something occurred",
+          "difficulty": "Easy"
         },
         {
           "type": "transformation_chain",
           "template": "transformation_chain",
           "steps": [
             {
-              "fodder": {"indices": [3], "text": "conflicts"},
+              "fodder": {
+                "indices": [
+                  3
+                ],
+                "text": "conflicts"
+              },
               "result": "WARS",
               "type": "synonym",
               "reasoning": "Wars are armed conflicts"
             },
             {
-              "indicator": {"indices": [0, 1, 2], "text": "In Republican's absence"},
+              "indicator": {
+                "indices": [
+                  0,
+                  1,
+                  2
+                ],
+                "text": "In Republican's absence"
+              },
               "fodder": "WARS",
               "result": "WAS",
               "type": "deletion",
@@ -1182,22 +1507,44 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [4, 5, 6, 7], "text": "relatively OK for tobacco?"},
+          "expected": {
+            "indices": [
+              4,
+              5,
+              6,
+              7
+            ],
+            "text": "relatively OK for tobacco?"
+          },
           "position": "end",
-          "explicit": true
+          "explicit": true,
+          "hint": "A cigarette descriptor suggesting reduced harmful content",
+          "difficulty": "Medium"
         },
         {
           "type": "charade",
           "template": "charade_with_parts",
           "parts": [
             {
-              "fodder": {"indices": [1, 2, 3], "text": "in the doldrums"},
+              "fodder": {
+                "indices": [
+                  1,
+                  2,
+                  3
+                ],
+                "text": "in the doldrums"
+              },
               "result": "LOW",
               "type": "synonym",
               "reasoning": "Being in the doldrums means feeling low"
             },
             {
-              "fodder": {"indices": [0], "text": "Sailor"},
+              "fodder": {
+                "indices": [
+                  0
+                ],
+                "text": "Sailor"
+              },
               "result": "TAR",
               "type": "synonym",
               "reasoning": "Tar is old slang for a sailor (Jack Tar)"
@@ -1249,21 +1596,43 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [3], "text": "patronage"},
+          "expected": {
+            "indices": [
+              3
+            ],
+            "text": "patronage"
+          },
           "position": "end",
-          "explicit": true
+          "explicit": true,
+          "hint": "Support or protection from a powerful person or organization",
+          "difficulty": "Medium"
         },
         {
           "type": "container",
           "template": "insertion_with_one_synonym_outer",
-          "indicator": {"indices": [1], "text": "welcoming"},
+          "indicator": {
+            "indices": [
+              1
+            ],
+            "text": "welcoming"
+          },
           "outer": {
-            "fodder": {"indices": [0], "text": "Summits"},
+            "fodder": {
+              "indices": [
+                0
+              ],
+              "text": "Summits"
+            },
             "result": "APICES",
             "reasoning": "Apices is plural of apex (summit/peak)"
           },
           "inner": {
-            "fodder": {"indices": [2], "text": "American"},
+            "fodder": {
+              "indices": [
+                2
+              ],
+              "text": "American"
+            },
             "result": "US",
             "reasoning": "US = United States (American)"
           },
@@ -1315,22 +1684,40 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [0], "text": "Twit"},
+          "expected": {
+            "indices": [
+              0
+            ],
+            "text": "Twit"
+          },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "To criticize or scold someone",
+          "difficulty": "Medium"
         },
         {
           "type": "charade",
           "template": "charade_with_parts",
           "parts": [
             {
-              "fodder": {"indices": [1, 2], "text": "copying antique"},
+              "fodder": {
+                "indices": [
+                  1,
+                  2
+                ],
+                "text": "copying antique"
+              },
               "result": "REPRO",
               "type": "synonym",
               "reasoning": "A repro is a reproduction or copy of an antique"
             },
             {
-              "fodder": {"indices": [4], "text": "pine"},
+              "fodder": {
+                "indices": [
+                  4
+                ],
+                "text": "pine"
+              },
               "intermediate": "ACHE",
               "result": "ACH",
               "type": "synonym_then_deletion",
@@ -1386,26 +1773,46 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [0], "text": "Fugitives"},
+          "expected": {
+            "indices": [
+              0
+            ],
+            "text": "Fugitives"
+          },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "Passing quickly, transient - like someone on the run",
+          "difficulty": "Medium"
         },
         {
           "type": "charade",
           "template": "charade_with_parts",
           "parts": [
             {
-              "fodder": {"indices": [1, 2, 3], "text": "attempt to escape"},
+              "fodder": {
+                "indices": [
+                  1,
+                  2,
+                  3
+                ],
+                "text": "attempt to escape"
+              },
               "result": "FLEE",
               "type": "synonym",
               "reasoning": "To flee is to attempt to escape"
             },
             {
-              "fodder": {"indices": [5, 6], "text": "good egg"},
+              "fodder": {
+                "indices": [
+                  5,
+                  6
+                ],
+                "text": "good egg"
+              },
               "intermediate": "G + NIT",
               "result": "TING",
               "type": "abbreviation_synonym_reversed",
-              "reasoning": "good=G, egg=NIT (louse egg), then 'upset' reverses GNIT→TING"
+              "reasoning": "good=G, egg=NIT (louse egg), then 'upset' reverses GNIT\u2192TING"
             }
           ],
           "result": "FLEETING",
@@ -1456,18 +1863,38 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [0, 1], "text": "Pretend authority"},
+          "expected": {
+            "indices": [
+              0,
+              1
+            ],
+            "text": "Pretend authority"
+          },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "A pretentious person who claims expertise they don't have",
+          "difficulty": "Medium"
         },
         {
           "type": "hidden",
           "template": "hidden_reversed",
-          "indicator": {"indices": [2, 5], "text": "raised ... limits"},
-          "fodder": {"indices": [3, 4], "text": "undue spending"},
+          "indicator": {
+            "indices": [
+              2,
+              5
+            ],
+            "text": "raised ... limits"
+          },
+          "fodder": {
+            "indices": [
+              3,
+              4
+            ],
+            "text": "undue spending"
+          },
           "hidden_letters": "DUESP",
           "result": "PSEUD",
-          "reasoning": "Hidden reversed in 'unDUE SPending' → DUESP reversed = PSEUD"
+          "reasoning": "Hidden reversed in 'unDUE SPending' \u2192 DUESP reversed = PSEUD"
         }
       ],
       "metadata": {
@@ -1514,26 +1941,44 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [0, 1], "text": "Tsars like"},
+          "expected": {
+            "indices": [
+              0,
+              1
+            ],
+            "text": "Tsars like"
+          },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "A Roman emperor - Tsars took their title from this word",
+          "difficulty": "Easy"
         },
         {
           "type": "charade",
           "template": "charade_with_parts",
           "parts": [
             {
-              "fodder": {"indices": [2], "text": "roughly"},
+              "fodder": {
+                "indices": [
+                  2
+                ],
+                "text": "roughly"
+              },
               "result": "CA",
               "type": "abbreviation",
               "reasoning": "CA is abbreviation for circa (Latin for 'around/roughly')"
             },
             {
-              "fodder": {"indices": [3], "text": "level"},
+              "fodder": {
+                "indices": [
+                  3
+                ],
+                "text": "level"
+              },
               "intermediate": "RASE",
               "result": "ESAR",
               "type": "synonym_then_reversal",
-              "reasoning": "level=RASE (archaic for raze), 'revolution' reverses it→ESAR"
+              "reasoning": "level=RASE (archaic for raze), 'revolution' reverses it\u2192ESAR"
             }
           ],
           "result": "CAESAR",
@@ -1587,24 +2032,55 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [0, 1, 2, 3, 4, 5, 6, 7, 8], "text": "One missing initially admitted to Electra with some upheaval?"},
+          "expected": {
+            "indices": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ],
+            "text": "One missing initially admitted to Electra with some upheaval?"
+          },
           "position": "all",
           "explicit": true,
-          "hint": "&lit clue - entire clue describes someone arriving late to theatre"
+          "hint": "An &lit clue - someone who arrives after the show has started",
+          "difficulty": "Hard"
         },
         {
           "type": "anagram",
           "template": "anagram_with_fodder_pieces",
-          "indicator": {"indices": [7, 8], "text": "some upheaval"},
+          "indicator": {
+            "indices": [
+              7,
+              8
+            ],
+            "text": "some upheaval"
+          },
           "pieces": [
             {
-              "fodder": {"indices": [0, 1], "text": "One missing"},
+              "fodder": {
+                "indices": [
+                  0,
+                  1
+                ],
+                "text": "One missing"
+              },
               "result": "OM",
               "type": "letter_selection",
               "reasoning": "'initially' takes first letters: O + M"
             },
             {
-              "fodder": {"indices": [5], "text": "Electra"},
+              "fodder": {
+                "indices": [
+                  5
+                ],
+                "text": "Electra"
+              },
               "result": "ELECTRA",
               "type": "literal",
               "reasoning": "Used as-is (proper noun)"
@@ -1661,23 +2137,45 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [8], "text": "school"},
+          "expected": {
+            "indices": [
+              8
+            ],
+            "text": "school"
+          },
           "position": "end",
-          "explicit": true
+          "explicit": true,
+          "hint": "To train or teach someone, often with strict methods",
+          "difficulty": "Medium"
         },
         {
           "type": "charade",
           "template": "charade_with_parts",
           "parts": [
             {
-              "fodder": {"indices": [0, 1, 2], "text": "Photos I had"},
+              "fodder": {
+                "indices": [
+                  0,
+                  1,
+                  2
+                ],
+                "text": "Photos I had"
+              },
               "intermediate": "PICS + ID",
               "result": "DISCIP",
               "type": "synonyms_then_reversal",
-              "reasoning": "Photos=PICS, I had=ID, 'mounted' reverses PICSID→DISCIP"
+              "reasoning": "Photos=PICS, I had=ID, 'mounted' reverses PICSID\u2192DISCIP"
             },
             {
-              "fodder": {"indices": [4, 5, 6, 7], "text": "cover the inside of"},
+              "fodder": {
+                "indices": [
+                  4,
+                  5,
+                  6,
+                  7
+                ],
+                "text": "cover the inside of"
+              },
               "result": "LINE",
               "type": "synonym",
               "reasoning": "To line a coat is to cover its inside"
@@ -1734,16 +2232,36 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [6, 7, 8], "text": "when it's dark?"},
+          "expected": {
+            "indices": [
+              6,
+              7,
+              8
+            ],
+            "text": "when it's dark?"
+          },
           "position": "end",
-          "explicit": true
+          "explicit": true,
+          "hint": "An astronomical event that temporarily blocks sunlight",
+          "difficulty": "Medium"
         },
         {
           "type": "container",
           "template": "insertion_with_charade_inner",
-          "indicator": {"indices": [3, 4], "text": "coming inside"},
+          "indicator": {
+            "indices": [
+              3,
+              4
+            ],
+            "text": "coming inside"
+          },
           "outer": {
-            "fodder": {"indices": [5], "text": "only"},
+            "fodder": {
+              "indices": [
+                5
+              ],
+              "text": "only"
+            },
             "result": "SOLE",
             "type": "synonym",
             "reasoning": "Sole means only, as in 'the sole survivor'"
@@ -1751,19 +2269,34 @@
           "inner": {
             "pieces": [
               {
-                "fodder": {"indices": [0], "text": "Are"},
+                "fodder": {
+                  "indices": [
+                    0
+                  ],
+                  "text": "Are"
+                },
                 "result": "ARE",
                 "type": "literal",
                 "reasoning": "Used as-is"
               },
               {
-                "fodder": {"indices": [1], "text": "cold"},
+                "fodder": {
+                  "indices": [
+                    1
+                  ],
+                  "text": "cold"
+                },
                 "result": "C",
                 "type": "abbreviation",
                 "reasoning": "C = cold (weather notation)"
               },
               {
-                "fodder": {"indices": [2], "text": "kissers"},
+                "fodder": {
+                  "indices": [
+                    2
+                  ],
+                  "text": "kissers"
+                },
                 "result": "LIPS",
                 "type": "synonym",
                 "reasoning": "Kissers is slang for lips"
@@ -1821,26 +2354,45 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [0, 1], "text": "Arab robe"},
+          "expected": {
+            "indices": [
+              0,
+              1
+            ],
+            "text": "Arab robe"
+          },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "A traditional long garment worn in Middle Eastern countries",
+          "difficulty": "Hard"
         },
         {
           "type": "charade",
           "template": "charade_with_parts",
           "parts": [
             {
-              "fodder": {"indices": [7], "text": "beauty"},
+              "fodder": {
+                "indices": [
+                  7
+                ],
+                "text": "beauty"
+              },
               "result": "DISH",
               "type": "synonym",
               "reasoning": "A dish is slang for an attractive person (a beauty)"
             },
             {
-              "fodder": {"indices": [2, 3], "text": "ad has"},
+              "fodder": {
+                "indices": [
+                  2,
+                  3
+                ],
+                "text": "ad has"
+              },
               "intermediate": "ADHAS",
               "result": "DASHA",
               "type": "literal_then_anagram",
-              "reasoning": "'misrepresented' rearranges ADHAS → DASHA"
+              "reasoning": "'misrepresented' rearranges ADHAS \u2192 DASHA"
             }
           ],
           "result": "DISHDASHA",
@@ -1890,21 +2442,44 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [0], "text": "Embankment"},
+          "expected": {
+            "indices": [
+              0
+            ],
+            "text": "Embankment"
+          },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "A famous structure on the Nile river",
+          "difficulty": "Medium"
         },
         {
           "type": "container",
           "template": "insertion_with_two_synonyms",
-          "indicator": {"indices": [2, 3], "text": "lengthened with"},
+          "indicator": {
+            "indices": [
+              2,
+              3
+            ],
+            "text": "lengthened with"
+          },
           "outer": {
-            "fodder": {"indices": [1], "text": "architect"},
+            "fodder": {
+              "indices": [
+                1
+              ],
+              "text": "architect"
+            },
             "result": "ADAM",
             "reasoning": "Robert Adam was a famous British architect"
           },
           "inner": {
-            "fodder": {"indices": [4], "text": "cob?"},
+            "fodder": {
+              "indices": [
+                4
+              ],
+              "text": "cob?"
+            },
             "result": "SWAN",
             "reasoning": "A cob is a male swan"
           },
@@ -1960,29 +2535,53 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [7, 8, 9], "text": "out of time"},
+          "expected": {
+            "indices": [
+              7,
+              8,
+              9
+            ],
+            "text": "out of time"
+          },
           "position": "end",
-          "explicit": true
+          "explicit": true,
+          "hint": "Existing outside of time, timeless",
+          "difficulty": "Hard"
         },
         {
           "type": "charade",
           "template": "charade_with_parts",
           "parts": [
             {
-              "fodder": {"indices": [0], "text": "Friend"},
+              "fodder": {
+                "indices": [
+                  0
+                ],
+                "text": "Friend"
+              },
               "intermediate": "MATE",
               "result": "ATEM",
               "type": "synonym_then_rearrangement",
               "reasoning": "Friend=MATE, 'taking minute to finish' moves M to end: ATEM"
             },
             {
-              "fodder": {"indices": [5], "text": "piano"},
+              "fodder": {
+                "indices": [
+                  5
+                ],
+                "text": "piano"
+              },
               "result": "P",
               "type": "abbreviation",
               "reasoning": "Musical dynamic marking p = piano (soft)"
             },
             {
-              "fodder": {"indices": [6], "text": "exam"},
+              "fodder": {
+                "indices": [
+                  6
+                ],
+                "text": "exam"
+              },
               "result": "ORAL",
               "type": "synonym",
               "reasoning": "A spoken exam is an oral"
@@ -2035,23 +2634,46 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [4, 5], "text": "massive hit"},
+          "expected": {
+            "indices": [
+              4,
+              5
+            ],
+            "text": "massive hit"
+          },
           "position": "end",
-          "explicit": true
+          "explicit": true,
+          "hint": "A very large amount of something, especially medicine",
+          "difficulty": "Medium"
         },
         {
           "type": "anagram",
           "template": "anagram_with_fodder_pieces",
-          "indicator": {"indices": [2], "text": "remade"},
+          "indicator": {
+            "indices": [
+              2
+            ],
+            "text": "remade"
+          },
           "pieces": [
             {
-              "fodder": {"indices": [0], "text": "See"},
+              "fodder": {
+                "indices": [
+                  0
+                ],
+                "text": "See"
+              },
               "result": "SEE",
               "type": "literal",
               "reasoning": "Used as-is"
             },
             {
-              "fodder": {"indices": [1], "text": "Dogma"},
+              "fodder": {
+                "indices": [
+                  1
+                ],
+                "text": "Dogma"
+              },
               "result": "DOGMA",
               "type": "literal",
               "reasoning": "Used as-is"
@@ -2105,21 +2727,45 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [0], "text": "Many"},
+          "expected": {
+            "indices": [
+              0
+            ],
+            "text": "Many"
+          },
           "position": "start",
-          "explicit": true
+          "explicit": true,
+          "hint": "A word meaning a large quantity, often used colloquially",
+          "difficulty": "Easy"
         },
         {
           "type": "container",
           "template": "insertion_with_two_synonyms",
-          "indicator": {"indices": [2, 3], "text": "divided by"},
+          "indicator": {
+            "indices": [
+              2,
+              3
+            ],
+            "text": "divided by"
+          },
           "outer": {
-            "fodder": {"indices": [1], "text": "academics"},
+            "fodder": {
+              "indices": [
+                1
+              ],
+              "text": "academics"
+            },
             "result": "DONS",
             "reasoning": "British term for university professors or fellows"
           },
           "inner": {
-            "fodder": {"indices": [4, 5], "text": "gender-neutral pronoun"},
+            "fodder": {
+              "indices": [
+                4,
+                5
+              ],
+              "text": "gender-neutral pronoun"
+            },
             "result": "ZE",
             "reasoning": "A modern gender-neutral pronoun (between HE and SHE)"
           },
@@ -2173,26 +2819,48 @@
       "steps": [
         {
           "type": "standard_definition",
-          "expected": {"indices": [5, 6, 7], "text": "exposed to blasts"},
+          "expected": {
+            "indices": [
+              5,
+              6,
+              7
+            ],
+            "text": "exposed to blasts"
+          },
           "position": "end",
-          "explicit": true
+          "explicit": true,
+          "hint": "Describing a place battered by strong winds",
+          "difficulty": "Easy"
         },
         {
           "type": "charade",
           "template": "charade_with_parts",
           "parts": [
             {
-              "fodder": {"indices": [0], "text": "Turn"},
+              "fodder": {
+                "indices": [
+                  0
+                ],
+                "text": "Turn"
+              },
               "result": "WIND",
               "type": "synonym",
               "reasoning": "To wind a handle is to turn it"
             },
             {
-              "fodder": {"indices": [1, 2, 3, 4], "text": "bench back in street"},
+              "fodder": {
+                "indices": [
+                  1,
+                  2,
+                  3,
+                  4
+                ],
+                "text": "bench back in street"
+              },
               "intermediate": "PEW reversed in ST",
               "result": "SWEPT",
               "type": "container_with_reversal",
-              "reasoning": "bench=PEW, 'back' reverses→WEP, 'in' puts inside ST: S+WEP+T=SWEPT"
+              "reasoning": "bench=PEW, 'back' reverses\u2192WEP, 'in' puts inside ST: S+WEP+T=SWEPT"
             }
           ],
           "result": "WINDSWEPT",
