@@ -1095,6 +1095,26 @@ class TemplateTrainer {
                             const menuItems = this.render.menuItems || [];
                             const menuItem = menuItems[parseInt(itemIdx)];
                             const position = menuItem?.step_data?.position || 'start';
+                            const stepType = menuItem?.type || '';
+
+                            // Generate completion message based on step type
+                            let completionMessage = '';
+                            if (stepType === 'standard_definition') {
+                                completionMessage = `DEFINITION: <strong>${definitionText}</strong> found at the ${position} of the clue`;
+                            } else if (stepType === 'container_indicator') {
+                                completionMessage = `CONTAINER INDICATOR: <strong>${definitionText}</strong>`;
+                            } else if (stepType === 'container_outer') {
+                                completionMessage = `OUTER WORD: <strong>${definitionText}</strong>`;
+                            } else if (stepType === 'container_inner') {
+                                completionMessage = `INNER WORD: <strong>${definitionText}</strong>`;
+                            } else if (stepType.startsWith('charade_part_')) {
+                                completionMessage = `CHARADE PART: <strong>${definitionText}</strong>`;
+                            } else if (stepType === 'anagram_fodder') {
+                                completionMessage = `ANAGRAM FODDER: <strong>${definitionText}</strong>`;
+                            } else {
+                                // Generic fallback
+                                completionMessage = `<strong>${definitionText}</strong>`;
+                            }
 
                             // Show completion message and collapse after a moment
                             setTimeout(() => {
@@ -1117,7 +1137,7 @@ class TemplateTrainer {
                                     // Replace step title with the result
                                     const stepTitle = stepItem.querySelector('.step-title');
                                     if (stepTitle) {
-                                        stepTitle.innerHTML = `DEFINITION: <strong>${definitionText}</strong> found at the ${position} of the clue`;
+                                        stepTitle.innerHTML = completionMessage;
                                     }
                                 }
                             }, 500);
