@@ -1,0 +1,26 @@
+Exception ignored in: <function SyncGoTrueClient.__del__ at 0xe61bf7fe7be0>
+Traceback (most recent call last):
+  File "/sessions/inspiring-funny-planck/.local/lib/python3.10/site-packages/supabase_auth/_sync/gotrue_client.py", line 1288, in __del__
+    if self._refresh_token_timer:
+AttributeError: 'SyncSupabaseAuthClient' object has no attribute '_refresh_token_timer'
+Supabase not available (Using SOCKS proxy, but the 'socksio' package is not installed. Make sure to install httpx using `pip install httpx[socks]`.), using file-based storage
+Loaded 30 clues from clues_db.json (mtime: 1770231890.3325734)
+All clue annotations validated successfully
+Starting Crossword Server...
+Open http://localhost:8080 in your browser
+Or from other devices on your network: http://<your-ip>:8080
+ * Serving Flask app 'crossword_server'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://127.0.0.1:8080
+Press CTRL+C to quit
+ * Restarting with stat
+Exception ignored in: <function SyncGoTrueClient.__del__ at 0xebc6b688fbe0>
+Traceback (most recent call last):
+  File "/sessions/inspiring-funny-planck/.local/lib/python3.10/site-packages/supabase_auth/_sync/gotrue_client.py", line 1288, in __del__
+    if self._refresh_token_timer:
+AttributeError: 'SyncSupabaseAuthClient' object has no attribute '_refresh_token_timer'
+ * Debugger is active!
+ * Debugger PIN: 751-060-965

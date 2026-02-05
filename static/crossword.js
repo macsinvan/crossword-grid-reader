@@ -158,14 +158,17 @@ class CrosswordPuzzle {
         const directionSuffix = wordData.direction === 'across' ? 'a' : 'd';
         const clueId = `times-${puzzleNumber}-${wordData.clueNumber}${directionSuffix}`;
 
-        // Use solved-view endpoint to get the full breakdown immediately
+        // Start training session (step menu → progressive discovery)
         try {
-            const response = await fetch('/trainer/solved-view', {
+            const response = await fetch('/trainer/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    clue_id: clueId,
-                    crossLetters: wordData.crossLetters,
+                    clue_text: wordData.clueText,
+                    puzzle_number: puzzleNumber,
+                    clue_number: wordData.clueNumber,
+                    direction: wordData.direction,
+                    cross_letters: wordData.crossLetters,
                     enumeration: wordData.enumeration
                 })
             });

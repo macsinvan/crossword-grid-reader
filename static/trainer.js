@@ -1062,6 +1062,7 @@ class TemplateTrainer {
                 const itemIdx = word.getAttribute('data-item-idx');
                 const expandedSection = this.container.querySelector(`.step-expanded[data-item-idx="${itemIdx}"]`);
                 const expectedIndices = JSON.parse(expandedSection.getAttribute('data-expected') || '[]');
+                const allWordsInSection = this.container.querySelectorAll(`.clue-word[data-item-idx="${itemIdx}"]`);
 
                 // Toggle selection
                 if (word.style.background === 'rgb(34, 197, 94)' || word.style.background === '#22c55e') {
@@ -1073,6 +1074,63 @@ class TemplateTrainer {
                     if (expectedIndices.includes(wordIdx)) {
                         word.style.background = '#22c55e'; // Green
                         word.style.color = 'white';
+
+                        // Check if all expected words are now selected
+                        const selectedIndices = [];
+                        allWordsInSection.forEach(w => {
+                            if (w.style.background === 'rgb(34, 197, 94)' || w.style.background === '#22c55e') {
+                                selectedIndices.push(parseInt(w.getAttribute('data-word-idx')));
+                            }
+                        });
+
+                        // If all expected indices are selected, show completion
+                        if (expectedIndices.every(idx => selectedIndices.includes(idx)) &&
+                            selectedIndices.every(idx => expectedIndices.includes(idx))) {
+
+                            // Get the selected words text
+                            const selectedWords = [];
+                            expectedIndices.sort((a, b) => a - b).forEach(idx => {
+                                const w = Array.from(allWordsInSection).find(el => parseInt(el.getAttribute('data-word-idx')) === idx);
+                                if (w) selectedWords.push(w.textContent);
+                            });
+                            const definitionText = selectedWords.join(' ');
+
+                            // Get position from menu item data (from render)
+                            const menuItems = this.render.menuItems || [];
+                            const menuItem = menuItems[parseInt(itemIdx)];
+                            const position = menuItem?.step_data?.position || 'start';
+
+                            // Show completion message and collapse after a moment
+                            setTimeout(() => {
+                                // Collapse expanded section
+                                expandedSection.style.display = 'none';
+
+                                // Show completion in the step item itself
+                                const stepItem = this.container.querySelector(`.step-item[data-item-idx="${itemIdx}"]`);
+                                if (stepItem) {
+                                    // Add completion indicator
+                                    const statusIcon = stepItem.querySelector('.status-icon');
+                                    if (statusIcon) {
+                                        statusIcon.textContent = '✓';
+                                    }
+                                    stepItem.classList.remove('pending');
+                                    stepItem.classList.add('completed');
+                                    stepItem.style.background = '#f0fdf4';
+                                    stepItem.style.borderColor = '#22c55e';
+
+                                    // Add summary text below step item
+                                    const wrapper = stepItem.parentElement;
+                                    let summaryDiv = wrapper.querySelector('.step-summary');
+                                    if (!summaryDiv) {
+                                        summaryDiv = document.createElement('div');
+                                        summaryDiv.className = 'step-summary';
+                                        summaryDiv.style.cssText = 'padding: 0.75rem 1rem; background: #f0fdf4; border: 1px solid #22c55e; border-top: none; border-radius: 0 0 0.5rem 0.5rem; color: #166534; font-size: 0.875rem;';
+                                        wrapper.appendChild(summaryDiv);
+                                    }
+                                    summaryDiv.innerHTML = `✓ <strong>${definitionText}</strong> found at the ${position} of the clue`;
+                                }
+                            }, 500);
+                        }
                     } else {
                         // Show feedback for wrong selection
                         word.style.background = '#ef4444'; // Red

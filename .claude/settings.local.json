@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(lsof:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh repo create:*)",
+      "Bash(pip3 list:*)",
+      "Bash(git push)",
+      "Bash(git reset:*)",
+      "Bash(git push:*)",
+      "Bash(xargs kill -9)",
+      "Bash(# First start a session curl -s -X POST http://localhost:5001/training/start -H \"\"Content-Type: application/json\"\" -d ''{\"\"clueId\"\": \"\"times-29453-1a\"\"}'' # Submit clue type \\(0 = Standard\\) curl -s -X POST http://localhost:5001/training/input -H \"\"Content-Type: application/json\"\" -d ''{\"\"clueId\"\": \"\"times-29453-1a\"\", \"\"value\"\": 0}'' # Continue past teaching curl -s -X POST http://localhost:5001/training/continue -H \"\"Content-Type: application/json\"\" -d ''{\"\"clueId\"\": \"\"times-29453-1a\"\"}'' # Submit definition [0,1,2,3] curl -s -X POST http://localhost:5001/training/input -H \"\"Content-Type: application/json\"\" -d ''{\"\"clueId\"\": \"\"times-29453-1a\"\", \"\"value\"\": [0,1,2,3]}'' # Continue past teaching curl -s -X POST http://localhost:5001/training/continue -H \"\"Content-Type: application/json\"\" -d ''{\"\"clueId\"\": \"\"times-29453-1a\"\"}'' # Now we should be at synonym step 1, fodder phase - submit [4,5] curl -s -X POST http://localhost:5001/training/input -H \"\"Content-Type: application/json\"\" -d ''{\"\"clueId\"\": \"\"times-29453-1a\"\", \"\"value\"\": [4,5]}'')",
+      "Bash(cd:*)",
+      "Bash(ps:*)",
+      "Bash(__NEW_LINE_8f0e992f0a97ba31__ echo \"=== CONTINUE ===\")",
+      "Bash(__NEW_LINE_40fb8d23f2b33c52__ echo \"=== CONTINUE AGAIN ===\")",
+      "Bash(pip install:*)",
+      "Bash(echo $ANTHROPIC_API_KEY)",
+      "Bash(git checkout:*)",
+      "Bash(pkill -f \"python3 crossword_server.py\")",
+      "Bash(kill:*)",
+      "Bash(# Start session curl -s -X POST \"\"http://127.0.0.1:8080/trainer/start\"\" -H \"\"Content-Type: application/json\"\" -d ''{\"\"puzzle_number\"\": \"\"29453\"\", \"\"clue_number\"\": \"\"11\"\", \"\"direction\"\": \"\"across\"\"}'' # Choose Standard curl -s -X POST \"\"http://127.0.0.1:8080/trainer/input\"\" -H \"\"Content-Type: application/json\"\" -d ''{\"\"clue_id\"\": \"\"times-29453-11a\"\", \"\"input\"\": \"\"Standard\"\"}'' # Continue through the teaching phase curl -s -X POST \"\"http://127.0.0.1:8080/trainer/continue\"\" -H \"\"Content-Type: application/json\"\" -d ''{\"\"clue_id\"\": \"\"times-29453-11a\"\"}'' # See where we are now curl -s -X POST \"\"http://127.0.0.1:8080/trainer/continue\"\" -H \"\"Content-Type: application/json\"\" -d ''{\"\"clue_id\"\": \"\"times-29453-11a\"\"}'')",
+      "Bash(# Start a fresh session curl -s -X POST \"\"http://127.0.0.1:8080/trainer/start\"\" -H \"\"Content-Type: application/json\"\" -d ''{\"\"puzzle_number\"\": \"\"29453\"\", \"\"clue_number\"\": \"\"4\"\", \"\"direction\"\": \"\"across\"\"}'' # Choose Standard curl -s -X POST \"\"http://127.0.0.1:8080/trainer/input\"\" -H \"\"Content-Type: application/json\"\" -d ''{\"\"clue_id\"\": \"\"times-29453-4a\"\", \"\"input\"\": \"\"Standard\"\"}'' # Continue to get to a step curl -s -X POST \"\"http://127.0.0.1:8080/trainer/continue\"\" -H \"\"Content-Type: application/json\"\" -d ''{\"\"clue_id\"\": \"\"times-29453-4a\"\"}'' curl -s -X POST \"\"http://127.0.0.1:8080/trainer/continue\"\" -H \"\"Content-Type: application/json\"\" -d ''{\"\"clue_id\"\": \"\"times-29453-4a\"\"}'' # Now test solve-step curl -s -X POST \"\"http://127.0.0.1:8080/trainer/solve-step\"\" -H \"\"Content-Type: application/json\"\" -d ''{\"\"clue_id\"\": \"\"times-29453-4a\"\"}'')",
+      "Bash(# Start fresh session curl -s -X POST \"\"http://127.0.0.1:8080/trainer/start\"\" -H \"\"Content-Type: application/json\"\" -d ''{\"\"puzzle_number\"\": \"\"29453\"\", \"\"clue_number\"\": \"\"4\"\", \"\"direction\"\": \"\"across\"\"}'' # Choose Standard curl -s -X POST \"\"http://127.0.0.1:8080/trainer/input\"\" -H \"\"Content-Type: application/json\"\" -d ''{\"\"clue_id\"\": \"\"times-29453-4a\"\", \"\"input\"\": \"\"Standard\"\"}'' # Continue to interactive step curl -s -X POST \"\"http://127.0.0.1:8080/trainer/continue\"\" -H \"\"Content-Type: application/json\"\" -d ''{\"\"clue_id\"\": \"\"times-29453-4a\"\"}'' # Check what phase we''re on curl -s -X POST \"\"http://127.0.0.1:8080/trainer/continue\"\" -H \"\"Content-Type: application/json\"\" -d ''{\"\"clue_id\"\": \"\"times-29453-4a\"\"}'')",
+      "Bash(source .env)",
+      "Bash(pkill:*)",
+      "Bash(__NEW_LINE_d053172c61345af3__ curl -s -X POST http://127.0.0.1:8080/trainer/reveal -H \"Content-Type: application/json\" -d '{\"\"clue_id\"\": \"\"times-29453-5d\"\"}')",
+      "Bash(# Make a request that should trigger reload curl -s -X POST \"\"http://127.0.0.1:8080/trainer/start\"\" -H \"\"Content-Type: application/json\"\" -d ''{\"\"puzzle_number\"\": \"\"29453\"\", \"\"clue_number\"\": \"\"27\"\", \"\"direction\"\": \"\"across\"\", \"\"clue_text\"\": \"\"See Dogma remade as massive hit \\(8\\)\"\"}'' && grep -i \"\"Auto-reload\\\\|Loaded.*clues\"\" /tmp/server.log)",
+      "Bash(# Clear old log and restart fresh lsof -ti:8080)",
+      "Bash(# Kill server and restart with output capture kill -9 78349 78369 sleep 1 cd /Users/andrewmackenzie/Desktop/Grid\\\\ Reader && python3 crossword_server.py 2>&1)",
+      "Bash(__NEW_LINE_c4ec0120dc905c7d__ curl -s -X POST \"http://127.0.0.1:8080/trainer/input\" -H \"Content-Type: application/json\" -d '{\"\"clue_id\"\":\"\"times-29453-25a\"\",\"\"value\"\":\"\"DRIVE\"\"}')",
+      "Bash(__NEW_LINE_a662d0cdf4d3c86a__ curl -s -X POST \"http://127.0.0.1:8080/trainer/input\" -H \"Content-Type: application/json\" -d '{\"\"clue_id\"\":\"\"times-29453-25a\"\",\"\"value\"\":\"\"DRIVE\"\"}')"
+    ]
+  }
+}
