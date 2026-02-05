@@ -1,0 +1,55 @@
+{
+  "version": "1.0",
+  "description": "Schema definitions for clue step templates. These capture data from the clue - they have NO knowledge of presentation/process, ONLY knowledge of the clue itself.",
+  "templates": {
+    "standard_definition": {
+      "description": "Captures which words in the clue are the definition and where they appear",
+      "fields": {
+        "type": {
+          "required": true,
+          "type": "string",
+          "value": "standard_definition"
+        },
+        "expected": {
+          "required": true,
+          "type": "object",
+          "description": "Which words in the clue are the definition",
+          "fields": {
+            "indices": {
+              "required": true,
+              "type": "array",
+              "itemType": "number",
+              "description": "Word positions in clue.words array (0-indexed)"
+            },
+            "text": {
+              "required": true,
+              "type": "string",
+              "description": "The definition text extracted from those positions"
+            }
+          }
+        },
+        "position": {
+          "required": true,
+          "type": "string",
+          "enum": ["start", "end"],
+          "description": "Where in the clue the definition appears"
+        },
+        "explicit": {
+          "required": false,
+          "type": "boolean",
+          "description": "Whether the definition is straightforward (true) or cryptic (false)",
+          "default": true
+        }
+      },
+      "example": {
+        "type": "standard_definition",
+        "expected": {
+          "indices": [0],
+          "text": "Urge"
+        },
+        "position": "start",
+        "explicit": true
+      }
+    }
+  }
+}

@@ -332,20 +332,30 @@ This is why we control the metadata format completely. We're not constrained by 
 
 **Critical Architecture:** Each step `type` in clue metadata maps 1:1 to a render template in `training_handler.py`.
 
+**IMPORTANT: Templates Stored External to Code**
+- **Clue Step Template Schemas:** Stored in `clue_step_templates.json` (NOT in code)
+- **Render Templates:** Stored in `training_handler.py` (code)
+- **Why separate:** Template schemas must be version-controlled, machine-readable, and reusable independent of implementation code
+
 **IMPORTANT: Thin Stateless Client**
 The client (`trainer.js`) has ZERO state and ZERO logic. It receives a complete `render` object from the server and displays it. The render object contains EVERYTHING needed: what to show, what input mode, what colors, what text. The client never decides anything—it's a pure rendering layer.
 
 **The Two-Layer System:**
 
 ```
-LAYER 1: Clue Step Template (in clues_db.json)
-  └─ Clue-specific data only
-  └─ Schema compatible with render template
-  └─ Example: {"type": "synonym", "fodder": {...}, "result": "DRIVEL"}
-       │
-       │ 1:1 mapping ↓
-       │
-LAYER 2: Render Template (in training_handler.py)
+LAYER 1: Clue Step Template
+  ├─ Schema Definition: clue_step_templates.json (EXTERNAL TO CODE)
+  │   └─ Defines required/optional fields, types, validation rules
+  │   └─ Example: standard_definition schema with expected, position fields
+  │
+  └─ Instance: clues_db.json → training_items → {clue_id} → steps[]
+      └─ Clue-specific data only
+      └─ Must conform to schema in clue_step_templates.json
+      └─ Example: {"type": "synonym", "fodder": {...}, "result": "DRIVEL"}
+           │
+           │ 1:1 mapping ↓
+           │
+LAYER 2: Render Template (in training_handler.py - CODE)
   └─ Generic step type information
   └─ Accepts clue step data as input
   └─ Defines how to present in teaching mode
@@ -360,13 +370,20 @@ LAYER 2: Render Template (in training_handler.py)
 
 **Terminology:**
 
-1. **Clue Step Template** (metadata in `clues_db.json`):
-   - Clue-specific information ONLY
-   - Schema must be compatible with corresponding render template
-   - Contains: which words, expected answers, reasoning text, indices
+1. **Clue Step Template Schema** (in `clue_step_templates.json` - EXTERNAL TO CODE):
+   - **Purpose:** Capture data from the clue in a form that can be used by the render template. Has NO knowledge of presentation/process. ONLY has knowledge of the clue itself.
+   - Formal definition of required/optional fields for extracting clue data
+   - Defines field types, validation rules, examples
+   - Machine-readable, version-controlled
+   - Example: Schema for "synonym" type defining fodder, result, reasoning fields
+
+2. **Clue Step Template Instance** (metadata in `clues_db.json`):
+   - **Purpose:** Specific data extracted from this clue, conforming to schema
+   - Contains: which words (indices), expected answers, reasoning text
+   - Has NO presentation logic - purely data extraction
    - Example: `{"type": "synonym", "fodder": {"text": "silly speech", "indices": [5,6]}, "result": "DRIVEL"}`
 
-2. **Render Template** (code in `training_handler.py`):
+3. **Render Template** (code in `training_handler.py`):
    - Generic information about the step type
    - Accepts clue step template data as input
    - Defines how to present to user in teaching mode
@@ -1181,3 +1198,78 @@ The following bugs and features were implemented during development:
 13. **Mobile Responsive Grid**: CSS Grid with `1fr` units, `aspect-ratio: 1` cells, viewport-based sizing
 14. **Cross Letters in Solve Phase**: Fixed `isFinalAnswerStep` condition to include `phaseId === 'solve'`
 15. **Duplicate Hypothesis Fix**: Prevent duplicate HYPOTHESIS entries in learnings
+
+---
+
+## Appendix B: Clue Step Template Schema Reference
+
+**Authoritative Source:** `clue_step_templates.json` - This file contains the formal, machine-readable schema definitions for all template types.
+
+**Purpose:** This appendix documents the formal schema for each clue step template type. These schemas define the exact structure of step metadata stored in `clues_db.json` → `training_items` → `{clue_id}` → `steps[]`.
+
+**Key Principle:** We control these templates completely. They are our custom design, optimized for interactive teaching and future automated annotation.
+
+**How to Use:**
+1. When creating new clue metadata → Reference `clue_step_templates.json` for field requirements
+2. When validating existing metadata → Check against schemas in `clue_step_templates.json`
+3. When implementing new features → Use template definitions to understand what data is available
+
+---
+
+### B.1 standard_definition
+
+**Purpose:** Identify the definition portion of a cryptic clue (always at start or end).
+
+**Schema:**
+```json
+{
+  "type": "standard_definition",
+  "expected": {
+    "indices": number[],    // REQUIRED: Word indices in clue (0-indexed)
+    "text": string          // REQUIRED: The actual definition words
+  },
+  "position": string,       // REQUIRED: "start" | "end"
+  "explicit": boolean       // OPTIONAL: true if obvious, false if cryptic/indirect
+}
+```
+
+**Required Fields:**
+- `type`: Must be `"standard_definition"`
+- `expected.indices`: Array of word positions (e.g., `[0]` or `[0, 1]`)
+- `expected.text`: The definition text extracted from clue
+- `position`: Either `"start"` or `"end"` (definitions are never in middle)
+
+**Optional Fields:**
+- `explicit`: Indicates if definition is straightforward (default: true)
+
+**Related Metadata (at clue level):**
+- `clue.difficulty.definition.rating`: "easy" | "medium" | "hard"
+- `clue.difficulty.definition.hint`: Context explaining the definition
+
+**Example:**
+```json
+{
+  "type": "standard_definition",
+  "expected": {
+    "indices": [0],
+    "text": "Embankment"
+  },
+  "position": "start",
+  "explicit": true
+}
+```
+
+**Validation Rules:**
+1. `indices` must reference valid word positions in `clue.words` array
+2. `text` must match the concatenation of words at specified indices
+3. `position` must be either "start" or "end" (never "middle")
+4. If `explicit` is false, `clue.difficulty.definition.hint` should be provided
+
+**Render Template Mapping:**
+- Maps to: `STEP_TEMPLATES["standard_definition"]` in `training_handler.py`
+- Phases: select → teaching
+- Input mode: tap_words (user selects definition words)
+
+**Display in Step Menu:**
+- Title: "Identify Definition"
+- No sub-steps (atomic operation)
