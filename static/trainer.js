@@ -950,29 +950,71 @@ class TemplateTrainer {
                                 </span>
                             </div>
                             <div class="step-expanded" data-item-idx="${idx}" data-expected="${JSON.stringify(item.expected_indices || [])}" style="display: none; padding: 1rem; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 0.5rem 0.5rem;">
-                                <!-- Clue Words -->
-                                <div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">
-                                    ${(r.words || []).map((word, wordIdx) => {
-                                        const availableIndices = item.available_indices || [];
-                                        if (availableIndices.length === 0 || availableIndices.includes(wordIdx)) {
-                                            return `<span class="clue-word" data-word-idx="${wordIdx}" data-item-idx="${idx}" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;">${word}</span>`;
-                                        }
-                                        return '';
-                                    }).join('')}
-                                </div>
-                                <div style="display: flex; align-items: start; gap: 0.5rem;">
-                                    <div style="flex: 1;">
-                                        <p style="color: #374151; margin-bottom: 0.5rem;">Click on the clue words to ${item.title.toLowerCase()}.</p>
+                                ${item.type === 'container_assembly' ?
+                                    // Assembly step: Show text inputs for synonyms
+                                    `<div class="assembly-inputs">
+                                        <p style="color: #dc2626; margin-bottom: 1rem; font-weight: 500;">
+                                            ❌ Raw insertion: ${item.step_data?.outer?.fodder?.text || ''} + ${item.step_data?.inner?.fodder?.text || ''} doesn't work
+                                        </p>
+                                        <p style="color: #374151; margin-bottom: 1rem;">
+                                            Find synonyms to complete the assembly:
+                                        </p>
+                                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                            <div>
+                                                <label style="display: block; font-weight: 500; margin-bottom: 0.25rem;">
+                                                    Outer synonym for "${item.step_data?.outer?.fodder?.text || ''}":
+                                                </label>
+                                                <input type="text" class="assembly-outer" data-item-idx="${idx}"
+                                                    placeholder="Enter synonym"
+                                                    style="width: 200px; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">
+                                            </div>
+                                            <div>
+                                                <label style="display: block; font-weight: 500; margin-bottom: 0.25rem;">
+                                                    Inner synonym for "${item.step_data?.inner?.fodder?.text || ''}":
+                                                </label>
+                                                <input type="text" class="assembly-inner" data-item-idx="${idx}"
+                                                    placeholder="Enter synonym"
+                                                    style="width: 200px; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">
+                                            </div>
+                                            <div>
+                                                <label style="display: block; font-weight: 500; margin-bottom: 0.25rem;">
+                                                    Final answer (${r.enumeration || ''}):
+                                                </label>
+                                                <input type="text" class="assembly-result" data-item-idx="${idx}"
+                                                    placeholder="Enter assembled answer"
+                                                    style="width: 300px; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">
+                                            </div>
+                                            <button class="assembly-check" data-item-idx="${idx}"
+                                                style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; width: fit-content;">
+                                                Check Answer
+                                            </button>
+                                        </div>
+                                    </div>`
+                                    :
+                                    // Regular step: Show clickable words
+                                    `<div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">
+                                        ${(r.words || []).map((word, wordIdx) => {
+                                            const availableIndices = item.available_indices || [];
+                                            if (availableIndices.length === 0 || availableIndices.includes(wordIdx)) {
+                                                return \`<span class="clue-word" data-word-idx="\${wordIdx}" data-item-idx="\${idx}" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;">\${word}</span>\`;
+                                            }
+                                            return '';
+                                        }).join('')}
                                     </div>
-                                    ${item.hint ? `<button class="hint-toggle" data-item-idx="${idx}"
-                                            style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;"
-                                            title="Show hint">
-                                        💡
-                                    </button>` : ''}
-                                </div>
-                                ${item.hint ? `<div class="hint-content" data-item-idx="${idx}" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;">
-                                    <p style="color: #92400e; font-size: 0.875rem; margin: 0;">${item.hint}</p>
-                                </div>` : ''}
+                                    <div style="display: flex; align-items: start; gap: 0.5rem;">
+                                        <div style="flex: 1;">
+                                            <p style="color: #374151; margin-bottom: 0.5rem;">Click on the clue words to ${item.title.toLowerCase()}.</p>
+                                        </div>
+                                        ${item.hint ? \`<button class="hint-toggle" data-item-idx="\${idx}"
+                                                style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;"
+                                                title="Show hint">
+                                            💡
+                                        </button>\` : ''}
+                                    </div>
+                                    ${item.hint ? \`<div class="hint-content" data-item-idx="\${idx}" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;">
+                                        <p style="color: #92400e; font-size: 0.875rem; margin: 0;">\${item.hint}</p>
+                                    </div>\` : ''}`
+                                }
                             </div>
                         </div>
                     `).join('')}
@@ -1152,6 +1194,66 @@ class TemplateTrainer {
                             word.style.color = '';
                         }, 500);
                     }
+                }
+            });
+        });
+
+        // Assembly check buttons
+        const assemblyCheckBtns = this.container.querySelectorAll('.assembly-check');
+        assemblyCheckBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const itemIdx = btn.getAttribute('data-item-idx');
+                const outerInput = this.container.querySelector(`.assembly-outer[data-item-idx="${itemIdx}"]`);
+                const innerInput = this.container.querySelector(`.assembly-inner[data-item-idx="${itemIdx}"]`);
+                const resultInput = this.container.querySelector(`.assembly-result[data-item-idx="${itemIdx}"]`);
+
+                const menuItems = this.render.menuItems || [];
+                const menuItem = menuItems[parseInt(itemIdx)];
+                const stepData = menuItem?.step_data || {};
+
+                const outerExpected = (stepData?.outer?.result || '').toUpperCase().replace(/\s/g, '');
+                const innerExpected = (stepData?.inner?.result || '').toUpperCase().replace(/\s/g, '');
+                const resultExpected = (stepData?.result || '').toUpperCase().replace(/\s/g, '');
+
+                const outerValue = (outerInput.value || '').toUpperCase().replace(/\s/g, '');
+                const innerValue = (innerInput.value || '').toUpperCase().replace(/\s/g, '');
+                const resultValue = (resultInput.value || '').toUpperCase().replace(/\s/g, '');
+
+                // Check if all correct
+                if (outerValue === outerExpected && innerValue === innerExpected && resultValue === resultExpected) {
+                    // Mark as complete
+                    const expandedSection = this.container.querySelector(`.step-expanded[data-item-idx="${itemIdx}"]`);
+                    setTimeout(() => {
+                        expandedSection.style.display = 'none';
+
+                        const stepItem = this.container.querySelector(`.step-item[data-item-idx="${itemIdx}"]`);
+                        if (stepItem) {
+                            const statusIcon = stepItem.querySelector('.status-icon');
+                            if (statusIcon) {
+                                statusIcon.textContent = '✓';
+                            }
+                            stepItem.classList.remove('pending');
+                            stepItem.classList.add('completed');
+                            stepItem.style.background = '#f0fdf4';
+                            stepItem.style.borderColor = '#22c55e';
+
+                            const stepTitle = stepItem.querySelector('.step-title');
+                            if (stepTitle) {
+                                stepTitle.innerHTML = `ASSEMBLY: <strong>${resultExpected}</strong>`;
+                            }
+                        }
+                    }, 500);
+                } else {
+                    // Show error
+                    [outerInput, innerInput, resultInput].forEach(input => {
+                        if (input) {
+                            input.style.borderColor = '#ef4444';
+                            setTimeout(() => {
+                                input.style.borderColor = '#d1d5db';
+                            }, 1000);
+                        }
+                    });
                 }
             });
         });
