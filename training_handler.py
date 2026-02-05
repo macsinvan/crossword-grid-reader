@@ -1359,52 +1359,82 @@ def _expand_step_to_menu_items(step, base_index):
         template = step.get("template", "")
         indicator = step.get("indicator", {})
         ind_text = indicator.get("text", "") if isinstance(indicator, dict) else ""
+        outer = step.get("outer", {})
+        inner = step.get("inner", {})
+        outer_fodder = outer.get("fodder", {}).get("text", "") if isinstance(outer, dict) else ""
+        inner_fodder = inner.get("fodder", {}).get("text", "") if isinstance(inner, dict) else ""
 
         if template == "insertion_with_two_synonyms":
-            # Expand into atomic teaching steps
-            outer = step.get("outer", {})
-            inner = step.get("inner", {})
-            outer_fodder = outer.get("fodder", {}).get("text", "")
-            inner_fodder = inner.get("fodder", {}).get("text", "")
-
             return [
-                {
-                    "index": f"{base_index}.1",
-                    "title": f"Identify Container ({ind_text})",
-                    "type": "container_indicator",
-                    "step_data": step,
-                    "sub_step": "indicator"
-                },
-                {
-                    "index": f"{base_index}.2",
-                    "title": f"Identify Literal ({outer_fodder})",
-                    "type": "container_outer",
-                    "step_data": step,
-                    "sub_step": "outer"
-                },
-                {
-                    "index": f"{base_index}.3",
-                    "title": f"Identify Implied Synonym ({inner_fodder})",
-                    "type": "container_inner",
-                    "step_data": step,
-                    "sub_step": "inner"
-                },
-                {
-                    "index": f"{base_index}.4",
-                    "title": "Assemble",
-                    "type": "container_assembly",
-                    "step_data": step,
-                    "sub_step": "assembly"
-                }
+                {"index": f"{base_index}.1", "title": f"Identify Container ({ind_text})", "type": "container_indicator", "step_data": step, "sub_step": "indicator"},
+                {"index": f"{base_index}.2", "title": f"Identify Literal ({outer_fodder})", "type": "container_outer", "step_data": step, "sub_step": "outer"},
+                {"index": f"{base_index}.3", "title": f"Identify Implied Synonym ({inner_fodder})", "type": "container_inner", "step_data": step, "sub_step": "inner"},
+                {"index": f"{base_index}.4", "title": "Assemble", "type": "container_assembly", "step_data": step, "sub_step": "assembly"}
+            ]
+        elif template == "insertion_with_one_synonym_outer":
+            return [
+                {"index": f"{base_index}.1", "title": f"Identify Container ({ind_text})", "type": "container_indicator", "step_data": step, "sub_step": "indicator"},
+                {"index": f"{base_index}.2", "title": f"Identify Synonym ({outer_fodder})", "type": "container_outer", "step_data": step, "sub_step": "outer"},
+                {"index": f"{base_index}.3", "title": "Assemble", "type": "container_assembly", "step_data": step, "sub_step": "assembly"}
+            ]
+        elif template == "insertion_with_charade_inner":
+            return [
+                {"index": f"{base_index}.1", "title": f"Identify Container ({ind_text})", "type": "container_indicator", "step_data": step, "sub_step": "indicator"},
+                {"index": f"{base_index}.2", "title": f"Identify Outer ({outer_fodder})", "type": "container_outer", "step_data": step, "sub_step": "outer"},
+                {"index": f"{base_index}.3", "title": "Build Inner Charade", "type": "container_inner_charade", "step_data": step, "sub_step": "inner"},
+                {"index": f"{base_index}.4", "title": "Assemble", "type": "container_assembly", "step_data": step, "sub_step": "assembly"}
             ]
         else:
-            # Unknown container template - return single item
-            return [{
-                "index": base_index,
-                "title": f"Identify Container" + (f" ({ind_text})" if ind_text else ""),
-                "type": step_type,
-                "step_data": step
-            }]
+            return [{"index": base_index, "title": f"Identify Container" + (f" ({ind_text})" if ind_text else ""), "type": step_type, "step_data": step}]
+
+    # Charade with template - expand into parts + assembly
+    elif step_type == "charade":
+        template = step.get("template", "")
+        parts = step.get("parts", [])
+
+        if template == "charade_with_parts":
+            items = []
+            for i, part in enumerate(parts, 1):
+                if isinstance(part, dict):
+                    fodder_text = part.get("fodder", {}).get("text", "") if isinstance(part.get("fodder"), dict) else str(part.get("fodder", ""))
+                    part_type = part.get("type", "transform")
+                    items.append({"index": f"{base_index}.{i}", "title": f"Transform Part {i} ({fodder_text})", "type": f"charade_part_{part_type}", "step_data": step, "sub_step": f"part_{i}"})
+            items.append({"index": f"{base_index}.{len(parts)+1}", "title": "Assemble Parts", "type": "charade_assembly", "step_data": step, "sub_step": "assembly"})
+            return items
+        else:
+            return [{"index": base_index, "title": "Assemble", "type": step_type, "step_data": step}]
+
+    # Anagram with template - expand into pieces + solve
+    elif step_type == "anagram":
+        template = step.get("template", "")
+
+        if template == "anagram_with_fodder_pieces":
+            pieces = step.get("pieces", [])
+            items = []
+            for i, piece in enumerate(pieces, 1):
+                if isinstance(piece, dict):
+                    fodder_text = piece.get("fodder", {}).get("text", "") if isinstance(piece.get("fodder"), dict) else str(piece.get("fodder", ""))
+                    items.append({"index": f"{base_index}.{i}", "title": f"Get Piece {i} ({fodder_text})", "type": "anagram_piece", "step_data": step, "sub_step": f"piece_{i}"})
+            items.append({"index": f"{base_index}.{len(pieces)+1}", "title": "Rearrange Letters", "type": "anagram_solve", "step_data": step, "sub_step": "solve"})
+            return items
+        else:
+            return [{"index": base_index, "title": "Solve Anagram", "type": step_type, "step_data": step}]
+
+    # Transformation chain - expand into steps
+    elif step_type == "transformation_chain":
+        template = step.get("template", "")
+
+        if template == "transformation_chain":
+            chain_steps = step.get("steps", [])
+            items = []
+            for i, chain_step in enumerate(chain_steps, 1):
+                step_type_name = chain_step.get("type", "transform")
+                fodder = chain_step.get("fodder", "")
+                fodder_text = fodder.get("text", "") if isinstance(fodder, dict) else str(fodder)
+                items.append({"index": f"{base_index}.{i}", "title": f"{step_type_name.title()} ({fodder_text})", "type": f"transform_{step_type_name}", "step_data": step, "sub_step": f"step_{i}"})
+            return items
+        else:
+            return [{"index": base_index, "title": "Apply Transformations", "type": step_type, "step_data": step}]
 
     # Default: return single item
     else:
