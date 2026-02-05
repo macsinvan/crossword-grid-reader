@@ -1099,14 +1099,31 @@ class TemplateTrainer {
 
                             // Generate completion message based on step type
                             let completionMessage = '';
+                            const stepData = menuItem?.step_data || {};
+                            const subStep = menuItem?.sub_step || '';
+
                             if (stepType === 'standard_definition') {
                                 completionMessage = `DEFINITION: <strong>${definitionText}</strong> found at the ${position} of the clue`;
                             } else if (stepType === 'container_indicator') {
                                 completionMessage = `CONTAINER INDICATOR: <strong>${definitionText}</strong>`;
                             } else if (stepType === 'container_outer') {
-                                completionMessage = `OUTER WORD: <strong>${definitionText}</strong>`;
+                                const outerResult = stepData?.outer?.result || '';
+                                const outerReasoning = stepData?.outer?.reasoning || '';
+                                if (outerResult) {
+                                    completionMessage = `OUTER WORD: <strong>${definitionText}</strong> → ${outerResult}` +
+                                        (outerReasoning ? ` <span style="color: #6b7280; font-size: 0.875rem;">(${outerReasoning})</span>` : '');
+                                } else {
+                                    completionMessage = `OUTER WORD: <strong>${definitionText}</strong>`;
+                                }
                             } else if (stepType === 'container_inner') {
-                                completionMessage = `INNER WORD: <strong>${definitionText}</strong>`;
+                                const innerResult = stepData?.inner?.result || '';
+                                const innerReasoning = stepData?.inner?.reasoning || '';
+                                if (innerResult) {
+                                    completionMessage = `INNER WORD: <strong>${definitionText}</strong> → ${innerResult}` +
+                                        (innerReasoning ? ` <span style="color: #6b7280; font-size: 0.875rem;">(${innerReasoning})</span>` : '');
+                                } else {
+                                    completionMessage = `INNER WORD: <strong>${definitionText}</strong>`;
+                                }
                             } else if (stepType.startsWith('charade_part_')) {
                                 completionMessage = `CHARADE PART: <strong>${definitionText}</strong>`;
                             } else if (stepType === 'anagram_fodder') {
