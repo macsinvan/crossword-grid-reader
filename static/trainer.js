@@ -1265,7 +1265,7 @@ class TemplateTrainer {
 
                 // Check if all correct
                 if (outerValue === outerExpected && innerValue === innerExpected && resultValue === resultExpected) {
-                    // Mark as complete
+                    // Mark as complete and apply answer to grid
                     const expandedSection = this.container.querySelector(`.step-expanded[data-item-idx="${itemIdx}"]`);
                     setTimeout(() => {
                         expandedSection.style.display = 'none';
@@ -1286,6 +1286,13 @@ class TemplateTrainer {
                                 stepTitle.innerHTML = `ASSEMBLY: <strong>${resultExpected}</strong>`;
                             }
                         }
+
+                        // Apply answer to grid after brief delay
+                        setTimeout(() => {
+                            if (this.onComplete) {
+                                this.onComplete();
+                            }
+                        }, 1000);
                     }, 500);
                 } else {
                     // Show error - flash red on incorrect boxes
