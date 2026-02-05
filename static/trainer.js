@@ -951,45 +951,57 @@ class TemplateTrainer {
                             </div>
                             <div class="step-expanded" data-item-idx="${idx}" data-expected="${JSON.stringify(item.expected_indices || [])}" style="display: none; padding: 1rem; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 0.5rem 0.5rem;">
                                 ${item.type === 'container_assembly' ?
-                                    // Assembly step: Show text inputs for synonyms
-                                    `<div class="assembly-inputs">
-                                        <p style="color: #dc2626; margin-bottom: 1rem; font-weight: 500;">
-                                            ❌ Raw insertion: ${item.step_data?.outer?.fodder?.text || ''} + ${item.step_data?.inner?.fodder?.text || ''} doesn't work
-                                        </p>
-                                        <p style="color: #374151; margin-bottom: 1rem;">
-                                            Find synonyms to complete the assembly:
-                                        </p>
-                                        <div style="display: flex; flex-direction: column; gap: 1rem;">
-                                            <div>
-                                                <label style="display: block; font-weight: 500; margin-bottom: 0.25rem;">
-                                                    Outer synonym for "${item.step_data?.outer?.fodder?.text || ''}":
-                                                </label>
-                                                <input type="text" class="assembly-outer" data-item-idx="${idx}"
-                                                    placeholder="Enter synonym"
-                                                    style="width: 200px; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">
-                                            </div>
-                                            <div>
-                                                <label style="display: block; font-weight: 500; margin-bottom: 0.25rem;">
-                                                    Inner synonym for "${item.step_data?.inner?.fodder?.text || ''}":
-                                                </label>
-                                                <input type="text" class="assembly-inner" data-item-idx="${idx}"
-                                                    placeholder="Enter synonym"
-                                                    style="width: 200px; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">
-                                            </div>
-                                            <div>
-                                                <label style="display: block; font-weight: 500; margin-bottom: 0.25rem;">
-                                                    Final answer (${r.enumeration || ''}):
-                                                </label>
-                                                <input type="text" class="assembly-result" data-item-idx="${idx}"
-                                                    placeholder="Enter assembled answer"
-                                                    style="width: 300px; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">
-                                            </div>
-                                            <button class="assembly-check" data-item-idx="${idx}"
-                                                style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; width: fit-content;">
-                                                Check Answer
-                                            </button>
-                                        </div>
-                                    </div>`
+                                    // Assembly step: Show letter boxes for synonyms
+                                    (() => {
+                                        const outerResult = item.step_data?.outer?.result || '';
+                                        const innerResult = item.step_data?.inner?.result || '';
+                                        const finalResult = item.step_data?.result || '';
+                                        const outerLen = outerResult.replace(/\s/g, '').length;
+                                        const innerLen = innerResult.replace(/\s/g, '').length;
+                                        const finalParts = finalResult.split(' ');
+
+                                        return '<div class="assembly-inputs">' +
+                                            '<p style="color: #dc2626; margin-bottom: 1rem; font-weight: 500;">' +
+                                            '❌ Raw insertion: ' + (item.step_data?.outer?.fodder?.text || '') + ' + ' + (item.step_data?.inner?.fodder?.text || '') + ' doesn' + "'" + 't work' +
+                                            '</p>' +
+                                            '<p style="color: #374151; margin-bottom: 1rem;">Find synonyms to complete the assembly:</p>' +
+                                            '<div style="display: flex; flex-direction: column; gap: 1.5rem;">' +
+                                            '<div>' +
+                                            '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Outer synonym for "' + (item.step_data?.outer?.fodder?.text || '') + '":</label>' +
+                                            '<div style="display: flex; gap: 4px;">' +
+                                            Array(outerLen).fill(0).map((_, i) =>
+                                                '<input type="text" maxlength="1" class="assembly-outer-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
+                                                'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
+                                            ).join('') +
+                                            '</div>' +
+                                            '</div>' +
+                                            '<div>' +
+                                            '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Inner synonym for "' + (item.step_data?.inner?.fodder?.text || '') + '":</label>' +
+                                            '<div style="display: flex; gap: 4px;">' +
+                                            Array(innerLen).fill(0).map((_, i) =>
+                                                '<input type="text" maxlength="1" class="assembly-inner-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
+                                                'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
+                                            ).join('') +
+                                            '</div>' +
+                                            '</div>' +
+                                            '<div>' +
+                                            '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Final answer (' + (r.enumeration || '') + '):</label>' +
+                                            '<div style="display: flex; gap: 4px; flex-wrap: wrap;">' +
+                                            finalParts.map((part, partIdx) =>
+                                                '<div style="display: flex; gap: 4px;">' +
+                                                Array(part.length).fill(0).map((_, i) =>
+                                                    '<input type="text" maxlength="1" class="assembly-result-letter" data-item-idx="' + idx + '" data-part-idx="' + partIdx + '" data-letter-idx="' + i + '" ' +
+                                                    'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
+                                                ).join('') +
+                                                '</div>'
+                                            ).join('') +
+                                            '</div>' +
+                                            '</div>' +
+                                            '<button class="assembly-check" data-item-idx="' + idx + '" ' +
+                                            'style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; width: fit-content;">Check Answer</button>' +
+                                            '</div>' +
+                                            '</div>';
+                                    })()
                                     :
                                     // Regular step: Show clickable words
                                     `<div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">
@@ -1192,15 +1204,56 @@ class TemplateTrainer {
             });
         });
 
+        // Assembly letter box handlers - stop propagation and auto-advance
+        const assemblyLetters = this.container.querySelectorAll('.assembly-outer-letter, .assembly-inner-letter, .assembly-result-letter');
+        assemblyLetters.forEach(input => {
+            // Stop keyboard events from reaching the crossword grid
+            input.addEventListener('keydown', (e) => {
+                e.stopPropagation();
+
+                // Backspace - move to previous box
+                if (e.key === 'Backspace' && !input.value) {
+                    const allInputs = Array.from(this.container.querySelectorAll('.assembly-outer-letter, .assembly-inner-letter, .assembly-result-letter'));
+                    const currentIdx = allInputs.indexOf(input);
+                    if (currentIdx > 0) {
+                        allInputs[currentIdx - 1].focus();
+                    }
+                }
+            });
+
+            input.addEventListener('input', (e) => {
+                e.stopPropagation();
+
+                // Auto-advance to next box
+                if (input.value) {
+                    const allInputs = Array.from(this.container.querySelectorAll('.assembly-outer-letter, .assembly-inner-letter, .assembly-result-letter'));
+                    const currentIdx = allInputs.indexOf(input);
+                    if (currentIdx < allInputs.length - 1) {
+                        allInputs[currentIdx + 1].focus();
+                    }
+                }
+            });
+
+            input.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        });
+
         // Assembly check buttons
         const assemblyCheckBtns = this.container.querySelectorAll('.assembly-check');
         assemblyCheckBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const itemIdx = btn.getAttribute('data-item-idx');
-                const outerInput = this.container.querySelector(`.assembly-outer[data-item-idx="${itemIdx}"]`);
-                const innerInput = this.container.querySelector(`.assembly-inner[data-item-idx="${itemIdx}"]`);
-                const resultInput = this.container.querySelector(`.assembly-result[data-item-idx="${itemIdx}"]`);
+
+                // Collect values from letter boxes
+                const outerLetters = this.container.querySelectorAll(`.assembly-outer-letter[data-item-idx="${itemIdx}"]`);
+                const innerLetters = this.container.querySelectorAll(`.assembly-inner-letter[data-item-idx="${itemIdx}"]`);
+                const resultLetters = this.container.querySelectorAll(`.assembly-result-letter[data-item-idx="${itemIdx}"]`);
+
+                const outerValue = Array.from(outerLetters).map(l => l.value).join('').toUpperCase();
+                const innerValue = Array.from(innerLetters).map(l => l.value).join('').toUpperCase();
+                const resultValue = Array.from(resultLetters).map(l => l.value).join('').toUpperCase();
 
                 const menuItems = this.render.menuItems || [];
                 const menuItem = menuItems[parseInt(itemIdx)];
@@ -1209,10 +1262,6 @@ class TemplateTrainer {
                 const outerExpected = (stepData?.outer?.result || '').toUpperCase().replace(/\s/g, '');
                 const innerExpected = (stepData?.inner?.result || '').toUpperCase().replace(/\s/g, '');
                 const resultExpected = (stepData?.result || '').toUpperCase().replace(/\s/g, '');
-
-                const outerValue = (outerInput.value || '').toUpperCase().replace(/\s/g, '');
-                const innerValue = (innerInput.value || '').toUpperCase().replace(/\s/g, '');
-                const resultValue = (resultInput.value || '').toUpperCase().replace(/\s/g, '');
 
                 // Check if all correct
                 if (outerValue === outerExpected && innerValue === innerExpected && resultValue === resultExpected) {
@@ -1239,14 +1288,14 @@ class TemplateTrainer {
                         }
                     }, 500);
                 } else {
-                    // Show error
-                    [outerInput, innerInput, resultInput].forEach(input => {
-                        if (input) {
+                    // Show error - flash red on incorrect boxes
+                    [outerLetters, innerLetters, resultLetters].forEach(letterGroup => {
+                        letterGroup.forEach(input => {
                             input.style.borderColor = '#ef4444';
                             setTimeout(() => {
                                 input.style.borderColor = '#d1d5db';
                             }, 1000);
-                        }
+                        });
                     });
                 }
             });
