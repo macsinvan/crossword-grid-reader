@@ -1383,7 +1383,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "step_data": step,
                     "sub_step": "indicator",
                     "expected_indices": indicator.get("indices", []),
-                    "hint": "Container indicators suggest one thing goes inside another. Look for words like 'in', 'within', 'holding', 'containing', or words that suggest insertion or lengthening."
+                    "hint": indicator.get("reasoning", "")
                 },
                 {
                     "index": f"{base_index}.2",
@@ -1392,7 +1392,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "step_data": step,
                     "sub_step": "outer",
                     "expected_indices": outer.get("fodder", {}).get("indices", []),
-                    "hint": "Outer word gets lengthened by the inner word."
+                    "hint": outer.get("reasoning", "")
                 },
                 {
                     "index": f"{base_index}.3",
@@ -1401,7 +1401,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "step_data": step,
                     "sub_step": "inner",
                     "expected_indices": inner.get("fodder", {}).get("indices", []),
-                    "hint": "This word goes inside to lengthen the outer word."
+                    "hint": inner.get("reasoning", "")
                 },
                 {
                     "index": f"{base_index}.4",
@@ -1409,7 +1409,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "type": "container_assembly",
                     "step_data": step,
                     "sub_step": "assembly",
-                    "hint": f"Find synonyms for the outer and inner words, then combine them: {assembly}"
+                    "hint": assembly
                 }
             ]
         elif template == "insertion_with_one_synonym_outer":
@@ -1423,7 +1423,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "step_data": step,
                     "sub_step": "indicator",
                     "expected_indices": indicator.get("indices", []),
-                    "hint": "Container indicators suggest one thing goes inside another. Look for words like 'in', 'within', 'holding', 'containing'."
+                    "hint": indicator.get("reasoning", "")
                 },
                 {
                     "index": f"{base_index}.2",
@@ -1432,7 +1432,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "step_data": step,
                     "sub_step": "outer",
                     "expected_indices": outer.get("fodder", {}).get("indices", []),
-                    "hint": "Find the synonym for the outer word."
+                    "hint": outer.get("reasoning", "")
                 },
                 {
                     "index": f"{base_index}.3",
@@ -1440,12 +1440,15 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "type": "container_assembly",
                     "step_data": step,
                     "sub_step": "assembly",
-                    "hint": f"Combine according to: {assembly}"
+                    "hint": assembly
                 }
             ]
         elif template == "insertion_with_charade_inner":
             outer_result = outer.get("result", "")
             assembly = step.get("assembly", "")
+            # For charade inner, combine reasoning from all inner pieces
+            inner_pieces = inner.get("pieces", [])
+            inner_reasoning = "; ".join(p.get("reasoning", "") for p in inner_pieces if p.get("reasoning"))
             return [
                 {
                     "index": f"{base_index}.1",
@@ -1454,7 +1457,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "step_data": step,
                     "sub_step": "indicator",
                     "expected_indices": indicator.get("indices", []),
-                    "hint": "Container indicators suggest one thing goes inside another. Look for words that suggest insertion."
+                    "hint": indicator.get("reasoning", "")
                 },
                 {
                     "index": f"{base_index}.2",
@@ -1463,7 +1466,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "step_data": step,
                     "sub_step": "outer",
                     "expected_indices": outer.get("fodder", {}).get("indices", []),
-                    "hint": "This word will be the outer container holding the charade inside."
+                    "hint": outer.get("reasoning", "")
                 },
                 {
                     "index": f"{base_index}.3",
@@ -1471,7 +1474,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "type": "container_inner_charade",
                     "step_data": step,
                     "sub_step": "inner",
-                    "hint": "Build the inner part by combining multiple wordplay elements."
+                    "hint": inner_reasoning
                 },
                 {
                     "index": f"{base_index}.4",
@@ -1479,7 +1482,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "type": "container_assembly",
                     "step_data": step,
                     "sub_step": "assembly",
-                    "hint": f"Combine according to: {assembly}"
+                    "hint": assembly
                 }
             ]
         else:
@@ -1501,7 +1504,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 "type": "wordplay_identification",
                 "step_data": step,
                 "sub_step": "identify_indicators",
-                "hint": "Look for wordplay indicators: anagram (mixed, confused), container (in, within, holding), reversal (back, returning). If none found, it's a simple Charade."
+                "hint": step.get("wordplay_hint", "")
             })
 
             # Steps 2+: Identify each part (transforms happen in Assembly step)
@@ -1516,7 +1519,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                         "step_data": step,
                         "sub_step": f"part_{i}",
                         "expected_indices": part.get("fodder", {}).get("indices", []),
-                        "hint": f"Find a {part_type} for this word."
+                        "hint": part.get("reasoning", "")
                     })
 
             # Final step: Assemble (shows raw attempt + letter boxes, like 17D)
@@ -1526,7 +1529,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 "type": "charade_assembly",
                 "step_data": step,
                 "sub_step": "assembly",
-                "hint": f"Combine the transformed parts: {assembly}"
+                "hint": assembly
             })
             return items
         else:
@@ -1542,8 +1545,9 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
             for i, piece in enumerate(pieces, 1):
                 if isinstance(piece, dict):
                     fodder_text = piece.get("fodder", {}).get("text", "") if isinstance(piece.get("fodder"), dict) else str(piece.get("fodder", ""))
-                    items.append({"index": f"{base_index}.{i}", "title": f"Get Piece {i} ({fodder_text})", "type": "anagram_piece", "step_data": step, "sub_step": f"piece_{i}"})
-            items.append({"index": f"{base_index}.{len(pieces)+1}", "title": "Rearrange Letters", "type": "anagram_solve", "step_data": step, "sub_step": "solve"})
+                    items.append({"index": f"{base_index}.{i}", "title": f"Get Piece {i} ({fodder_text})", "type": "anagram_piece", "step_data": step, "sub_step": f"piece_{i}", "hint": piece.get("reasoning", "")})
+            fodder_combined = step.get("fodder_combined", "")
+            items.append({"index": f"{base_index}.{len(pieces)+1}", "title": "Rearrange Letters", "type": "anagram_solve", "step_data": step, "sub_step": "solve", "hint": fodder_combined})
             return items
         else:
             return [{"index": base_index, "title": "Solve Anagram", "type": step_type, "step_data": step}]
@@ -1559,7 +1563,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 step_type_name = chain_step.get("type", "transform")
                 fodder = chain_step.get("fodder", "")
                 fodder_text = fodder.get("text", "") if isinstance(fodder, dict) else str(fodder)
-                items.append({"index": f"{base_index}.{i}", "title": f"{step_type_name.title()} ({fodder_text})", "type": f"transform_{step_type_name}", "step_data": step, "sub_step": f"step_{i}"})
+                items.append({"index": f"{base_index}.{i}", "title": f"{step_type_name.title()} ({fodder_text})", "type": f"transform_{step_type_name}", "step_data": step, "sub_step": f"step_{i}", "hint": chain_step.get("reasoning", "")})
             return items
         else:
             return [{"index": base_index, "title": "Apply Transformations", "type": step_type, "step_data": step}]

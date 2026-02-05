@@ -1024,6 +1024,22 @@ A "Check" button appears next to the Reveal and Solve buttons in the answer box 
 - Success response: same as `/trainer/solved-view` (includes `mode: "solved_view"`)
 - Failure response: `{"success": false, "error": "Incorrect answer"}`
 
+### 10.10 Step Hints from Clue Metadata
+Interactive step hints are sourced directly from the `reasoning` field in clue metadata (`clues_db.json`). No hardcoded hint strings in code.
+
+**Mapping:**
+- Container outer/inner steps → `outer.reasoning` / `inner.reasoning`
+- Container indicator → `indicator.reasoning`
+- Container/charade assembly → `step.assembly` string
+- Charade parts → `part.reasoning`
+- Charade wordplay identification → `step.wordplay_hint`
+- Charade inner (composite) → joined `pieces[].reasoning`
+- Anagram pieces → `piece.reasoning`
+- Anagram solve → `step.fodder_combined`
+- Transformation chain steps → `chain_step.reasoning`
+
+The same `reasoning` text serves both as the interactive hint (lightbulb reveal) and the solved view breakdown explanation.
+
 ---
 
 ## 11. Mobile Responsive Design
