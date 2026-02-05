@@ -15,13 +15,88 @@ This document specifies the Grid Reader application at a level of detail suffici
 - **Deployment**: Local development (Vercel planned for Phase 3)
 
 ### 1.2 Key Principles
-1. **Stateless Client Architecture**: The trainer UI (`trainer.js`) is a dumb rendering layer with ZERO local state. ALL state lives on the server in `training_handler.py`.
-2. **No AI/LLM**: Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
-3. **Server-Driven Rendering**: Client receives a `render` object and displays it - nothing more.
+1. **Progressive Discovery Teaching**: This is a TEACHING app, not a solution viewer. Users should DISCOVER the clue breakdown step-by-step through guided interaction, NOT see the full decode revealed upfront. Each step requires user engagement before revealing the next insight.
+2. **Stateless Client Architecture**: The trainer UI (`trainer.js`) is a dumb rendering layer with ZERO local state. ALL state lives on the server in `training_handler.py`.
+3. **No AI/LLM**: Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
+4. **Server-Driven Rendering**: Client receives a `render` object and displays it - nothing more.
 
 ---
 
-## 2. System Architecture
+## 2. Teaching Philosophy: Progressive Discovery
+
+### 2.1 Design Goal
+**Grid Reader is a TEACHING APP, not a solution viewer.**
+
+The end user experience should be:
+- Users DISCOVER the clue breakdown through guided interaction
+- Each step reveals ONE insight at a time
+- Users must engage (tap words, type answers, make choices) before progressing
+- The full solution is NEVER displayed all at once
+
+### 2.2 Anti-Pattern: Reveal-All Display
+❌ **WRONG:** Showing the full clue breakdown upfront like this:
+```
+DEFINITION: "Embankment" = ASWAN DAM
+CONTAINER: "lengthened with" tells us A takes B inside
+  A: "architect" → ADAM (Robert Adam was a famous British architect)
+  B: "cob?" → SWAN (A cob is a male swan)
+ASSEMBLY: A + (SWAN) + DAM = ASWAN DAM ✓
+```
+
+This defeats the purpose of teaching. The user sees the answer without thinking.
+
+### 2.3 Correct Pattern: Step Menu Overview
+✓ **CORRECT:** Show a roadmap, then guide discovery within each step:
+
+**Initial Screen - Step Menu:**
+```
+┌─────────────────────────────────────────────┐
+│ 17D: Embankment architect lengthened       │
+│      with cob? (5,3)                        │
+├─────────────────────────────────────────────┤
+│ Answer: [A][S][W][A][N] [D][A][M]          │
+├─────────────────────────────────────────────┤
+│ Steps to solve:                             │
+│                                             │
+│ 1. ⭕ Identify Definition                   │
+│ 2. ⭕ Identify Wordplay Indicator           │
+│ 3. ⭕ Identify Literal (architect)          │
+│ 4. ⭕ Identify Implied Synonym (cob)        │
+│ 5. ⭕ Assemble                              │
+│                                             │
+│ [Click any step to begin]                  │
+└─────────────────────────────────────────────┘
+```
+
+**User clicks "Identify Definition" → Interactive Step:**
+- Prompt: "Tap the definition in this clue"
+- User taps "Embankment"
+- Feedback: "✓ DEFINITION FOUND: Embankment"
+- Returns to menu showing: `1. ✓ Identify Definition` (completed)
+
+**User clicks "Identify Wordplay Indicator" → Interactive Step:**
+- Prompt: "This is a container clue. Tap the indicator"
+- User taps "lengthened with"
+- Teaching: "'lengthened with' means A takes B inside"
+- Returns to menu showing: `2. ✓ Identify Wordplay Indicator` (completed)
+
+**Progressive completion:** User works through each step, accumulating breadcrumbs (🎓). Only after completing all steps does the full solution become visible.
+
+### 2.4 Implementation Status
+⚠️ **Current State (v1):** The trainer currently reveals too much information upfront. This was a necessary first step to validate the template system works.
+
+🎯 **Target State (v2):** Each step will require user interaction before revealing insights. The full breakdown only appears in the summary page AFTER completion or explicit "Give Up".
+
+### 2.5 Design Rules
+1. **One insight per interaction** - Never reveal multiple facts simultaneously
+2. **Require engagement** - Users must tap, type, or choose before advancing
+3. **Build incrementally** - Each step builds on previous discoveries
+4. **Celebrate progress** - Show breadcrumbs (🎓) of accumulated knowledge
+5. **Delayed gratification** - Full solution only visible at the end
+
+---
+
+## 3. System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -65,7 +140,7 @@ This document specifies the Grid Reader application at a level of detail suffici
 
 ---
 
-## 3. Data Models
+## 4. Data Models
 
 ### 3.1 Puzzle Structure
 ```json
@@ -143,9 +218,9 @@ _sessions[clue_id] = {
 
 ---
 
-## 4. Training Flow
+## 5. Training Flow
 
-### 4.1 Step Types (13 types)
+### 5.1 Step Types (13 types)
 
 | Type | Phases | Description |
 |------|--------|-------------|
@@ -163,7 +238,7 @@ _sessions[clue_id] = {
 | `charade_verify` | result → teaching | Combine pieces |
 | `double_definition` | first_def → second_def → solve → teaching | Two meanings |
 
-### 4.2 Input Modes
+### 5.2 Input Modes
 
 | Mode | User Action | Validation |
 |------|-------------|------------|
@@ -172,7 +247,7 @@ _sessions[clue_id] = {
 | `multiple_choice` | Select from options | Check selection index |
 | `none` | Read teaching panel | No validation, just "Continue" |
 
-### 4.3 Render Object Structure
+### 5.3 Render Object Structure
 ```json
 {
   "stepIndex": 1,
@@ -195,12 +270,57 @@ _sessions[clue_id] = {
 
 ---
 
-## 5. UI Specifications
+## 6. UI Specifications
 
-### 5.1 Trainer Popup Layout
+### 6.1 Step Menu (Overview Screen)
+
+**Purpose:** First screen shown when user clicks "Solve". Displays all steps as a roadmap before diving into interactive solving.
+
+**Layout:**
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ HEADER: Clue number + text                              [X] │
+│ HEADER: 17D Embankment architect lengthened with cob? (5,3) │
+│                                                          [X] │
+├─────────────────────────────────────────────────────────────┤
+│ ANSWER BOXES (crossword-style)                              │
+│ [A][S][W][A][N] [D][A][M]                                   │
+│  ↑cross letters shown, others empty                         │
+├─────────────────────────────────────────────────────────────┤
+│ STEPS TO SOLVE:                                             │
+│                                                             │
+│ ⭕ 1. Identify Definition                                   │
+│ ⭕ 2. Identify Wordplay Indicator                           │
+│ ⭕ 3. Identify Literal (architect)                          │
+│ ⭕ 4. Identify Implied Synonym (cob)                        │
+│ ⭕ 5. Assemble                                              │
+│                                                             │
+│ [Each step is clickable]                                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**State Indicators:**
+- ⭕ = Not started (gray circle)
+- 🔄 = In progress (blue circle)
+- ✓ = Completed (green checkmark)
+
+**Behavior:**
+1. User clicks any step → Navigate to that step's interactive phases
+2. After completing a step → Return to menu with updated status
+3. When all steps completed → Show summary page
+4. Answer boxes are always visible and editable (hypothesis entry allowed)
+
+**Data Source:**
+- Step list generated from `clue_data["steps"]` array in `clues_db.json`
+- Step titles derived from `step["type"]` and optional `step["label"]`
+
+### 6.3 Step Detail (Interactive Solving)
+
+When user clicks a step from the menu, they enter the interactive solving view:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ HEADER: Step 2 of 5: Identify Wordplay Indicator       [X] │
+│ ← Back to Steps                                             │
 ├─────────────────────────────────────────────────────────────┤
 │ SECTION 1: Clue words with highlights                       │
 │ [Urge] removal of line from [silly] [speech] (5)            │
@@ -233,7 +353,7 @@ _sessions[clue_id] = {
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 5.2 Summary Page (Completion Screen)
+### 6.4 Summary Page (Completion Screen)
 
 **Trigger:** When all steps completed OR Solve button clicked
 
@@ -287,7 +407,7 @@ _sessions[clue_id] = {
 1. Natural completion: `step_index >= len(steps)` in `get_render()`
 2. Solve button: `reveal_answer()` returns with `complete: True`
 
-### 5.3 Color Scheme
+### 6.5 Color Scheme
 
 | Element | Color | Hex |
 |---------|-------|-----|
@@ -302,9 +422,9 @@ _sessions[clue_id] = {
 
 ---
 
-## 6. API Endpoints
+## 7. API Endpoints
 
-### 6.1 POST /trainer/start
+### 7.1 POST /trainer/start
 Start a new training session.
 
 **Request:**
@@ -320,9 +440,9 @@ Start a new training session.
 }
 ```
 
-**Response:** Render object (see 4.3)
+**Response:** Render object (see 5.3)
 
-### 6.2 POST /trainer/input
+### 7.2 POST /trainer/input
 Submit user input for validation.
 
 **Request:**
@@ -335,7 +455,7 @@ Submit user input for validation.
 
 **Response:** Updated render object
 
-### 6.3 POST /trainer/continue
+### 7.3 POST /trainer/continue
 Advance past teaching phase.
 
 **Request:**
@@ -347,7 +467,7 @@ Advance past teaching phase.
 
 **Response:** Updated render object
 
-### 6.4 POST /trainer/reveal
+### 7.4 POST /trainer/reveal
 Give up and reveal full answer.
 
 **Request:**
@@ -359,7 +479,7 @@ Give up and reveal full answer.
 
 **Response:** Completion render with `complete: true`, `learnings` for all steps
 
-### 6.5 POST /trainer/ui-state
+### 7.5 POST /trainer/ui-state
 Update UI state (hint toggle, word selection, typing).
 
 **Request:**
@@ -372,7 +492,7 @@ Update UI state (hint toggle, word selection, typing).
 
 **Response:** Updated render object
 
-### 6.6 POST /trainer/hypothesis
+### 7.6 POST /trainer/hypothesis
 Submit answer hypothesis (user typed correct answer in boxes).
 
 **Request:**
@@ -385,7 +505,7 @@ Submit answer hypothesis (user typed correct answer in boxes).
 
 **Response:** If correct, sets `answer_known: true`, returns updated render
 
-### 6.7 POST /trainer/solve-step
+### 7.7 POST /trainer/solve-step
 Reveal answer for current step only.
 
 **Request:**
@@ -399,7 +519,7 @@ Reveal answer for current step only.
 
 ---
 
-## 7. Files Structure
+## 8. Files Structure
 
 ```
 Grid Reader/
@@ -423,9 +543,9 @@ Grid Reader/
 
 ---
 
-## 8. Database Schema
+## 9. Database Schema
 
-### 8.1 Supabase Tables
+### 9.1 Supabase Tables
 
 ```sql
 -- Publications (Times, Guardian, etc.)
@@ -477,9 +597,9 @@ CREATE TABLE user_progress (
 
 ---
 
-## 9. Behavioral Specifications
+## 10. Behavioral Specifications
 
-### 9.1 Answer Auto-Population
+### 10.1 Answer Auto-Population
 When a step's `result` matches the final answer, automatically:
 1. Fill answer boxes with the result
 2. Set `answer_locked = True`
@@ -487,49 +607,49 @@ When a step's `result` matches the final answer, automatically:
 
 **Trigger:** In `handle_input()` when `phase_id == "result"` completes successfully.
 
-### 9.2 Skip Redundant Input
+### 10.2 Skip Redundant Input
 When `answer_known = True` (user already typed correct answer), skip any phase where:
 - `inputMode == "text"`
 - Expected answer equals the final answer
 
 **Implementation:** In `get_render()`, auto-advance past such phases.
 
-### 9.3 Cross Letters Display
+### 10.3 Cross Letters Display
 - Cross letters (from intersecting clues) shown in answer boxes
 - Blue border and light blue background
 - Not editable (locked)
 - Must match when user types answer
 
-### 9.4 Hint System
+### 10.4 Hint System
 - 💡 icon shown for phases with hints available
 - Click toggles `hint_visible` in session
 - Hint text from: step.hint, onWrong.message, or teaching_hints.json
 - Reset to hidden when advancing to next step
 
-### 9.5 Solve Step (🔓)
+### 10.5 Solve Step (🔓)
 - Reveals expected answer for current step only
 - Records "REVEALED: {answer}" in learnings
 - Advances to teaching phase
 
-### 9.6 Solve Button (Full Give Up)
+### 10.6 Solve Button (Full Give Up)
 - Reveals complete answer
 - Populates learnings with all step breakdowns
 - Shows summary page with "Update Grid" button
 
-### 9.7 Multi-word Answers
+### 10.7 Multi-word Answers
 Answers with spaces (e.g., "LOW TAR"):
 - Strip spaces for answer box count
 - Strip spaces for comparison
 - Strip spaces when applying to grid
 
-### 9.8 Auto-reload clues_db.json
+### 10.8 Auto-reload clues_db.json
 Server checks file modification time on each `/trainer/start` request. If changed, reloads automatically without server restart.
 
 ---
 
-## 10. Mobile Responsive Design
+## 11. Mobile Responsive Design
 
-### 10.1 Grid Scaling Strategy
+### 11.1 Grid Scaling Strategy
 
 The crossword grid scales to fit any screen width using CSS Grid with fractional units (`1fr`), not fixed pixel sizes.
 
@@ -544,7 +664,7 @@ The crossword grid scales to fit any screen width using CSS Grid with fractional
 - Media queries with fixed breakpoints require guessing device sizes
 - Viewport units (`vw`) automatically scale to any screen
 
-### 10.2 CSS Structure
+### 11.2 CSS Structure
 
 ```css
 /* Base cell - no fixed dimensions */
@@ -584,7 +704,7 @@ The crossword grid scales to fit any screen width using CSS Grid with fractional
 }
 ```
 
-### 10.3 JavaScript Grid Rendering
+### 11.3 JavaScript Grid Rendering
 
 ```javascript
 // crossword.js - renderGrid()
@@ -593,7 +713,7 @@ gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 // NOT: `repeat(${cols}, 40px)` - this breaks responsive scaling
 ```
 
-### 10.4 Trainer Modal on Mobile
+### 11.4 Trainer Modal on Mobile
 
 ```css
 @media (max-width: 768px) {
@@ -611,7 +731,7 @@ gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 }
 ```
 
-### 10.5 Key Measurements
+### 11.5 Key Measurements
 
 | Screen Width | Grid Width | Cell Size (approx) |
 |--------------|------------|-------------------|
@@ -622,7 +742,7 @@ gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 
 ---
 
-## 11. Development Phases
+## 12. Development Phases
 
 ### Phase 1: Supabase Database Integration ✓
 - Supabase PostgreSQL backend
@@ -653,34 +773,34 @@ gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 
 ---
 
-## 11. Testing Checklist
+## 13. Testing Checklist
 
-### 11.1 Core Flow
+### 13.1 Core Flow
 - [ ] Import PDF puzzle
 - [ ] Grid displays correctly
 - [ ] Clue selection highlights grid cells
 - [ ] Click "Solve" opens trainer
 
-### 11.2 Trainer Flow
+### 13.2 Trainer Flow
 - [ ] Step phases advance correctly
 - [ ] tap_words validates selection
 - [ ] text input validates answer
 - [ ] teaching panels display
 - [ ] Continue advances to next step
 
-### 11.3 Answer Entry
+### 13.3 Answer Entry
 - [ ] Cross letters displayed and locked
 - [ ] Typing fills boxes and auto-advances
 - [ ] Correct answer shows green, locks boxes
 - [ ] Incorrect answer flashes red
 
-### 11.4 Completion
+### 13.4 Completion
 - [ ] All steps complete → summary page
 - [ ] Summary shows 🎉 + answer
 - [ ] Summary shows all breadcrumbs with 🎓
 - [ ] "Update Grid" applies answer and closes
 
-### 11.5 Give Up Options
+### 13.5 Give Up Options
 - [ ] 🔓 reveals current step only
 - [ ] Solve button reveals full answer
 - [ ] Both show summary page

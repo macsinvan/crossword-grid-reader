@@ -174,6 +174,17 @@ Templates define how each step type is displayed:
 }
 ```
 
+## TODO
+
+### Phase 2.1: Step Menu Overview (Next)
+- [ ] Implement step menu overview screen as first screen when clicking "Solve"
+- [ ] Show all steps as clickable menu items with status indicators (⭕/🔄/✓)
+- [ ] Display answer boxes at top of menu (always visible, editable for hypothesis)
+- [ ] Navigate to individual step detail views when user clicks a step
+- [ ] Return to menu after completing each step with updated status
+- [ ] Generate step titles from clue_data["steps"] with type and optional label
+- [ ] Only show full solution on summary page after all steps completed
+
 ## Current State
 
 ### Completed Features
