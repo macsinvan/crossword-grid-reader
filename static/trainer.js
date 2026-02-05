@@ -986,7 +986,7 @@ class TemplateTrainer {
                                             rawFailureMsg = '❌ Raw insertion: ' + (item.step_data?.outer?.fodder?.text || '') + ' + ' + (item.step_data?.inner?.fodder?.text || '') + ' doesn' + "'" + 't work';
 
                                             partsHtml = '<div>' +
-                                                '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Outer synonym for "' + (item.step_data?.outer?.fodder?.text || '') + '":</label>' +
+                                                '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Outer transform for "' + (item.step_data?.outer?.fodder?.text || '') + '":</label>' +
                                                 '<div style="display: flex; gap: 4px;">' +
                                                 Array(outerLen).fill(0).map((_, i) =>
                                                     '<input type="text" maxlength="1" class="assembly-part-0-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
@@ -995,7 +995,7 @@ class TemplateTrainer {
                                                 '</div>' +
                                                 '</div>' +
                                                 '<div>' +
-                                                '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Inner synonym for "' + (item.step_data?.inner?.fodder?.text || '') + '":</label>' +
+                                                '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Inner transform for "' + (item.step_data?.inner?.fodder?.text || '') + '":</label>' +
                                                 '<div style="display: flex; gap: 4px;">' +
                                                 Array(innerLen).fill(0).map((_, i) =>
                                                     '<input type="text" maxlength="1" class="assembly-part-1-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +

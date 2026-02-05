@@ -1504,14 +1504,14 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 "hint": "Look for wordplay indicators: anagram (mixed, confused), container (in, within, holding), reversal (back, returning). If none found, it's a simple Charade."
             })
 
-            # Steps 2+: Transform each part (like 17D's Transform Outer/Inner)
+            # Steps 2+: Identify each part (transforms happen in Assembly step)
             for i, part in enumerate(parts, 1):
                 if isinstance(part, dict):
                     fodder_text = part.get("fodder", {}).get("text", "") if isinstance(part.get("fodder"), dict) else str(part.get("fodder", ""))
                     part_type = part.get("type", "transform")
                     items.append({
                         "index": f"{base_index}.{i+1}",
-                        "title": f"Transform Part {i}",
+                        "title": f"Identify Part {i}",
                         "type": f"charade_part_{part_type}",
                         "step_data": step,
                         "sub_step": f"part_{i}",
