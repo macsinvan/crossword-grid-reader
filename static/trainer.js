@@ -951,7 +951,7 @@ class TemplateTrainer {
                                 ${statusIcons[item.status]}
                             </span>
                             <span class="step-number" style="font-weight: 600; margin-right: 0.5rem; color: ${statusColors[item.status]};">
-                                ${item.index + 1}.
+                                ${typeof item.index === 'number' ? (item.index + 1) : item.index}.
                             </span>
                             <span class="step-title" style="flex: 1; color: ${statusColors[item.status]};">
                                 ${item.title}
