@@ -913,16 +913,6 @@ class TemplateTrainer {
 
         const html = `
             <div class="step-menu-container" style="padding: 1.5rem; max-width: 800px; margin: 0 auto;">
-                <!-- Header: Clue Text -->
-                <div class="menu-header" style="margin-bottom: 1.5rem;">
-                    <h2 style="font-size: 1.25rem; font-weight: 600; color: #1f2937; margin: 0 0 0.5rem 0;">
-                        ${clueText}
-                    </h2>
-                    <p style="color: #6b7280; font-size: 0.875rem;">
-                        ${enumeration}
-                    </p>
-                </div>
-
                 <!-- Answer Boxes -->
                 <div class="menu-answer-section" style="margin: 1.5rem 0; padding: 1rem; background: #f9fafb; border-radius: 0.5rem;">
                     <div style="display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap;">
@@ -1118,16 +1108,11 @@ class TemplateTrainer {
                                     stepItem.style.background = '#f0fdf4';
                                     stepItem.style.borderColor = '#22c55e';
 
-                                    // Add summary text below step item
-                                    const wrapper = stepItem.parentElement;
-                                    let summaryDiv = wrapper.querySelector('.step-summary');
-                                    if (!summaryDiv) {
-                                        summaryDiv = document.createElement('div');
-                                        summaryDiv.className = 'step-summary';
-                                        summaryDiv.style.cssText = 'padding: 0.75rem 1rem; background: #f0fdf4; border: 1px solid #22c55e; border-top: none; border-radius: 0 0 0.5rem 0.5rem; color: #166534; font-size: 0.875rem;';
-                                        wrapper.appendChild(summaryDiv);
+                                    // Replace step title with the result
+                                    const stepTitle = stepItem.querySelector('.step-title');
+                                    if (stepTitle) {
+                                        stepTitle.innerHTML = `DEFINITION: <strong>${definitionText}</strong> found at the ${position} of the clue`;
                                     }
-                                    summaryDiv.innerHTML = `✓ <strong>${definitionText}</strong> found at the ${position} of the clue`;
                                 }
                             }, 500);
                         }
