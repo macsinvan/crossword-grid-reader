@@ -959,20 +959,24 @@ class TemplateTrainer {
                                     ${item.title}
                                 </span>
                             </div>
-                            <div class="step-expanded" data-item-idx="${idx}" style="display: none; padding: 1rem; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 0.5rem 0.5rem;">
+                            <div class="step-expanded" data-item-idx="${idx}" data-expected="${JSON.stringify(item.expected_indices || [])}" style="display: none; padding: 1rem; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 0.5rem 0.5rem;">
+                                <!-- Clue Words -->
+                                <div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">
+                                    ${(r.words || []).map((word, wordIdx) => `<span class="clue-word" data-word-idx="${wordIdx}" data-item-idx="${idx}" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;">${word}</span>`).join('')}
+                                </div>
                                 <div style="display: flex; align-items: start; gap: 0.5rem;">
                                     <div style="flex: 1;">
-                                        <p style="color: #374151; margin-bottom: 0.5rem;">Click on the clue words to identify the ${item.title.toLowerCase()}.</p>
+                                        <p style="color: #374151; margin-bottom: 0.5rem;">Click on the clue words to ${item.title.toLowerCase()}.</p>
                                     </div>
-                                    <button class="hint-toggle" data-item-idx="${idx}"
+                                    ${item.hint ? `<button class="hint-toggle" data-item-idx="${idx}"
                                             style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;"
                                             title="Show hint">
                                         💡
-                                    </button>
+                                    </button>` : ''}
                                 </div>
-                                <div class="hint-content" data-item-idx="${idx}" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;">
-                                    <p style="color: #92400e; font-size: 0.875rem; margin: 0;">Hint will be shown here</p>
-                                </div>
+                                ${item.hint ? `<div class="hint-content" data-item-idx="${idx}" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;">
+                                    <p style="color: #92400e; font-size: 0.875rem; margin: 0;">${item.hint}</p>
+                                </div>` : ''}
                             </div>
                         </div>
                     `).join('')}
@@ -1045,6 +1049,39 @@ class TemplateTrainer {
                 } else {
                     hintContent.style.display = 'none';
                     toggle.style.opacity = '0.6';
+                }
+            });
+        });
+
+        // Attach click handlers to clue words
+        const clueWords = this.container.querySelectorAll('.clue-word');
+        clueWords.forEach(word => {
+            word.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const wordIdx = parseInt(word.getAttribute('data-word-idx'));
+                const itemIdx = word.getAttribute('data-item-idx');
+                const expandedSection = this.container.querySelector(`.step-expanded[data-item-idx="${itemIdx}"]`);
+                const expectedIndices = JSON.parse(expandedSection.getAttribute('data-expected') || '[]');
+
+                // Toggle selection
+                if (word.style.background === 'rgb(34, 197, 94)' || word.style.background === '#22c55e') {
+                    // Deselect
+                    word.style.background = '';
+                    word.style.color = '';
+                } else {
+                    // Check if correct
+                    if (expectedIndices.includes(wordIdx)) {
+                        word.style.background = '#22c55e'; // Green
+                        word.style.color = 'white';
+                    } else {
+                        // Show feedback for wrong selection
+                        word.style.background = '#ef4444'; // Red
+                        word.style.color = 'white';
+                        setTimeout(() => {
+                            word.style.background = '';
+                            word.style.color = '';
+                        }, 500);
+                    }
                 }
             });
         });

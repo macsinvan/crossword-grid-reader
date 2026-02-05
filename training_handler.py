@@ -1338,7 +1338,7 @@ def substitute_variables(text, step, session, clue=None):
 
     return text
 
-def _expand_step_to_menu_items(step, base_index):
+def _expand_step_to_menu_items(step, base_index, clue=None):
     """
     Expand a complex step (e.g., container with template) into atomic menu items.
     Returns list of menu item dictionaries.
@@ -1347,11 +1347,18 @@ def _expand_step_to_menu_items(step, base_index):
 
     # Atomic steps - return single item
     if step_type == "standard_definition":
+        # Generate dynamic hint based on clue metadata
+        answer = clue.get("clue", {}).get("answer", "") if clue else ""
+        answer_length = len(answer.replace(" ", ""))  # Count letters, not spaces
+        hint = f"This is a cryptic clue. The definition is ALWAYS at the start OR the end. Look for words that sound like a meaningful phrase that could yield a {answer_length}-letter answer."
+
         return [{
             "index": base_index,
             "title": "Identify Definition",
             "type": step_type,
-            "step_data": step
+            "step_data": step,
+            "hint": hint,
+            "expected_indices": step.get("expected", {}).get("indices", [])
         }]
 
     # Container with template - expand into atomic steps
@@ -1457,7 +1464,7 @@ def _build_menu_render(session, clue):
 
     for idx, step in enumerate(steps_data):
         # Expand step into atomic menu items
-        expanded_items = _expand_step_to_menu_items(step, idx)
+        expanded_items = _expand_step_to_menu_items(step, idx, clue)
 
         for item in expanded_items:
             # Determine status based on completed steps
