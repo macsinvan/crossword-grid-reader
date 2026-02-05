@@ -1387,7 +1387,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 },
                 {
                     "index": f"{base_index}.2",
-                    "title": "Identify Outer Word",
+                    "title": "Transform Outer Word",
                     "type": "container_outer",
                     "step_data": step,
                     "sub_step": "outer",
@@ -1396,7 +1396,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 },
                 {
                     "index": f"{base_index}.3",
-                    "title": "Identify Inner Word",
+                    "title": "Transform Inner Word",
                     "type": "container_inner",
                     "step_data": step,
                     "sub_step": "inner",
@@ -1427,12 +1427,12 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 },
                 {
                     "index": f"{base_index}.2",
-                    "title": "Identify Outer Synonym",
+                    "title": "Transform Outer Word",
                     "type": "container_outer",
                     "step_data": step,
                     "sub_step": "outer",
                     "expected_indices": outer.get("fodder", {}).get("indices", []),
-                    "hint": f"This word's synonym ({outer_result}) will be the outer container."
+                    "hint": "Find the synonym for the outer word."
                 },
                 {
                     "index": f"{base_index}.3",
@@ -1458,12 +1458,12 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 },
                 {
                     "index": f"{base_index}.2",
-                    "title": "Identify Outer Word",
+                    "title": "Transform Outer Word",
                     "type": "container_outer",
                     "step_data": step,
                     "sub_step": "outer",
                     "expected_indices": outer.get("fodder", {}).get("indices", []),
-                    "hint": f"This word ({outer_result}) will be the outer container holding the charade inside."
+                    "hint": "This word will be the outer container holding the charade inside."
                 },
                 {
                     "index": f"{base_index}.3",
