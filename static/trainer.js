@@ -950,7 +950,39 @@ class TemplateTrainer {
                                 </span>
                             </div>
                             <div class="step-expanded" data-item-idx="${idx}" data-expected="${JSON.stringify(item.expected_indices || [])}" style="display: none; padding: 1rem; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 0.5rem 0.5rem;">
-                                ${item.type === 'container_assembly' ?
+                                ${item.type === 'wordplay_identification' ?
+                                    // Wordplay identification: Show words with "No indicators" button
+                                    '<div class="wordplay-id">' +
+                                    '<p style="color: #374151; margin-bottom: 1rem;">Click on any wordplay indicators (anagram, container, reversal words) or click below if there are none:</p>' +
+                                    '<div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">' +
+                                    (r.words || []).map((word, wordIdx) => {
+                                        const availableIndices = item.available_indices || [];
+                                        if (availableIndices.length === 0 || availableIndices.includes(wordIdx)) {
+                                            return '<span class="clue-word indicator-check" data-word-idx="' + wordIdx + '" data-item-idx="' + idx + '" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;">' + word + '</span>';
+                                        }
+                                        return '';
+                                    }).join('') +
+                                    '</div>' +
+                                    '<button class="no-indicators-btn" data-item-idx="' + idx + '" ' +
+                                    'style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-weight: 500;">No wordplay indicators → Charade</button>' +
+                                    '</div>'
+                                    : item.type === 'charade_raw_assembly' ?
+                                    // Raw assembly attempt: Show it doesn't work
+                                    (() => {
+                                        const parts = item.step_data?.parts || [];
+                                        const rawText = parts.map(p => p.fodder?.text || '').join('');
+                                        const rawLength = rawText.replace(/\s/g, '').length;
+                                        const expectedLength = (this.render?.answer || '').replace(/\s/g, '').length;
+                                        return '<div class="raw-assembly">' +
+                                            '<p style="color: #dc2626; margin-bottom: 1rem; font-weight: 500; font-size: 1.1rem;">' +
+                                            '❌ Raw assembly: ' + parts.map(p => p.fodder?.text || '').join(' + ') + ' = ' + rawText.toUpperCase() + ' (' + rawLength + ' letters ≠ ' + expectedLength + ')' +
+                                            '</p>' +
+                                            '<p style="color: #374151; margin-bottom: 1rem;">The words don' + "'" + 't combine directly. We need to transform them first.</p>' +
+                                            '<button class="acknowledge-btn" data-item-idx="' + idx + '" ' +
+                                            'style="padding: 0.75rem 1.5rem; background: #3b82f6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-weight: 500;">Continue to transformations →</button>' +
+                                            '</div>';
+                                    })()
+                                    : item.type === 'container_assembly' ?
                                     // Assembly step: Show letter boxes for synonyms
                                     (() => {
                                         const outerResult = item.step_data?.outer?.result || '';
@@ -1306,6 +1338,66 @@ class TemplateTrainer {
                         });
                     });
                 }
+            });
+        });
+
+        // No indicators button (wordplay identification)
+        const noIndicatorsBtns = this.container.querySelectorAll('.no-indicators-btn');
+        noIndicatorsBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const itemIdx = btn.getAttribute('data-item-idx');
+                const expandedSection = this.container.querySelector(`.step-expanded[data-item-idx="${itemIdx}"]`);
+
+                setTimeout(() => {
+                    expandedSection.style.display = 'none';
+
+                    const stepItem = this.container.querySelector(`.step-item[data-item-idx="${itemIdx}"]`);
+                    if (stepItem) {
+                        const statusIcon = stepItem.querySelector('.status-icon');
+                        if (statusIcon) statusIcon.textContent = '✓';
+
+                        stepItem.classList.remove('pending');
+                        stepItem.classList.add('completed');
+                        stepItem.style.background = '#f0fdf4';
+                        stepItem.style.borderColor = '#22c55e';
+
+                        const stepTitle = stepItem.querySelector('.step-title');
+                        if (stepTitle) {
+                            stepTitle.innerHTML = 'WORDPLAY TYPE: <strong>Charade</strong> (no indicators found)';
+                        }
+                    }
+                }, 300);
+            });
+        });
+
+        // Acknowledge button (raw assembly)
+        const acknowledgeBtns = this.container.querySelectorAll('.acknowledge-btn');
+        acknowledgeBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const itemIdx = btn.getAttribute('data-item-idx');
+                const expandedSection = this.container.querySelector(`.step-expanded[data-item-idx="${itemIdx}"]`);
+
+                setTimeout(() => {
+                    expandedSection.style.display = 'none';
+
+                    const stepItem = this.container.querySelector(`.step-item[data-item-idx="${itemIdx}"]`);
+                    if (stepItem) {
+                        const statusIcon = stepItem.querySelector('.status-icon');
+                        if (statusIcon) statusIcon.textContent = '✓';
+
+                        stepItem.classList.remove('pending');
+                        stepItem.classList.add('completed');
+                        stepItem.style.background = '#f0fdf4';
+                        stepItem.style.borderColor = '#22c55e';
+
+                        const stepTitle = stepItem.querySelector('.step-title');
+                        if (stepTitle) {
+                            stepTitle.innerHTML = 'RAW ASSEMBLY: <strong>Doesn\'t work</strong> - transformations needed';
+                        }
+                    }
+                }, 300);
             });
         });
 
