@@ -1032,7 +1032,11 @@ class TemplateTrainer {
                                 ${item.type === 'wordplay_identification' ?
                                     // Wordplay identification: Show words with "No indicators" button
                                     '<div class="wordplay-id">' +
-                                    '<p style="color: #374151; margin-bottom: 1rem;">Click on any wordplay indicators (anagram, container, reversal words) or click below if there are none:</p>' +
+                                    '<div style="display: flex; align-items: start; gap: 0.5rem;">' +
+                                    '<p style="color: #374151; margin-bottom: 1rem; flex: 1;">Click on any wordplay indicators (anagram, container, reversal words) or click below if there are none:</p>' +
+                                    (item.hint ? '<button class="hint-toggle" data-item-idx="' + idx + '" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;" title="Show hint">💡</button>' : '') +
+                                    '</div>' +
+                                    (item.hint ? '<div class="hint-content" data-item-idx="' + idx + '" style="display: none; margin-top: -0.5rem; margin-bottom: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;"><p style="color: #92400e; font-size: 0.875rem; margin: 0;">' + item.hint + '</p></div>' : '') +
                                     '<div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">' +
                                     (r.words || []).map((word, wordIdx) => {
                                         const availableIndices = item.available_indices || [];
@@ -1046,77 +1050,39 @@ class TemplateTrainer {
                                     'style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-weight: 500;">No wordplay indicators → Charade</button>' +
                                     '</div>'
                                     : (item.type === 'container_assembly' || item.type === 'charade_assembly') ?
-                                    // Assembly step: Show letter boxes for transformations
+                                    // Assembly step: dumb render of server-provided assembly_parts
                                     (() => {
-                                        const isContainer = item.type === 'container_assembly';
-                                        const finalResult = item.step_data?.result || '';
+                                        const parts = item.assembly_parts || [];
+                                        const finalResult = item.result || '';
                                         const finalParts = finalResult.split(' ');
 
-                                        let rawFailureMsg = '';
-                                        let partsHtml = '';
-
-                                        if (isContainer) {
-                                            // Container: outer + inner
-                                            const outerResult = item.step_data?.outer?.result || '';
-                                            const innerResult = item.step_data?.inner?.result || '';
-                                            const outerLen = outerResult.replace(/\s/g, '').length;
-                                            const innerLen = innerResult.replace(/\s/g, '').length;
-
-                                            rawFailureMsg = '❌ Raw insertion: ' + (item.step_data?.outer?.fodder?.text || '') + ' + ' + (item.step_data?.inner?.fodder?.text || '') + ' doesn' + "'" + 't work';
-
-                                            partsHtml = '<div>' +
-                                                '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Outer transform for "' + (item.step_data?.outer?.fodder?.text || '') + '":</label>' +
+                                        const partsHtml = parts.map((part, partIdx) => {
+                                            const partLen = (part.result || '').replace(/\s/g, '').length;
+                                            return '<div>' +
+                                                '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">' + (part.label || '') + ':</label>' +
                                                 '<div style="display: flex; gap: 4px;">' +
-                                                Array(outerLen).fill(0).map((_, i) =>
-                                                    '<input type="text" maxlength="1" class="assembly-part-0-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
-                                                    'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
-                                                ).join('') +
-                                                '</div>' +
-                                                '</div>' +
-                                                '<div>' +
-                                                '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Inner transform for "' + (item.step_data?.inner?.fodder?.text || '') + '":</label>' +
-                                                '<div style="display: flex; gap: 4px;">' +
-                                                Array(innerLen).fill(0).map((_, i) =>
-                                                    '<input type="text" maxlength="1" class="assembly-part-1-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
+                                                Array(partLen).fill(0).map((_, i) =>
+                                                    '<input type="text" maxlength="1" class="assembly-part-' + partIdx + '-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
                                                     'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
                                                 ).join('') +
                                                 '</div>' +
                                                 '</div>';
-                                        } else {
-                                            // Charade: multiple parts
-                                            const parts = item.step_data?.parts || [];
-                                            const rawText = parts.map(p => p.fodder?.text || '').join('');
-                                            const rawLength = rawText.replace(/\s/g, '').length;
-                                            const expectedLength = finalResult.replace(/\s/g, '').length;
-
-                                            rawFailureMsg = '❌ Raw: ' + parts.map(p => p.fodder?.text || '').join(' + ') + ' = ' + rawText.toUpperCase() + ' (' + rawLength + ' letters ≠ ' + expectedLength + ')';
-
-                                            partsHtml = parts.map((part, partIdx) => {
-                                                const partResult = part.result || '';
-                                                const partLen = partResult.replace(/\s/g, '').length;
-                                                const partType = part.type || 'transformation';
-                                                return '<div>' +
-                                                    '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Part ' + (partIdx + 1) + ' (' + partType + ' of "' + (part.fodder?.text || '') + '"):</label>' +
-                                                    '<div style="display: flex; gap: 4px;">' +
-                                                    Array(partLen).fill(0).map((_, i) =>
-                                                        '<input type="text" maxlength="1" class="assembly-part-' + partIdx + '-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
-                                                        'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
-                                                    ).join('') +
-                                                    '</div>' +
-                                                    '</div>';
-                                            }).join('');
-                                        }
+                                        }).join('');
 
                                         return '<div class="assembly-inputs">' +
                                             '<p style="color: #dc2626; margin-bottom: 1rem; font-weight: 500;">' +
-                                            rawFailureMsg +
+                                            (item.raw_failure_msg || '') +
                                             '</p>' +
-                                            '<p style="color: #374151; margin-bottom: 1rem;">Complete the assembly with the transformed parts:</p>' +
+                                            '<div style="display: flex; align-items: start; gap: 0.5rem;">' +
+                                            '<p style="color: #374151; margin-bottom: 1rem; flex: 1;">Complete the assembly with the transformed parts:</p>' +
+                                            (item.hint ? '<button class="hint-toggle" data-item-idx="' + idx + '" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;" title="Show hint">💡</button>' : '') +
+                                            '</div>' +
+                                            (item.hint ? '<div class="hint-content" data-item-idx="' + idx + '" style="display: none; margin-top: -0.5rem; margin-bottom: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;"><p style="color: #92400e; font-size: 0.875rem; margin: 0;">' + item.hint + '</p></div>' : '') +
                                             '<div style="display: flex; flex-direction: column; gap: 1.5rem;">' +
                                             partsHtml +
                                             '<div>' +
-                                            '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Final answer (' + (r.enumeration || '') + '):</label>' +
-                                            '<div style="display: flex; gap: 4px; flex-wrap: wrap;">' +
+                                            '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">' + (item.final_answer_label || '') + ':</label>' +
+                                            '<div style="display: flex; gap: 16px; flex-wrap: wrap;">' +
                                             finalParts.map((part, partIdx) =>
                                                 '<div style="display: flex; gap: 4px;">' +
                                                 Array(part.length).fill(0).map((_, i) =>

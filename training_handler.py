@@ -1375,6 +1375,14 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
             outer_result = outer.get("result", "")
             inner_result = inner.get("result", "")
             assembly = step.get("assembly", "")
+            outer_fodder_text = outer.get("fodder", {}).get("text", "")
+            inner_fodder_text = inner.get("fodder", {}).get("text", "")
+            result = step.get("result", "")
+            enumeration = clue.get("clue", {}).get("enumeration", "") if clue else ""
+            assembly_parts = [
+                {"label": f'Outer word ({outer.get("type", "synonym")} of "{outer_fodder_text}")', "result": outer_result},
+                {"label": f'Inner word ({inner.get("type", "synonym")} of "{inner_fodder_text}")', "result": inner_result},
+            ]
             return [
                 {
                     "index": f"{base_index}.1",
@@ -1409,12 +1417,25 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "type": "container_assembly",
                     "step_data": step,
                     "sub_step": "assembly",
-                    "hint": assembly
+                    "hint": assembly,
+                    "raw_failure_msg": f'❌ Raw insertion: "{inner_fodder_text}" inserted into "{outer_fodder_text}" doesn\'t work',
+                    "final_answer_label": f"Insert inner into outer to get final answer ({enumeration})",
+                    "assembly_parts": assembly_parts,
+                    "result": result
                 }
             ]
         elif template == "insertion_with_one_synonym_outer":
             outer_result = outer.get("result", "")
             assembly = step.get("assembly", "")
+            outer_fodder_text = outer.get("fodder", {}).get("text", "")
+            inner_fodder_text = inner.get("fodder", {}).get("text", "")
+            inner_result = inner.get("result", "")
+            result = step.get("result", "")
+            enumeration = clue.get("clue", {}).get("enumeration", "") if clue else ""
+            assembly_parts = [
+                {"label": f'Outer word ({outer.get("type", "synonym")} of "{outer_fodder_text}")', "result": outer_result},
+                {"label": f'Inner word ({inner.get("type", "synonym")} of "{inner_fodder_text}")', "result": inner_result},
+            ]
             return [
                 {
                     "index": f"{base_index}.1",
@@ -1440,15 +1461,36 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "type": "container_assembly",
                     "step_data": step,
                     "sub_step": "assembly",
-                    "hint": assembly
+                    "hint": assembly,
+                    "raw_failure_msg": f'❌ Raw insertion: "{inner_fodder_text}" inserted into "{outer_fodder_text}" doesn\'t work',
+                    "final_answer_label": f"Insert inner into outer to get final answer ({enumeration})",
+                    "assembly_parts": assembly_parts,
+                    "result": result
                 }
             ]
         elif template == "insertion_with_charade_inner":
             outer_result = outer.get("result", "")
             assembly = step.get("assembly", "")
-            # For charade inner, combine reasoning from all inner pieces
+            # For charade inner, combine reasoning and indices from all inner pieces
             inner_pieces = inner.get("pieces", [])
             inner_reasoning = "; ".join(p.get("reasoning", "") for p in inner_pieces if p.get("reasoning"))
+            inner_indices = []
+            for p in inner_pieces:
+                inner_indices.extend(p.get("fodder", {}).get("indices", []))
+            outer_fodder_text = outer.get("fodder", {}).get("text", "")
+            inner_fodder_text = inner.get("fodder", {}).get("text", "")
+            result = step.get("result", "")
+            enumeration = clue.get("clue", {}).get("enumeration", "") if clue else ""
+            assembly_parts = [
+                {"label": f'Outer word ({outer.get("type", "synonym")} of "{outer_fodder_text}")', "result": outer_result},
+            ]
+            for i, piece in enumerate(inner_pieces, 1):
+                piece_fodder_text = piece.get("fodder", {}).get("text", "")
+                piece_type = piece.get("type", "transform")
+                assembly_parts.append({
+                    "label": f'Inner part {i} ({piece_type} of "{piece_fodder_text}")',
+                    "result": piece.get("result", "")
+                })
             return [
                 {
                     "index": f"{base_index}.1",
@@ -1474,6 +1516,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "type": "container_inner_charade",
                     "step_data": step,
                     "sub_step": "inner",
+                    "expected_indices": inner_indices,
                     "hint": inner_reasoning
                 },
                 {
@@ -1482,7 +1525,11 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "type": "container_assembly",
                     "step_data": step,
                     "sub_step": "assembly",
-                    "hint": assembly
+                    "hint": assembly,
+                    "raw_failure_msg": f'❌ Raw insertion: "{inner_fodder_text}" inserted into "{outer_fodder_text}" doesn\'t work',
+                    "final_answer_label": f"Insert inner into outer to get final answer ({enumeration})",
+                    "assembly_parts": assembly_parts,
+                    "result": result
                 }
             ]
         else:
@@ -1523,13 +1570,37 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     })
 
             # Final step: Assemble (shows raw attempt + letter boxes, like 17D)
+            result = step.get("result", "")
+            enumeration = clue.get("clue", {}).get("enumeration", "") if clue else ""
+            raw_parts_text = " + ".join(
+                part.get("fodder", {}).get("text", "") if isinstance(part.get("fodder"), dict) else str(part.get("fodder", ""))
+                for part in parts if isinstance(part, dict)
+            )
+            raw_combined = "".join(
+                part.get("fodder", {}).get("text", "").upper() if isinstance(part.get("fodder"), dict) else str(part.get("fodder", "")).upper()
+                for part in parts if isinstance(part, dict)
+            ).replace(" ", "")
+            expected_len = len(result.replace(" ", ""))
+            assembly_parts = []
+            for i, part in enumerate(parts, 1):
+                if isinstance(part, dict):
+                    part_fodder_text = part.get("fodder", {}).get("text", "") if isinstance(part.get("fodder"), dict) else str(part.get("fodder", ""))
+                    part_type = part.get("type", "transform")
+                    assembly_parts.append({
+                        "label": f'Part {i} ({part_type} of "{part_fodder_text}")',
+                        "result": part.get("result", "")
+                    })
             items.append({
                 "index": f"{base_index}.{len(parts)+2}",
                 "title": "Assemble",
                 "type": "charade_assembly",
                 "step_data": step,
                 "sub_step": "assembly",
-                "hint": assembly
+                "hint": assembly,
+                "raw_failure_msg": f"❌ Raw: {raw_parts_text} = {raw_combined} ({len(raw_combined)} letters ≠ {expected_len})",
+                "final_answer_label": f"Join the parts to get final answer ({enumeration})",
+                "assembly_parts": assembly_parts,
+                "result": result
             })
             return items
         else:
@@ -1575,7 +1646,8 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
             "index": base_index,
             "title": title,
             "type": step_type,
-            "step_data": step
+            "step_data": step,
+            "hint": step.get("reasoning", "")
         }]
 
 def _build_menu_render(session, clue):

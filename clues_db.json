@@ -466,7 +466,8 @@
           "result": "OPTIC",
           "assembly": "O + IT + PC → (anagram) → OPTIC",
           "letters_so_far": 5,
-          "letters_needed": 5
+          "letters_needed": 5,
+          "fodder_combined": "O + IT + PC = OITPC"
         }
       ],
       "metadata": {
@@ -785,7 +786,8 @@
             }
           ],
           "result": "OMERTA",
-          "assembly": "O + MATER → (anagram) → OMERTA"
+          "assembly": "O + MATER → (anagram) → OMERTA",
+          "fodder_combined": "O + MATER = OMATER"
         }
       ],
       "metadata": {
@@ -961,6 +963,14 @@
             "reasoning": "To stalk is to track or follow prey"
           },
           "inner": {
+            "fodder": {
+              "indices": [
+                3,
+                4,
+                5
+              ],
+              "text": "very little time"
+            },
             "pieces": [
               {
                 "fodder": {
@@ -990,7 +1000,7 @@
             "assembly": "WEE + T = WEET"
           },
           "result": "SWEET TALK",
-          "assembly": "S(WEET)ALK = SWEET TALK"
+          "assembly": "S(WEET)TALK = SWEET TALK"
         }
       ],
       "metadata": {
@@ -2319,7 +2329,15 @@
                 "reasoning": "Kissers is slang for lips"
               }
             ],
-            "assembly": "ARE + C + LIPS = ARECLIPS"
+            "assembly": "ARE + C + LIPS = ARECLIPS",
+            "fodder": {
+              "indices": [
+                0,
+                1,
+                2
+              ],
+              "text": "Are cold kissers"
+            }
           },
           "result": "SOLAR ECLIPSE",
           "assembly": "SOL + (ARECLIPS) + E = SOLAR ECLIPSE"
