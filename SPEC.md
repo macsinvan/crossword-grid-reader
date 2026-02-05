@@ -16,9 +16,10 @@ This document specifies the Grid Reader application at a level of detail suffici
 
 ### 1.2 Key Principles
 1. **Progressive Discovery Teaching**: This is a TEACHING app, not a solution viewer. Users should DISCOVER the clue breakdown step-by-step through guided interaction, NOT see the full decode revealed upfront. Each step requires user engagement before revealing the next insight.
-2. **Stateless Client Architecture**: The trainer UI (`trainer.js`) is a dumb rendering layer with ZERO local state. ALL state lives on the server in `training_handler.py`.
-3. **No AI/LLM**: Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
-4. **Server-Driven Rendering**: Client receives a `render` object and displays it - nothing more.
+2. **Template-Based Architecture**: All clues are represented using 13 predefined step templates that can be combined to construct ANY cryptic clue. This enables both human teaching AND future automated annotation (a solver that generates metadata from cold clues).
+3. **Stateless Client Architecture**: The trainer UI (`trainer.js`) is a dumb rendering layer with ZERO local state. ALL state lives on the server in `training_handler.py`.
+4. **No AI/LLM**: Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
+5. **Server-Driven Rendering**: Client receives a `render` object and displays it - nothing more.
 
 ---
 
@@ -142,7 +143,7 @@ This defeats the purpose of teaching. The user sees the answer without thinking.
 
 ## 4. Data Models
 
-### 3.1 Puzzle Structure
+### 4.1 Puzzle Structure
 ```json
 {
   "puzzle": {
@@ -164,7 +165,17 @@ This defeats the purpose of teaching. The user sees the answer without thinking.
 }
 ```
 
-### 3.2 Clue Annotation Structure (clues_db.json)
+### 4.2 Clue Metadata Format (Our Custom Schema)
+
+**Key Principle:** We control this metadata format completely. It's our own design, optimized for interactive teaching.
+
+**Template-Based Architecture:**
+- The metadata uses **predefined step templates** (13 types) that can be combined to construct ANY cryptic clue
+- Each step has a `type` field that maps to a template in `training_handler.py`
+- Templates define the interactive phases (fodder → result → teaching)
+- By mixing templates, we can represent any cryptic mechanism
+
+**Example: Simple Deletion Clue**
 ```json
 {
   "training_items": {
@@ -177,16 +188,18 @@ This defeats the purpose of teaching. The user sees the answer without thinking.
       "words": ["Urge", "removal", "of", "line", "from", "silly", "speech"],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {"text": "Urge", "indices": [0]}
+          "type": "standard_definition",  // Template: identify definition
+          "expected": {"text": "Urge", "indices": [0]},
+          "position": "start"
         },
         {
-          "type": "synonym",
+          "type": "synonym",  // Template: find synonym
           "fodder": {"text": "silly speech", "indices": [5, 6]},
-          "result": "DRIVEL"
+          "result": "DRIVEL",
+          "reasoning": "Silly speech = DRIVEL"
         },
         {
-          "type": "deletion",
+          "type": "deletion",  // Template: remove letter
           "indicator": {"text": "removal of line", "indices": [1, 2, 3]},
           "fodder": {"text": "DRIVEL"},
           "deleted": "L",
@@ -198,7 +211,97 @@ This defeats the purpose of teaching. The user sees the answer without thinking.
 }
 ```
 
-### 3.3 Session State (server-side)
+**Why This Format:**
+1. **Flexible:** Can represent any cryptic mechanism by combining templates
+2. **Teachable:** Each step maps to interactive phases users work through
+3. **Optimizable:** We can refine the format as we learn what works best
+4. **Self-Contained:** Includes all data needed for validation and teaching
+
+**Template Reusability:**
+The same `synonym` template can be reused across thousands of clues. We just provide different `fodder` and `result` values. This makes annotating new clues efficient.
+
+**Available Step Templates (13 types):**
+
+| Template Type | Purpose | Example |
+|---------------|---------|---------|
+| `standard_definition` | Identify definition at start/end | "Urge" = definition |
+| `synonym` | Word → synonym | "silly speech" → DRIVEL |
+| `abbreviation` | Word → abbreviation | "five" → V |
+| `literal` | Word used as-is | "it" → IT |
+| `literal_phrase` | Phrase read literally | "do you mean" → ISIT |
+| `anagram` | Rearrange letters | "changed" + "tone" → NOTE |
+| `reversal` | Reverse word | "returned" + "dog" → GOD |
+| `deletion` | Remove letter(s) | DRIVEL - L → DRIVE |
+| `letter_selection` | First/last/middle letters | "initially big" → B |
+| `hidden` | Hidden word in phrase | "ma**KING**dom" → KING |
+| `container_verify` | One part inside another | AD(A)M → ADAM |
+| `charade_verify` | Combine parts in order | RE + PRO + ACH → REPROACH |
+| `double_definition` | Two definitions | "bark" = tree covering & dog sound |
+
+**Composability Example:**
+A complex clue like "Embankment architect lengthened with cob? (5,3)" uses:
+1. `standard_definition` → "Embankment"
+2. `container_verify` → "lengthened with" indicates container
+3. `synonym` → "architect" → ADAM
+4. `synonym` → "cob" → SWAN
+5. `charade_verify` → A + SWAN + DAM → ASWAN DAM
+
+By mixing these 5 templates, we construct the full teaching sequence.
+
+### 4.2.1 Critical: Template System Enables Automated Annotation
+
+**Why This Template-Based Architecture Matters:**
+
+The template system is not just for displaying pre-annotated clues. It's the foundation for **automated clue annotation**.
+
+**Future Capability: Cold Clue Solver**
+We will build a solver that takes:
+- **Input:** A "cold" clue (never seen before) + optionally the answer
+- **Output:** Complete clue metadata in our format, using templates
+
+**Example Workflow:**
+```
+INPUT:
+  Clue: "Embankment architect lengthened with cob? (5,3)"
+  Answer: "ASWAN DAM" (optional)
+
+SOLVER PROCESS:
+  1. Identify clue type → Container
+  2. Find definition → "Embankment"
+  3. Parse indicator → "lengthened with" = container indicator
+  4. Identify components:
+     - "architect" → synonym lookup → ADAM
+     - "cob" → synonym lookup → SWAN
+  5. Verify assembly → AD + (SWAN) + AM = ASWAN DAM
+
+OUTPUT (generated metadata):
+{
+  "steps": [
+    {"type": "standard_definition", "expected": {"text": "Embankment", ...}},
+    {"type": "container_verify", "indicator": {"text": "lengthened with", ...}},
+    {"type": "synonym", "fodder": {"text": "architect"}, "result": "ADAM"},
+    {"type": "synonym", "fodder": {"text": "cob"}, "result": "SWAN"},
+    {"type": "charade_verify", "result": "ASWAN DAM", "assembly": "..."}
+  ]
+}
+```
+
+**Why Templates Make This Possible:**
+1. **Finite Set:** Only 13 templates to generate (not infinite variations)
+2. **Deterministic:** Each template has clear input/output structure
+3. **Composable:** Complex clues are just combinations of simple templates
+4. **Reusable:** Same templates work for thousands of clues
+5. **Validatable:** Generated metadata follows exact schema
+
+**Design Implication:**
+Every template must be:
+- **Machine-generatable:** Can be produced by algorithmic parsing
+- **Complete:** Contains all data needed for validation and teaching
+- **Unambiguous:** No ambiguity in what constitutes this step type
+
+This is why we control the metadata format completely. We're not constrained by external schemas—we design it to be both human-teachable AND machine-generatable.
+
+### 4.3 Session State (server-side)
 ```python
 _sessions[clue_id] = {
     "step_index": 0,           # Current step (-1 for clue type identification)
@@ -770,6 +873,16 @@ gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 - Rate limiting
 - Analytics
 - Security hardening
+
+### Phase 6: Automated Clue Annotation (Future)
+- Build solver that generates metadata from cold clues
+- Input: Raw clue text + optional answer
+- Output: Complete clue metadata using templates
+- Enables scaling annotation to thousands of clues
+- Validates template system completeness
+
+**Why This Matters:**
+Currently, clues must be manually annotated in `clues_db.json`. The solver will automate this process, allowing us to rapidly expand the teaching library. The template-based architecture makes this possible because we only need to generate from 13 predefined patterns, not infinite variations.
 
 ---
 

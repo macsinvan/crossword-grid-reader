@@ -185,6 +185,16 @@ Templates define how each step type is displayed:
 - [ ] Generate step titles from clue_data["steps"] with type and optional label
 - [ ] Only show full solution on summary page after all steps completed
 
+### Phase 6: Automated Clue Annotation (Future)
+- [ ] Build solver that takes cold clues (+ optional answer) and generates metadata
+- [ ] Input parser: Extract clue components, identify indicators, parse enumeration
+- [ ] Template generator: Map parsed components to 13 step templates
+- [ ] Synonym/abbreviation lookup: Build comprehensive dictionaries
+- [ ] Assembly validator: Verify generated steps produce correct answer
+- [ ] Confidence scoring: Rank generated annotations by certainty
+- [ ] Human review UI: Allow manual refinement of auto-generated annotations
+- [ ] Batch processing: Annotate entire puzzle sets automatically
+
 ## Current State
 
 ### Completed Features
