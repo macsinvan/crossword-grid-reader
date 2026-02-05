@@ -966,56 +966,75 @@ class TemplateTrainer {
                                     '<button class="no-indicators-btn" data-item-idx="' + idx + '" ' +
                                     'style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-weight: 500;">No wordplay indicators → Charade</button>' +
                                     '</div>'
-                                    : item.type === 'charade_raw_assembly' ?
-                                    // Raw assembly attempt: Show it doesn't work
+                                    : (item.type === 'container_assembly' || item.type === 'charade_assembly') ?
+                                    // Assembly step: Show letter boxes for transformations
                                     (() => {
-                                        const parts = item.step_data?.parts || [];
-                                        const rawText = parts.map(p => p.fodder?.text || '').join('');
-                                        const rawLength = rawText.replace(/\s/g, '').length;
-                                        const expectedLength = (this.render?.answer || '').replace(/\s/g, '').length;
-                                        return '<div class="raw-assembly">' +
-                                            '<p style="color: #dc2626; margin-bottom: 1rem; font-weight: 500; font-size: 1.1rem;">' +
-                                            '❌ Raw assembly: ' + parts.map(p => p.fodder?.text || '').join(' + ') + ' = ' + rawText.toUpperCase() + ' (' + rawLength + ' letters ≠ ' + expectedLength + ')' +
-                                            '</p>' +
-                                            '<p style="color: #374151; margin-bottom: 1rem;">The words don' + "'" + 't combine directly. We need to transform them first.</p>' +
-                                            '<button class="acknowledge-btn" data-item-idx="' + idx + '" ' +
-                                            'style="padding: 0.75rem 1.5rem; background: #3b82f6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-weight: 500;">Continue to transformations →</button>' +
-                                            '</div>';
-                                    })()
-                                    : item.type === 'container_assembly' ?
-                                    // Assembly step: Show letter boxes for synonyms
-                                    (() => {
-                                        const outerResult = item.step_data?.outer?.result || '';
-                                        const innerResult = item.step_data?.inner?.result || '';
+                                        const isContainer = item.type === 'container_assembly';
                                         const finalResult = item.step_data?.result || '';
-                                        const outerLen = outerResult.replace(/\s/g, '').length;
-                                        const innerLen = innerResult.replace(/\s/g, '').length;
                                         const finalParts = finalResult.split(' ');
+
+                                        let rawFailureMsg = '';
+                                        let partsHtml = '';
+
+                                        if (isContainer) {
+                                            // Container: outer + inner
+                                            const outerResult = item.step_data?.outer?.result || '';
+                                            const innerResult = item.step_data?.inner?.result || '';
+                                            const outerLen = outerResult.replace(/\s/g, '').length;
+                                            const innerLen = innerResult.replace(/\s/g, '').length;
+
+                                            rawFailureMsg = '❌ Raw insertion: ' + (item.step_data?.outer?.fodder?.text || '') + ' + ' + (item.step_data?.inner?.fodder?.text || '') + ' doesn' + "'" + 't work';
+
+                                            partsHtml = '<div>' +
+                                                '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Outer synonym for "' + (item.step_data?.outer?.fodder?.text || '') + '":</label>' +
+                                                '<div style="display: flex; gap: 4px;">' +
+                                                Array(outerLen).fill(0).map((_, i) =>
+                                                    '<input type="text" maxlength="1" class="assembly-part-0-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
+                                                    'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
+                                                ).join('') +
+                                                '</div>' +
+                                                '</div>' +
+                                                '<div>' +
+                                                '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Inner synonym for "' + (item.step_data?.inner?.fodder?.text || '') + '":</label>' +
+                                                '<div style="display: flex; gap: 4px;">' +
+                                                Array(innerLen).fill(0).map((_, i) =>
+                                                    '<input type="text" maxlength="1" class="assembly-part-1-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
+                                                    'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
+                                                ).join('') +
+                                                '</div>' +
+                                                '</div>';
+                                        } else {
+                                            // Charade: multiple parts
+                                            const parts = item.step_data?.parts || [];
+                                            const rawText = parts.map(p => p.fodder?.text || '').join('');
+                                            const rawLength = rawText.replace(/\s/g, '').length;
+                                            const expectedLength = finalResult.replace(/\s/g, '').length;
+
+                                            rawFailureMsg = '❌ Raw: ' + parts.map(p => p.fodder?.text || '').join(' + ') + ' = ' + rawText.toUpperCase() + ' (' + rawLength + ' letters ≠ ' + expectedLength + ')';
+
+                                            partsHtml = parts.map((part, partIdx) => {
+                                                const partResult = part.result || '';
+                                                const partLen = partResult.replace(/\s/g, '').length;
+                                                const partType = part.type || 'transformation';
+                                                return '<div>' +
+                                                    '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Part ' + (partIdx + 1) + ' (' + partType + ' of "' + (part.fodder?.text || '') + '"):</label>' +
+                                                    '<div style="display: flex; gap: 4px;">' +
+                                                    Array(partLen).fill(0).map((_, i) =>
+                                                        '<input type="text" maxlength="1" class="assembly-part-' + partIdx + '-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
+                                                        'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
+                                                    ).join('') +
+                                                    '</div>' +
+                                                    '</div>';
+                                            }).join('');
+                                        }
 
                                         return '<div class="assembly-inputs">' +
                                             '<p style="color: #dc2626; margin-bottom: 1rem; font-weight: 500;">' +
-                                            '❌ Raw insertion: ' + (item.step_data?.outer?.fodder?.text || '') + ' + ' + (item.step_data?.inner?.fodder?.text || '') + ' doesn' + "'" + 't work' +
+                                            rawFailureMsg +
                                             '</p>' +
-                                            '<p style="color: #374151; margin-bottom: 1rem;">Find synonyms to complete the assembly:</p>' +
+                                            '<p style="color: #374151; margin-bottom: 1rem;">Complete the assembly with the transformed parts:</p>' +
                                             '<div style="display: flex; flex-direction: column; gap: 1.5rem;">' +
-                                            '<div>' +
-                                            '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Outer synonym for "' + (item.step_data?.outer?.fodder?.text || '') + '":</label>' +
-                                            '<div style="display: flex; gap: 4px;">' +
-                                            Array(outerLen).fill(0).map((_, i) =>
-                                                '<input type="text" maxlength="1" class="assembly-outer-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
-                                                'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
-                                            ).join('') +
-                                            '</div>' +
-                                            '</div>' +
-                                            '<div>' +
-                                            '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Inner synonym for "' + (item.step_data?.inner?.fodder?.text || '') + '":</label>' +
-                                            '<div style="display: flex; gap: 4px;">' +
-                                            Array(innerLen).fill(0).map((_, i) =>
-                                                '<input type="text" maxlength="1" class="assembly-inner-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
-                                                'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
-                                            ).join('') +
-                                            '</div>' +
-                                            '</div>' +
+                                            partsHtml +
                                             '<div>' +
                                             '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Final answer (' + (r.enumeration || '') + '):</label>' +
                                             '<div style="display: flex; gap: 4px; flex-wrap: wrap;">' +
@@ -1238,7 +1257,7 @@ class TemplateTrainer {
         });
 
         // Assembly letter box handlers - stop propagation and auto-advance
-        const assemblyLetters = this.container.querySelectorAll('.assembly-outer-letter, .assembly-inner-letter, .assembly-result-letter');
+        const assemblyLetters = this.container.querySelectorAll('[class*="assembly-part-"][class*="-letter"], .assembly-result-letter');
         assemblyLetters.forEach(input => {
             // Stop keyboard events from reaching the crossword grid
             input.addEventListener('keydown', (e) => {
@@ -1246,7 +1265,7 @@ class TemplateTrainer {
 
                 // Backspace - move to previous box
                 if (e.key === 'Backspace' && !input.value) {
-                    const allInputs = Array.from(this.container.querySelectorAll('.assembly-outer-letter, .assembly-inner-letter, .assembly-result-letter'));
+                    const allInputs = Array.from(this.container.querySelectorAll('[class*="assembly-part-"][class*="-letter"], .assembly-result-letter'));
                     const currentIdx = allInputs.indexOf(input);
                     if (currentIdx > 0) {
                         allInputs[currentIdx - 1].focus();
@@ -1259,7 +1278,7 @@ class TemplateTrainer {
 
                 // Auto-advance to next box
                 if (input.value) {
-                    const allInputs = Array.from(this.container.querySelectorAll('.assembly-outer-letter, .assembly-inner-letter, .assembly-result-letter'));
+                    const allInputs = Array.from(this.container.querySelectorAll('[class*="assembly-part-"][class*="-letter"], .assembly-result-letter'));
                     const currentIdx = allInputs.indexOf(input);
                     if (currentIdx < allInputs.length - 1) {
                         allInputs[currentIdx + 1].focus();
@@ -1279,25 +1298,45 @@ class TemplateTrainer {
                 e.stopPropagation();
                 const itemIdx = btn.getAttribute('data-item-idx');
 
-                // Collect values from letter boxes
-                const outerLetters = this.container.querySelectorAll(`.assembly-outer-letter[data-item-idx="${itemIdx}"]`);
-                const innerLetters = this.container.querySelectorAll(`.assembly-inner-letter[data-item-idx="${itemIdx}"]`);
-                const resultLetters = this.container.querySelectorAll(`.assembly-result-letter[data-item-idx="${itemIdx}"]`);
-
-                const outerValue = Array.from(outerLetters).map(l => l.value).join('').toUpperCase();
-                const innerValue = Array.from(innerLetters).map(l => l.value).join('').toUpperCase();
-                const resultValue = Array.from(resultLetters).map(l => l.value).join('').toUpperCase();
-
                 const menuItems = this.render.menuItems || [];
                 const menuItem = menuItems[parseInt(itemIdx)];
                 const stepData = menuItem?.step_data || {};
-
-                const outerExpected = (stepData?.outer?.result || '').toUpperCase().replace(/\s/g, '');
-                const innerExpected = (stepData?.inner?.result || '').toUpperCase().replace(/\s/g, '');
                 const resultExpected = (stepData?.result || '').toUpperCase().replace(/\s/g, '');
 
+                // Collect values from letter boxes dynamically
+                const resultLetters = this.container.querySelectorAll(`.assembly-result-letter[data-item-idx="${itemIdx}"]`);
+                const resultValue = Array.from(resultLetters).map(l => l.value).join('').toUpperCase();
+
+                // Collect part values - check for both container (outer/inner) and charade (parts array)
+                const partInputs = [];
+                const partExpected = [];
+
+                if (stepData.outer && stepData.inner) {
+                    // Container: outer and inner
+                    const part0Letters = this.container.querySelectorAll(`.assembly-part-0-letter[data-item-idx="${itemIdx}"]`);
+                    const part1Letters = this.container.querySelectorAll(`.assembly-part-1-letter[data-item-idx="${itemIdx}"]`);
+                    partInputs.push(part0Letters, part1Letters);
+                    partExpected.push(
+                        (stepData.outer.result || '').toUpperCase().replace(/\s/g, ''),
+                        (stepData.inner.result || '').toUpperCase().replace(/\s/g, '')
+                    );
+                } else if (stepData.parts) {
+                    // Charade: multiple parts
+                    stepData.parts.forEach((part, idx) => {
+                        const partLetters = this.container.querySelectorAll(`.assembly-part-${idx}-letter[data-item-idx="${itemIdx}"]`);
+                        partInputs.push(partLetters);
+                        partExpected.push((part.result || '').toUpperCase().replace(/\s/g, ''));
+                    });
+                }
+
+                // Validate all parts
+                const partValues = partInputs.map(letters =>
+                    Array.from(letters).map(l => l.value).join('').toUpperCase()
+                );
+                const allPartsCorrect = partValues.every((val, idx) => val === partExpected[idx]);
+
                 // Check if all correct
-                if (outerValue === outerExpected && innerValue === innerExpected && resultValue === resultExpected) {
+                if (allPartsCorrect && resultValue === resultExpected) {
                     // Mark as complete and apply answer to grid
                     const expandedSection = this.container.querySelector(`.step-expanded[data-item-idx="${itemIdx}"]`);
                     setTimeout(() => {
@@ -1329,7 +1368,8 @@ class TemplateTrainer {
                     }, 500);
                 } else {
                     // Show error - flash red on incorrect boxes
-                    [outerLetters, innerLetters, resultLetters].forEach(letterGroup => {
+                    const allLetterGroups = [...partInputs, resultLetters];
+                    allLetterGroups.forEach(letterGroup => {
                         letterGroup.forEach(input => {
                             input.style.borderColor = '#ef4444';
                             setTimeout(() => {
@@ -1371,35 +1411,6 @@ class TemplateTrainer {
             });
         });
 
-        // Acknowledge button (raw assembly)
-        const acknowledgeBtns = this.container.querySelectorAll('.acknowledge-btn');
-        acknowledgeBtns.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const itemIdx = btn.getAttribute('data-item-idx');
-                const expandedSection = this.container.querySelector(`.step-expanded[data-item-idx="${itemIdx}"]`);
-
-                setTimeout(() => {
-                    expandedSection.style.display = 'none';
-
-                    const stepItem = this.container.querySelector(`.step-item[data-item-idx="${itemIdx}"]`);
-                    if (stepItem) {
-                        const statusIcon = stepItem.querySelector('.status-icon');
-                        if (statusIcon) statusIcon.textContent = '✓';
-
-                        stepItem.classList.remove('pending');
-                        stepItem.classList.add('completed');
-                        stepItem.style.background = '#f0fdf4';
-                        stepItem.style.borderColor = '#22c55e';
-
-                        const stepTitle = stepItem.querySelector('.step-title');
-                        if (stepTitle) {
-                            stepTitle.innerHTML = 'RAW ASSEMBLY: <strong>Doesn\'t work</strong> - transformations needed';
-                        }
-                    }
-                }, 300);
-            });
-        });
 
         // Reveal button in step menu
         const revealBtn = this.container.querySelector('.reveal-button');

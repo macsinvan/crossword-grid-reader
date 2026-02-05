@@ -1504,23 +1504,13 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 "hint": "Look for wordplay indicators: anagram (mixed, confused), container (in, within, holding), reversal (back, returning). If none found, it's a simple Charade."
             })
 
-            # Step 2: Try raw assembly (shows it doesn't work)
-            items.append({
-                "index": f"{base_index}.2",
-                "title": "Try Raw Assembly",
-                "type": "charade_raw_assembly",
-                "step_data": step,
-                "sub_step": "raw_assembly",
-                "hint": "Try combining the words directly to see if they form the answer."
-            })
-
-            # Steps 3+: Transform each part
+            # Steps 2+: Transform each part (like 17D's Transform Outer/Inner)
             for i, part in enumerate(parts, 1):
                 if isinstance(part, dict):
                     fodder_text = part.get("fodder", {}).get("text", "") if isinstance(part.get("fodder"), dict) else str(part.get("fodder", ""))
                     part_type = part.get("type", "transform")
                     items.append({
-                        "index": f"{base_index}.{i+2}",
+                        "index": f"{base_index}.{i+1}",
                         "title": f"Transform Part {i}",
                         "type": f"charade_part_{part_type}",
                         "step_data": step,
@@ -1529,9 +1519,9 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                         "hint": f"Find a {part_type} for this word."
                     })
 
-            # Final step: Assemble with transformations
+            # Final step: Assemble (shows raw attempt + letter boxes, like 17D)
             items.append({
-                "index": f"{base_index}.{len(parts)+3}",
+                "index": f"{base_index}.{len(parts)+2}",
                 "title": "Assemble",
                 "type": "charade_assembly",
                 "step_data": step,
