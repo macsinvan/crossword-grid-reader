@@ -950,8 +950,8 @@ class TemplateTrainer {
                                 </span>
                             </div>
                             <div class="step-expanded" data-item-idx="${idx}" data-expected="${JSON.stringify(item.expected_indices || [])}" style="display: none; padding: 1rem; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 0.5rem 0.5rem;">
-                                ${item.type === 'wordplay_identification' ?
-                                    // Wordplay identification: Show words with "No indicators" button
+                                ${item.expanded_type === 'tap_words_with_fallback_button' ?
+                                    // Tap words with a fallback button (server provides button config)
                                     '<div class="wordplay-id">' +
                                     '<p style="color: #374151; margin-bottom: 1rem;">Click on any wordplay indicators (anagram, container, reversal words) or click below if there are none:</p>' +
                                     '<div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">' +
@@ -964,83 +964,37 @@ class TemplateTrainer {
                                     }).join('') +
                                     '</div>' +
                                     '<button class="no-indicators-btn" data-item-idx="' + idx + '" ' +
-                                    'style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-weight: 500;">No wordplay indicators → Charade</button>' +
+                                    'style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-weight: 500;">' + (item.fallback_button?.label || 'Continue') + '</button>' +
                                     '</div>'
-                                    : (item.type === 'container_assembly' || item.type === 'charade_assembly') ?
-                                    // Assembly step: Show letter boxes for transformations
+                                    : item.expanded_type === 'assembly' ?
+                                    // Assembly step: Render from server-provided assembly_config
                                     (() => {
-                                        const isContainer = item.type === 'container_assembly';
-                                        const finalResult = item.step_data?.result || '';
-                                        const finalParts = finalResult.split(' ');
-
-                                        let rawFailureMsg = '';
-                                        let partsHtml = '';
-
-                                        if (isContainer) {
-                                            // Container: outer + inner
-                                            const outerResult = item.step_data?.outer?.result || '';
-                                            const innerResult = item.step_data?.inner?.result || '';
-                                            const outerLen = outerResult.replace(/\s/g, '').length;
-                                            const innerLen = innerResult.replace(/\s/g, '').length;
-
-                                            rawFailureMsg = '❌ Raw insertion: ' + (item.step_data?.outer?.fodder?.text || '') + ' + ' + (item.step_data?.inner?.fodder?.text || '') + ' doesn' + "'" + 't work';
-
-                                            partsHtml = '<div>' +
-                                                '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Outer transform for "' + (item.step_data?.outer?.fodder?.text || '') + '":</label>' +
-                                                '<div style="display: flex; gap: 4px;">' +
-                                                Array(outerLen).fill(0).map((_, i) =>
-                                                    '<input type="text" maxlength="1" class="assembly-part-0-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
-                                                    'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
-                                                ).join('') +
-                                                '</div>' +
-                                                '</div>' +
-                                                '<div>' +
-                                                '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Inner transform for "' + (item.step_data?.inner?.fodder?.text || '') + '":</label>' +
-                                                '<div style="display: flex; gap: 4px;">' +
-                                                Array(innerLen).fill(0).map((_, i) =>
-                                                    '<input type="text" maxlength="1" class="assembly-part-1-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
-                                                    'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
-                                                ).join('') +
-                                                '</div>' +
-                                                '</div>';
-                                        } else {
-                                            // Charade: multiple parts
-                                            const parts = item.step_data?.parts || [];
-                                            const rawText = parts.map(p => p.fodder?.text || '').join('');
-                                            const rawLength = rawText.replace(/\s/g, '').length;
-                                            const expectedLength = finalResult.replace(/\s/g, '').length;
-
-                                            rawFailureMsg = '❌ Raw: ' + parts.map(p => p.fodder?.text || '').join(' + ') + ' = ' + rawText.toUpperCase() + ' (' + rawLength + ' letters ≠ ' + expectedLength + ')';
-
-                                            partsHtml = parts.map((part, partIdx) => {
-                                                const partResult = part.result || '';
-                                                const partLen = partResult.replace(/\s/g, '').length;
-                                                const partType = part.type || 'transformation';
-                                                return '<div>' +
-                                                    '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Part ' + (partIdx + 1) + ' (' + partType + ' of "' + (part.fodder?.text || '') + '"):</label>' +
-                                                    '<div style="display: flex; gap: 4px;">' +
-                                                    Array(partLen).fill(0).map((_, i) =>
-                                                        '<input type="text" maxlength="1" class="assembly-part-' + partIdx + '-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
-                                                        'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
-                                                    ).join('') +
-                                                    '</div>' +
-                                                    '</div>';
-                                            }).join('');
-                                        }
+                                        const config = item.assembly_config || {};
+                                        const partsHtml = (config.parts || []).map((part, partIdx) =>
+                                            '<div>' +
+                                            '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">' + part.label + '</label>' +
+                                            '<div style="display: flex; gap: 4px;">' +
+                                            Array(part.length).fill(0).map((_, i) =>
+                                                '<input type="text" maxlength="1" class="assembly-part-' + partIdx + '-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
+                                                'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
+                                            ).join('') +
+                                            '</div>' +
+                                            '</div>'
+                                        ).join('');
 
                                         return '<div class="assembly-inputs">' +
                                             '<p style="color: #dc2626; margin-bottom: 1rem; font-weight: 500;">' +
-                                            rawFailureMsg +
+                                            (config.failure_message || '') +
                                             '</p>' +
-                                            '<p style="color: #374151; margin-bottom: 1rem;">Complete the assembly with the transformed parts:</p>' +
+                                            '<p style="color: #374151; margin-bottom: 1rem;">' + (config.instruction || '') + '</p>' +
                                             '<div style="display: flex; flex-direction: column; gap: 1.5rem;">' +
                                             partsHtml +
                                             '<div>' +
-                                            '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Final answer (' + (r.enumeration || '') + '):</label>' +
+                                            '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">' + (config.final_label || 'Final answer:') + '</label>' +
                                             '<div style="display: flex; gap: 4px; flex-wrap: wrap;">' +
-                                            finalParts.map((part, partIdx) =>
+                                            (config.final_parts || []).map((partLen, partIdx) =>
                                                 '<div style="display: flex; gap: 4px;">' +
-                                                Array(part.length).fill(0).map((_, i) =>
+                                                Array(partLen).fill(0).map((_, i) =>
                                                     '<input type="text" maxlength="1" class="assembly-result-letter" data-item-idx="' + idx + '" data-part-idx="' + partIdx + '" data-letter-idx="' + i + '" ' +
                                                     'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
                                                 ).join('') +
@@ -1054,7 +1008,7 @@ class TemplateTrainer {
                                             '</div>';
                                     })()
                                     :
-                                    // Regular step: Show clickable words
+                                    // Default: tap_words — Show clickable words with hint
                                     `<div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">
                                         ${(r.words || []).map((word, wordIdx) => {
                                             const availableIndices = item.available_indices || [];
