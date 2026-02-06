@@ -61,51 +61,6 @@ class TemplateTrainer {
         }
     }
 
-    // Start session - React lines 94-112
-    // Note: In this port, the session is already started by crossword.js openTrainer()
-    // which calls /trainer/start. This method is called but the initial render state
-    // is already set by crossword.js, so we just render the UI.
-    async startSession() {
-        // The session was already started by openTrainer() in crossword.js
-        // which sets this.render before creating the TemplateTrainer instance
-        // If render is already set, just render the UI
-        if (this.render) {
-            this.loading = false;
-            this.renderUI();
-            return;
-        }
-
-        // Fallback: start a new session if render wasn't provided
-        this.loading = true;
-        this.error = null;
-        this.renderLoading();
-
-        try {
-            const response = await fetch('/trainer/start', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clue_id: this.clueId })
-            });
-
-            const data = await response.json();
-
-            if (data.success === false || data.error) {
-                this.error = data.error || 'Failed to start training';
-                this.renderError();
-                return;
-            }
-
-            this.render = data.render;
-            this.clueId = data.clue_id || this.clueId;
-            this.loading = false;
-            this.renderUI();
-
-        } catch (e) {
-            this.error = String(e);
-            this.renderError();
-        }
-    }
-
     async submitInput(value) {
         if (!this.render) return;
 
@@ -378,46 +333,44 @@ class TemplateTrainer {
     }
 
     // Handle step menu item click - navigate to selected step
-    handleMenuItemClick(stepIndex) {
-        fetch('/trainer/menu-select', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                clue_id: this.clueId,
-                step_index: stepIndex,
-                crossLetters: this.crossLetters,
-                enumeration: this.enumeration
-            })
-        })
-        .then(r => r.json())
-        .then(renderObj => {
+    async handleMenuItemClick(stepIndex) {
+        try {
+            const response = await fetch('/trainer/menu-select', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    clue_id: this.clueId,
+                    step_index: stepIndex,
+                    crossLetters: this.render?.crossLetters || [],
+                    enumeration: this.render?.enumeration || this.enumeration
+                })
+            });
+            const renderObj = await response.json();
             this.render = renderObj;
             this.renderUI();
-        })
-        .catch(err => {
+        } catch (err) {
             console.error('Error selecting menu item:', err);
-        });
+        }
     }
 
     // Handle return to menu button click
-    handleBackToMenu() {
-        fetch('/trainer/return-menu', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                clue_id: this.clueId,
-                crossLetters: this.crossLetters,
-                enumeration: this.enumeration
-            })
-        })
-        .then(r => r.json())
-        .then(renderObj => {
+    async handleBackToMenu() {
+        try {
+            const response = await fetch('/trainer/return-menu', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    clue_id: this.clueId,
+                    crossLetters: this.render?.crossLetters || [],
+                    enumeration: this.render?.enumeration || this.enumeration
+                })
+            });
+            const renderObj = await response.json();
             this.render = renderObj;
             this.renderUI();
-        })
-        .catch(err => {
+        } catch (err) {
             console.error('Error returning to menu:', err);
-        });
+        }
     }
 
     // Handle step menu actions — send to server for validation and re-render
@@ -556,12 +509,16 @@ class TemplateTrainer {
             <div style="padding: 1rem; color: #dc2626; background: #fef2f2; border-radius: 0.5rem;">
                 <p style="font-weight: 500;">Error</p>
                 <p style="font-size: 0.875rem;">${this.error}</p>
-                <button onclick="this.closest('.trainer-content').trainer.onBack?.()"
+                <button data-action="error-back"
                     style="margin-top: 1rem; padding: 0.5rem 1rem; background: #e5e7eb; border-radius: 0.375rem; border: none; cursor: pointer;">
                     Go Back
                 </button>
             </div>
         `;
+        const backBtn = this.container.querySelector('[data-action="error-back"]');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => this.onBack?.());
+        }
     }
 
     renderUI() {
@@ -593,7 +550,7 @@ class TemplateTrainer {
         const html = `
             <!-- HEADER: Back to Menu Button -->
             <div style="margin-bottom: 0.75rem;">
-                <button onclick="trainer.handleBackToMenu()"
+                <button data-action="back-to-menu"
                         style="padding: 0.5rem 1rem; background: #f3f4f6; border: 1px solid #d1d5db;
                                border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem;
                                color: #374151; transition: background 0.2s;"
@@ -612,7 +569,6 @@ class TemplateTrainer {
                         return `<span
                             data-word-index="${index}"
                             style="padding: 0.125rem 0.375rem; border-radius: 0.25rem; transition: all 0.2s; cursor: ${isTapMode ? 'pointer' : 'default'}; ${bgColor ? `background-color: ${bgColor}; color: white;` : ''}"
-                            ${isTapMode ? '' : ''}
                         >${word}</span>`;
                     }).join('')}
                     <span style="color: #9ca3af;">(${this.render?.enumeration || ''})</span>
@@ -715,10 +671,6 @@ class TemplateTrainer {
             pos += wordLengths[i];
             wordBoundaries.push(pos - 1); // Position of last letter before gap
         }
-
-        // Debug: log cross letters and word boundaries
-        console.log('[Trainer] Cross letters from server:', crossLetters);
-        console.log('[Trainer] Enumeration from server:', enumeration, '-> word boundaries after positions:', wordBoundaries);
 
         return answer.split('').map((letter, i) => {
             // Check if this position has a cross letter from the grid
@@ -968,6 +920,21 @@ class TemplateTrainer {
         </div>`;
     }
 
+    // Shared learnings detail list (used by renderComplete and renderSolvedView)
+    renderLearningsDetail(learnings, emptyText) {
+        if (learnings.length > 0) {
+            return `<div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                ${learnings.map(item => `
+                    <div style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.5rem; background: #f8fafc; border-radius: 0.375rem; font-size: 0.9rem;">
+                        <span>🎓</span>
+                        <span>${item.title || item.text || ''}</span>
+                    </div>
+                `).join('')}
+            </div>`;
+        }
+        return `<div style="text-align: center; color: #6b7280; padding: 1rem;">${emptyText}</div>`;
+    }
+
     // Solved view - Summary page with breadcrumbs
     renderComplete() {
         const learnings = this.render.learnings || [];
@@ -1015,20 +982,7 @@ class TemplateTrainer {
 
             <!-- BREADCRUMBS: All solve steps -->
             <div style="background: white; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; padding: 1rem;">
-                ${learnings.length > 0 ? `
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                        ${learnings.map(item => `
-                            <div style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.5rem; background: #f8fafc; border-radius: 0.375rem; font-size: 0.9rem;">
-                                <span>🎓</span>
-                                <span>${item.title || item.text || ''}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                ` : `
-                    <div style="text-align: center; color: #6b7280; padding: 1rem;">
-                        Clue solved!
-                    </div>
-                `}
+                ${this.renderLearningsDetail(learnings, 'Clue solved!')}
             </div>
 
             <!-- UPDATE GRID BUTTON -->
@@ -1048,8 +1002,6 @@ class TemplateTrainer {
      */
     renderStepMenu() {
         const r = this.render;
-        const clueText = r.clueText || this.clueText || '';
-        const enumeration = r.enumeration || this.enumeration || '';
 
         const statusIcons = {
             'pending': '⭕',
@@ -1103,94 +1055,7 @@ class TemplateTrainer {
                                 </span>
                             </div>
                             <div class="step-expanded" data-item-idx="${idx}" data-expected="${JSON.stringify(item.expected_indices || [])}" style="display: none; padding: 1rem; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 0.5rem 0.5rem;">
-                                ${item.expanded_type === 'tap_words_with_fallback_button' ?
-                                    // Tap words with a fallback button (server provides button config)
-                                    '<div class="wordplay-id">' +
-                                    '<div style="display: flex; align-items: start; gap: 0.5rem;">' +
-                                    '<p style="color: #374151; margin-bottom: 1rem; flex: 1;">Click on any wordplay indicators (anagram, container, reversal words) or click below if there are none:</p>' +
-                                    (item.hint ? '<button class="hint-toggle" data-item-idx="' + idx + '" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;" title="Show hint">💡</button>' : '') +
-                                    '</div>' +
-                                    (item.hint ? '<div class="hint-content" data-item-idx="' + idx + '" style="display: none; margin-top: -0.5rem; margin-bottom: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;"><p style="color: #92400e; font-size: 0.875rem; margin: 0;">' + item.hint + '</p></div>' : '') +
-                                    '<div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">' +
-                                    (r.words || []).map((word, wordIdx) => {
-                                        const availableIndices = item.available_indices || [];
-                                        const selectedWords = item.selected_words || [];
-                                        const isSelected = selectedWords.includes(wordIdx);
-                                        if (availableIndices.length === 0 || availableIndices.includes(wordIdx)) {
-                                            return '<span class="clue-word indicator-check" data-word-idx="' + wordIdx + '" data-item-idx="' + idx + '" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;' + (isSelected ? ' background: #22c55e; color: white;' : '') + '">' + word + '</span>';
-                                        }
-                                        return '';
-                                    }).join('') +
-                                    '</div>' +
-                                    '<button class="no-indicators-btn" data-item-idx="' + idx + '" ' +
-                                    'style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-weight: 500;">' + (item.fallback_button?.label || 'Continue') + '</button>' +
-                                    '</div>'
-                                    : item.expanded_type === 'assembly' ?
-                                    // Assembly step: Render from server-provided assembly_config
-                                    (() => {
-                                        const config = item.assembly_config || {};
-                                        const partsHtml = (config.parts || []).map((part, partIdx) =>
-                                            '<div>' +
-                                            '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">' + part.label + '</label>' +
-                                            '<div style="display: flex; gap: 4px;">' +
-                                            Array(part.length).fill(0).map((_, i) =>
-                                                '<input type="text" maxlength="1" class="assembly-part-' + partIdx + '-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
-                                                'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
-                                            ).join('') +
-                                            '</div>' +
-                                            '</div>'
-                                        ).join('');
-
-                                        return '<div class="assembly-inputs">' +
-                                            '<p style="color: #dc2626; margin-bottom: 1rem; font-weight: 500;">' +
-                                            (config.failure_message || '') +
-                                            '</p>' +
-                                            '<div style="display: flex; align-items: start; gap: 0.5rem;">' +
-                                            '<p style="color: #374151; margin-bottom: 1rem; flex: 1;">' + (config.instruction || '') + '</p>' +
-                                            (item.hint ? '<button class="hint-toggle" data-item-idx="' + idx + '" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;" title="Show hint">💡</button>' : '') +
-                                            '</div>' +
-                                            (item.hint ? '<div class="hint-content" data-item-idx="' + idx + '" style="display: none; margin-top: -0.5rem; margin-bottom: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;"><p style="color: #92400e; font-size: 0.875rem; margin: 0;">' + item.hint + '</p></div>' : '') +
-                                            '<div style="display: flex; flex-direction: column; gap: 1.5rem;">' +
-                                            partsHtml +
-                                            '<div>' +
-                                            '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">' + (config.final_label || 'Final answer:') + '</label>' +
-                                            '<div style="display: flex; gap: 4px; flex-wrap: wrap;">' +
-                                            (config.final_parts || []).map((partLen, partIdx) =>
-                                                '<div style="display: flex; gap: 4px;">' +
-                                                Array(partLen).fill(0).map((_, i) =>
-                                                    '<input type="text" maxlength="1" class="assembly-result-letter" data-item-idx="' + idx + '" data-part-idx="' + partIdx + '" data-letter-idx="' + i + '" ' +
-                                                    'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
-                                                ).join('') +
-                                                '</div>'
-                                            ).join('') +
-                                            '</div>' +
-                                            '</div>' +
-                                            '<button class="assembly-check" data-item-idx="' + idx + '" ' +
-                                            'style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; width: fit-content;">Check Answer</button>' +
-                                            '</div>' +
-                                            '</div>';
-                                    })()
-                                    :
-                                    // Default: tap_words — Show clickable words with hint
-                                    `<div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">
-                                        ${(r.words || []).map((word, wordIdx) => {
-                                            const availableIndices = item.available_indices || [];
-                                            const selectedWords = item.selected_words || [];
-                                            const isSelected = selectedWords.includes(wordIdx);
-                                            if (availableIndices.length === 0 || availableIndices.includes(wordIdx)) {
-                                                return '<span class="clue-word" data-word-idx="' + wordIdx + '" data-item-idx="' + idx + '" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;' + (isSelected ? ' background: #22c55e; color: white;' : '') + '">' + word + '</span>';
-                                            }
-                                            return '';
-                                        }).join('')}
-                                    </div>
-                                    <div style="display: flex; align-items: start; gap: 0.5rem;">
-                                        <div style="flex: 1;">
-                                            <p style="color: #374151; margin-bottom: 0.5rem;">Click on the clue words to ${item.title.toLowerCase()}.</p>
-                                        </div>
-                                        ${item.hint ? '<button class="hint-toggle" data-item-idx="' + idx + '" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;" title="Show hint">💡</button>' : ''}
-                                    </div>
-                                    ${item.hint ? '<div class="hint-content" data-item-idx="' + idx + '" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;"><p style="color: #92400e; font-size: 0.875rem; margin: 0;">' + item.hint + '</p></div>' : ''}`
-                                }
+                                ${this.renderMenuItemExpanded(item, idx, r.words || [])}
                             </div>
                         </div>
                     `).join('')}
@@ -1206,8 +1071,102 @@ class TemplateTrainer {
         `;
 
         this.container.innerHTML = html;
+        this.attachStepMenuListeners();
+    }
 
-        // Attach click handlers to step items - toggle expand/collapse
+    // Render the expanded content for a step menu item based on its expanded_type
+    renderMenuItemExpanded(item, idx, words) {
+        if (item.expanded_type === 'tap_words_with_fallback_button') {
+            return '<div class="wordplay-id">' +
+                '<div style="display: flex; align-items: start; gap: 0.5rem;">' +
+                '<p style="color: #374151; margin-bottom: 1rem; flex: 1;">Click on any wordplay indicators (anagram, container, reversal words) or click below if there are none:</p>' +
+                (item.hint ? '<button class="hint-toggle" data-item-idx="' + idx + '" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;" title="Show hint">💡</button>' : '') +
+                '</div>' +
+                (item.hint ? '<div class="hint-content" data-item-idx="' + idx + '" style="display: none; margin-top: -0.5rem; margin-bottom: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;"><p style="color: #92400e; font-size: 0.875rem; margin: 0;">' + item.hint + '</p></div>' : '') +
+                '<div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">' +
+                words.map((word, wordIdx) => {
+                    const availableIndices = item.available_indices || [];
+                    const selectedWords = item.selected_words || [];
+                    const isSelected = selectedWords.includes(wordIdx);
+                    if (availableIndices.length === 0 || availableIndices.includes(wordIdx)) {
+                        return '<span class="clue-word indicator-check" data-word-idx="' + wordIdx + '" data-item-idx="' + idx + '" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;' + (isSelected ? ' background: #22c55e; color: white;' : '') + '">' + word + '</span>';
+                    }
+                    return '';
+                }).join('') +
+                '</div>' +
+                '<button class="no-indicators-btn" data-item-idx="' + idx + '" ' +
+                'style="padding: 0.75rem 1.5rem; background: #10b981; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-weight: 500;">' + (item.fallback_button?.label || 'Continue') + '</button>' +
+                '</div>';
+        }
+
+        if (item.expanded_type === 'assembly') {
+            const config = item.assembly_config || {};
+            const partsHtml = (config.parts || []).map((part, partIdx) =>
+                '<div>' +
+                '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">' + part.label + '</label>' +
+                '<div style="display: flex; gap: 4px;">' +
+                Array(part.length).fill(0).map((_, i) =>
+                    '<input type="text" maxlength="1" class="assembly-part-' + partIdx + '-letter" data-item-idx="' + idx + '" data-letter-idx="' + i + '" ' +
+                    'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
+                ).join('') +
+                '</div>' +
+                '</div>'
+            ).join('');
+
+            return '<div class="assembly-inputs">' +
+                '<p style="color: #dc2626; margin-bottom: 1rem; font-weight: 500;">' +
+                (config.failure_message || '') +
+                '</p>' +
+                '<div style="display: flex; align-items: start; gap: 0.5rem;">' +
+                '<p style="color: #374151; margin-bottom: 1rem; flex: 1;">' + (config.instruction || '') + '</p>' +
+                (item.hint ? '<button class="hint-toggle" data-item-idx="' + idx + '" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;" title="Show hint">💡</button>' : '') +
+                '</div>' +
+                (item.hint ? '<div class="hint-content" data-item-idx="' + idx + '" style="display: none; margin-top: -0.5rem; margin-bottom: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;"><p style="color: #92400e; font-size: 0.875rem; margin: 0;">' + item.hint + '</p></div>' : '') +
+                '<div style="display: flex; flex-direction: column; gap: 1.5rem;">' +
+                partsHtml +
+                '<div>' +
+                '<label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">' + (config.final_label || 'Final answer:') + '</label>' +
+                '<div style="display: flex; gap: 4px; flex-wrap: wrap;">' +
+                (config.final_parts || []).map((partLen, partIdx) =>
+                    '<div style="display: flex; gap: 4px;">' +
+                    Array(partLen).fill(0).map((_, i) =>
+                        '<input type="text" maxlength="1" class="assembly-result-letter" data-item-idx="' + idx + '" data-part-idx="' + partIdx + '" data-letter-idx="' + i + '" ' +
+                        'style="width: 40px; height: 40px; text-align: center; font-size: 1.25rem; font-weight: 600; border: 2px solid #d1d5db; border-radius: 0.25rem; text-transform: uppercase;">'
+                    ).join('') +
+                    '</div>'
+                ).join('') +
+                '</div>' +
+                '</div>' +
+                '<button class="assembly-check" data-item-idx="' + idx + '" ' +
+                'style="padding: 0.5rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; width: fit-content;">Check Answer</button>' +
+                '</div>' +
+                '</div>';
+        }
+
+        // Default: tap_words — Show clickable words with hint
+        return `<div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">
+            ${words.map((word, wordIdx) => {
+                const availableIndices = item.available_indices || [];
+                const selectedWords = item.selected_words || [];
+                const isSelected = selectedWords.includes(wordIdx);
+                if (availableIndices.length === 0 || availableIndices.includes(wordIdx)) {
+                    return '<span class="clue-word" data-word-idx="' + wordIdx + '" data-item-idx="' + idx + '" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;' + (isSelected ? ' background: #22c55e; color: white;' : '') + '">' + word + '</span>';
+                }
+                return '';
+            }).join('')}
+        </div>
+        <div style="display: flex; align-items: start; gap: 0.5rem;">
+            <div style="flex: 1;">
+                <p style="color: #374151; margin-bottom: 0.5rem;">Click on the clue words to ${item.title.toLowerCase()}.</p>
+            </div>
+            ${item.hint ? '<button class="hint-toggle" data-item-idx="' + idx + '" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;" title="Show hint">💡</button>' : ''}
+        </div>
+        ${item.hint ? '<div class="hint-content" data-item-idx="' + idx + '" style="display: none; margin-top: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;"><p style="color: #92400e; font-size: 0.875rem; margin: 0;">' + item.hint + '</p></div>' : ''}`;
+    }
+
+    // Attach all event listeners for the step menu
+    attachStepMenuListeners() {
+        // Step item click handlers - toggle expand/collapse
         const stepItems = this.container.querySelectorAll('.step-item');
         stepItems.forEach(item => {
             item.addEventListener('click', () => {
@@ -1249,11 +1208,10 @@ class TemplateTrainer {
             });
         });
 
-        // Attach click handlers to hint toggle buttons
-        const hintToggles = this.container.querySelectorAll('.hint-toggle');
-        hintToggles.forEach(toggle => {
+        // Hint toggle buttons
+        this.container.querySelectorAll('.hint-toggle').forEach(toggle => {
             toggle.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent step collapse
+                e.stopPropagation();
                 const itemIdx = toggle.getAttribute('data-item-idx');
                 const hintContent = this.container.querySelector(`.hint-content[data-item-idx="${itemIdx}"]`);
 
@@ -1267,9 +1225,8 @@ class TemplateTrainer {
             });
         });
 
-        // Attach click handlers to clue words — server validates and returns updated menu
-        const clueWords = this.container.querySelectorAll('.clue-word');
-        clueWords.forEach(word => {
+        // Clue word click handlers — server validates and returns updated menu
+        this.container.querySelectorAll('.clue-word').forEach(word => {
             word.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const wordIdx = parseInt(word.getAttribute('data-word-idx'));
@@ -1281,11 +1238,8 @@ class TemplateTrainer {
         // Assembly letter box handlers - stop propagation and auto-advance
         const assemblyLetters = this.container.querySelectorAll('[class*="assembly-part-"][class*="-letter"], .assembly-result-letter');
         assemblyLetters.forEach(input => {
-            // Stop keyboard events from reaching the crossword grid
             input.addEventListener('keydown', (e) => {
                 e.stopPropagation();
-
-                // Backspace - move to previous box
                 if (e.key === 'Backspace' && !input.value) {
                     const allInputs = Array.from(this.container.querySelectorAll('[class*="assembly-part-"][class*="-letter"], .assembly-result-letter'));
                     const currentIdx = allInputs.indexOf(input);
@@ -1297,8 +1251,6 @@ class TemplateTrainer {
 
             input.addEventListener('input', (e) => {
                 e.stopPropagation();
-
-                // Auto-advance to next box
                 if (input.value) {
                     const allInputs = Array.from(this.container.querySelectorAll('[class*="assembly-part-"][class*="-letter"], .assembly-result-letter'));
                     const currentIdx = allInputs.indexOf(input);
@@ -1313,9 +1265,8 @@ class TemplateTrainer {
             });
         });
 
-        // Assembly check buttons — collect values and send to server for validation
-        const assemblyCheckBtns = this.container.querySelectorAll('.assembly-check');
-        assemblyCheckBtns.forEach(btn => {
+        // Assembly check buttons
+        this.container.querySelectorAll('.assembly-check').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const itemIdx = parseInt(btn.getAttribute('data-item-idx'));
@@ -1325,16 +1276,14 @@ class TemplateTrainer {
             });
         });
 
-        // No indicators button (wordplay identification) — server marks as completed
-        const noIndicatorsBtns = this.container.querySelectorAll('.no-indicators-btn');
-        noIndicatorsBtns.forEach(btn => {
+        // No indicators fallback button
+        this.container.querySelectorAll('.no-indicators-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const itemIdx = parseInt(btn.getAttribute('data-item-idx'));
                 this.handleMenuAction('fallback_button', { item_idx: itemIdx });
             });
         });
-
 
         // Check button in step menu
         const checkBtn = this.container.querySelector('.check-button');
@@ -1415,20 +1364,7 @@ class TemplateTrainer {
 
             <!-- SECTION 4: BREAKDOWN STEPS -->
             <div style="background: white; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb; padding: 1rem;">
-                ${learnings.length > 0 ? `
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                        ${learnings.map(item => `
-                            <div style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.5rem; background: #f8fafc; border-radius: 0.375rem; font-size: 0.9rem;">
-                                <span>🎓</span>
-                                <span>${item.title || item.text || ''}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                ` : `
-                    <div style="text-align: center; color: #6b7280; padding: 1rem;">
-                        Clue breakdown complete!
-                    </div>
-                `}
+                ${this.renderLearningsDetail(learnings, 'Clue breakdown complete!')}
             </div>
 
             <!-- SECTION 5: UPDATE GRID BUTTON -->
@@ -1510,6 +1446,8 @@ class TemplateTrainer {
                     this.submitContinue();
                 } else if (action === 'complete') {
                     this.onComplete?.();
+                } else if (action === 'back-to-menu') {
+                    this.handleBackToMenu();
                 }
             });
         });
@@ -1767,9 +1705,8 @@ class TemplateTrainer {
 
                 // Answer locked means correct answer typed — don't auto-submit,
                 // user clicks Check button to navigate to solved view
-                if (result.answerLocked) {
-                    console.log('[Trainer] Answer correct — use Check button to verify');
-                }
+                // Answer locked means correct answer typed — user clicks Check button
+
             }
         } catch (e) {
             console.error('Silent update failed:', e);

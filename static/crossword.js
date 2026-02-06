@@ -404,9 +404,7 @@ class CrosswordPuzzle {
             this.renderPuzzle();
 
             // Try to restore saved progress
-            if (this.loadProgress()) {
-                console.log('Restored saved progress');
-            }
+            this.loadProgress();
 
             const titleParts = [`${this.puzzle.series || this.puzzle.publication} #${this.puzzle.number}`];
             if (this.puzzle.date) {
