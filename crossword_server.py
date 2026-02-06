@@ -951,6 +951,48 @@ def trainer_reveal():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/trainer/check-answer', methods=['POST'])
+def trainer_check_answer():
+    """
+    Validate user's typed answer. If correct, return solved view.
+    If incorrect, return error for client feedback.
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    clue_id = data.get('clue_id')
+    user_answer = data.get('answer', '')
+    cross_letters = data.get('crossLetters', [])
+    enumeration = data.get('enumeration', '')
+
+    if not clue_id:
+        return jsonify({'error': 'Missing clue_id'}), 400
+    if not user_answer:
+        return jsonify({'success': False, 'error': 'No answer entered'}), 200
+
+    try:
+        clue_data = CLUES_DB.get(clue_id)
+        if not clue_data:
+            return jsonify({'error': 'Clue not found'}), 404
+
+        expected = clue_data.get('clue', {}).get('answer', '').upper().replace(' ', '')
+        if user_answer.upper().replace(' ', '') != expected:
+            return jsonify({'success': False, 'error': 'Incorrect answer'})
+
+        # Correct — return solved view
+        result = training_handler.get_solved_view(clue_id, clue_data)
+        result['clue_id'] = clue_id
+        result['crossLetters'] = cross_letters
+        result['enumeration'] = enumeration or clue_data.get('clue', {}).get('enumeration', '')
+        return jsonify(result)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/trainer/solved-view', methods=['POST'])
 def trainer_solved_view():
     """

@@ -808,13 +808,22 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
             items = []
             for i, sub_cfg in enumerate(template_steps, 1):
                 sub_step = sub_cfg.get("sub_step", "")
+                # Use JSON config hint, falling back to clue metadata reasoning
+                hint = _fmt(sub_cfg.get("hint", ""), v)
+                if not hint:
+                    if sub_step == "indicator":
+                        hint = indicator.get("reasoning", "")
+                    elif sub_step == "outer":
+                        hint = outer.get("reasoning", "")
+                    elif sub_step == "inner":
+                        hint = inner.get("reasoning", "")
                 item = {
                     "index": f"{base_index}.{i}",
                     "title": _fmt(sub_cfg.get("title", ""), v),
                     "type": sub_cfg.get("type", step_type),
                     "step_data": step,
                     "sub_step": sub_step,
-                    "hint": _fmt(sub_cfg.get("hint", ""), v),
+                    "hint": hint,
                     "expanded_type": sub_cfg.get("expanded_type", "tap_words"),
                     "completion_title": _fmt(sub_cfg.get("completion_title", ""), v),
                 }
@@ -855,7 +864,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 "type": ind_cfg.get("type", "wordplay_identification"),
                 "step_data": step,
                 "sub_step": "identify_indicators",
-                "hint": ind_cfg.get("hint", ""),
+                "hint": ind_cfg.get("hint", "") or step.get("wordplay_hint", ""),
                 "expanded_type": ind_cfg.get("expanded_type", "tap_words_with_fallback_button"),
                 "fallback_button": {
                     "label": ind_cfg.get("fallback_button_label", "No wordplay indicators \u2192 Charade"),
@@ -877,7 +886,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                         "step_data": step,
                         "sub_step": f"part_{i}",
                         "expected_indices": part.get("fodder", {}).get("indices", []),
-                        "hint": _fmt(part_cfg.get("hint_template", ""), pv),
+                        "hint": _fmt(part_cfg.get("hint_template", ""), pv) or part.get("reasoning", ""),
                         "expanded_type": part_cfg.get("expanded_type", "tap_words"),
                         "completion_title": _fmt(part_cfg.get("completion_title_template", ""), pv),
                     })
@@ -917,8 +926,9 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 if isinstance(piece, dict):
                     fodder_text = piece.get("fodder", {}).get("text", "") if isinstance(piece.get("fodder"), dict) else str(piece.get("fodder", ""))
                     pv = {"n": i, "fodder_text": fodder_text}
-                    items.append({"index": f"{base_index}.{i}", "title": _fmt(piece_cfg.get("title_template", ""), pv), "type": piece_cfg.get("type", "anagram_piece"), "step_data": step, "sub_step": f"piece_{i}", "expanded_type": piece_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(piece_cfg.get("completion_title_template", ""), pv)})
-            items.append({"index": f"{base_index}.{len(pieces)+1}", "title": solve_cfg.get("title", "Rearrange Letters"), "type": solve_cfg.get("type", "anagram_solve"), "step_data": step, "sub_step": "solve", "expanded_type": solve_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(solve_cfg.get("completion_title_template", ""), {"result": result})})
+                    items.append({"index": f"{base_index}.{i}", "title": _fmt(piece_cfg.get("title_template", ""), pv), "type": piece_cfg.get("type", "anagram_piece"), "step_data": step, "sub_step": f"piece_{i}", "hint": piece.get("reasoning", ""), "expanded_type": piece_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(piece_cfg.get("completion_title_template", ""), pv)})
+            fodder_combined = step.get("fodder_combined", "")
+            items.append({"index": f"{base_index}.{len(pieces)+1}", "title": solve_cfg.get("title", "Rearrange Letters"), "type": solve_cfg.get("type", "anagram_solve"), "step_data": step, "sub_step": "solve", "hint": fodder_combined, "expanded_type": solve_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(solve_cfg.get("completion_title_template", ""), {"result": result})})
             return items
         else:
             default_cfg = anag_cfg.get("default", {})
@@ -939,7 +949,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 fodder_text = fodder.get("text", "") if isinstance(fodder, dict) else str(fodder)
                 chain_result = chain_step.get("result", "")
                 cv = {"step_type_title": step_type_name.title(), "step_type_name": step_type_name, "step_type_upper": step_type_name.upper(), "fodder_text": fodder_text, "chain_result": chain_result}
-                items.append({"index": f"{base_index}.{i}", "title": _fmt(chain_cfg.get("title_template", ""), cv), "type": _fmt(chain_cfg.get("type_template", ""), cv), "step_data": step, "sub_step": f"step_{i}", "expanded_type": chain_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(chain_cfg.get("completion_title_template", ""), cv)})
+                items.append({"index": f"{base_index}.{i}", "title": _fmt(chain_cfg.get("title_template", ""), cv), "type": _fmt(chain_cfg.get("type_template", ""), cv), "step_data": step, "sub_step": f"step_{i}", "hint": chain_step.get("reasoning", ""), "expanded_type": chain_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(chain_cfg.get("completion_title_template", ""), cv)})
             return items
         else:
             default_cfg = tc_cfg.get("default", {})
@@ -955,6 +965,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
             "title": _fmt(default_cfg.get("title_template", "{step_type_title}"), v),
             "type": step_type,
             "step_data": step,
+            "hint": step.get("reasoning", ""),
             "expanded_type": default_cfg.get("expanded_type", "tap_words"),
             "completion_title": _fmt(default_cfg.get("completion_title_template", "<strong>{step_type_title}</strong>"), v),
         }]

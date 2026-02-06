@@ -269,6 +269,69 @@ class TemplateTrainer {
         }
     }
 
+    async handleCheckAnswer() {
+        // Collect typed answer from DOM
+        const inputs = this.container.querySelectorAll('.answer-box-input');
+        const letters = [];
+        inputs.forEach(input => {
+            letters.push((input.value || '').toUpperCase());
+        });
+        const userAnswer = letters.join('');
+
+        if (!userAnswer || letters.some(l => !l)) {
+            // Not all boxes filled — show feedback
+            this.showCheckFeedback('Fill in all boxes first');
+            return;
+        }
+
+        try {
+            const response = await fetch('/trainer/check-answer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clue_id: this.clueId,
+                    answer: userAnswer,
+                    crossLetters: this.render?.crossLetters || [],
+                    enumeration: this.render?.enumeration || this.enumeration
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Correct — navigate to solved view
+                this.render = data;
+                this.renderUI();
+            } else {
+                // Incorrect — show error feedback
+                this.showCheckFeedback(data.error || 'Incorrect — try again');
+            }
+        } catch (e) {
+            this.showCheckFeedback('Error checking answer');
+            console.error('Check answer failed:', e);
+        }
+    }
+
+    showCheckFeedback(message) {
+        // Show brief red feedback near answer boxes
+        const existing = this.container.querySelector('.check-feedback');
+        if (existing) existing.remove();
+
+        const feedback = document.createElement('div');
+        feedback.className = 'check-feedback';
+        feedback.style.cssText = 'color: #dc2626; font-size: 0.875rem; text-align: center; margin-top: 0.5rem; font-weight: 500;';
+        feedback.textContent = message;
+
+        // Insert after the answer area
+        const inputArea = this.container.querySelector('.answer-box-input')?.closest('div[style*="gap: 8px"]');
+        if (inputArea) {
+            inputArea.parentNode.insertBefore(feedback, inputArea.nextSibling);
+        }
+
+        // Auto-clear after 2 seconds
+        setTimeout(() => feedback.remove(), 2000);
+    }
+
     // =========================================================================
     // EVENT HANDLERS (matching React handlers)
     // =========================================================================
@@ -622,6 +685,7 @@ class TemplateTrainer {
                     ${this.renderAnswerBoxes()}
                 </div>
                 <div style="display: flex; gap: 4px;">
+                    ${this.renderCheckButton()}
                     ${this.renderRevealButton()}
                     ${this.renderSolveButton()}
                 </div>
@@ -847,6 +911,20 @@ class TemplateTrainer {
         </button>`;
     }
 
+    // Check button - validates typed answer, navigates to solved view if correct
+    renderCheckButton() {
+        return `<button class="check-button"
+                        style="padding: 0.25rem 0.5rem; background: none; color: #16a34a;
+                               font-weight: 500; border-radius: 0.25rem; border: 1px solid #16a34a;
+                               cursor: pointer; font-size: 0.75rem; opacity: 0.8;
+                               transition: opacity 0.2s, background 0.2s;"
+                        title="Check if your answer is correct"
+                        onmouseover="this.style.opacity='1'; this.style.background='#f0fdf4';"
+                        onmouseout="this.style.opacity='0.8'; this.style.background='none';">
+            Check
+        </button>`;
+    }
+
     // Reveal button - shows full decoded solution immediately
     renderRevealButton() {
         return `<button class="reveal-button"
@@ -994,6 +1072,7 @@ class TemplateTrainer {
                             ${this.renderAnswerBoxes()}
                         </div>
                         <div style="display: flex; gap: 4px;">
+                            ${this.renderCheckButton()}
                             ${this.renderRevealButton()}
                         </div>
                     </div>
@@ -1027,7 +1106,11 @@ class TemplateTrainer {
                                 ${item.expanded_type === 'tap_words_with_fallback_button' ?
                                     // Tap words with a fallback button (server provides button config)
                                     '<div class="wordplay-id">' +
-                                    '<p style="color: #374151; margin-bottom: 1rem;">Click on any wordplay indicators (anagram, container, reversal words) or click below if there are none:</p>' +
+                                    '<div style="display: flex; align-items: start; gap: 0.5rem;">' +
+                                    '<p style="color: #374151; margin-bottom: 1rem; flex: 1;">Click on any wordplay indicators (anagram, container, reversal words) or click below if there are none:</p>' +
+                                    (item.hint ? '<button class="hint-toggle" data-item-idx="' + idx + '" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;" title="Show hint">💡</button>' : '') +
+                                    '</div>' +
+                                    (item.hint ? '<div class="hint-content" data-item-idx="' + idx + '" style="display: none; margin-top: -0.5rem; margin-bottom: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;"><p style="color: #92400e; font-size: 0.875rem; margin: 0;">' + item.hint + '</p></div>' : '') +
                                     '<div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">' +
                                     (r.words || []).map((word, wordIdx) => {
                                         const availableIndices = item.available_indices || [];
@@ -1062,7 +1145,11 @@ class TemplateTrainer {
                                             '<p style="color: #dc2626; margin-bottom: 1rem; font-weight: 500;">' +
                                             (config.failure_message || '') +
                                             '</p>' +
-                                            '<p style="color: #374151; margin-bottom: 1rem;">' + (config.instruction || '') + '</p>' +
+                                            '<div style="display: flex; align-items: start; gap: 0.5rem;">' +
+                                            '<p style="color: #374151; margin-bottom: 1rem; flex: 1;">' + (config.instruction || '') + '</p>' +
+                                            (item.hint ? '<button class="hint-toggle" data-item-idx="' + idx + '" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s;" title="Show hint">💡</button>' : '') +
+                                            '</div>' +
+                                            (item.hint ? '<div class="hint-content" data-item-idx="' + idx + '" style="display: none; margin-top: -0.5rem; margin-bottom: 0.75rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0.25rem;"><p style="color: #92400e; font-size: 0.875rem; margin: 0;">' + item.hint + '</p></div>' : '') +
                                             '<div style="display: flex; flex-direction: column; gap: 1.5rem;">' +
                                             partsHtml +
                                             '<div>' +
@@ -1249,6 +1336,14 @@ class TemplateTrainer {
         });
 
 
+        // Check button in step menu
+        const checkBtn = this.container.querySelector('.check-button');
+        if (checkBtn) {
+            checkBtn.addEventListener('click', () => {
+                this.handleCheckAnswer();
+            });
+        }
+
         // Reveal button in step menu
         const revealBtn = this.container.querySelector('.reveal-button');
         if (revealBtn) {
@@ -1256,6 +1351,9 @@ class TemplateTrainer {
                 this.handleRevealSolve();
             });
         }
+
+        // Answer box input listeners in step menu
+        this.attachAnswerBoxListeners();
     }
 
     /**
@@ -1370,6 +1468,14 @@ class TemplateTrainer {
             });
         }
 
+        // Check button (validate typed answer)
+        const checkBtn = this.container.querySelector('.check-button');
+        if (checkBtn) {
+            checkBtn.addEventListener('click', () => {
+                this.handleCheckAnswer();
+            });
+        }
+
         // Reveal button (show full decoded solution)
         const revealBtn = this.container.querySelector('.reveal-button');
         if (revealBtn) {
@@ -1408,67 +1514,8 @@ class TemplateTrainer {
             });
         });
 
-        // Answer box input listeners (for interactive answer entry)
-        // Typing updates server state, but we DON'T re-render on every keystroke
-        // Server validates when complete and returns answerLocked=true
-        const answerInputs = this.container.querySelectorAll('.answer-box-input');
-        console.log('[Trainer] Found answer inputs:', answerInputs.length);
-
-        answerInputs.forEach(input => {
-            // Handle input (letter typed)
-            input.addEventListener('input', (e) => {
-                const pos = parseInt(e.target.dataset.position, 10);
-                const letter = e.target.value.toUpperCase().slice(-1); // Take last char if multiple
-                console.log('[Trainer] Input at pos', pos, ':', letter);
-                e.target.value = letter;
-
-                // Update server state WITHOUT triggering full re-render
-                this.updateAnswerLetterSilent(pos, letter);
-
-                // Auto-advance to next empty box (immediate UI feedback)
-                if (letter) {
-                    this.focusNextEmptyBox(pos);
-                }
-            });
-
-            // Handle keyboard navigation
-            input.addEventListener('keydown', (e) => {
-                const pos = parseInt(e.target.dataset.position, 10);
-
-                if (e.key === 'Backspace' && !e.target.value) {
-                    // Move to previous editable box on backspace when empty
-                    e.preventDefault();
-                    this.focusPreviousEditableBox(pos);
-                } else if (e.key === 'ArrowLeft') {
-                    e.preventDefault();
-                    this.focusPreviousEditableBox(pos);
-                } else if (e.key === 'ArrowRight') {
-                    e.preventDefault();
-                    this.focusNextEditableBox(pos);
-                } else if (e.key === 'Tab' && !e.shiftKey) {
-                    e.preventDefault();
-                    this.focusNextEditableBox(pos);
-                }
-            });
-
-            // Visual feedback on focus
-            input.addEventListener('focus', () => {
-                input.style.borderColor = '#2563eb';
-                input.style.boxShadow = '0 0 0 2px rgba(37, 99, 235, 0.2)';
-            });
-
-            input.addEventListener('blur', () => {
-                input.style.borderColor = '#d1d5db';
-                input.style.boxShadow = 'none';
-            });
-        });
-
-        // Auto-focus first empty answer box
-        const firstEmptyBox = this.container.querySelector('.answer-box-input:not([value])') ||
-                              this.container.querySelector('.answer-box-input');
-        if (firstEmptyBox) {
-            firstEmptyBox.focus();
-        }
+        // Answer box input listeners
+        this.attachAnswerBoxListeners();
 
         // Step text input listeners (crossword-style boxes for text mode)
         // Typing updates server state silently (no re-render), validates on Check button
@@ -1564,6 +1611,72 @@ class TemplateTrainer {
         }
     }
 
+    // Attach answer box input listeners — called from both attachEventListeners and step menu
+    attachAnswerBoxListeners() {
+        const answerInputs = this.container.querySelectorAll('.answer-box-input');
+        if (answerInputs.length === 0) return;
+
+        answerInputs.forEach(input => {
+            // All letter entry handled via keydown for reliable cursor advance
+            input.addEventListener('keydown', (e) => {
+                const pos = parseInt(e.target.dataset.position, 10);
+
+                if (e.key === 'Backspace') {
+                    e.preventDefault();
+                    if (e.target.value) {
+                        e.target.value = '';
+                        this.updateAnswerLetterSilent(pos, '');
+                    } else {
+                        this.focusPreviousEditableBox(pos);
+                    }
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    this.focusPreviousEditableBox(pos);
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    this.focusNextEditableBox(pos);
+                } else if (e.key === 'Tab' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.focusNextEditableBox(pos);
+                } else if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+                    e.preventDefault();
+                    const letter = e.key.toUpperCase();
+                    e.target.value = letter;
+                    this.updateAnswerLetterSilent(pos, letter);
+                    this.focusNextEmptyBox(pos);
+                }
+            });
+
+            // Fallback: handle input event for mobile/virtual keyboards
+            input.addEventListener('input', (e) => {
+                const pos = parseInt(e.target.dataset.position, 10);
+                const letter = e.target.value.toUpperCase().slice(-1);
+                e.target.value = letter;
+                if (letter) {
+                    this.updateAnswerLetterSilent(pos, letter);
+                    this.focusNextEmptyBox(pos);
+                }
+            });
+
+            input.addEventListener('focus', () => {
+                input.style.borderColor = '#2563eb';
+                input.style.boxShadow = '0 0 0 2px rgba(37, 99, 235, 0.2)';
+            });
+
+            input.addEventListener('blur', () => {
+                input.style.borderColor = '#d1d5db';
+                input.style.boxShadow = 'none';
+            });
+        });
+
+        // Auto-focus first empty answer box
+        const firstEmptyBox = this.container.querySelector('.answer-box-input:not([value])') ||
+                              this.container.querySelector('.answer-box-input');
+        if (firstEmptyBox) {
+            firstEmptyBox.focus();
+        }
+    }
+
     // Navigation helpers for answer boxes
     // All boxes are editable (including cross letters), so just find next empty or next box
     focusNextEmptyBox(currentPos) {
@@ -1652,10 +1765,10 @@ class TemplateTrainer {
                 // Update our render state (for reference) but DON'T re-render
                 this.render = result;
 
-                // Only re-render if server says answer is now locked (correct answer entered)
+                // Answer locked means correct answer typed — don't auto-submit,
+                // user clicks Check button to navigate to solved view
                 if (result.answerLocked) {
-                    console.log('[Trainer] Answer correct! Submitting hypothesis...');
-                    this.submitAnswerHypothesis();
+                    console.log('[Trainer] Answer correct — use Check button to verify');
                 }
             }
         } catch (e) {

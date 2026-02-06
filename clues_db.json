@@ -68,7 +68,8 @@
             }
           ],
           "result": "VISIT",
-          "assembly": "V + ISIT = VISIT"
+          "assembly": "V + ISIT = VISIT",
+          "wordplay_hint": "The clue builds the answer from two parts in sequence"
         }
       ],
       "metadata": {
@@ -153,7 +154,8 @@
             }
           ],
           "result": "BISHOP",
-          "assembly": "BISH + OP = BISHOP"
+          "assembly": "BISH + OP = BISHOP",
+          "wordplay_hint": "The clue builds the answer from two parts in sequence"
         }
       ],
       "metadata": {
@@ -250,7 +252,8 @@
           ],
           "result": "RAVEN",
           "assembly": "RAVE + N = RAVEN",
-          "note": "N comes after RAVE"
+          "note": "N comes after RAVE",
+          "wordplay_hint": "The clue builds the answer from two parts in sequence"
         }
       ],
       "metadata": {
@@ -461,9 +464,10 @@
             }
           ],
           "result": "OPTIC",
-          "assembly": "O + IT + PC \u2192 (anagram) \u2192 OPTIC",
+          "assembly": "O + IT + PC → (anagram) → OPTIC",
           "letters_so_far": 5,
-          "letters_needed": 5
+          "letters_needed": 5,
+          "fodder_combined": "O + IT + PC = OITPC"
         }
       ],
       "metadata": {
@@ -577,7 +581,8 @@
             }
           ],
           "result": "MADAGASCAR",
-          "assembly": "MAD + AGA + S + CAR = MADAGASCAR"
+          "assembly": "MAD + AGA + S + CAR = MADAGASCAR",
+          "wordplay_hint": "The clue builds the answer from four parts in sequence"
         }
       ],
       "metadata": {
@@ -680,7 +685,8 @@
             }
           ],
           "result": "ANDANTINO",
-          "assembly": "AND + ANTI + NO = ANDANTINO"
+          "assembly": "AND + ANTI + NO = ANDANTINO",
+          "wordplay_hint": "The clue builds the answer from three parts in sequence"
         }
       ],
       "metadata": {
@@ -706,7 +712,7 @@
       "id": "times-29453-2d",
       "clue": {
         "number": "2D",
-        "text": "Crooked old mater \u2014 which strongly suggests criminal is mum",
+        "text": "Crooked old mater — which strongly suggests criminal is mum",
         "enumeration": "6",
         "answer": "OMERTA",
         "definition": [
@@ -780,7 +786,8 @@
             }
           ],
           "result": "OMERTA",
-          "assembly": "O + MATER \u2192 (anagram) \u2192 OMERTA"
+          "assembly": "O + MATER → (anagram) → OMERTA",
+          "fodder_combined": "O + MATER = OMATER"
         }
       ],
       "metadata": {
@@ -851,7 +858,8 @@
             "indices": [
               6
             ],
-            "text": "nurses"
+            "text": "nurses",
+            "reasoning": "'nurses' suggests caring for/wrapping around — containment"
           },
           "outer": {
             "fodder": {
@@ -941,7 +949,8 @@
             "indices": [
               2
             ],
-            "text": "takes"
+            "text": "takes",
+            "reasoning": "'takes' suggests one part absorbing/containing another"
           },
           "outer": {
             "fodder": {
@@ -954,6 +963,14 @@
             "reasoning": "To stalk is to track or follow prey"
           },
           "inner": {
+            "fodder": {
+              "indices": [
+                3,
+                4,
+                5
+              ],
+              "text": "very little time"
+            },
             "pieces": [
               {
                 "fodder": {
@@ -983,7 +1000,7 @@
             "assembly": "WEE + T = WEET"
           },
           "result": "SWEET TALK",
-          "assembly": "S(WEET)ALK = SWEET TALK"
+          "assembly": "S(WEET)TALK = SWEET TALK"
         }
       ],
       "metadata": {
@@ -1053,7 +1070,8 @@
               5,
               6
             ],
-            "text": "must wear"
+            "text": "must wear",
+            "reasoning": "'must wear' suggests putting something on the outside"
           },
           "outer": {
             "fodder": {
@@ -1096,7 +1114,7 @@
         "overall": "medium",
         "recommendedApproach": "definition"
       },
-      "reported_issue": "Meta data issue. EVery synonym must have a verifiable hint\nSYNONYM: socks \u2192 HOSE\n'socks' = HOSE **Remember:** Synonyms are the bread and butter of cryptic wordplay.",
+      "reported_issue": "Meta data issue. EVery synonym must have a verifiable hint\nSYNONYM: socks → HOSE\n'socks' = HOSE **Remember:** Synonyms are the bread and butter of cryptic wordplay.",
       "verified": true
     },
     "times-29453-15a": {
@@ -1192,7 +1210,8 @@
             }
           ],
           "result": "AMBASSADRESS",
-          "assembly": "AM + BASS + A + DRESS = AMBASSADRESS"
+          "assembly": "AM + BASS + A + DRESS = AMBASSADRESS",
+          "wordplay_hint": "The clue builds the answer from four parts in sequence"
         }
       ],
       "metadata": {
@@ -1281,7 +1300,8 @@
             }
           ],
           "result": "DUOMO",
-          "assembly": "DUO + MO = DUOMO"
+          "assembly": "DUO + MO = DUOMO",
+          "wordplay_hint": "The clue builds the answer from two parts in sequence"
         }
       ],
       "metadata": {
@@ -1551,7 +1571,8 @@
             }
           ],
           "result": "LOW TAR",
-          "assembly": "LOW + TAR = LOW TAR"
+          "assembly": "LOW + TAR = LOW TAR",
+          "wordplay_hint": "The clue builds the answer from two parts in sequence"
         }
       ],
       "metadata": {
@@ -1614,7 +1635,8 @@
             "indices": [
               1
             ],
-            "text": "welcoming"
+            "text": "welcoming",
+            "reasoning": "'welcoming' suggests receiving something inside"
           },
           "outer": {
             "fodder": {
@@ -1725,7 +1747,8 @@
             }
           ],
           "result": "REPROACH",
-          "assembly": "REPRO + ACH = REPROACH"
+          "assembly": "REPRO + ACH = REPROACH",
+          "wordplay_hint": "The clue builds the answer from two parts in sequence"
         }
       ],
       "metadata": {
@@ -1751,7 +1774,7 @@
       "id": "times-29453-18d",
       "clue": {
         "number": "18D",
-        "text": "Fugitive\u2019s attempt to escape upset good egg",
+        "text": "Fugitive’s attempt to escape upset good egg",
         "enumeration": "8",
         "answer": "FLEETING",
         "definition": [
@@ -1812,11 +1835,12 @@
               "intermediate": "G + NIT",
               "result": "TING",
               "type": "abbreviation_synonym_reversed",
-              "reasoning": "good=G, egg=NIT (louse egg), then 'upset' reverses GNIT\u2192TING"
+              "reasoning": "good=G, egg=NIT (louse egg), then 'upset' reverses GNIT→TING"
             }
           ],
           "result": "FLEETING",
-          "assembly": "FLEE + TING = FLEETING"
+          "assembly": "FLEE + TING = FLEETING",
+          "wordplay_hint": "The clue builds the answer from two parts in sequence"
         }
       ],
       "metadata": {
@@ -1894,7 +1918,7 @@
           },
           "hidden_letters": "DUESP",
           "result": "PSEUD",
-          "reasoning": "Hidden reversed in 'unDUE SPending' \u2192 DUESP reversed = PSEUD"
+          "reasoning": "Hidden reversed in 'unDUE SPending' → DUESP reversed = PSEUD"
         }
       ],
       "metadata": {
@@ -1920,7 +1944,7 @@
       "id": "times-29453-28a",
       "clue": {
         "number": "28A",
-        "text": "Tsar\u2019s like, roughly level after revolution",
+        "text": "Tsar’s like, roughly level after revolution",
         "enumeration": "6",
         "answer": "CAESAR",
         "definition": [
@@ -1978,11 +2002,12 @@
               "intermediate": "RASE",
               "result": "ESAR",
               "type": "synonym_then_reversal",
-              "reasoning": "level=RASE (archaic for raze), 'revolution' reverses it\u2192ESAR"
+              "reasoning": "level=RASE (archaic for raze), 'revolution' reverses it→ESAR"
             }
           ],
           "result": "CAESAR",
-          "assembly": "CA + ESAR = CAESAR"
+          "assembly": "CA + ESAR = CAESAR",
+          "wordplay_hint": "The clue builds the answer from two parts — one is an anagram"
         }
       ],
       "metadata": {
@@ -2164,7 +2189,7 @@
               "intermediate": "PICS + ID",
               "result": "DISCIP",
               "type": "synonyms_then_reversal",
-              "reasoning": "Photos=PICS, I had=ID, 'mounted' reverses PICSID\u2192DISCIP"
+              "reasoning": "Photos=PICS, I had=ID, 'mounted' reverses PICSID→DISCIP"
             },
             {
               "fodder": {
@@ -2182,7 +2207,8 @@
             }
           ],
           "result": "DISCIPLINE",
-          "assembly": "DISCIP + LINE = DISCIPLINE"
+          "assembly": "DISCIP + LINE = DISCIPLINE",
+          "wordplay_hint": "The clue builds the answer from two parts in sequence"
         }
       ],
       "metadata": {
@@ -2253,7 +2279,8 @@
               3,
               4
             ],
-            "text": "coming inside"
+            "text": "coming inside",
+            "reasoning": "'coming inside' directly signals insertion"
           },
           "outer": {
             "fodder": {
@@ -2302,7 +2329,15 @@
                 "reasoning": "Kissers is slang for lips"
               }
             ],
-            "assembly": "ARE + C + LIPS = ARECLIPS"
+            "assembly": "ARE + C + LIPS = ARECLIPS",
+            "fodder": {
+              "indices": [
+                0,
+                1,
+                2
+              ],
+              "text": "Are cold kissers"
+            }
           },
           "result": "SOLAR ECLIPSE",
           "assembly": "SOL + (ARECLIPS) + E = SOLAR ECLIPSE"
@@ -2392,11 +2427,12 @@
               "intermediate": "ADHAS",
               "result": "DASHA",
               "type": "literal_then_anagram",
-              "reasoning": "'misrepresented' rearranges ADHAS \u2192 DASHA"
+              "reasoning": "'misrepresented' rearranges ADHAS → DASHA"
             }
           ],
           "result": "DISHDASHA",
-          "assembly": "DISH + DASHA = DISHDASHA"
+          "assembly": "DISH + DASHA = DISHDASHA",
+          "wordplay_hint": "The clue builds the answer from two parts — one is an anagram"
         }
       ],
       "metadata": {
@@ -2460,7 +2496,8 @@
             "indices": [
               2
             ],
-            "text": "lengthened"
+            "text": "lengthened",
+            "reasoning": "'lengthened' suggests stretching one word by adding letters from another word"
           },
           "outer": {
             "fodder": {
@@ -2587,7 +2624,8 @@
             }
           ],
           "result": "ATEMPORAL",
-          "assembly": "ATEM + P + ORAL = ATEMPORAL"
+          "assembly": "ATEM + P + ORAL = ATEMPORAL",
+          "wordplay_hint": "The clue builds the answer from three parts in sequence"
         }
       ],
       "metadata": {
@@ -2745,7 +2783,8 @@
               2,
               3
             ],
-            "text": "divided by"
+            "text": "divided by",
+            "reasoning": "'divided by' suggests splitting one word to insert another"
           },
           "outer": {
             "fodder": {
@@ -2859,11 +2898,12 @@
               "intermediate": "PEW reversed in ST",
               "result": "SWEPT",
               "type": "container_with_reversal",
-              "reasoning": "bench=PEW, 'back' reverses\u2192WEP, 'in' puts inside ST: S+WEP+T=SWEPT"
+              "reasoning": "bench=PEW, 'back' reverses→WEP, 'in' puts inside ST: S+WEP+T=SWEPT"
             }
           ],
           "result": "WINDSWEPT",
-          "assembly": "WIND + SWEPT = WINDSWEPT"
+          "assembly": "WIND + SWEPT = WINDSWEPT",
+          "wordplay_hint": "The clue builds the answer from two parts in sequence"
         }
       ],
       "metadata": {

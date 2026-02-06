@@ -1008,6 +1008,38 @@ Answers with spaces (e.g., "LOW TAR"):
 ### 10.8 Auto-reload clues_db.json
 Server checks file modification time on each `/trainer/start` request. If changed, reloads automatically without server restart.
 
+### 10.9 Check Answer Button
+A "Check" button appears next to the Reveal and Solve buttons in the answer box area.
+
+**Visibility:** Shown when answer boxes are editable (not locked or complete).
+
+**Behavior:**
+1. On click: collects user's typed letters, sends to `POST /trainer/check-answer`
+2. Server validates answer (stripped, uppercased comparison)
+3. If correct → returns solved view data (`mode: "solved_view"`), client navigates to summary page
+4. If incorrect → returns error, client shows brief red feedback ("Incorrect — try again") that auto-clears after 2 seconds
+
+**Endpoint:** `POST /trainer/check-answer`
+- Request: `{"clue_id": "...", "answer": "BISHOP"}`
+- Success response: same as `/trainer/solved-view` (includes `mode: "solved_view"`)
+- Failure response: `{"success": false, "error": "Incorrect answer"}`
+
+### 10.10 Step Hints from Clue Metadata
+Interactive step hints are sourced directly from the `reasoning` field in clue metadata (`clues_db.json`). No hardcoded hint strings in code.
+
+**Mapping:**
+- Container outer/inner steps → `outer.reasoning` / `inner.reasoning`
+- Container indicator → `indicator.reasoning`
+- Container/charade assembly → `step.assembly` string
+- Charade parts → `part.reasoning`
+- Charade wordplay identification → `step.wordplay_hint`
+- Charade inner (composite) → joined `pieces[].reasoning`
+- Anagram pieces → `piece.reasoning`
+- Anagram solve → `step.fodder_combined`
+- Transformation chain steps → `chain_step.reasoning`
+
+The same `reasoning` text serves both as the interactive hint (lightbulb reveal) and the solved view breakdown explanation.
+
 ---
 
 ## 11. Mobile Responsive Design
