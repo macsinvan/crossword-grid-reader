@@ -1089,6 +1089,40 @@ def trainer_return_menu():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/trainer/menu-action', methods=['POST'])
+def trainer_menu_action():
+    """Handle step menu user interactions (word clicks, assembly checks, fallback buttons)."""
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    clue_id = data.get('clue_id')
+    action = data.get('action')
+
+    if not clue_id:
+        return jsonify({'error': 'Missing clue_id'}), 400
+    if not action:
+        return jsonify({'error': 'Missing action'}), 400
+
+    try:
+        clue_data = CLUES_DB.get(clue_id)
+        if not clue_data:
+            return jsonify({'error': 'Clue not found'}), 404
+
+        result = training_handler.handle_menu_action(clue_id, clue_data, action, data)
+        if 'mode' in result:
+            # Success - full menu render returned
+            result['clue_id'] = clue_id
+            result['crossLetters'] = data.get('crossLetters', [])
+            result['enumeration'] = data.get('enumeration', '') or clue_data.get('clue', {}).get('enumeration', '')
+        return jsonify(result)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("Starting Crossword Server...")
     print("Open http://localhost:8080 in your browser")

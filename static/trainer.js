@@ -357,6 +357,80 @@ class TemplateTrainer {
         });
     }
 
+    // Handle step menu actions — send to server for validation and re-render
+    async handleMenuAction(action, data, element, itemIdx) {
+        try {
+            const response = await fetch('/trainer/menu-action', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    clue_id: this.clueId,
+                    action: action,
+                    crossLetters: this.render?.crossLetters || [],
+                    enumeration: this.render?.enumeration || this.enumeration,
+                    ...data
+                })
+            });
+            const result = await response.json();
+            if (result.correct === false) {
+                // Ephemeral visual feedback for wrong answers
+                this.flashMenuError(action, data, element, itemIdx);
+            } else {
+                this.render = result;
+                this.renderUI();
+                // If server says to apply answer to grid
+                if (result.apply_to_grid && this.onComplete) {
+                    setTimeout(() => this.onComplete(), 500);
+                }
+            }
+        } catch (e) {
+            console.error('Menu action failed:', e);
+        }
+    }
+
+    // Collect assembly part values from DOM inputs
+    collectAssemblyParts(itemIdx) {
+        const parts = [];
+        let partIdx = 0;
+        while (true) {
+            const letters = this.container.querySelectorAll(`.assembly-part-${partIdx}-letter[data-item-idx="${itemIdx}"]`);
+            if (letters.length === 0) break;
+            parts.push(Array.from(letters).map(l => l.value || '').join(''));
+            partIdx++;
+        }
+        return parts;
+    }
+
+    // Collect assembly result value from DOM inputs
+    collectAssemblyResult(itemIdx) {
+        const letters = this.container.querySelectorAll(`.assembly-result-letter[data-item-idx="${itemIdx}"]`);
+        return Array.from(letters).map(l => l.value || '').join('');
+    }
+
+    // Ephemeral visual feedback for wrong answers (not state — just brief CSS flash)
+    flashMenuError(action, data, element, itemIdx) {
+        if (action === 'word_click' && element) {
+            // Flash red on wrong word
+            element.style.background = '#ef4444';
+            element.style.color = 'white';
+            setTimeout(() => {
+                element.style.background = '';
+                element.style.color = '';
+            }, 500);
+        } else if (action === 'assembly_check' && itemIdx !== undefined) {
+            // Flash red on all assembly inputs
+            const allInputs = this.container.querySelectorAll(
+                `[class*="assembly-part-"][data-item-idx="${itemIdx}"], .assembly-result-letter[data-item-idx="${itemIdx}"]`
+            );
+            allInputs.forEach(input => {
+                input.style.borderColor = '#ef4444';
+                setTimeout(() => {
+                    input.style.borderColor = '#d1d5db';
+                }, 1000);
+            });
+        }
+    }
+
     // =========================================================================
     // RENDERING HELPERS
     // =========================================================================
@@ -957,8 +1031,10 @@ class TemplateTrainer {
                                     '<div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">' +
                                     (r.words || []).map((word, wordIdx) => {
                                         const availableIndices = item.available_indices || [];
+                                        const selectedWords = item.selected_words || [];
+                                        const isSelected = selectedWords.includes(wordIdx);
                                         if (availableIndices.length === 0 || availableIndices.includes(wordIdx)) {
-                                            return '<span class="clue-word indicator-check" data-word-idx="' + wordIdx + '" data-item-idx="' + idx + '" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;">' + word + '</span>';
+                                            return '<span class="clue-word indicator-check" data-word-idx="' + wordIdx + '" data-item-idx="' + idx + '" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;' + (isSelected ? ' background: #22c55e; color: white;' : '') + '">' + word + '</span>';
                                         }
                                         return '';
                                     }).join('') +
@@ -1012,8 +1088,10 @@ class TemplateTrainer {
                                     `<div class="clue-words" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; font-size: 1.1rem;">
                                         ${(r.words || []).map((word, wordIdx) => {
                                             const availableIndices = item.available_indices || [];
+                                            const selectedWords = item.selected_words || [];
+                                            const isSelected = selectedWords.includes(wordIdx);
                                             if (availableIndices.length === 0 || availableIndices.includes(wordIdx)) {
-                                                return '<span class="clue-word" data-word-idx="' + wordIdx + '" data-item-idx="' + idx + '" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;">' + word + '</span>';
+                                                return '<span class="clue-word" data-word-idx="' + wordIdx + '" data-item-idx="' + idx + '" style="padding: 0.25rem 0.5rem; cursor: pointer; border-radius: 0.25rem; transition: background 0.2s;' + (isSelected ? ' background: #22c55e; color: white;' : '') + '">' + word + '</span>';
                                             }
                                             return '';
                                         }).join('')}
@@ -1102,111 +1180,14 @@ class TemplateTrainer {
             });
         });
 
-        // Attach click handlers to clue words
+        // Attach click handlers to clue words — server validates and returns updated menu
         const clueWords = this.container.querySelectorAll('.clue-word');
         clueWords.forEach(word => {
             word.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const wordIdx = parseInt(word.getAttribute('data-word-idx'));
-                const itemIdx = word.getAttribute('data-item-idx');
-                const expandedSection = this.container.querySelector(`.step-expanded[data-item-idx="${itemIdx}"]`);
-                const expectedIndices = JSON.parse(expandedSection.getAttribute('data-expected') || '[]');
-                const allWordsInSection = this.container.querySelectorAll(`.clue-word[data-item-idx="${itemIdx}"]`);
-
-                // Toggle selection
-                if (word.style.background === 'rgb(34, 197, 94)' || word.style.background === '#22c55e') {
-                    // Deselect
-                    word.style.background = '';
-                    word.style.color = '';
-                } else {
-                    // Check if correct
-                    if (expectedIndices.includes(wordIdx)) {
-                        word.style.background = '#22c55e'; // Green
-                        word.style.color = 'white';
-
-                        // Check if all expected words are now selected
-                        const selectedIndices = [];
-                        allWordsInSection.forEach(w => {
-                            if (w.style.background === 'rgb(34, 197, 94)' || w.style.background === '#22c55e') {
-                                selectedIndices.push(parseInt(w.getAttribute('data-word-idx')));
-                            }
-                        });
-
-                        // If all expected indices are selected, show completion
-                        if (expectedIndices.every(idx => selectedIndices.includes(idx)) &&
-                            selectedIndices.every(idx => expectedIndices.includes(idx))) {
-
-                            // Get the selected words text
-                            const selectedWords = [];
-                            expectedIndices.sort((a, b) => a - b).forEach(idx => {
-                                const w = Array.from(allWordsInSection).find(el => parseInt(el.getAttribute('data-word-idx')) === idx);
-                                if (w) selectedWords.push(w.textContent);
-                            });
-                            const definitionText = selectedWords.join(' ');
-
-                            // Get position from menu item data (from render)
-                            const menuItems = this.render.menuItems || [];
-                            const menuItem = menuItems[parseInt(itemIdx)];
-                            const position = menuItem?.step_data?.position || 'start';
-                            const stepType = menuItem?.type || '';
-
-                            // Generate completion message based on step type
-                            let completionMessage = '';
-
-                            if (stepType === 'standard_definition') {
-                                const enumeration = this.render?.enumeration || '';
-                                completionMessage = `DEFINITION: <strong>${definitionText}</strong> found at the ${position} of the clue.<br><br>Can you find a word (${enumeration}) meaning ${definitionText}?`;
-                            } else if (stepType === 'container_indicator') {
-                                completionMessage = `CONTAINER INDICATOR: <strong>${definitionText}</strong>`;
-                            } else if (stepType === 'container_outer') {
-                                completionMessage = `OUTER WORD: <strong>${definitionText}</strong>`;
-                            } else if (stepType === 'container_inner') {
-                                completionMessage = `INNER WORD: <strong>${definitionText}</strong>`;
-                            } else if (stepType.startsWith('charade_part_')) {
-                                completionMessage = `CHARADE PART: <strong>${definitionText}</strong>`;
-                            } else if (stepType === 'anagram_fodder') {
-                                completionMessage = `ANAGRAM FODDER: <strong>${definitionText}</strong>`;
-                            } else {
-                                // Generic fallback
-                                completionMessage = `<strong>${definitionText}</strong>`;
-                            }
-
-                            // Show completion message and collapse after a moment
-                            setTimeout(() => {
-                                // Collapse expanded section
-                                expandedSection.style.display = 'none';
-
-                                // Show completion in the step item itself
-                                const stepItem = this.container.querySelector(`.step-item[data-item-idx="${itemIdx}"]`);
-                                if (stepItem) {
-                                    // Add completion indicator
-                                    const statusIcon = stepItem.querySelector('.status-icon');
-                                    if (statusIcon) {
-                                        statusIcon.textContent = '✓';
-                                    }
-                                    stepItem.classList.remove('pending');
-                                    stepItem.classList.add('completed');
-                                    stepItem.style.background = '#f0fdf4';
-                                    stepItem.style.borderColor = '#22c55e';
-
-                                    // Replace step title with the result
-                                    const stepTitle = stepItem.querySelector('.step-title');
-                                    if (stepTitle) {
-                                        stepTitle.innerHTML = completionMessage;
-                                    }
-                                }
-                            }, 500);
-                        }
-                    } else {
-                        // Show feedback for wrong selection
-                        word.style.background = '#ef4444'; // Red
-                        word.style.color = 'white';
-                        setTimeout(() => {
-                            word.style.background = '';
-                            word.style.color = '';
-                        }, 500);
-                    }
-                }
+                const itemIdx = parseInt(word.getAttribute('data-item-idx'));
+                this.handleMenuAction('word_click', { item_idx: itemIdx, word_idx: wordIdx }, word);
             });
         });
 
@@ -1245,123 +1226,25 @@ class TemplateTrainer {
             });
         });
 
-        // Assembly check buttons
+        // Assembly check buttons — collect values and send to server for validation
         const assemblyCheckBtns = this.container.querySelectorAll('.assembly-check');
         assemblyCheckBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const itemIdx = btn.getAttribute('data-item-idx');
-
-                const menuItems = this.render.menuItems || [];
-                const menuItem = menuItems[parseInt(itemIdx)];
-                const stepData = menuItem?.step_data || {};
-                const resultExpected = (stepData?.result || '').toUpperCase().replace(/\s/g, '');
-
-                // Collect values from letter boxes dynamically
-                const resultLetters = this.container.querySelectorAll(`.assembly-result-letter[data-item-idx="${itemIdx}"]`);
-                const resultValue = Array.from(resultLetters).map(l => l.value).join('').toUpperCase();
-
-                // Collect part values - check for both container (outer/inner) and charade (parts array)
-                const partInputs = [];
-                const partExpected = [];
-
-                if (stepData.outer && stepData.inner) {
-                    // Container: outer and inner
-                    const part0Letters = this.container.querySelectorAll(`.assembly-part-0-letter[data-item-idx="${itemIdx}"]`);
-                    const part1Letters = this.container.querySelectorAll(`.assembly-part-1-letter[data-item-idx="${itemIdx}"]`);
-                    partInputs.push(part0Letters, part1Letters);
-                    partExpected.push(
-                        (stepData.outer.result || '').toUpperCase().replace(/\s/g, ''),
-                        (stepData.inner.result || '').toUpperCase().replace(/\s/g, '')
-                    );
-                } else if (stepData.parts) {
-                    // Charade: multiple parts
-                    stepData.parts.forEach((part, idx) => {
-                        const partLetters = this.container.querySelectorAll(`.assembly-part-${idx}-letter[data-item-idx="${itemIdx}"]`);
-                        partInputs.push(partLetters);
-                        partExpected.push((part.result || '').toUpperCase().replace(/\s/g, ''));
-                    });
-                }
-
-                // Validate all parts
-                const partValues = partInputs.map(letters =>
-                    Array.from(letters).map(l => l.value).join('').toUpperCase()
-                );
-                const allPartsCorrect = partValues.every((val, idx) => val === partExpected[idx]);
-
-                // Check if all correct
-                if (allPartsCorrect && resultValue === resultExpected) {
-                    // Mark as complete and apply answer to grid
-                    const expandedSection = this.container.querySelector(`.step-expanded[data-item-idx="${itemIdx}"]`);
-                    setTimeout(() => {
-                        expandedSection.style.display = 'none';
-
-                        const stepItem = this.container.querySelector(`.step-item[data-item-idx="${itemIdx}"]`);
-                        if (stepItem) {
-                            const statusIcon = stepItem.querySelector('.status-icon');
-                            if (statusIcon) {
-                                statusIcon.textContent = '✓';
-                            }
-                            stepItem.classList.remove('pending');
-                            stepItem.classList.add('completed');
-                            stepItem.style.background = '#f0fdf4';
-                            stepItem.style.borderColor = '#22c55e';
-
-                            const stepTitle = stepItem.querySelector('.step-title');
-                            if (stepTitle) {
-                                stepTitle.innerHTML = `ASSEMBLY: <strong>${resultExpected}</strong>`;
-                            }
-                        }
-
-                        // Apply answer to grid after brief delay
-                        setTimeout(() => {
-                            if (this.onComplete) {
-                                this.onComplete();
-                            }
-                        }, 1000);
-                    }, 500);
-                } else {
-                    // Show error - flash red on incorrect boxes
-                    const allLetterGroups = [...partInputs, resultLetters];
-                    allLetterGroups.forEach(letterGroup => {
-                        letterGroup.forEach(input => {
-                            input.style.borderColor = '#ef4444';
-                            setTimeout(() => {
-                                input.style.borderColor = '#d1d5db';
-                            }, 1000);
-                        });
-                    });
-                }
+                const itemIdx = parseInt(btn.getAttribute('data-item-idx'));
+                const parts = this.collectAssemblyParts(itemIdx);
+                const result = this.collectAssemblyResult(itemIdx);
+                this.handleMenuAction('assembly_check', { item_idx: itemIdx, parts, result }, null, itemIdx);
             });
         });
 
-        // No indicators button (wordplay identification)
+        // No indicators button (wordplay identification) — server marks as completed
         const noIndicatorsBtns = this.container.querySelectorAll('.no-indicators-btn');
         noIndicatorsBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const itemIdx = btn.getAttribute('data-item-idx');
-                const expandedSection = this.container.querySelector(`.step-expanded[data-item-idx="${itemIdx}"]`);
-
-                setTimeout(() => {
-                    expandedSection.style.display = 'none';
-
-                    const stepItem = this.container.querySelector(`.step-item[data-item-idx="${itemIdx}"]`);
-                    if (stepItem) {
-                        const statusIcon = stepItem.querySelector('.status-icon');
-                        if (statusIcon) statusIcon.textContent = '✓';
-
-                        stepItem.classList.remove('pending');
-                        stepItem.classList.add('completed');
-                        stepItem.style.background = '#f0fdf4';
-                        stepItem.style.borderColor = '#22c55e';
-
-                        const stepTitle = stepItem.querySelector('.step-title');
-                        if (stepTitle) {
-                            stepTitle.innerHTML = 'WORDPLAY TYPE: <strong>Charade</strong> (no indicators found)';
-                        }
-                    }
-                }, 300);
+                const itemIdx = parseInt(btn.getAttribute('data-item-idx'));
+                this.handleMenuAction('fallback_button', { item_idx: itemIdx });
             });
         });
 

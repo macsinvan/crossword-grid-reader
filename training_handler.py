@@ -1156,6 +1156,9 @@ def start_session(clue_id, clue, cross_letters=None, enumeration=None):
         "step_text_input": [],  # Letters typed in step input boxes
         "hint_visible": False,  # Whether hint is shown
         "answer_locked": False,  # Whether answer boxes are locked (correct answer typed)
+        # Step menu state (server-driven completion tracking)
+        "menu_completed_items": {},  # idx_str -> {"title": "DEFINITION: ..."}
+        "menu_selected_words": {},  # idx_str -> [word_idx, ...] for partially-completed tap_words
         # Grid context (passed from client, stored for all renders)
         "cross_letters": cross_letters or [],
         "enumeration": enumeration or clue.get("clue", {}).get("enumeration", "")
@@ -1410,6 +1413,11 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
         answer_length = len(answer.replace(" ", ""))  # Count letters, not spaces
         hint = f"This is a cryptic clue. The definition is ALWAYS at the start OR the end. Look for words that sound like a meaningful phrase that could yield a {answer_length}-letter answer."
 
+        # Pre-compute completion title from expected text
+        expected_text = step.get("expected", {}).get("text", "")
+        position = step.get("position", "start")
+        enumeration = clue.get("clue", {}).get("enumeration", "") if clue else ""
+
         return [{
             "index": base_index,
             "title": "Identify Definition",
@@ -1418,6 +1426,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
             "hint": hint,
             "expected_indices": step.get("expected", {}).get("indices", []),
             "expanded_type": "tap_words",
+            "completion_title": f"DEFINITION: <strong>{expected_text}</strong> found at the {position} of the clue.<br><br>Can you find a word ({enumeration}) meaning {expected_text}?",
         }]
 
     # Container with template - expand into atomic steps
@@ -1434,6 +1443,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
             outer_result = outer.get("result", "")
             inner_result = inner.get("result", "")
             assembly = step.get("assembly", "")
+            result = step.get("result", "")
             return [
                 {
                     "index": f"{base_index}.1",
@@ -1444,6 +1454,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "expected_indices": indicator.get("indices", []),
                     "hint": "Container indicators suggest one thing goes inside another. Look for words like 'in', 'within', 'holding', 'containing', or words that suggest insertion or lengthening.",
                     "expanded_type": "tap_words",
+                    "completion_title": f"CONTAINER INDICATOR: <strong>{ind_text}</strong>",
                 },
                 {
                     "index": f"{base_index}.2",
@@ -1454,6 +1465,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "expected_indices": outer.get("fodder", {}).get("indices", []),
                     "hint": "Outer word gets lengthened by the inner word.",
                     "expanded_type": "tap_words",
+                    "completion_title": f"OUTER WORD: <strong>{outer_fodder}</strong>",
                 },
                 {
                     "index": f"{base_index}.3",
@@ -1464,6 +1476,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "expected_indices": inner.get("fodder", {}).get("indices", []),
                     "hint": "This word goes inside to lengthen the outer word.",
                     "expanded_type": "tap_words",
+                    "completion_title": f"INNER WORD: <strong>{inner_fodder}</strong>",
                 },
                 {
                     "index": f"{base_index}.4",
@@ -1474,11 +1487,13 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "hint": f"Find synonyms for the outer and inner words, then combine them: {assembly}",
                     "expanded_type": "assembly",
                     "assembly_config": _build_assembly_config(step, clue),
+                    "completion_title": f"ASSEMBLY: <strong>{result}</strong>",
                 }
             ]
         elif template == "insertion_with_one_synonym_outer":
             outer_result = outer.get("result", "")
             assembly = step.get("assembly", "")
+            result = step.get("result", "")
             return [
                 {
                     "index": f"{base_index}.1",
@@ -1489,6 +1504,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "expected_indices": indicator.get("indices", []),
                     "hint": "Container indicators suggest one thing goes inside another. Look for words like 'in', 'within', 'holding', 'containing'.",
                     "expanded_type": "tap_words",
+                    "completion_title": f"CONTAINER INDICATOR: <strong>{ind_text}</strong>",
                 },
                 {
                     "index": f"{base_index}.2",
@@ -1499,6 +1515,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "expected_indices": outer.get("fodder", {}).get("indices", []),
                     "hint": "Find the synonym for the outer word.",
                     "expanded_type": "tap_words",
+                    "completion_title": f"OUTER WORD: <strong>{outer_fodder}</strong>",
                 },
                 {
                     "index": f"{base_index}.3",
@@ -1509,11 +1526,13 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "hint": f"Combine according to: {assembly}",
                     "expanded_type": "assembly",
                     "assembly_config": _build_assembly_config(step, clue),
+                    "completion_title": f"ASSEMBLY: <strong>{result}</strong>",
                 }
             ]
         elif template == "insertion_with_charade_inner":
             outer_result = outer.get("result", "")
             assembly = step.get("assembly", "")
+            result = step.get("result", "")
             return [
                 {
                     "index": f"{base_index}.1",
@@ -1524,6 +1543,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "expected_indices": indicator.get("indices", []),
                     "hint": "Container indicators suggest one thing goes inside another. Look for words that suggest insertion.",
                     "expanded_type": "tap_words",
+                    "completion_title": f"CONTAINER INDICATOR: <strong>{ind_text}</strong>",
                 },
                 {
                     "index": f"{base_index}.2",
@@ -1534,6 +1554,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "expected_indices": outer.get("fodder", {}).get("indices", []),
                     "hint": "This word will be the outer container holding the charade inside.",
                     "expanded_type": "tap_words",
+                    "completion_title": f"OUTER WORD: <strong>{outer_fodder}</strong>",
                 },
                 {
                     "index": f"{base_index}.3",
@@ -1543,6 +1564,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "sub_step": "inner",
                     "hint": "Build the inner part by combining multiple wordplay elements.",
                     "expanded_type": "tap_words",
+                    "completion_title": f"INNER CHARADE: <strong>{inner_fodder}</strong>",
                 },
                 {
                     "index": f"{base_index}.4",
@@ -1553,15 +1575,17 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                     "hint": f"Combine according to: {assembly}",
                     "expanded_type": "assembly",
                     "assembly_config": _build_assembly_config(step, clue),
+                    "completion_title": f"ASSEMBLY: <strong>{result}</strong>",
                 }
             ]
         else:
-            return [{"index": base_index, "title": f"Identify Container" + (f" ({ind_text})" if ind_text else ""), "type": step_type, "step_data": step, "expanded_type": "tap_words"}]
+            return [{"index": base_index, "title": f"Identify Container" + (f" ({ind_text})" if ind_text else ""), "type": step_type, "step_data": step, "expanded_type": "tap_words", "completion_title": f"CONTAINER: <strong>{ind_text}</strong>"}]
 
     # Charade with template - expand into parts + assembly
     elif step_type == "charade":
         template = step.get("template", "")
         parts = step.get("parts", [])
+        result = step.get("result", "")
 
         if template == "charade_with_parts":
             assembly = step.get("assembly", "")
@@ -1579,6 +1603,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 "fallback_button": {
                     "label": "No wordplay indicators \u2192 Charade",
                 },
+                "completion_title": "WORDPLAY TYPE: <strong>Charade</strong> (no indicators found)",
             })
 
             # Steps 2+: Identify each part (transforms happen in Assembly step)
@@ -1595,6 +1620,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                         "expected_indices": part.get("fodder", {}).get("indices", []),
                         "hint": f"Find a {part_type} for this word.",
                         "expanded_type": "tap_words",
+                        "completion_title": f"CHARADE PART: <strong>{fodder_text}</strong>",
                     })
 
             # Final step: Assemble (shows raw attempt + letter boxes, like 17D)
@@ -1607,14 +1633,16 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 "hint": f"Combine the transformed parts: {assembly}",
                 "expanded_type": "assembly",
                 "assembly_config": _build_assembly_config(step, clue),
+                "completion_title": f"ASSEMBLY: <strong>{result}</strong>",
             })
             return items
         else:
-            return [{"index": base_index, "title": "Assemble", "type": step_type, "step_data": step, "expanded_type": "tap_words"}]
+            return [{"index": base_index, "title": "Assemble", "type": step_type, "step_data": step, "expanded_type": "tap_words", "completion_title": f"<strong>{result}</strong>"}]
 
     # Anagram with template - expand into pieces + solve
     elif step_type == "anagram":
         template = step.get("template", "")
+        result = step.get("result", "")
 
         if template == "anagram_with_fodder_pieces":
             pieces = step.get("pieces", [])
@@ -1622,11 +1650,11 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
             for i, piece in enumerate(pieces, 1):
                 if isinstance(piece, dict):
                     fodder_text = piece.get("fodder", {}).get("text", "") if isinstance(piece.get("fodder"), dict) else str(piece.get("fodder", ""))
-                    items.append({"index": f"{base_index}.{i}", "title": f"Get Piece {i} ({fodder_text})", "type": "anagram_piece", "step_data": step, "sub_step": f"piece_{i}", "expanded_type": "tap_words"})
-            items.append({"index": f"{base_index}.{len(pieces)+1}", "title": "Rearrange Letters", "type": "anagram_solve", "step_data": step, "sub_step": "solve", "expanded_type": "tap_words"})
+                    items.append({"index": f"{base_index}.{i}", "title": f"Get Piece {i} ({fodder_text})", "type": "anagram_piece", "step_data": step, "sub_step": f"piece_{i}", "expanded_type": "tap_words", "completion_title": f"ANAGRAM FODDER: <strong>{fodder_text}</strong>"})
+            items.append({"index": f"{base_index}.{len(pieces)+1}", "title": "Rearrange Letters", "type": "anagram_solve", "step_data": step, "sub_step": "solve", "expanded_type": "tap_words", "completion_title": f"ANAGRAM: <strong>{result}</strong>"})
             return items
         else:
-            return [{"index": base_index, "title": "Solve Anagram", "type": step_type, "step_data": step, "expanded_type": "tap_words"}]
+            return [{"index": base_index, "title": "Solve Anagram", "type": step_type, "step_data": step, "expanded_type": "tap_words", "completion_title": f"ANAGRAM: <strong>{result}</strong>"}]
 
     # Transformation chain - expand into steps
     elif step_type == "transformation_chain":
@@ -1639,10 +1667,11 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 step_type_name = chain_step.get("type", "transform")
                 fodder = chain_step.get("fodder", "")
                 fodder_text = fodder.get("text", "") if isinstance(fodder, dict) else str(fodder)
-                items.append({"index": f"{base_index}.{i}", "title": f"{step_type_name.title()} ({fodder_text})", "type": f"transform_{step_type_name}", "step_data": step, "sub_step": f"step_{i}", "expanded_type": "tap_words"})
+                chain_result = chain_step.get("result", "")
+                items.append({"index": f"{base_index}.{i}", "title": f"{step_type_name.title()} ({fodder_text})", "type": f"transform_{step_type_name}", "step_data": step, "sub_step": f"step_{i}", "expanded_type": "tap_words", "completion_title": f"{step_type_name.upper()}: <strong>{chain_result}</strong>"})
             return items
         else:
-            return [{"index": base_index, "title": "Apply Transformations", "type": step_type, "step_data": step, "expanded_type": "tap_words"}]
+            return [{"index": base_index, "title": "Apply Transformations", "type": step_type, "step_data": step, "expanded_type": "tap_words", "completion_title": f"<strong>{step_type}</strong>"}]
 
     # Default: return single item
     else:
@@ -1653,6 +1682,7 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
             "type": step_type,
             "step_data": step,
             "expanded_type": "tap_words",
+            "completion_title": f"<strong>{title}</strong>",
         }]
 
 def _build_menu_render(session, clue):
@@ -1702,6 +1732,18 @@ def _build_menu_render(session, clue):
                     step_indices.update(piece.get("indices", []))
 
         used_indices.update(step_indices)
+
+    # Apply completed status and selected words from session state
+    completed = session.get("menu_completed_items", {})
+    selected = session.get("menu_selected_words", {})
+    for idx, item in enumerate(menu_items):
+        idx_str = str(idx)
+        if idx_str in completed:
+            item["status"] = "completed"
+            item["title"] = completed[idx_str]["title"]
+        # Include currently selected words for partially-completed items
+        if idx_str in selected:
+            item["selected_words"] = selected[idx_str]
 
     return {
         "mode": "step_menu",
@@ -2133,6 +2175,112 @@ def return_to_menu(clue_id, clue):
     session["step_index"] = -2
     session["phase_index"] = 0
     return get_render(clue_id, clue)
+
+
+def handle_menu_action(clue_id, clue, action, data):
+    """
+    Handle user interactions within the step menu (word clicks, assembly checks,
+    fallback buttons). Validates input server-side and updates menu completion state.
+
+    Returns updated menu render on success, or {correct: false} for wrong answers.
+    """
+    session = get_session(clue_id)
+    if not session:
+        return {"error": "No session"}
+
+    # Rebuild menu items to access expected_indices and completion_title
+    steps_data = clue.get("steps", [])
+    menu_items = []
+    for idx, step in enumerate(steps_data):
+        expanded_items = _expand_step_to_menu_items(step, idx, clue)
+        menu_items.extend(expanded_items)
+
+    item_idx = data.get("item_idx")
+    if item_idx is None or item_idx < 0 or item_idx >= len(menu_items):
+        return {"error": f"Invalid item_idx: {item_idx}"}
+
+    menu_item = menu_items[item_idx]
+    idx_str = str(item_idx)
+
+    if action == "word_click":
+        word_idx = data.get("word_idx")
+        if word_idx is None:
+            return {"error": "Missing word_idx"}
+
+        expected_indices = menu_item.get("expected_indices", [])
+
+        if word_idx in expected_indices:
+            # Correct word - add to selected words for this item
+            if idx_str not in session["menu_selected_words"]:
+                session["menu_selected_words"][idx_str] = []
+            if word_idx not in session["menu_selected_words"][idx_str]:
+                session["menu_selected_words"][idx_str].append(word_idx)
+
+            # Check if all expected words are now selected
+            selected = set(session["menu_selected_words"][idx_str])
+            if set(expected_indices) == selected:
+                # Step completed - store completion title and clear selected words
+                session["menu_completed_items"][idx_str] = {
+                    "title": menu_item.get("completion_title", menu_item.get("title", ""))
+                }
+                del session["menu_selected_words"][idx_str]
+
+            return _build_menu_render(session, clue)
+        else:
+            # Wrong word - return error for ephemeral flash
+            return {"correct": False, "flash_word_idx": word_idx}
+
+    elif action == "assembly_check":
+        parts_input = data.get("parts", [])
+        result_input = data.get("result", "").upper().replace(" ", "")
+
+        step_data = menu_item.get("step_data", {})
+        result_expected = (step_data.get("result", "") or "").upper().replace(" ", "")
+
+        # Build expected parts based on step type
+        part_expected = []
+        if step_data.get("outer") and step_data.get("inner"):
+            # Container: outer and inner
+            part_expected.append(
+                (step_data["outer"].get("result", "") or "").upper().replace(" ", "")
+            )
+            part_expected.append(
+                (step_data["inner"].get("result", "") or "").upper().replace(" ", "")
+            )
+        elif step_data.get("parts"):
+            # Charade: multiple parts
+            for part in step_data["parts"]:
+                part_expected.append(
+                    (part.get("result", "") or "").upper().replace(" ", "")
+                )
+
+        # Validate all parts
+        parts_correct = len(parts_input) == len(part_expected) and all(
+            p.upper().replace(" ", "") == e for p, e in zip(parts_input, part_expected)
+        )
+        result_correct = result_input == result_expected
+
+        if parts_correct and result_correct:
+            # Mark as completed
+            session["menu_completed_items"][idx_str] = {
+                "title": menu_item.get("completion_title", f"ASSEMBLY: <strong>{result_expected}</strong>")
+            }
+            render = _build_menu_render(session, clue)
+            render["apply_to_grid"] = True
+            return render
+        else:
+            return {"correct": False}
+
+    elif action == "fallback_button":
+        # Mark as completed with the pre-computed completion title
+        session["menu_completed_items"][idx_str] = {
+            "title": menu_item.get("completion_title", menu_item.get("title", ""))
+        }
+        return _build_menu_render(session, clue)
+
+    else:
+        return {"error": f"Unknown menu action: {action}"}
+
 
 # =============================================================================
 # INPUT HANDLING
