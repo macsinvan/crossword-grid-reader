@@ -262,6 +262,19 @@ header h1 {
 /* Grid Container */
 .grid-container {
     flex-shrink: 0;
+    position: relative;
+}
+
+.grid-proxy-input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    border: none;
+    padding: 0;
+    margin: 0;
+    pointer-events: none;
+    z-index: -1;
 }
 
 .crossword-grid {

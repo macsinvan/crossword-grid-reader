@@ -111,14 +111,48 @@ class CrosswordPuzzle {
 
         // Keyboard input
         document.addEventListener('keydown', (e) => {
-            // Don't intercept keyboard when typing in trainer inputs
-            if (e.target.id === 'trainer-text-input' ||
+            if (e.target.classList.contains('grid-proxy-input')) {
+                // Proxy input: let keydown through to handleKeydown, but
+                // preventDefault on letters to avoid double-entry from input event
+                if (/^[a-zA-Z]$/.test(e.key)) e.preventDefault();
+            } else if (e.target.id === 'trainer-text-input' ||
                 e.target.classList.contains('answer-box-input') ||
                 e.target.classList.contains('step-text-input')) {
+                // Don't intercept keyboard when typing in trainer inputs
                 return;
             }
             if (this.puzzle && this.selectedCell) {
                 this.handleKeydown(e);
+            }
+        });
+
+        // Mobile keyboard fallback via proxy input
+        // Virtual keyboards may not fire reliable keydown events, so
+        // we also listen for input events as a fallback
+        document.addEventListener('input', (e) => {
+            if (!e.target.classList.contains('grid-proxy-input')) return;
+            if (!this.puzzle || !this.selectedCell) return;
+
+            if (e.inputType === 'deleteContentBackward') {
+                // Backspace on mobile virtual keyboard
+                const { row, col } = this.selectedCell;
+                if (this.userGrid[row][col]) {
+                    this.setCell(row, col, '');
+                } else {
+                    this.moveToPrevCell();
+                    const prev = this.selectedCell;
+                    if (prev) this.setCell(prev.row, prev.col, '');
+                }
+                e.target.value = '';
+                return;
+            }
+
+            const letter = (e.target.value || '').slice(-1).toUpperCase();
+            e.target.value = '';
+            if (/^[A-Z]$/.test(letter)) {
+                const { row, col } = this.selectedCell;
+                this.setCell(row, col, letter);
+                this.moveToNextCell();
             }
         });
 
@@ -138,6 +172,7 @@ class CrosswordPuzzle {
 
     async openTrainer() {
         if (!this.selectedCell || !this.puzzle) return;
+        if (this.proxyInput) this.proxyInput.blur();
 
         const wordData = this.getWordDataForTrainer();
         if (!wordData) return;
@@ -636,6 +671,21 @@ class CrosswordPuzzle {
                 gridEl.appendChild(cell);
             }
         }
+
+        // Create mobile keyboard proxy input (hidden, triggers virtual keyboard on focus)
+        let proxyInput = gridEl.parentNode.querySelector('.grid-proxy-input');
+        if (!proxyInput) {
+            proxyInput = document.createElement('input');
+            proxyInput.type = 'text';
+            proxyInput.className = 'grid-proxy-input';
+            proxyInput.setAttribute('autocapitalize', 'characters');
+            proxyInput.setAttribute('autocomplete', 'off');
+            proxyInput.setAttribute('spellcheck', 'false');
+            proxyInput.setAttribute('autocorrect', 'off');
+            proxyInput.setAttribute('aria-label', 'Crossword input');
+            gridEl.parentNode.appendChild(proxyInput);
+        }
+        this.proxyInput = proxyInput;
     }
 
     renderClues() {
@@ -674,6 +724,7 @@ class CrosswordPuzzle {
             this.selectedCell.row === row &&
             this.selectedCell.col === col) {
             this.toggleDirection();
+            this.focusProxyInput();
             return;
         }
 
@@ -695,6 +746,7 @@ class CrosswordPuzzle {
         this.clearValidation();
         this.updateHighlights();
         this.updateCurrentClue();
+        this.focusProxyInput();
     }
 
     selectClue(direction, number) {
@@ -712,6 +764,14 @@ class CrosswordPuzzle {
             this.clearValidation();
             this.updateHighlights();
             this.updateCurrentClue();
+            this.focusProxyInput();
+        }
+    }
+
+    focusProxyInput() {
+        if (this.proxyInput) {
+            this.proxyInput.value = '';
+            this.proxyInput.focus({ preventScroll: true });
         }
     }
 
@@ -795,7 +855,6 @@ class CrosswordPuzzle {
             );
             if (clueEl) {
                 clueEl.classList.add('active');
-                clueEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         }
     }
