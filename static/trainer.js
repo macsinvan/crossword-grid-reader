@@ -1345,43 +1345,14 @@ class TemplateTrainer {
 
                 const menuItems = this.render.menuItems || [];
                 const menuItem = menuItems[parseInt(itemIdx)];
-                const stepData = menuItem?.step_data || {};
-                const resultExpected = (stepData?.result || '').toUpperCase().replace(/\s/g, '');
+                const resultExpected = (menuItem?.result || '').toUpperCase().replace(/\s/g, '');
 
-                // Collect values from letter boxes dynamically
+                // Collect final answer from letter boxes
                 const resultLetters = this.container.querySelectorAll(`.assembly-result-letter[data-item-idx="${itemIdx}"]`);
                 const resultValue = Array.from(resultLetters).map(l => l.value).join('').toUpperCase();
 
-                // Collect part values - check for both container (outer/inner) and charade (parts array)
-                const partInputs = [];
-                const partExpected = [];
-
-                if (stepData.outer && stepData.inner) {
-                    // Container: outer and inner
-                    const part0Letters = this.container.querySelectorAll(`.assembly-part-0-letter[data-item-idx="${itemIdx}"]`);
-                    const part1Letters = this.container.querySelectorAll(`.assembly-part-1-letter[data-item-idx="${itemIdx}"]`);
-                    partInputs.push(part0Letters, part1Letters);
-                    partExpected.push(
-                        (stepData.outer.result || '').toUpperCase().replace(/\s/g, ''),
-                        (stepData.inner.result || '').toUpperCase().replace(/\s/g, '')
-                    );
-                } else if (stepData.parts) {
-                    // Charade: multiple parts
-                    stepData.parts.forEach((part, idx) => {
-                        const partLetters = this.container.querySelectorAll(`.assembly-part-${idx}-letter[data-item-idx="${itemIdx}"]`);
-                        partInputs.push(partLetters);
-                        partExpected.push((part.result || '').toUpperCase().replace(/\s/g, ''));
-                    });
-                }
-
-                // Validate all parts
-                const partValues = partInputs.map(letters =>
-                    Array.from(letters).map(l => l.value).join('').toUpperCase()
-                );
-                const allPartsCorrect = partValues.every((val, idx) => val === partExpected[idx]);
-
-                // Check if all correct
-                if (allPartsCorrect && resultValue === resultExpected) {
+                // Check if final answer is correct
+                if (resultValue === resultExpected) {
                     // Mark as complete and apply answer to grid
                     const expandedSection = this.container.querySelector(`.step-expanded[data-item-idx="${itemIdx}"]`);
                     setTimeout(() => {
