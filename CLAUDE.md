@@ -288,12 +288,6 @@ Templates with multiple atomic steps expand automatically:
 
 ## TODO
 
-### Simplification Pass
-- [ ] Audit `_expand_step_to_menu_items()` — the branching per template variant is unnecessary; a single data-driven loop over the JSON sub-step list should replace all the `elif` branches
-- [ ] Audit `_build_assembly_config()` — container vs charade branches share most logic; unify
-- [ ] Audit dynamic phase builders — `build_wordplay_overview_phases`, `build_deletion_discover_phases`, `build_container_verify_phases` construct phases imperatively with hardcoded text; extract text to `render_templates.json` and simplify the Python to a loop over phase specs
-- [ ] Review `get_render()` special-case overrides — many exist because templates weren't rich enough; now that templates are in JSON, make them richer and eliminate overrides
-
 ### Phase 6: Automated Clue Annotation (Future)
 - [ ] Build solver that takes cold clues (+ optional answer) and generates metadata
 - [ ] Input parser: Extract clue components, identify indicators, parse enumeration

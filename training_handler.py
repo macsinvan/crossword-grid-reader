@@ -596,6 +596,27 @@ def substitute_variables(text, step, session, clue=None):
         subs["hint"] = get_teaching_hint("synonyms", fodder_text,
             "Cryptic crosswords often use unexpected synonyms. This pairing is worth remembering!")
 
+    # Build hint_suffix for standard_definition teaching
+    definition_hint = step.get("hint", "")
+    subs["hint_suffix"] = f"\n\n**Hint:** {definition_hint}" if definition_hint else ""
+
+    # Handle fodder_word.text
+    if "fodder_word" in step and isinstance(step["fodder_word"], dict):
+        subs["fodder_word_text"] = step["fodder_word"].get("text", "")
+
+    # Provide definition_text from clue's first step (for teaching summaries)
+    if clue:
+        clue_steps = clue.get("steps", [])
+        if "definition_text" not in subs:
+            if clue_steps and clue_steps[0].get("type") == "standard_definition":
+                subs["definition_text"] = clue_steps[0].get("expected", {}).get("text", "")
+        # Provide charade_result from charade_verify step (for alternation teaching)
+        if "charade_result" not in subs:
+            for s in clue_steps:
+                if s.get("type") == "charade_verify":
+                    subs["charade_result"] = s.get("result", "")
+                    break
+
     # Handle indicator
     if "indicator" in step:
         ind = step["indicator"]
@@ -693,282 +714,217 @@ def _fmt(template_str, vars_dict):
         result = result.replace("{" + key + "}", str(val))
     return result
 
-def _build_assembly_config(step, clue=None):
-    """
-    Build assembly_config for container_assembly and charade_assembly items.
-    Text strings read from RENDER_TEMPLATES["assembly_config"].
-    """
+def _build_step_vars(step, clue=None):
+    """Extract all template variables from step data in one place."""
     step_type = step.get("type", "")
+    indicator = step.get("indicator", {})
+    outer = step.get("outer", {})
+    inner = step.get("inner", {})
     result = step.get("result", "")
-    final_parts = result.split(" ") if result else [""]
+    answer = clue.get("clue", {}).get("answer", "") if clue else ""
     enumeration = clue.get("clue", {}).get("enumeration", "") if clue else ""
-    asm_cfg = RENDER_TEMPLATES.get("assembly_config", {})
 
-    config = {
-        "instruction": _fmt(asm_cfg.get("instruction", ""), {}),
-        "final_label": _fmt(asm_cfg.get("final_label", ""), {"enumeration": enumeration}),
-        "final_parts": [len(p) for p in final_parts],
+    return {
+        "step_type": step_type,
+        "step_type_title": step_type.replace("_", " ").title(),
+        "ind_text": indicator.get("text", "") if isinstance(indicator, dict) else "",
+        "outer_fodder": outer.get("fodder", {}).get("text", "") if isinstance(outer, dict) else "",
+        "inner_fodder": inner.get("fodder", {}).get("text", "") if isinstance(inner, dict) else "",
+        "outer_fodder_text": outer.get("fodder", {}).get("text", "") if isinstance(outer, dict) else "",
+        "inner_fodder_text": inner.get("fodder", {}).get("text", "") if isinstance(inner, dict) else "",
+        "assembly": step.get("assembly", ""),
+        "result": result,
+        "expected_text": step.get("expected", {}).get("text", ""),
+        "position": step.get("position", "start"),
+        "answer_length": len(answer.replace(" ", "")) if answer else 0,
+        "enumeration": enumeration,
+        "fodder_combined": step.get("fodder_combined", ""),
+        # For assembly failure_message vars (charade)
+        "raw_parts_display": "",
+        "raw_text_upper": "",
+        "raw_length": 0,
+        "expected_length": len(result.replace(" ", "")) if result else 0,
     }
 
+
+def _build_element_vars(element, index):
+    """Extract template variables from a repeating element (part/piece/chain step)."""
+    if not isinstance(element, dict):
+        return {"n": index}
+    fodder = element.get("fodder", "")
+    fodder_text = fodder.get("text", "") if isinstance(fodder, dict) else str(fodder)
+    part_type = element.get("type", "transform")
+    return {
+        "n": index,
+        "fodder_text": fodder_text,
+        "part_type": part_type,
+        "part_role": part_type.title(),
+        "chain_result": element.get("result", ""),
+        "step_type_name": part_type,
+        "step_type_title": part_type.title(),
+        "step_type_upper": part_type.upper(),
+        "reasoning": element.get("reasoning", ""),
+    }
+
+
+def _resolve_expected(step, sub_step):
+    """Map sub_step name to expected_indices from step data."""
+    if sub_step == "indicator":
+        return step.get("indicator", {}).get("indices", [])
+    elif sub_step == "outer":
+        return step.get("outer", {}).get("fodder", {}).get("indices", [])
+    elif sub_step == "inner":
+        return step.get("inner", {}).get("fodder", {}).get("indices", [])
+    elif sub_step.startswith("part_"):
+        part_idx = int(sub_step.split("_")[1]) - 1
+        parts = step.get("parts", [])
+        if part_idx < len(parts):
+            return parts[part_idx].get("fodder", {}).get("indices", [])
+    elif sub_step.startswith("piece_"):
+        piece_idx = int(sub_step.split("_")[1]) - 1
+        pieces = step.get("pieces", [])
+        if piece_idx < len(pieces):
+            return pieces[piece_idx].get("fodder", {}).get("indices", [])
+    # Fallback for select-type steps
+    return step.get("expected", {}).get("indices", [])
+
+
+def _make_menu_item(sub_cfg, v, index, step, clue):
+    """Build a single menu item from a sub-step config and variables."""
+    sub_step = _fmt(sub_cfg.get("sub_step_template", sub_cfg.get("sub_step", "")), v)
+    expanded_type = sub_cfg.get("expanded_type", "tap_words")
+
+    hint = _fmt(sub_cfg.get("hint", ""), v)
+    # Fall back to element reasoning if JSON hint is empty
+    if not hint:
+        hint = v.get("reasoning", "") or step.get("reasoning", "")
+
+    item = {
+        "index": index,
+        "title": _fmt(sub_cfg.get("title", ""), v),
+        "type": _fmt(sub_cfg.get("type", step.get("type", "")), v),
+        "step_data": step,
+        "sub_step": sub_step,
+        "hint": hint,
+        "expanded_type": expanded_type,
+        "completion_title": _fmt(sub_cfg.get("completion_title", ""), v),
+    }
+
+    # Add expected_indices for tap_words items
+    if expanded_type in ("tap_words", "tap_words_with_fallback_button"):
+        item["expected_indices"] = _resolve_expected(step, sub_step)
+
+    # Add assembly_config for assembly items
+    if expanded_type == "assembly":
+        item["assembly_config"] = _build_assembly_config(step, clue)
+
+    # Add fallback_button if specified
+    if "fallback_button_label" in sub_cfg:
+        item["fallback_button"] = {"label": sub_cfg["fallback_button_label"]}
+
+    return item
+
+
+def _get_assembly_parts(step):
+    """Return uniform parts list for assembly config: [{fodder_text, part_type, part_role, length}]."""
+    step_type = step.get("type", "")
     if step_type == "container":
         outer = step.get("outer", {})
         inner = step.get("inner", {})
-        outer_fodder_text = outer.get("fodder", {}).get("text", "") if isinstance(outer, dict) else ""
-        inner_fodder_text = inner.get("fodder", {}).get("text", "") if isinstance(inner, dict) else ""
         outer_result = outer.get("result", "") if isinstance(outer, dict) else ""
         inner_result = inner.get("result", "") if isinstance(inner, dict) else ""
-        outer_len = len(outer_result.replace(" ", ""))
-        inner_len = len(inner_result.replace(" ", ""))
-        ctr_cfg = asm_cfg.get("container", {})
-        v = {"outer_fodder_text": outer_fodder_text, "inner_fodder_text": inner_fodder_text}
-
-        config["failure_message"] = _fmt(ctr_cfg.get("failure_message", ""), v)
-        config["parts"] = [
-            {"label": _fmt(ctr_cfg.get("outer_label", ""), v), "length": outer_len},
-            {"label": _fmt(ctr_cfg.get("inner_label", ""), v), "length": inner_len},
+        outer_fodder = outer.get("fodder", {}).get("text", "") if isinstance(outer, dict) else ""
+        inner_fodder = inner.get("fodder", {}).get("text", "") if isinstance(inner, dict) else ""
+        return [
+            {"fodder_text": outer_fodder, "part_type": "outer", "part_role": "Outer", "length": len(outer_result.replace(" ", ""))},
+            {"fodder_text": inner_fodder, "part_type": "inner", "part_role": "Inner", "length": len(inner_result.replace(" ", ""))},
         ]
     elif step_type == "charade":
         parts = step.get("parts", [])
+        result = []
+        for p in parts:
+            part_result = p.get("result", "")
+            part_type = p.get("type", "transformation")
+            fodder = p.get("fodder", "")
+            fodder_text = fodder.get("text", "") if isinstance(fodder, dict) else str(fodder)
+            result.append({"fodder_text": fodder_text, "part_type": part_type, "part_role": part_type.title(), "length": len(part_result.replace(" ", ""))})
+        return result
+    return []
+
+
+def _build_assembly_config(step, clue=None):
+    """Build assembly_config for assembly items. Unified for container and charade."""
+    step_type = step.get("type", "")
+    result = step.get("result", "")
+    enumeration = clue.get("clue", {}).get("enumeration", "") if clue else ""
+    asm_cfg = RENDER_TEMPLATES.get("assembly_config", {})
+    type_cfg = asm_cfg.get(step_type, {})
+
+    raw_parts = _get_assembly_parts(step)
+    v = _build_step_vars(step, clue)
+
+    # Compute charade-specific failure vars
+    if step_type == "charade":
+        parts = step.get("parts", [])
         raw_text = "".join(p.get("fodder", {}).get("text", "") if isinstance(p.get("fodder"), dict) else str(p.get("fodder", "")) for p in parts)
-        raw_length = len(raw_text.replace(" ", ""))
-        expected_length = len(result.replace(" ", ""))
-        raw_parts_display = " + ".join(
-            p.get("fodder", {}).get("text", "") if isinstance(p.get("fodder"), dict) else str(p.get("fodder", ""))
-            for p in parts
-        )
-        chr_cfg = asm_cfg.get("charade", {})
+        v["raw_parts_display"] = " + ".join(p.get("fodder", {}).get("text", "") if isinstance(p.get("fodder"), dict) else str(p.get("fodder", "")) for p in parts)
+        v["raw_text_upper"] = raw_text.upper()
+        v["raw_length"] = len(raw_text.replace(" ", ""))
 
-        config["failure_message"] = _fmt(chr_cfg.get("failure_message", ""), {
-            "raw_parts_display": raw_parts_display,
-            "raw_text_upper": raw_text.upper(),
-            "raw_length": raw_length,
-            "expected_length": expected_length,
-        })
-        config["parts"] = []
-        for part in parts:
-            part_result = part.get("result", "")
-            part_len = len(part_result.replace(" ", ""))
-            part_type = part.get("type", "transformation")
-            fodder_text = part.get("fodder", {}).get("text", "") if isinstance(part.get("fodder"), dict) else str(part.get("fodder", ""))
-            config["parts"].append({
-                "label": _fmt(chr_cfg.get("part_label", ""), {"part_type": part_type, "fodder_text": fodder_text}),
-                "length": part_len,
-            })
-
-    return config
+    return {
+        "instruction": _fmt(asm_cfg.get("instruction", ""), v),
+        "final_label": _fmt(asm_cfg.get("final_label", ""), {"enumeration": enumeration}),
+        "final_parts": [len(p) for p in result.split(" ")] if result else [0],
+        "failure_message": _fmt(type_cfg.get("failure_message", ""), v),
+        "parts": [
+            {"label": _fmt(type_cfg.get("part_label", ""), {**v, **pv}), "length": pv["length"]}
+            for pv in raw_parts
+        ],
+    }
 
 
 def _expand_step_to_menu_items(step, base_index, clue=None):
     """
-    Expand a complex step (e.g., container with template) into atomic menu items.
-    Text strings read from RENDER_TEMPLATES["menu_items"].
-    Returns list of menu item dictionaries.
+    Expand a step into atomic menu items using JSON config.
+    All step types use the same generic loop over JSON arrays.
     """
     step_type = step.get("type", "")
+    template = step.get("template", "")
     menu_cfg = RENDER_TEMPLATES.get("menu_items", {})
 
-    # Atomic steps - return single item
-    if step_type == "standard_definition":
-        cfg = menu_cfg.get("standard_definition", {})
-        answer = clue.get("clue", {}).get("answer", "") if clue else ""
-        answer_length = len(answer.replace(" ", ""))
-        expected_text = step.get("expected", {}).get("text", "")
-        position = step.get("position", "start")
-        enumeration = clue.get("clue", {}).get("enumeration", "") if clue else ""
-        v = {"answer_length": answer_length, "expected_text": expected_text, "position": position, "enumeration": enumeration}
-
-        return [{
-            "index": base_index,
-            "title": cfg.get("title", "Identify Definition"),
-            "type": step_type,
-            "step_data": step,
-            "hint": _fmt(cfg.get("hint", ""), v),
-            "expected_indices": step.get("expected", {}).get("indices", []),
-            "expanded_type": cfg.get("expanded_type", "tap_words"),
-            "completion_title": _fmt(cfg.get("completion_title", ""), v),
-        }]
-
-    # Container with template - expand into atomic steps
-    elif step_type == "container":
-        template = step.get("template", "")
-        indicator = step.get("indicator", {})
-        ind_text = indicator.get("text", "") if isinstance(indicator, dict) else ""
-        outer = step.get("outer", {})
-        inner = step.get("inner", {})
-        outer_fodder = outer.get("fodder", {}).get("text", "") if isinstance(outer, dict) else ""
-        inner_fodder = inner.get("fodder", {}).get("text", "") if isinstance(inner, dict) else ""
-        assembly = step.get("assembly", "")
-        result = step.get("result", "")
-        v = {"ind_text": ind_text, "outer_fodder": outer_fodder, "inner_fodder": inner_fodder, "assembly": assembly, "result": result}
-
-        ctr_cfg = menu_cfg.get("container", {})
-        template_steps = ctr_cfg.get(template)  # list of sub-step configs, or None
-
-        if isinstance(template_steps, list):
-            items = []
-            for i, sub_cfg in enumerate(template_steps, 1):
-                sub_step = sub_cfg.get("sub_step", "")
-                # Use JSON config hint, falling back to clue metadata reasoning
-                hint = _fmt(sub_cfg.get("hint", ""), v)
-                if not hint:
-                    if sub_step == "indicator":
-                        hint = indicator.get("reasoning", "")
-                    elif sub_step == "outer":
-                        hint = outer.get("reasoning", "")
-                    elif sub_step == "inner":
-                        hint = inner.get("reasoning", "")
-                item = {
-                    "index": f"{base_index}.{i}",
-                    "title": _fmt(sub_cfg.get("title", ""), v),
-                    "type": sub_cfg.get("type", step_type),
-                    "step_data": step,
-                    "sub_step": sub_step,
-                    "hint": hint,
-                    "expanded_type": sub_cfg.get("expanded_type", "tap_words"),
-                    "completion_title": _fmt(sub_cfg.get("completion_title", ""), v),
-                }
-                # Add structural data based on sub_step
-                if sub_step == "indicator":
-                    item["expected_indices"] = indicator.get("indices", [])
-                elif sub_step == "outer":
-                    item["expected_indices"] = outer.get("fodder", {}).get("indices", [])
-                elif sub_step == "inner":
-                    item["expected_indices"] = inner.get("fodder", {}).get("indices", [])
-                elif sub_step == "assembly":
-                    item["assembly_config"] = _build_assembly_config(step, clue)
-                items.append(item)
-            return items
-        else:
-            # Default container (no matching template)
-            default_cfg = ctr_cfg.get("default", {})
-            title = _fmt(default_cfg.get("title_with_indicator", ""), v) if ind_text else default_cfg.get("title", "Identify Container")
-            return [{"index": base_index, "title": title, "type": step_type, "step_data": step, "expanded_type": default_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(default_cfg.get("completion_title", ""), v)}]
-
-    # Charade with template - expand into parts + assembly
-    elif step_type == "charade":
-        template = step.get("template", "")
-        parts = step.get("parts", [])
-        result = step.get("result", "")
-        chr_cfg = menu_cfg.get("charade", {})
-
-        if template == "charade_with_parts":
-            assembly = step.get("assembly", "")
-            tmpl_cfg = chr_cfg.get("charade_with_parts", {})
-            items = []
-
-            # Step 1: Identify wordplay indicators
-            ind_cfg = tmpl_cfg.get("indicator_step", {})
-            items.append({
-                "index": f"{base_index}.1",
-                "title": ind_cfg.get("title", "Identify Wordplay Indicators"),
-                "type": ind_cfg.get("type", "wordplay_identification"),
-                "step_data": step,
-                "sub_step": "identify_indicators",
-                "hint": ind_cfg.get("hint", "") or step.get("wordplay_hint", ""),
-                "expanded_type": ind_cfg.get("expanded_type", "tap_words_with_fallback_button"),
-                "fallback_button": {
-                    "label": ind_cfg.get("fallback_button_label", "No wordplay indicators \u2192 Charade"),
-                },
-                "completion_title": ind_cfg.get("completion_title", ""),
-            })
-
-            # Steps 2+: Identify each part
-            part_cfg = tmpl_cfg.get("part_step", {})
-            for i, part in enumerate(parts, 1):
-                if isinstance(part, dict):
-                    fodder_text = part.get("fodder", {}).get("text", "") if isinstance(part.get("fodder"), dict) else str(part.get("fodder", ""))
-                    part_type = part.get("type", "transform")
-                    pv = {"n": i, "part_type": part_type, "fodder_text": fodder_text}
-                    items.append({
-                        "index": f"{base_index}.{i+1}",
-                        "title": _fmt(part_cfg.get("title_template", "Identify Part {n}"), pv),
-                        "type": _fmt(part_cfg.get("type_template", "charade_part_{part_type}"), pv),
-                        "step_data": step,
-                        "sub_step": f"part_{i}",
-                        "expected_indices": part.get("fodder", {}).get("indices", []),
-                        "hint": _fmt(part_cfg.get("hint_template", ""), pv) or part.get("reasoning", ""),
-                        "expanded_type": part_cfg.get("expanded_type", "tap_words"),
-                        "completion_title": _fmt(part_cfg.get("completion_title_template", ""), pv),
-                    })
-
-            # Final step: Assemble
-            asm_cfg = tmpl_cfg.get("assembly_step", {})
-            av = {"assembly": assembly, "result": result}
-            items.append({
-                "index": f"{base_index}.{len(parts)+2}",
-                "title": asm_cfg.get("title", "Assemble"),
-                "type": asm_cfg.get("type", "charade_assembly"),
-                "step_data": step,
-                "sub_step": "assembly",
-                "hint": _fmt(asm_cfg.get("hint_template", ""), av),
-                "expanded_type": asm_cfg.get("expanded_type", "assembly"),
-                "assembly_config": _build_assembly_config(step, clue),
-                "completion_title": _fmt(asm_cfg.get("completion_title_template", ""), av),
-            })
-            return items
-        else:
-            default_cfg = chr_cfg.get("default", {})
-            return [{"index": base_index, "title": default_cfg.get("title", "Assemble"), "type": step_type, "step_data": step, "expanded_type": default_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(default_cfg.get("completion_title", ""), {"result": result})}]
-
-    # Anagram with template - expand into pieces + solve
-    elif step_type == "anagram":
-        template = step.get("template", "")
-        result = step.get("result", "")
-        anag_cfg = menu_cfg.get("anagram", {})
-
-        if template == "anagram_with_fodder_pieces":
-            tmpl_cfg = anag_cfg.get("anagram_with_fodder_pieces", {})
-            piece_cfg = tmpl_cfg.get("piece_step", {})
-            solve_cfg = tmpl_cfg.get("solve_step", {})
-            pieces = step.get("pieces", [])
-            items = []
-            for i, piece in enumerate(pieces, 1):
-                if isinstance(piece, dict):
-                    fodder_text = piece.get("fodder", {}).get("text", "") if isinstance(piece.get("fodder"), dict) else str(piece.get("fodder", ""))
-                    pv = {"n": i, "fodder_text": fodder_text}
-                    items.append({"index": f"{base_index}.{i}", "title": _fmt(piece_cfg.get("title_template", ""), pv), "type": piece_cfg.get("type", "anagram_piece"), "step_data": step, "sub_step": f"piece_{i}", "hint": piece.get("reasoning", ""), "expanded_type": piece_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(piece_cfg.get("completion_title_template", ""), pv)})
-            fodder_combined = step.get("fodder_combined", "")
-            items.append({"index": f"{base_index}.{len(pieces)+1}", "title": solve_cfg.get("title", "Rearrange Letters"), "type": solve_cfg.get("type", "anagram_solve"), "step_data": step, "sub_step": "solve", "hint": fodder_combined, "expanded_type": solve_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(solve_cfg.get("completion_title_template", ""), {"result": result})})
-            return items
-        else:
-            default_cfg = anag_cfg.get("default", {})
-            return [{"index": base_index, "title": default_cfg.get("title", "Solve Anagram"), "type": step_type, "step_data": step, "expanded_type": default_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(default_cfg.get("completion_title", ""), {"result": result})}]
-
-    # Transformation chain - expand into steps
-    elif step_type == "transformation_chain":
-        template = step.get("template", "")
-        tc_cfg = menu_cfg.get("transformation_chain", {})
-
-        if template == "transformation_chain":
-            chain_cfg = tc_cfg.get("chain_step", {})
-            chain_steps = step.get("steps", [])
-            items = []
-            for i, chain_step in enumerate(chain_steps, 1):
-                step_type_name = chain_step.get("type", "transform")
-                fodder = chain_step.get("fodder", "")
-                fodder_text = fodder.get("text", "") if isinstance(fodder, dict) else str(fodder)
-                chain_result = chain_step.get("result", "")
-                cv = {"step_type_title": step_type_name.title(), "step_type_name": step_type_name, "step_type_upper": step_type_name.upper(), "fodder_text": fodder_text, "chain_result": chain_result}
-                items.append({"index": f"{base_index}.{i}", "title": _fmt(chain_cfg.get("title_template", ""), cv), "type": _fmt(chain_cfg.get("type_template", ""), cv), "step_data": step, "sub_step": f"step_{i}", "hint": chain_step.get("reasoning", ""), "expanded_type": chain_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(chain_cfg.get("completion_title_template", ""), cv)})
-            return items
-        else:
-            default_cfg = tc_cfg.get("default", {})
-            return [{"index": base_index, "title": default_cfg.get("title", "Apply Transformations"), "type": step_type, "step_data": step, "expanded_type": default_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(default_cfg.get("completion_title", ""), {"step_type": step_type})}]
-
-    # Default: return single item
+    # Find config: type-specific template, type default, or global default
+    type_cfg = menu_cfg.get(step_type, menu_cfg.get("default", []))
+    if isinstance(type_cfg, dict):
+        # Nested by template name (container, charade, etc.)
+        sub_steps = type_cfg.get(template, type_cfg.get("default", menu_cfg.get("default", [])))
     else:
-        default_cfg = menu_cfg.get("default", {})
-        title = step_type.replace("_", " ").title()
-        v = {"step_type_title": title}
-        return [{
-            "index": base_index,
-            "title": _fmt(default_cfg.get("title_template", "{step_type_title}"), v),
-            "type": step_type,
-            "step_data": step,
-            "hint": step.get("reasoning", ""),
-            "expanded_type": default_cfg.get("expanded_type", "tap_words"),
-            "completion_title": _fmt(default_cfg.get("completion_title_template", "<strong>{step_type_title}</strong>"), v),
-        }]
+        # Direct array (standard_definition, default)
+        sub_steps = type_cfg
+
+    # Normalize to array
+    if isinstance(sub_steps, dict):
+        sub_steps = [sub_steps]
+
+    v = _build_step_vars(step, clue)
+    items = []
+    counter = 1
+
+    for sub_cfg in sub_steps:
+        repeat_for = sub_cfg.get("repeat_for")
+        if repeat_for:
+            elements = step.get(repeat_for, [])
+            for i, element in enumerate(elements, 1):
+                if isinstance(element, dict):
+                    ev = _build_element_vars(element, i)
+                    idx = f"{base_index}.{counter}"
+                    items.append(_make_menu_item(sub_cfg, {**v, **ev}, idx, step, clue))
+                    counter += 1
+        else:
+            idx = f"{base_index}.{counter}" if len(sub_steps) > 1 else base_index
+            items.append(_make_menu_item(sub_cfg, v, idx, step, clue))
+            counter += 1
+
+    return items
 
 def _build_menu_render(session, clue):
     """
@@ -1187,103 +1143,19 @@ def get_render(clue_id, clue):
     if "button" in phase:
         render["button"] = phase["button"]
 
-    # Special handling for standard_definition teaching phase - include definition hint
-    if step["type"] == "standard_definition" and phase["id"] == "teaching":
-        definition_text = step.get("expected", {}).get("text", "")
-        position = step.get("position", "")
-        definition_hint = step.get("hint", "")
-
-        instruction = f"Good! The definition, '{definition_text}', is at the {position} of the clue."
-        if definition_hint:
-            instruction += f"\n\n**Hint:** {definition_hint}"
-        render["panel"]["instruction"] = instruction
-
-    # Special handling for wordplay_overview teaching phase
+    # Special handling for wordplay_overview teaching phase (too dynamic for JSON)
     if step["type"] == "wordplay_overview" and phase["id"] == "teaching":
         render["panel"]["instruction"] = build_wordplay_teaching(step, clue)
 
-    # Special handling for deletion_discover teaching
-    if step["type"] == "deletion_discover" and phase["id"] == "teaching":
-        fodder_word = step.get("fodder_word", {}).get("text", "")
-        fodder_synonym = step.get("fodder_synonym", "")
-        result = step.get("result", "")
-        render["panel"]["instruction"] = f"{fodder_word} = {fodder_synonym}, shortened = {result}\n\n**Remember:** Deletion indicators often require finding a synonym first, then shortening it."
-
-    # Special handling for container_verify teaching
-    if step["type"] == "container_verify" and phase["id"] == "teaching":
-        inner = step.get("inner", "")
-        outer = step.get("outer", "")
-        result = step.get("result", "")
-        # Build the split display
-        inner_upper = inner.upper()
-        result_upper = result.upper()
-        idx = result_upper.find(inner_upper)
-        if idx > 0:
-            before = result_upper[:idx]
-            after = result_upper[idx + len(inner_upper):]
-            split_display = f"{before} + {inner_upper} + {after}"
-        else:
-            split_display = f"{outer} around {inner}"
-
-        definition_text = ""
-        if steps and steps[0].get("type") == "standard_definition":
-            definition_text = steps[0].get("expected", {}).get("text", "")
-
-        render["panel"]["instruction"] = f"{split_display} = {result} ✓\nDefinition: \"{definition_text}\" = {result} ✓\n\n**Remember:** Container indicators (about, holds, around, inside, carries) tell you to put one piece inside another."
-
-    # Special handling for alternation_discover teaching
-    if step["type"] == "alternation_discover" and phase["id"] == "teaching":
-        fodder = get_fodder_text(step)
-        result = step.get("result", "")
-        pattern = step.get("pattern", "even")
-
-        # Get the previous charade result if available
-        charade_result = ""
-        for i, s in enumerate(steps):
-            if s.get("type") == "charade_verify":
-                charade_result = s.get("result", "")
-                break
-
-        definition_text = ""
-        if steps and steps[0].get("type") == "standard_definition":
-            definition_text = steps[0].get("expected", {}).get("text", "")
-
-        final_answer = answer
-        render["panel"]["instruction"] = f"Taking alternate letters from {fodder}: {result}\n{charade_result} + {result} = {final_answer} ✓\nDefinition: \"{definition_text}\" = {final_answer} ✓\n\n**Remember:** Alternation indicators (by turns, oddly, evenly, regularly) tell you to take every other letter."
-
-    # Special handling for fodder phase - dynamic word count for multiple templates
-    if phase["id"] == "fodder" and step["type"] in ["synonym", "abbreviation", "literal", "letter_selection"]:
+    # Fodder phase: use plural variants when multiple words expected
+    if phase["id"] == "fodder" and "instruction_plural" in phase.get("panel", {}):
         fodder_indices = step.get("fodder", {}).get("indices", [])
         word_count = len(fodder_indices)
-
-        if step["type"] == "synonym":
-            if word_count == 1:
-                render["panel"]["instruction"] = "Tap the word you need to find a synonym for."
-                render["actionPrompt"] = "Tap the word to find a synonym for"
-            else:
-                render["panel"]["instruction"] = f"Tap the {word_count} words you need to find a synonym for."
-                render["actionPrompt"] = f"Tap the {word_count} words to find a synonym for"
-        elif step["type"] == "abbreviation":
-            if word_count == 1:
-                render["panel"]["instruction"] = "Tap the word to abbreviate."
-                render["actionPrompt"] = "Tap the word to abbreviate"
-            else:
-                render["panel"]["instruction"] = f"Tap the {word_count} words to abbreviate."
-                render["actionPrompt"] = f"Tap the {word_count} words to abbreviate"
-        elif step["type"] == "literal":
-            if word_count == 1:
-                render["panel"]["instruction"] = "Tap the word used literally (as-is) in the answer."
-                render["actionPrompt"] = "Tap the literal word"
-            else:
-                render["panel"]["instruction"] = f"Tap the {word_count} words used literally (as-is) in the answer."
-                render["actionPrompt"] = f"Tap the {word_count} literal words"
-        elif step["type"] == "letter_selection":
-            if word_count == 1:
-                render["panel"]["instruction"] = "Tap the word you're extracting letters from."
-                render["actionPrompt"] = "Tap the source word"
-            else:
-                render["panel"]["instruction"] = f"Tap the {word_count} words you're extracting letters from."
-                render["actionPrompt"] = f"Tap the {word_count} source words"
+        if word_count > 1:
+            v = {"word_count": word_count}
+            render["panel"]["instruction"] = _fmt(phase["panel"]["instruction_plural"], v)
+            if "actionPrompt_plural" in phase:
+                render["actionPrompt"] = _fmt(phase["actionPrompt_plural"], v)
 
     # Add expected for validation
     if phase.get("inputMode") == "tap_words":

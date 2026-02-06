@@ -91,7 +91,7 @@
           "actionPrompt": "Continue to next step",
           "panel": {
             "title": "DEFINITION FOUND: {definition_text}",
-            "instruction": "Good! The definition, '{definition_text}', is at the {position} of the clue."
+            "instruction": "Good! The definition, '{definition_text}', is at the {position} of the clue.{hint_suffix}"
           },
           "inputMode": "none",
           "button": {"label": "Continue \u2192", "action": "next_step"}
@@ -125,7 +125,7 @@
           "actionPrompt": "Complete training",
           "panel": {
             "title": "VERIFIED!",
-            "instruction": "{outer_split} = {result} \u2713 Your hypothesis is confirmed by the wordplay!"
+            "instruction": "{outer_split} = {result} \u2713\nDefinition: \"{definition_text}\" = {result} \u2713\n\n**Remember:** Container indicators (about, holds, around, inside, carries) tell you to put one piece inside another."
           },
           "inputMode": "none",
           "button": {"label": "Complete \u2192", "action": "complete"}
@@ -188,7 +188,7 @@
           "actionPrompt": "Continue to next step",
           "panel": {
             "title": "ALTERNATION",
-            "instruction": "'{indicator}' on '{fodder}' = {result}"
+            "instruction": "Taking alternate letters from {fodder}: {result}\n{charade_result} + {result} = {answer} \u2713\nDefinition: \"{definition_text}\" = {answer} \u2713\n\n**Remember:** Alternation indicators (by turns, oddly, evenly, regularly) tell you to take every other letter."
           },
           "inputMode": "none",
           "button": {"label": "Continue \u2192", "action": "next_step"}
@@ -296,6 +296,7 @@
         {
           "id": "fodder",
           "actionPrompt": "Tap the word to abbreviate",
+          "actionPrompt_plural": "Tap the {word_count} words to abbreviate",
           "intro": {
             "title": "Abbreviation",
             "text": "Cryptic clues frequently use standard abbreviations. Common examples:\n\n\u2022 Numbers: five=V, one=I, nothing=O\n\u2022 Directions: north=N, east=E\n\u2022 Titles: doctor=DR, saint=ST\n\u2022 Units: second=S, minute=M",
@@ -303,7 +304,8 @@
           },
           "panel": {
             "title": "FIND THE WORD",
-            "instruction": "Tap the word that represents an abbreviation."
+            "instruction": "Tap the word to abbreviate.",
+            "instruction_plural": "Tap the {word_count} words to abbreviate."
           },
           "inputMode": "tap_words",
           "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
@@ -338,6 +340,7 @@
         {
           "id": "fodder",
           "actionPrompt": "Tap the word to find a synonym for",
+          "actionPrompt_plural": "Tap the {word_count} words to find a synonym for",
           "intro": {
             "title": "Synonym",
             "text": "Cryptic clues often require finding synonyms \u2014 words with the same or similar meaning.\n\nThe clue gives you one word, and you need to find another word that means the same thing.",
@@ -345,7 +348,8 @@
           },
           "panel": {
             "title": "FIND THE WORD",
-            "instruction": "Tap the word you need to find a synonym for."
+            "instruction": "Tap the word you need to find a synonym for.",
+            "instruction_plural": "Tap the {word_count} words you need to find a synonym for."
           },
           "inputMode": "tap_words",
           "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
@@ -479,10 +483,12 @@
         },
         {
           "id": "fodder",
-          "actionPrompt": "Tap the source word(s)",
+          "actionPrompt": "Tap the source word",
+          "actionPrompt_plural": "Tap the {word_count} source words",
           "panel": {
             "title": "FIND THE SOURCE",
-            "instruction": "Tap the word(s) you're extracting letters from."
+            "instruction": "Tap the word you're extracting letters from.",
+            "instruction_plural": "Tap the {word_count} words you're extracting letters from."
           },
           "inputMode": "tap_words",
           "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
@@ -516,7 +522,8 @@
       "phases": [
         {
           "id": "fodder",
-          "actionPrompt": "Tap the literal letters",
+          "actionPrompt": "Tap the literal word",
+          "actionPrompt_plural": "Tap the {word_count} literal words",
           "intro": {
             "title": "Literal",
             "text": "Sometimes letters in a clue are used exactly as written \u2014 no transformation needed.\n\nAbbreviations like 'IT', 'PC', 'TV' or single letters contribute directly to the answer.",
@@ -524,7 +531,8 @@
           },
           "panel": {
             "title": "FIND THE LITERAL",
-            "instruction": "Tap the word(s) used literally (as-is) in the answer."
+            "instruction": "Tap the word used literally (as-is) in the answer.",
+            "instruction_plural": "Tap the {word_count} words used literally (as-is) in the answer."
           },
           "inputMode": "tap_words",
           "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
@@ -686,12 +694,16 @@
   },
 
   "menu_items": {
-    "standard_definition": {
-      "title": "Identify Definition",
-      "hint": "This is a cryptic clue. The definition is ALWAYS at the start OR the end. Look for words that sound like a meaningful phrase that could yield a {answer_length}-letter answer.",
-      "completion_title": "DEFINITION: <strong>{expected_text}</strong> found at the {position} of the clue.<br><br>Can you find a word ({enumeration}) meaning {expected_text}?",
-      "expanded_type": "tap_words"
-    },
+    "standard_definition": [
+      {
+        "sub_step": "select",
+        "title": "Identify Definition",
+        "type": "standard_definition",
+        "hint": "This is a cryptic clue. The definition is ALWAYS at the start OR the end. Look for words that sound like a meaningful phrase that could yield a {answer_length}-letter answer.",
+        "completion_title": "DEFINITION: <strong>{expected_text}</strong> found at the {position} of the clue.<br><br>Can you find a word ({enumeration}) meaning {expected_text}?",
+        "expanded_type": "tap_words"
+      }
+    ],
     "container": {
       "insertion_with_two_synonyms": [
         {
@@ -787,16 +799,21 @@
           "expanded_type": "assembly"
         }
       ],
-      "default": {
-        "title": "Identify Container",
-        "title_with_indicator": "Identify Container ({ind_text})",
-        "completion_title": "CONTAINER: <strong>{ind_text}</strong>",
-        "expanded_type": "tap_words"
-      }
+      "default": [
+        {
+          "sub_step": "select",
+          "title": "Identify Container",
+          "type": "container",
+          "hint": "",
+          "completion_title": "CONTAINER: <strong>{ind_text}</strong>",
+          "expanded_type": "tap_words"
+        }
+      ]
     },
     "charade": {
-      "charade_with_parts": {
-        "indicator_step": {
+      "charade_with_parts": [
+        {
+          "sub_step": "identify_indicators",
           "title": "Identify Wordplay Indicators",
           "type": "wordplay_identification",
           "hint": "Look for wordplay indicators: anagram (mixed, confused), container (in, within, holding), reversal (back, returning). If none found, it's a simple Charade.",
@@ -804,66 +821,99 @@
           "fallback_button_label": "No wordplay indicators \u2192 Charade",
           "completion_title": "WORDPLAY TYPE: <strong>Charade</strong> (no indicators found)"
         },
-        "part_step": {
-          "title_template": "Identify Part {n}",
-          "type_template": "charade_part_{part_type}",
-          "hint_template": "Find a {part_type} for this word.",
-          "completion_title_template": "CHARADE PART: <strong>{fodder_text}</strong>",
+        {
+          "repeat_for": "parts",
+          "sub_step_template": "part_{n}",
+          "title": "Identify Part {n}",
+          "type": "charade_part_{part_type}",
+          "hint": "Find a {part_type} for this word.",
+          "completion_title": "CHARADE PART: <strong>{fodder_text}</strong>",
           "expanded_type": "tap_words"
         },
-        "assembly_step": {
+        {
+          "sub_step": "assembly",
           "title": "Assemble",
           "type": "charade_assembly",
-          "hint_template": "Combine the transformed parts: {assembly}",
-          "completion_title_template": "ASSEMBLY: <strong>{result}</strong>",
+          "hint": "Combine the transformed parts: {assembly}",
+          "completion_title": "ASSEMBLY: <strong>{result}</strong>",
           "expanded_type": "assembly"
         }
-      },
-      "default": {
-        "title": "Assemble",
-        "completion_title": "<strong>{result}</strong>",
-        "expanded_type": "tap_words"
-      }
-    },
-    "anagram": {
-      "anagram_with_fodder_pieces": {
-        "piece_step": {
-          "title_template": "Get Piece {n} ({fodder_text})",
-          "type": "anagram_piece",
-          "completion_title_template": "ANAGRAM FODDER: <strong>{fodder_text}</strong>",
-          "expanded_type": "tap_words"
-        },
-        "solve_step": {
-          "title": "Rearrange Letters",
-          "type": "anagram_solve",
-          "completion_title_template": "ANAGRAM: <strong>{result}</strong>",
+      ],
+      "default": [
+        {
+          "sub_step": "select",
+          "title": "Assemble",
+          "type": "charade",
+          "hint": "",
+          "completion_title": "<strong>{result}</strong>",
           "expanded_type": "tap_words"
         }
-      },
-      "default": {
-        "title": "Solve Anagram",
-        "completion_title": "ANAGRAM: <strong>{result}</strong>",
-        "expanded_type": "tap_words"
-      }
+      ]
+    },
+    "anagram": {
+      "anagram_with_fodder_pieces": [
+        {
+          "repeat_for": "pieces",
+          "sub_step_template": "piece_{n}",
+          "title": "Get Piece {n} ({fodder_text})",
+          "type": "anagram_piece",
+          "hint": "",
+          "completion_title": "ANAGRAM FODDER: <strong>{fodder_text}</strong>",
+          "expanded_type": "tap_words"
+        },
+        {
+          "sub_step": "solve",
+          "title": "Rearrange Letters",
+          "type": "anagram_solve",
+          "hint": "{fodder_combined}",
+          "completion_title": "ANAGRAM: <strong>{result}</strong>",
+          "expanded_type": "tap_words"
+        }
+      ],
+      "default": [
+        {
+          "sub_step": "select",
+          "title": "Solve Anagram",
+          "type": "anagram",
+          "hint": "",
+          "completion_title": "ANAGRAM: <strong>{result}</strong>",
+          "expanded_type": "tap_words"
+        }
+      ]
     },
     "transformation_chain": {
-      "chain_step": {
-        "title_template": "{step_type_title} ({fodder_text})",
-        "type_template": "transform_{step_type_name}",
-        "completion_title_template": "{step_type_upper}: <strong>{chain_result}</strong>",
-        "expanded_type": "tap_words"
-      },
-      "default": {
-        "title": "Apply Transformations",
-        "completion_title": "<strong>{step_type}</strong>",
+      "transformation_chain": [
+        {
+          "repeat_for": "steps",
+          "sub_step_template": "step_{n}",
+          "title": "{step_type_title} ({fodder_text})",
+          "type": "transform_{step_type_name}",
+          "hint": "",
+          "completion_title": "{step_type_upper}: <strong>{chain_result}</strong>",
+          "expanded_type": "tap_words"
+        }
+      ],
+      "default": [
+        {
+          "sub_step": "select",
+          "title": "Apply Transformations",
+          "type": "transformation_chain",
+          "hint": "",
+          "completion_title": "<strong>{step_type}</strong>",
+          "expanded_type": "tap_words"
+        }
+      ]
+    },
+    "default": [
+      {
+        "sub_step": "select",
+        "title": "{step_type_title}",
+        "type": "{step_type}",
+        "hint": "",
+        "completion_title": "<strong>{step_type_title}</strong>",
         "expanded_type": "tap_words"
       }
-    },
-    "default": {
-      "title_template": "{step_type_title}",
-      "completion_title_template": "<strong>{step_type_title}</strong>",
-      "expanded_type": "tap_words"
-    }
+    ]
   },
 
   "assembly_config": {
@@ -871,8 +921,7 @@
     "final_label": "Final answer ({enumeration}):",
     "container": {
       "failure_message": "\u274c Raw insertion: {outer_fodder_text} + {inner_fodder_text} doesn't work",
-      "outer_label": "Outer transform for \"{outer_fodder_text}\":",
-      "inner_label": "Inner transform for \"{inner_fodder_text}\":"
+      "part_label": "{part_role} transform for \"{fodder_text}\":"
     },
     "charade": {
       "failure_message": "\u274c Raw: {raw_parts_display} = {raw_text_upper} ({raw_length} letters \u2260 {expected_length})",
