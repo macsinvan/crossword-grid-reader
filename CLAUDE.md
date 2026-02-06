@@ -3,6 +3,47 @@
 ## Domain Expertise
 You are an expert in cryptic crosswords and the techniques used to solve them. You have researched this topic thoroughly. We are developing a trainer to teach students how to approach solving cryptic clues in a holistic and natural way, only using the information they have available at each step.
 
+### Coaching Tone — MANDATORY
+All user-facing text in templates MUST read like a skilled teacher guiding a student, NOT like a technical system describing its own internals. This applies to:
+- Menu item titles (before and after completion)
+- Assembly labels, instructions, and failure messages
+- Hints, prompts, and action text
+- Any string the student sees
+
+**Core coaching principle:**
+In charades and container insertions, the clue words are rarely used directly. Each word is typically a clue *to* another word — a synonym, abbreviation, or cryptic association. The assembly step exists to teach this: "these raw words don't work as-is, so what is each one really pointing to?" All template text must reflect this teaching principle.
+
+**Rules:**
+- No jargon: never use "transform", "raw insertion", "assembly", "outer/inner transform", "fodder" or similar programmer/solver terminology that students wouldn't know
+- No ALL-CAPS labels: "CONTAINER INDICATOR:" reads like a database field, not a teacher
+- Short and sharp: screen space is limited, every word must earn its place
+- Guide understanding: tell the student *why*, not just *what* (e.g. "'lengthened' tells us one word goes inside another" not "CONTAINER INDICATOR: lengthened")
+- Use the student's language: "What does 'architect' mean?" not "Outer transform for 'architect':"
+- Completed steps should summarise the insight, not label the category
+- Before writing ANY user-facing text, think as a cryptic crossword teacher — research the domain if needed, don't hypothesise from code structure
+
+### Coaching Guidance Per Template Type
+
+Every template's user-facing text must connect to these high-level coaching insights. Step instructions should flow naturally from this guidance.
+
+**standard_definition** — Every cryptic clue contains a straight definition, always at the very start or very end, never in the middle. Finding it first narrows your search. Completed: confirm what the definition means and where it sits.
+
+**container (insertion)** — An indicator word (e.g. "holding", "within", "nurses", "lengthened") tells you one word goes inside another. You need to identify: which word signals the insertion, which is the outer word, and which goes inside. The clue words themselves rarely *are* the answer letters — each is pointing to another word (synonym, abbreviation, etc.). The assembly step shows this: the raw words don't fit, so what does each one really mean?
+
+**charade** — The wordplay breaks into parts that join end-to-end. Often there are no indicator words at all — that's the giveaway it's a charade. Each part is a clue to a shorter word. Again, the raw words rarely work directly; each is pointing to something else. The assembly step demonstrates this by showing the raw words don't produce the right number of letters.
+
+**anagram** — An indicator word (e.g. "mixed", "confused", "struggling") signals that letters need rearranging. First collect the letters (sometimes from multiple words), then rearrange them into the answer.
+
+**hidden** — The answer is literally hiding in plain sight, spelled out across consecutive letters spanning word boundaries. An indicator like "in", "from", or "some" points to this. Sometimes the hidden word is reversed.
+
+**double_definition** — The clue is simply two definitions side by side, both pointing to the same answer. No wordplay trickery — just spot that both halves define the same word.
+
+**transformation_chain** — Multiple operations applied in sequence: start with a word, then apply each transformation (synonym, deletion, reversal, etc.) one after another. Each step builds on the previous result.
+
+**synonym / abbreviation / literal / reversal / deletion / letter_selection** — These are the building blocks that appear within charades, containers, and chains. Each teaches one specific trick: a word means something else (synonym), a standard short form (abbreviation, e.g. "five" = V), a word used as-is (literal), reading backwards (reversal), removing letters (deletion), or picking specific letters like first/last/middle (letter_selection).
+
+**connector** — Some words in the clue are just glue — "and", "with", "for" — that don't contribute any letters. Recognising them helps the student focus on the words that matter.
+
 ## Communication Rules
 
 **When I ask a direct question, answer it directly. Never take my question as a request to take action.**
@@ -246,6 +287,12 @@ Templates with multiple atomic steps expand automatically:
 - `transformation_chain` → Step for each transformation
 
 ## TODO
+
+### Simplification Pass
+- [ ] Audit `_expand_step_to_menu_items()` — the branching per template variant is unnecessary; a single data-driven loop over the JSON sub-step list should replace all the `elif` branches
+- [ ] Audit `_build_assembly_config()` — container vs charade branches share most logic; unify
+- [ ] Audit dynamic phase builders — `build_wordplay_overview_phases`, `build_deletion_discover_phases`, `build_container_verify_phases` construct phases imperatively with hardcoded text; extract text to `render_templates.json` and simplify the Python to a loop over phase specs
+- [ ] Review `get_render()` special-case overrides — many exist because templates weren't rich enough; now that templates are in JSON, make them richer and eliminate overrides
 
 ### Phase 6: Automated Clue Annotation (Future)
 - [ ] Build solver that takes cold clues (+ optional answer) and generates metadata

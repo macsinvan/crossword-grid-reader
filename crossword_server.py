@@ -672,8 +672,9 @@ def trainer_start():
     Start a training session for a clue.
     Uses local training_handler (no proxy).
     """
-    # Auto-reload clues_db.json if it has changed
+    # Auto-reload data files if changed
     maybe_reload_clues_db()
+    training_handler.maybe_reload_render_templates()
 
     data = request.get_json()
     if not data:
@@ -956,8 +957,9 @@ def trainer_solved_view():
     Get the solved view for a clue - shows full breakdown immediately.
     No step-by-step interaction, just the final summary.
     """
-    # Auto-reload clues_db.json if it has changed
+    # Auto-reload data files if changed
     maybe_reload_clues_db()
+    training_handler.maybe_reload_render_templates()
 
     data = request.get_json()
     if not data:

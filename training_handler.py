@@ -90,697 +90,42 @@ def parse_enumeration(enum_str):
     return sum(int(n) for n in numbers) if numbers else 0
 
 # =============================================================================
-# STEP TEMPLATES
+# RENDER TEMPLATES - Loaded from render_templates.json (EXTERNAL TO CODE)
 # =============================================================================
 
-STEP_TEMPLATES = {
-    "clue_type_identify": {
-        "phases": [
-            {
-                "id": "choose",
-                "actionPrompt": "Select clue type",
-                "intro": {
-                    "title": "First, identify the clue type",
-                    "text": "Before diving in, take a moment to scan the clue structure:\n\n• See instruction words (rearranged, inside, about, sounds like)? → Standard clue\n• Clear definition at start or end with wordplay in the rest? → Standard clue\n• Short clue with no instruction words? → Probably a double definition\n• One playful description with no clear split? → Cryptic definition\n• Every word serves both meaning AND wordplay? → &lit (rare!)"
-                },
-                "panel": {
-                    "title": "WHAT TYPE OF CLUE IS THIS?",
-                    "instruction": "Based on the structure, what type of clue do you think this is?"
-                },
-                "inputMode": "multiple_choice",
-                "onCorrect": {"message": "Good eye! Recognizing clue types helps you choose the right solving approach."},
-                "onWrong": {"message": "Not quite — look again at the clue structure. Are there instruction words? Is there a clear definition?"}
-            }
-        ]
-    },
+RENDER_TEMPLATES = {}
+RENDER_TEMPLATES_PATH = os.path.join(os.path.dirname(__file__), "render_templates.json")
+RENDER_TEMPLATES_MTIME = 0
 
-    "standard_definition": {
-        "phases": [
-            {
-                "id": "select",
-                "actionPrompt": "Tap the definition words",
-                "intro": {
-                    "title": "Find the Definition",
-                    "text": "Every standard cryptic clue has a 'straight' definition — a normal dictionary meaning of the answer.\n\nKey insight: The definition is ALWAYS at the very start OR the very end of the clue. Never in the middle!",
-                    "example": "Ignore the misleading surface story. Focus on the start and end — which phrase could define a word?"
-                },
-                "panel": {
-                    "title": "FIND THE DEFINITION",
-                    "instruction": "Tap the definition words. Remember: it's always at the start or end of the clue."
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "GREEN", "role": "definition"}},
-                "onWrong": {"message": "Hint: The definition is always at the very start OR very end — never in the middle."}
-            },
-            {
-                "id": "teaching",
-                "actionPrompt": "Continue to next step",
-                "panel": {
-                    "title": "DEFINITION FOUND: {definition_text}",
-                    "instruction": "Good! The definition, '{definition_text}', is at the {position} of the clue."
-                },
-                "inputMode": "none",
-                "button": {"label": "Continue →", "action": "next_step"}
-            }
-            # Note: "solve" phase added dynamically when recommendedApproach == "definition"
-        ]
-    },
+def _load_render_templates():
+    """Load render templates from JSON file. Errors out if file missing or invalid."""
+    global RENDER_TEMPLATES, RENDER_TEMPLATES_MTIME
+    current_mtime = os.path.getmtime(RENDER_TEMPLATES_PATH)
+    with open(RENDER_TEMPLATES_PATH, "r") as f:
+        RENDER_TEMPLATES = json.load(f)
+    RENDER_TEMPLATES_MTIME = current_mtime
+    print(f"Loaded render_templates.json ({len(RENDER_TEMPLATES.get('templates', {}))} templates, mtime: {current_mtime})")
 
-    "wordplay_overview": {
-        # Phases are generated dynamically based on common_vocabulary count
-        "phases": []  # Placeholder - built dynamically
-    },
+def maybe_reload_render_templates():
+    """Check if render_templates.json has been modified and reload if needed."""
+    try:
+        current_mtime = os.path.getmtime(RENDER_TEMPLATES_PATH)
+        if current_mtime != RENDER_TEMPLATES_MTIME:
+            print(f"[Auto-reload] render_templates.json changed, reloading...")
+            _load_render_templates()
+    except OSError:
+        pass
 
-    "deletion_discover": {
-        # Phases are generated dynamically to build multiple choice options
-        "phases": []  # Placeholder - built dynamically by build_deletion_discover_phases
-    },
-
-    "container_verify": {
-        "phases": [
-            {
-                "id": "order",
-                "actionPrompt": "Select which piece goes inside which",
-                "panel": {
-                    "title": "CONTAINER ORDER",
-                    "instruction": "You have two pieces: {inner} and {outer}. '{indicator}' tells us one goes inside the other. To make {answer}, which arrangement works?"
-                },
-                "inputMode": "multiple_choice",
-                "onCorrect": {"message": "That's right! Container indicators tell you the structure."},
-                "onWrong": {"message": "Hint: Look at {answer} — where does {inner} appear? Is it surrounded by letters, or does it surround them?"}
-            },
-            {
-                "id": "teaching",
-                "actionPrompt": "Complete training",
-                "panel": {
-                    "title": "VERIFIED!",
-                    "instruction": "{outer_split} = {result} ✓ Your hypothesis is confirmed by the wordplay!"
-                },
-                "inputMode": "none",
-                "button": {"label": "Complete →", "action": "complete"}
-            }
-        ]
-    },
-
-    "charade_verify": {
-        "phases": [
-            {
-                "id": "result",
-                "actionPrompt": "Type the combined result",
-                "panel": {
-                    "title": "COMBINE YOUR PIECES",
-                    "instruction": "You've gathered these pieces: {components_display}. Put them together — what do you get?"
-                },
-                "inputMode": "text",
-                "onCorrect": {"message": "Great! The pieces chain together nicely."},
-                "onWrong": {"message": "Hint: Simply join the pieces in order, left to right."}
-            },
-            {
-                "id": "teaching",
-                "actionPrompt": "Complete training",
-                "panel": {
-                    "title": "SOLVED!",
-                    "instruction": "{components_display} = {result} ✓"
-                },
-                "inputMode": "none",
-                "button": {"label": "Complete →", "action": "complete"}
-            }
-        ]
-    },
-
-    "alternation_discover": {
-        "phases": [
-            {
-                "id": "fodder",
-                "actionPrompt": "Tap the word the indicator operates on",
-                "panel": {
-                    "title": "FIND THE FODDER",
-                    "instruction": "'{indicator}' tells you to take alternating letters. Which word does it operate on?"
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
-                "onWrong": {"message": "Hint: Look for a word right next to the indicator."}
-            },
-            {
-                "id": "result",
-                "actionPrompt": "Type the alternating letters",
-                "panel": {
-                    "title": "EXTRACT THE LETTERS",
-                    "instruction": "Take alternating letters from '{fodder}'. Which {letters_needed} letters do you get?"
-                },
-                "inputMode": "text",
-                "onCorrect": {"message": "Well done! Alternation is a handy technique to recognize."},
-                "onWrong": {"message": "Hint: Take every other letter from '{fodder}' — try odd positions (1st, 3rd) or even (2nd, 4th)."}
-            },
-            {
-                "id": "teaching",
-                "actionPrompt": "Continue to next step",
-                "panel": {
-                    "title": "ALTERNATION",
-                    "instruction": "'{indicator}' on '{fodder}' = {result}"
-                },
-                "inputMode": "none",
-                "button": {"label": "Continue →", "action": "next_step"}
-            }
-        ]
-    },
-
-    "double_definition": {
-        "phases": [
-            {
-                "id": "first_def",
-                "actionPrompt": "Tap the first definition",
-                "intro": {
-                    "title": "Double Definition",
-                    "text": "This is a double definition — two separate meanings sitting side by side, both pointing to the same answer.\n\nNo wordplay indicators here. The trick is finding a word that satisfies both meanings.",
-                    "example": "Short clue with no obvious wordplay? Think double definition."
-                },
-                "panel": {
-                    "title": "FIND THE FIRST MEANING",
-                    "instruction": "Tap the first definition — one meaning of the answer."
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "GREEN", "role": "definition1"}},
-                "onWrong": {"message": "Hint: Look for a word or phrase that could define the answer on its own."}
-            },
-            {
-                "id": "second_def",
-                "actionPrompt": "Tap the second definition",
-                "panel": {
-                    "title": "FIND THE SECOND MEANING",
-                    "instruction": "Good! Now tap the second definition — a different meaning of the same word."
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "BLUE", "role": "definition2"}},
-                "onWrong": {"message": "Hint: Look for another word or phrase that also defines the answer, but in a different sense."}
-            },
-            {
-                "id": "solve",
-                "actionPrompt": "Type the answer",
-                "panel": {
-                    "title": "WHAT'S THE WORD?",
-                    "instruction": "What single word satisfies both definitions?"
-                },
-                "inputMode": "text",
-                "onCorrect": {"message": "Excellent! You found the word that bridges both meanings."},
-                "onWrong": {"message": "Hint: Think of a word that could mean both things — it's often a word with multiple unrelated meanings."}
-            },
-            {
-                "id": "teaching",
-                "actionPrompt": "Complete training",
-                "panel": {
-                    "title": "SOLVED!",
-                    "instruction": "Both definitions point to {result}. Double definitions are elegant — no wordplay needed, just two meanings of one word!"
-                },
-                "inputMode": "none",
-                "button": {"label": "Complete →", "action": "complete"}
-            }
-        ]
-    },
-
-    "literal_phrase": {
-        "phases": [
-            {
-                "id": "fodder",
-                "actionPrompt": "Tap the phrase that sounds like something else",
-                "intro": {
-                    "title": "Literal Phrase",
-                    "text": "Some cryptic clues use phrases that sound like something else when spoken aloud.\n\nThe trick is to read the phrase conversationally — what would it sound like if you said it?",
-                    "example": "'do you mean?' spoken aloud sounds like 'IS IT' — the question you'd ask for confirmation."
-                },
-                "panel": {
-                    "title": "FIND THE SPOKEN PHRASE",
-                    "instruction": "Tap the words that sound like something else when spoken aloud."
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
-                "onWrong": {"message": "Hint: Look for a phrase that might sound different when spoken conversationally."}
-            },
-            {
-                "id": "result",
-                "actionPrompt": "Type what the phrase sounds like",
-                "panel": {
-                    "title": "SPOKEN SOUND",
-                    "instruction": "What does '{fodder}' sound like when spoken aloud?"
-                },
-                "inputMode": "text",
-                "onCorrect": {"message": "That's it! Reading phrases aloud can reveal hidden meanings."},
-                "onWrong": {"message": "Hint: Say '{fodder}' out loud — what does it sound like?"}
-            },
-            {
-                "id": "teaching",
-                "actionPrompt": "Continue to next step",
-                "panel": {
-                    "title": "LITERAL PHRASE",
-                    "instruction": "'{fodder}' sounds like '{result}' when spoken.\n\n**Remember:** Some clues hide letters in how phrases sound when spoken conversationally."
-                },
-                "inputMode": "none",
-                "button": {"label": "Continue →", "action": "next_step"}
-            }
-        ]
-    },
-
-    "abbreviation": {
-        "phases": [
-            {
-                "id": "fodder",
-                "actionPrompt": "Tap the word to abbreviate",
-                "intro": {
-                    "title": "Abbreviation",
-                    "text": "Cryptic clues frequently use standard abbreviations. Common examples:\n\n• Numbers: five=V, one=I, nothing=O\n• Directions: north=N, east=E\n• Titles: doctor=DR, saint=ST\n• Units: second=S, minute=M",
-                    "example": "When you see a number or common word, think about its standard abbreviation."
-                },
-                "panel": {
-                    "title": "FIND THE WORD",
-                    "instruction": "Tap the word that represents an abbreviation."
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
-                "onWrong": {"message": "Hint: Look for a word that has a common abbreviation (numbers, directions, titles, etc.)."}
-            },
-            {
-                "id": "result",
-                "actionPrompt": "Type the abbreviation",
-                "panel": {
-                    "title": "TYPE ABBREVIATION",
-                    "instruction": "What is the standard abbreviation for '{fodder}'?"
-                },
-                "inputMode": "text",
-                "onCorrect": {"message": "Correct! Abbreviations are a staple of cryptic crosswords."},
-                "onWrong": {"message": "Hint: Think of the standard abbreviation for '{fodder}'."}
-            },
-            {
-                "id": "teaching",
-                "actionPrompt": "Continue to next step",
-                "panel": {
-                    "title": "ABBREVIATION",
-                    "instruction": "'{fodder}' = {result}\n\n**Hint:** {hint}"
-                },
-                "inputMode": "none",
-                "button": {"label": "Continue →", "action": "next_step"}
-            }
-        ]
-    },
-
-    "synonym": {
-        "phases": [
-            {
-                "id": "fodder",
-                "actionPrompt": "Tap the word to find a synonym for",
-                "intro": {
-                    "title": "Synonym",
-                    "text": "Cryptic clues often require finding synonyms — words with the same or similar meaning.\n\nThe clue gives you one word, and you need to find another word that means the same thing.",
-                    "example": "Think of alternative words that could replace the given word."
-                },
-                "panel": {
-                    "title": "FIND THE WORD",
-                    "instruction": "Tap the word you need to find a synonym for."
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
-                "onWrong": {"message": "Hint: Look for a word that needs to be replaced with a synonym."}
-            },
-            {
-                "id": "result",
-                "actionPrompt": "Type the synonym",
-                "panel": {
-                    "title": "TYPE SYNONYM",
-                    "instruction": "What's a synonym for '{fodder}' that fits?"
-                },
-                "inputMode": "text",
-                "onCorrect": {"message": "Good! Building synonym knowledge is key to cryptic solving."},
-                "onWrong": {"message": "Hint: Think of words that mean the same as '{fodder}'."}
-            },
-            {
-                "id": "teaching",
-                "actionPrompt": "Continue to next step",
-                "panel": {
-                    "title": "SYNONYM",
-                    "instruction": "'{fodder}' = {result}\n\n**Hint:** {hint}"
-                },
-                "inputMode": "none",
-                "button": {"label": "Continue →", "action": "next_step"}
-            }
-        ]
-    },
-
-    "deletion": {
-        "phases": [
-            {
-                "id": "indicator",
-                "actionPrompt": "Tap the deletion indicator",
-                "intro": {
-                    "title": "Deletion",
-                    "text": "Deletion indicators tell you to remove letters from a word. Common indicators:\n\n• 'a lot of', 'most of' = remove last letter\n• 'headless', 'beheaded' = remove first letter\n• 'heartless' = remove middle letter\n• 'losing', 'without', 'dropping' = remove specified letters",
-                    "example": "Look for words suggesting something is missing or shortened."
-                },
-                "panel": {
-                    "title": "FIND THE INDICATOR",
-                    "instruction": "Tap the word(s) that signal deletion."
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "ORANGE", "role": "indicator"}},
-                "onWrong": {"message": "Hint: Look for words suggesting removal or shortening."}
-            },
-            {
-                "id": "result",
-                "actionPrompt": "Type what remains after deletion",
-                "panel": {
-                    "title": "WHAT REMAINS?",
-                    "instruction": "After applying the deletion to '{fodder}', what letters remain?"
-                },
-                "inputMode": "text",
-                "onCorrect": {"message": "Correct! Deletion is a common cryptic technique."},
-                "onWrong": {"message": "Hint: Remove the indicated letter(s) from '{fodder}'."}
-            },
-            {
-                "id": "teaching",
-                "actionPrompt": "Continue to next step",
-                "panel": {
-                    "title": "DELETION",
-                    "instruction": "'{fodder}' with deletion = {result}\n\n**Remember:** Deletion indicators tell you which part of a word to remove."
-                },
-                "inputMode": "none",
-                "button": {"label": "Continue →", "action": "next_step"}
-            }
-        ]
-    },
-
-    "reversal": {
-        "phases": [
-            {
-                "id": "indicator",
-                "actionPrompt": "Tap the reversal indicator",
-                "intro": {
-                    "title": "Reversal",
-                    "text": "Reversal indicators tell you to reverse letters. Common indicators:\n\n• Across clues: 'back', 'returned', 'reflected', 'west'\n• Down clues: 'up', 'rising', 'climbing', 'overhead'\n• General: 'turned', 'reversed', 'backwards'",
-                    "example": "The indicator tells you which direction to read the letters."
-                },
-                "panel": {
-                    "title": "FIND THE INDICATOR",
-                    "instruction": "Tap the word(s) that signal reversal."
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "ORANGE", "role": "indicator"}},
-                "onWrong": {"message": "Hint: Look for words suggesting backwards or reversed."}
-            },
-            {
-                "id": "result",
-                "actionPrompt": "Type the reversed letters",
-                "panel": {
-                    "title": "REVERSE IT",
-                    "instruction": "Reverse '{fodder}'. What do you get?"
-                },
-                "inputMode": "text",
-                "onCorrect": {"message": "Good! Reversals can hide words in plain sight."},
-                "onWrong": {"message": "Hint: Write '{fodder}' backwards."}
-            },
-            {
-                "id": "teaching",
-                "actionPrompt": "Continue to next step",
-                "panel": {
-                    "title": "REVERSAL",
-                    "instruction": "'{fodder}' reversed = {result}\n\n**Remember:** Reversal indicators (back, up, turned) tell you to read letters backwards."
-                },
-                "inputMode": "none",
-                "button": {"label": "Continue →", "action": "next_step"}
-            }
-        ]
-    },
-
-    "letter_selection": {
-        "phases": [
-            {
-                "id": "indicator",
-                "actionPrompt": "Tap the selection indicator",
-                "intro": {
-                    "title": "Letter Selection",
-                    "text": "Letter selection indicators tell you to take specific letters:\n\n• 'head of', 'first of', 'initially' = first letter\n• 'tail of', 'finally', 'at last' = last letter\n• 'heart of', 'centre of' = middle letter\n• 'edges of', 'borders' = first and last letters",
-                    "example": "The indicator specifies which letter(s) to extract."
-                },
-                "panel": {
-                    "title": "FIND THE INDICATOR",
-                    "instruction": "Tap the word(s) that tell you which letters to select."
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "ORANGE", "role": "indicator"}},
-                "onWrong": {"message": "Hint: Look for words indicating position (first, last, heart, etc.)."}
-            },
-            {
-                "id": "fodder",
-                "actionPrompt": "Tap the source word(s)",
-                "panel": {
-                    "title": "FIND THE SOURCE",
-                    "instruction": "Tap the word(s) you're extracting letters from."
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
-                "onWrong": {"message": "Hint: Which word does the indicator operate on?"}
-            },
-            {
-                "id": "result",
-                "actionPrompt": "Type the extracted letters",
-                "panel": {
-                    "title": "EXTRACT THE LETTERS",
-                    "instruction": "What letter(s) do you get from '{fodder}'?"
-                },
-                "inputMode": "text",
-                "onCorrect": {"message": "Nice! Letter selection is a precise technique."},
-                "onWrong": {"message": "Hint: Apply the indicator to '{fodder}' — which letters does it specify?"}
-            },
-            {
-                "id": "teaching",
-                "actionPrompt": "Continue to next step",
-                "panel": {
-                    "title": "LETTER SELECTION",
-                    "instruction": "From '{fodder}' = {result}\n\n**Remember:** Selection indicators (head of, finally, heart of) pinpoint exact letters."
-                },
-                "inputMode": "none",
-                "button": {"label": "Continue →", "action": "next_step"}
-            }
-        ]
-    },
-
-    "literal": {
-        "phases": [
-            {
-                "id": "fodder",
-                "actionPrompt": "Tap the literal letters",
-                "intro": {
-                    "title": "Literal",
-                    "text": "Sometimes letters in a clue are used exactly as written — no transformation needed.\n\nAbbreviations like 'IT', 'PC', 'TV' or single letters contribute directly to the answer.",
-                    "example": "These letters go straight into the answer unchanged."
-                },
-                "panel": {
-                    "title": "FIND THE LITERAL",
-                    "instruction": "Tap the word(s) used literally (as-is) in the answer."
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
-                "onWrong": {"message": "Hint: Look for letters or abbreviations used unchanged."}
-            },
-            {
-                "id": "teaching",
-                "actionPrompt": "Continue to next step",
-                "panel": {
-                    "title": "LITERAL",
-                    "instruction": "'{fodder}' = {result} (used as-is)\n\n**Remember:** Some letters contribute directly without any transformation."
-                },
-                "inputMode": "none",
-                "button": {"label": "Continue →", "action": "next_step"}
-            }
-        ]
-    },
-
-    "connector": {
-        "phases": [
-            {
-                "id": "teaching",
-                "actionPrompt": "Continue to next step",
-                "panel": {
-                    "title": "CONNECTOR",
-                    "instruction": "'{fodder}' is a linking word connecting parts of the clue.\n\n**Remember:** Connectors (as, and, in, for) join wordplay elements but don't contribute letters."
-                },
-                "inputMode": "none",
-                "button": {"label": "Continue →", "action": "next_step"}
-            }
-        ]
-    },
-
-    "anagram": {
-        "phases": [
-            {
-                "id": "indicator",
-                "actionPrompt": "Tap the anagram indicator",
-                "intro": {
-                    "title": "Anagram",
-                    "text": "Anagram indicators suggest letters need rearranging. Common indicators:\n\n• 'mixed', 'scrambled', 'confused', 'crazy'\n• 'working', 'moving', 'dancing', 'drunk'\n• 'broken', 'damaged', 'ruined', 'wild'\n• Any word suggesting disorder or change",
-                    "example": "The indicator signals that adjacent letters should be rearranged."
-                },
-                "panel": {
-                    "title": "FIND THE INDICATOR",
-                    "instruction": "Tap the word(s) that signal an anagram."
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "ORANGE", "role": "indicator"}},
-                "onWrong": {"message": "Hint: Look for words suggesting mixing, confusion, or disorder."}
-            },
-            {
-                "id": "result",
-                "actionPrompt": "Type the anagrammed word",
-                "panel": {
-                    "title": "SOLVE THE ANAGRAM",
-                    "instruction": "Rearrange the fodder letters. What word do you get?"
-                },
-                "inputMode": "text",
-                "onCorrect": {"message": "Excellent! Anagrams are a cryptic crossword staple."},
-                "onWrong": {"message": "Hint: Rearrange all the fodder letters to form a word."}
-            },
-            {
-                "id": "teaching",
-                "actionPrompt": "Continue to next step",
-                "panel": {
-                    "title": "ANAGRAM",
-                    "instruction": "Rearranged = {result}\n\n**Remember:** Anagram indicators signal that letters need shuffling to reveal the answer."
-                },
-                "inputMode": "none",
-                "button": {"label": "Continue →", "action": "next_step"}
-            }
-        ]
-    },
-
-    "container": {
-        "phases": [
-            {
-                "id": "indicator",
-                "actionPrompt": "Tap the container indicator",
-                "intro": {
-                    "title": "Container",
-                    "text": "Container indicators tell you one thing goes inside another. Common indicators:\n\n• 'in', 'inside', 'within', 'held by'\n• 'around', 'about', 'outside', 'surrounding'\n• 'swallowing', 'eating', 'embracing', 'housing'",
-                    "example": "The indicator tells you which piece wraps around which."
-                },
-                "panel": {
-                    "title": "FIND THE INDICATOR",
-                    "instruction": "Tap the word(s) that signal a container."
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "ORANGE", "role": "indicator"}},
-                "onWrong": {"message": "Hint: Look for words suggesting something inside or around something else."}
-            },
-            {
-                "id": "order",
-                "actionPrompt": "Select which piece goes inside which",
-                "panel": {
-                    "title": "CONTAINER ORDER",
-                    "instruction": "Which piece goes inside which?"
-                },
-                "inputMode": "multiple_choice",
-                "onCorrect": {"message": "Correct! The container structure is now clear."},
-                "onWrong": {"message": "Hint: Look at the indicator — does it say something goes IN, or something goes AROUND?"}
-            },
-            {
-                "id": "teaching",
-                "actionPrompt": "Continue to next step",
-                "panel": {
-                    "title": "CONTAINER",
-                    "instruction": "{inner} inside {outer} = {result}\n\n**Remember:** Container indicators (in, around, holding) tell you to put one piece inside another."
-                },
-                "inputMode": "none",
-                "button": {"label": "Continue →", "action": "next_step"}
-            }
-        ]
-    },
-
-    "hidden": {
-        "phases": [
-            {
-                "id": "indicator",
-                "actionPrompt": "Tap the hidden word indicator",
-                "intro": {
-                    "title": "Hidden Word",
-                    "text": "Hidden word indicators tell you the answer is concealed within consecutive letters. Common indicators:\n\n• 'in', 'within', 'inside', 'part of'\n• 'some', 'partly', 'held by', 'contains'\n• 'buried in', 'hidden in', 'amongst'",
-                    "example": "The answer spans across word boundaries in the clue itself."
-                },
-                "panel": {
-                    "title": "FIND THE INDICATOR",
-                    "instruction": "Tap the word(s) that signal a hidden word."
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "ORANGE", "role": "indicator"}},
-                "onWrong": {"message": "Hint: Look for words suggesting something is hidden or contained."}
-            },
-            {
-                "id": "fodder",
-                "actionPrompt": "Tap the words containing the hidden answer",
-                "panel": {
-                    "title": "FIND THE FODDER",
-                    "instruction": "Tap the words that contain the hidden answer."
-                },
-                "inputMode": "tap_words",
-                "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
-                "onWrong": {"message": "Hint: Look for consecutive letters spanning word boundaries."}
-            },
-            {
-                "id": "teaching",
-                "actionPrompt": "Continue to next step",
-                "panel": {
-                    "title": "HIDDEN WORD",
-                    "instruction": "The answer {result} is hidden within '{fodder}'.\n\n**Remember:** Hidden word clues conceal the answer in consecutive letters across words."
-                },
-                "inputMode": "none",
-                "button": {"label": "Continue →", "action": "next_step"}
-            }
-        ]
-    }
-}
+# Load on module import — error out if missing
+_load_render_templates()
 
 # =============================================================================
 # CLUE TYPE IDENTIFICATION
 # =============================================================================
+# STEP_TEMPLATES, STEP_TO_CLUE_TYPE, and CLUE_TYPE_OPTIONS are now in
+# render_templates.json under "templates", "clue_type.step_to_clue_type",
+# and "clue_type.options" respectively.
 
-STEP_TO_CLUE_TYPE = {
-    "standard_definition": "standard",
-    "wordplay_overview": "standard",
-    "deletion_discover": "standard",
-    "container_verify": "standard",
-    "charade_verify": "standard",
-    "alternation_discover": "standard",
-    "literal_phrase": "standard",
-    "abbreviation": "standard",
-    "synonym": "standard",
-    "deletion": "standard",
-    "reversal": "standard",
-    "letter_selection": "standard",
-    "literal": "standard",
-    "connector": "standard",
-    "anagram": "standard",
-    "container": "standard",
-    "hidden": "standard",
-    "double_definition": "double_definition",
-}
-
-CLUE_TYPE_OPTIONS = [
-    {
-        "id": "standard",
-        "label": "Standard",
-        "description": "Definition at start or end, with wordplay indicators in the rest"
-    },
-    {
-        "id": "double_definition",
-        "label": "Double Definition",
-        "description": "Two separate meanings with no wordplay indicators"
-    },
-    {
-        "id": "cryptic_definition",
-        "label": "Cryptic Definition",
-        "description": "Whole clue is one whimsical description with no obvious wordplay"
-    },
-    {
-        "id": "and_lit",
-        "label": "&lit",
-        "description": "Whole clue both describes AND constructs the answer simultaneously"
-    }
-]
 
 def get_clue_type(clue):
     """Determine the clue type from the first step."""
@@ -788,13 +133,13 @@ def get_clue_type(clue):
     if not steps:
         return "standard"
     first_step_type = steps[0].get("type", "")
-    return STEP_TO_CLUE_TYPE.get(first_step_type, "standard")
+    return RENDER_TEMPLATES.get("clue_type", {}).get("step_to_clue_type", {}).get(first_step_type, "standard")
 
 def build_clue_type_step(clue):
     """Build a synthetic clue_type_identify step with correct answer."""
     correct_type = get_clue_type(clue)
     options = []
-    for opt in CLUE_TYPE_OPTIONS:
+    for opt in RENDER_TEMPLATES.get("clue_type", {}).get("options", []):
         options.append({
             "label": opt["label"],
             "description": opt["description"],
@@ -944,7 +289,7 @@ def build_wordplay_overview_phases(step, clue):
 
 def build_standard_definition_phases(step, clue):
     """Build phases for standard_definition, adding solve phase if recommendedApproach is 'definition'."""
-    base_phases = STEP_TEMPLATES["standard_definition"]["phases"].copy()
+    base_phases = RENDER_TEMPLATES["templates"]["standard_definition"]["phases"].copy()
 
     # Check if we should add solve phase
     difficulty = clue.get("difficulty", {})
@@ -1205,7 +550,7 @@ def get_step_phases(step, clue):
     elif step_type == "container_verify":
         return build_container_verify_phases(step, clue)
     else:
-        template = STEP_TEMPLATES.get(step_type)
+        template = RENDER_TEMPLATES.get("templates", {}).get(step_type)
         if template:
             return template["phases"]
         return []
@@ -1341,19 +686,27 @@ def substitute_variables(text, step, session, clue=None):
 
     return text
 
+def _fmt(template_str, vars_dict):
+    """Simple {var} substitution for template strings from render_templates.json."""
+    result = template_str
+    for key, val in vars_dict.items():
+        result = result.replace("{" + key + "}", str(val))
+    return result
+
 def _build_assembly_config(step, clue=None):
     """
     Build assembly_config for container_assembly and charade_assembly items.
-    Moves the assembly rendering logic from client to server.
+    Text strings read from RENDER_TEMPLATES["assembly_config"].
     """
     step_type = step.get("type", "")
     result = step.get("result", "")
     final_parts = result.split(" ") if result else [""]
     enumeration = clue.get("clue", {}).get("enumeration", "") if clue else ""
+    asm_cfg = RENDER_TEMPLATES.get("assembly_config", {})
 
     config = {
-        "instruction": "Complete the assembly with the transformed parts:",
-        "final_label": f"Final answer ({enumeration}):",
+        "instruction": _fmt(asm_cfg.get("instruction", ""), {}),
+        "final_label": _fmt(asm_cfg.get("final_label", ""), {"enumeration": enumeration}),
         "final_parts": [len(p) for p in final_parts],
     }
 
@@ -1366,13 +719,13 @@ def _build_assembly_config(step, clue=None):
         inner_result = inner.get("result", "") if isinstance(inner, dict) else ""
         outer_len = len(outer_result.replace(" ", ""))
         inner_len = len(inner_result.replace(" ", ""))
-        outer_type = outer.get("type", "transformation") if isinstance(outer, dict) else "transformation"
-        inner_type = inner.get("type", "transformation") if isinstance(inner, dict) else "transformation"
+        ctr_cfg = asm_cfg.get("container", {})
+        v = {"outer_fodder_text": outer_fodder_text, "inner_fodder_text": inner_fodder_text}
 
-        config["failure_message"] = f"\u274c Raw insertion: {outer_fodder_text} + {inner_fodder_text} doesn't work"
+        config["failure_message"] = _fmt(ctr_cfg.get("failure_message", ""), v)
         config["parts"] = [
-            {"label": f'Outer transform for "{outer_fodder_text}":', "length": outer_len},
-            {"label": f'Inner transform for "{inner_fodder_text}":', "length": inner_len},
+            {"label": _fmt(ctr_cfg.get("outer_label", ""), v), "length": outer_len},
+            {"label": _fmt(ctr_cfg.get("inner_label", ""), v), "length": inner_len},
         ]
     elif step_type == "charade":
         parts = step.get("parts", [])
@@ -1383,8 +736,14 @@ def _build_assembly_config(step, clue=None):
             p.get("fodder", {}).get("text", "") if isinstance(p.get("fodder"), dict) else str(p.get("fodder", ""))
             for p in parts
         )
+        chr_cfg = asm_cfg.get("charade", {})
 
-        config["failure_message"] = f"\u274c Raw: {raw_parts_display} = {raw_text.upper()} ({raw_length} letters \u2260 {expected_length})"
+        config["failure_message"] = _fmt(chr_cfg.get("failure_message", ""), {
+            "raw_parts_display": raw_parts_display,
+            "raw_text_upper": raw_text.upper(),
+            "raw_length": raw_length,
+            "expected_length": expected_length,
+        })
         config["parts"] = []
         for part in parts:
             part_result = part.get("result", "")
@@ -1392,7 +751,7 @@ def _build_assembly_config(step, clue=None):
             part_type = part.get("type", "transformation")
             fodder_text = part.get("fodder", {}).get("text", "") if isinstance(part.get("fodder"), dict) else str(part.get("fodder", ""))
             config["parts"].append({
-                "label": f'Part ({part_type} of "{fodder_text}"):',
+                "label": _fmt(chr_cfg.get("part_label", ""), {"part_type": part_type, "fodder_text": fodder_text}),
                 "length": part_len,
             })
 
@@ -1402,31 +761,31 @@ def _build_assembly_config(step, clue=None):
 def _expand_step_to_menu_items(step, base_index, clue=None):
     """
     Expand a complex step (e.g., container with template) into atomic menu items.
+    Text strings read from RENDER_TEMPLATES["menu_items"].
     Returns list of menu item dictionaries.
     """
     step_type = step.get("type", "")
+    menu_cfg = RENDER_TEMPLATES.get("menu_items", {})
 
     # Atomic steps - return single item
     if step_type == "standard_definition":
-        # Generate dynamic hint based on clue metadata
+        cfg = menu_cfg.get("standard_definition", {})
         answer = clue.get("clue", {}).get("answer", "") if clue else ""
-        answer_length = len(answer.replace(" ", ""))  # Count letters, not spaces
-        hint = f"This is a cryptic clue. The definition is ALWAYS at the start OR the end. Look for words that sound like a meaningful phrase that could yield a {answer_length}-letter answer."
-
-        # Pre-compute completion title from expected text
+        answer_length = len(answer.replace(" ", ""))
         expected_text = step.get("expected", {}).get("text", "")
         position = step.get("position", "start")
         enumeration = clue.get("clue", {}).get("enumeration", "") if clue else ""
+        v = {"answer_length": answer_length, "expected_text": expected_text, "position": position, "enumeration": enumeration}
 
         return [{
             "index": base_index,
-            "title": "Identify Definition",
+            "title": cfg.get("title", "Identify Definition"),
             "type": step_type,
             "step_data": step,
-            "hint": hint,
+            "hint": _fmt(cfg.get("hint", ""), v),
             "expected_indices": step.get("expected", {}).get("indices", []),
-            "expanded_type": "tap_words",
-            "completion_title": f"DEFINITION: <strong>{expected_text}</strong> found at the {position} of the clue.<br><br>Can you find a word ({enumeration}) meaning {expected_text}?",
+            "expanded_type": cfg.get("expanded_type", "tap_words"),
+            "completion_title": _fmt(cfg.get("completion_title", ""), v),
         }]
 
     # Container with template - expand into atomic steps
@@ -1438,229 +797,140 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
         inner = step.get("inner", {})
         outer_fodder = outer.get("fodder", {}).get("text", "") if isinstance(outer, dict) else ""
         inner_fodder = inner.get("fodder", {}).get("text", "") if isinstance(inner, dict) else ""
+        assembly = step.get("assembly", "")
+        result = step.get("result", "")
+        v = {"ind_text": ind_text, "outer_fodder": outer_fodder, "inner_fodder": inner_fodder, "assembly": assembly, "result": result}
 
-        if template == "insertion_with_two_synonyms":
-            outer_result = outer.get("result", "")
-            inner_result = inner.get("result", "")
-            assembly = step.get("assembly", "")
-            result = step.get("result", "")
-            return [
-                {
-                    "index": f"{base_index}.1",
-                    "title": "Identify Container Indicator",
-                    "type": "container_indicator",
+        ctr_cfg = menu_cfg.get("container", {})
+        template_steps = ctr_cfg.get(template)  # list of sub-step configs, or None
+
+        if isinstance(template_steps, list):
+            items = []
+            for i, sub_cfg in enumerate(template_steps, 1):
+                sub_step = sub_cfg.get("sub_step", "")
+                item = {
+                    "index": f"{base_index}.{i}",
+                    "title": _fmt(sub_cfg.get("title", ""), v),
+                    "type": sub_cfg.get("type", step_type),
                     "step_data": step,
-                    "sub_step": "indicator",
-                    "expected_indices": indicator.get("indices", []),
-                    "hint": "Container indicators suggest one thing goes inside another. Look for words like 'in', 'within', 'holding', 'containing', or words that suggest insertion or lengthening.",
-                    "expanded_type": "tap_words",
-                    "completion_title": f"CONTAINER INDICATOR: <strong>{ind_text}</strong>",
-                },
-                {
-                    "index": f"{base_index}.2",
-                    "title": "Identify Outer Word",
-                    "type": "container_outer",
-                    "step_data": step,
-                    "sub_step": "outer",
-                    "expected_indices": outer.get("fodder", {}).get("indices", []),
-                    "hint": "Outer word gets lengthened by the inner word.",
-                    "expanded_type": "tap_words",
-                    "completion_title": f"OUTER WORD: <strong>{outer_fodder}</strong>",
-                },
-                {
-                    "index": f"{base_index}.3",
-                    "title": "Identify Inner Word",
-                    "type": "container_inner",
-                    "step_data": step,
-                    "sub_step": "inner",
-                    "expected_indices": inner.get("fodder", {}).get("indices", []),
-                    "hint": "This word goes inside to lengthen the outer word.",
-                    "expanded_type": "tap_words",
-                    "completion_title": f"INNER WORD: <strong>{inner_fodder}</strong>",
-                },
-                {
-                    "index": f"{base_index}.4",
-                    "title": "Assemble",
-                    "type": "container_assembly",
-                    "step_data": step,
-                    "sub_step": "assembly",
-                    "hint": f"Find synonyms for the outer and inner words, then combine them: {assembly}",
-                    "expanded_type": "assembly",
-                    "assembly_config": _build_assembly_config(step, clue),
-                    "completion_title": f"ASSEMBLY: <strong>{result}</strong>",
+                    "sub_step": sub_step,
+                    "hint": _fmt(sub_cfg.get("hint", ""), v),
+                    "expanded_type": sub_cfg.get("expanded_type", "tap_words"),
+                    "completion_title": _fmt(sub_cfg.get("completion_title", ""), v),
                 }
-            ]
-        elif template == "insertion_with_one_synonym_outer":
-            outer_result = outer.get("result", "")
-            assembly = step.get("assembly", "")
-            result = step.get("result", "")
-            return [
-                {
-                    "index": f"{base_index}.1",
-                    "title": "Identify Container Indicator",
-                    "type": "container_indicator",
-                    "step_data": step,
-                    "sub_step": "indicator",
-                    "expected_indices": indicator.get("indices", []),
-                    "hint": "Container indicators suggest one thing goes inside another. Look for words like 'in', 'within', 'holding', 'containing'.",
-                    "expanded_type": "tap_words",
-                    "completion_title": f"CONTAINER INDICATOR: <strong>{ind_text}</strong>",
-                },
-                {
-                    "index": f"{base_index}.2",
-                    "title": "Identify Outer Synonym",
-                    "type": "container_outer",
-                    "step_data": step,
-                    "sub_step": "outer",
-                    "expected_indices": outer.get("fodder", {}).get("indices", []),
-                    "hint": "Find the synonym for the outer word.",
-                    "expanded_type": "tap_words",
-                    "completion_title": f"OUTER WORD: <strong>{outer_fodder}</strong>",
-                },
-                {
-                    "index": f"{base_index}.3",
-                    "title": "Assemble",
-                    "type": "container_assembly",
-                    "step_data": step,
-                    "sub_step": "assembly",
-                    "hint": f"Combine according to: {assembly}",
-                    "expanded_type": "assembly",
-                    "assembly_config": _build_assembly_config(step, clue),
-                    "completion_title": f"ASSEMBLY: <strong>{result}</strong>",
-                }
-            ]
-        elif template == "insertion_with_charade_inner":
-            outer_result = outer.get("result", "")
-            assembly = step.get("assembly", "")
-            result = step.get("result", "")
-            return [
-                {
-                    "index": f"{base_index}.1",
-                    "title": "Identify Container Indicator",
-                    "type": "container_indicator",
-                    "step_data": step,
-                    "sub_step": "indicator",
-                    "expected_indices": indicator.get("indices", []),
-                    "hint": "Container indicators suggest one thing goes inside another. Look for words that suggest insertion.",
-                    "expanded_type": "tap_words",
-                    "completion_title": f"CONTAINER INDICATOR: <strong>{ind_text}</strong>",
-                },
-                {
-                    "index": f"{base_index}.2",
-                    "title": "Identify Outer Word",
-                    "type": "container_outer",
-                    "step_data": step,
-                    "sub_step": "outer",
-                    "expected_indices": outer.get("fodder", {}).get("indices", []),
-                    "hint": "This word will be the outer container holding the charade inside.",
-                    "expanded_type": "tap_words",
-                    "completion_title": f"OUTER WORD: <strong>{outer_fodder}</strong>",
-                },
-                {
-                    "index": f"{base_index}.3",
-                    "title": "Build Inner Charade",
-                    "type": "container_inner_charade",
-                    "step_data": step,
-                    "sub_step": "inner",
-                    "hint": "Build the inner part by combining multiple wordplay elements.",
-                    "expanded_type": "tap_words",
-                    "completion_title": f"INNER CHARADE: <strong>{inner_fodder}</strong>",
-                },
-                {
-                    "index": f"{base_index}.4",
-                    "title": "Assemble",
-                    "type": "container_assembly",
-                    "step_data": step,
-                    "sub_step": "assembly",
-                    "hint": f"Combine according to: {assembly}",
-                    "expanded_type": "assembly",
-                    "assembly_config": _build_assembly_config(step, clue),
-                    "completion_title": f"ASSEMBLY: <strong>{result}</strong>",
-                }
-            ]
+                # Add structural data based on sub_step
+                if sub_step == "indicator":
+                    item["expected_indices"] = indicator.get("indices", [])
+                elif sub_step == "outer":
+                    item["expected_indices"] = outer.get("fodder", {}).get("indices", [])
+                elif sub_step == "inner":
+                    item["expected_indices"] = inner.get("fodder", {}).get("indices", [])
+                elif sub_step == "assembly":
+                    item["assembly_config"] = _build_assembly_config(step, clue)
+                items.append(item)
+            return items
         else:
-            return [{"index": base_index, "title": f"Identify Container" + (f" ({ind_text})" if ind_text else ""), "type": step_type, "step_data": step, "expanded_type": "tap_words", "completion_title": f"CONTAINER: <strong>{ind_text}</strong>"}]
+            # Default container (no matching template)
+            default_cfg = ctr_cfg.get("default", {})
+            title = _fmt(default_cfg.get("title_with_indicator", ""), v) if ind_text else default_cfg.get("title", "Identify Container")
+            return [{"index": base_index, "title": title, "type": step_type, "step_data": step, "expanded_type": default_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(default_cfg.get("completion_title", ""), v)}]
 
     # Charade with template - expand into parts + assembly
     elif step_type == "charade":
         template = step.get("template", "")
         parts = step.get("parts", [])
         result = step.get("result", "")
+        chr_cfg = menu_cfg.get("charade", {})
 
         if template == "charade_with_parts":
             assembly = step.get("assembly", "")
+            tmpl_cfg = chr_cfg.get("charade_with_parts", {})
             items = []
 
-            # Step 1: Identify wordplay indicators (result: None for charade)
+            # Step 1: Identify wordplay indicators
+            ind_cfg = tmpl_cfg.get("indicator_step", {})
             items.append({
                 "index": f"{base_index}.1",
-                "title": "Identify Wordplay Indicators",
-                "type": "wordplay_identification",
+                "title": ind_cfg.get("title", "Identify Wordplay Indicators"),
+                "type": ind_cfg.get("type", "wordplay_identification"),
                 "step_data": step,
                 "sub_step": "identify_indicators",
-                "hint": "Look for wordplay indicators: anagram (mixed, confused), container (in, within, holding), reversal (back, returning). If none found, it's a simple Charade.",
-                "expanded_type": "tap_words_with_fallback_button",
+                "hint": ind_cfg.get("hint", ""),
+                "expanded_type": ind_cfg.get("expanded_type", "tap_words_with_fallback_button"),
                 "fallback_button": {
-                    "label": "No wordplay indicators \u2192 Charade",
+                    "label": ind_cfg.get("fallback_button_label", "No wordplay indicators \u2192 Charade"),
                 },
-                "completion_title": "WORDPLAY TYPE: <strong>Charade</strong> (no indicators found)",
+                "completion_title": ind_cfg.get("completion_title", ""),
             })
 
-            # Steps 2+: Identify each part (transforms happen in Assembly step)
+            # Steps 2+: Identify each part
+            part_cfg = tmpl_cfg.get("part_step", {})
             for i, part in enumerate(parts, 1):
                 if isinstance(part, dict):
                     fodder_text = part.get("fodder", {}).get("text", "") if isinstance(part.get("fodder"), dict) else str(part.get("fodder", ""))
                     part_type = part.get("type", "transform")
+                    pv = {"n": i, "part_type": part_type, "fodder_text": fodder_text}
                     items.append({
                         "index": f"{base_index}.{i+1}",
-                        "title": f"Identify Part {i}",
-                        "type": f"charade_part_{part_type}",
+                        "title": _fmt(part_cfg.get("title_template", "Identify Part {n}"), pv),
+                        "type": _fmt(part_cfg.get("type_template", "charade_part_{part_type}"), pv),
                         "step_data": step,
                         "sub_step": f"part_{i}",
                         "expected_indices": part.get("fodder", {}).get("indices", []),
-                        "hint": f"Find a {part_type} for this word.",
-                        "expanded_type": "tap_words",
-                        "completion_title": f"CHARADE PART: <strong>{fodder_text}</strong>",
+                        "hint": _fmt(part_cfg.get("hint_template", ""), pv),
+                        "expanded_type": part_cfg.get("expanded_type", "tap_words"),
+                        "completion_title": _fmt(part_cfg.get("completion_title_template", ""), pv),
                     })
 
-            # Final step: Assemble (shows raw attempt + letter boxes, like 17D)
+            # Final step: Assemble
+            asm_cfg = tmpl_cfg.get("assembly_step", {})
+            av = {"assembly": assembly, "result": result}
             items.append({
                 "index": f"{base_index}.{len(parts)+2}",
-                "title": "Assemble",
-                "type": "charade_assembly",
+                "title": asm_cfg.get("title", "Assemble"),
+                "type": asm_cfg.get("type", "charade_assembly"),
                 "step_data": step,
                 "sub_step": "assembly",
-                "hint": f"Combine the transformed parts: {assembly}",
-                "expanded_type": "assembly",
+                "hint": _fmt(asm_cfg.get("hint_template", ""), av),
+                "expanded_type": asm_cfg.get("expanded_type", "assembly"),
                 "assembly_config": _build_assembly_config(step, clue),
-                "completion_title": f"ASSEMBLY: <strong>{result}</strong>",
+                "completion_title": _fmt(asm_cfg.get("completion_title_template", ""), av),
             })
             return items
         else:
-            return [{"index": base_index, "title": "Assemble", "type": step_type, "step_data": step, "expanded_type": "tap_words", "completion_title": f"<strong>{result}</strong>"}]
+            default_cfg = chr_cfg.get("default", {})
+            return [{"index": base_index, "title": default_cfg.get("title", "Assemble"), "type": step_type, "step_data": step, "expanded_type": default_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(default_cfg.get("completion_title", ""), {"result": result})}]
 
     # Anagram with template - expand into pieces + solve
     elif step_type == "anagram":
         template = step.get("template", "")
         result = step.get("result", "")
+        anag_cfg = menu_cfg.get("anagram", {})
 
         if template == "anagram_with_fodder_pieces":
+            tmpl_cfg = anag_cfg.get("anagram_with_fodder_pieces", {})
+            piece_cfg = tmpl_cfg.get("piece_step", {})
+            solve_cfg = tmpl_cfg.get("solve_step", {})
             pieces = step.get("pieces", [])
             items = []
             for i, piece in enumerate(pieces, 1):
                 if isinstance(piece, dict):
                     fodder_text = piece.get("fodder", {}).get("text", "") if isinstance(piece.get("fodder"), dict) else str(piece.get("fodder", ""))
-                    items.append({"index": f"{base_index}.{i}", "title": f"Get Piece {i} ({fodder_text})", "type": "anagram_piece", "step_data": step, "sub_step": f"piece_{i}", "expanded_type": "tap_words", "completion_title": f"ANAGRAM FODDER: <strong>{fodder_text}</strong>"})
-            items.append({"index": f"{base_index}.{len(pieces)+1}", "title": "Rearrange Letters", "type": "anagram_solve", "step_data": step, "sub_step": "solve", "expanded_type": "tap_words", "completion_title": f"ANAGRAM: <strong>{result}</strong>"})
+                    pv = {"n": i, "fodder_text": fodder_text}
+                    items.append({"index": f"{base_index}.{i}", "title": _fmt(piece_cfg.get("title_template", ""), pv), "type": piece_cfg.get("type", "anagram_piece"), "step_data": step, "sub_step": f"piece_{i}", "expanded_type": piece_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(piece_cfg.get("completion_title_template", ""), pv)})
+            items.append({"index": f"{base_index}.{len(pieces)+1}", "title": solve_cfg.get("title", "Rearrange Letters"), "type": solve_cfg.get("type", "anagram_solve"), "step_data": step, "sub_step": "solve", "expanded_type": solve_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(solve_cfg.get("completion_title_template", ""), {"result": result})})
             return items
         else:
-            return [{"index": base_index, "title": "Solve Anagram", "type": step_type, "step_data": step, "expanded_type": "tap_words", "completion_title": f"ANAGRAM: <strong>{result}</strong>"}]
+            default_cfg = anag_cfg.get("default", {})
+            return [{"index": base_index, "title": default_cfg.get("title", "Solve Anagram"), "type": step_type, "step_data": step, "expanded_type": default_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(default_cfg.get("completion_title", ""), {"result": result})}]
 
     # Transformation chain - expand into steps
     elif step_type == "transformation_chain":
         template = step.get("template", "")
+        tc_cfg = menu_cfg.get("transformation_chain", {})
 
         if template == "transformation_chain":
+            chain_cfg = tc_cfg.get("chain_step", {})
             chain_steps = step.get("steps", [])
             items = []
             for i, chain_step in enumerate(chain_steps, 1):
@@ -1668,21 +938,25 @@ def _expand_step_to_menu_items(step, base_index, clue=None):
                 fodder = chain_step.get("fodder", "")
                 fodder_text = fodder.get("text", "") if isinstance(fodder, dict) else str(fodder)
                 chain_result = chain_step.get("result", "")
-                items.append({"index": f"{base_index}.{i}", "title": f"{step_type_name.title()} ({fodder_text})", "type": f"transform_{step_type_name}", "step_data": step, "sub_step": f"step_{i}", "expanded_type": "tap_words", "completion_title": f"{step_type_name.upper()}: <strong>{chain_result}</strong>"})
+                cv = {"step_type_title": step_type_name.title(), "step_type_name": step_type_name, "step_type_upper": step_type_name.upper(), "fodder_text": fodder_text, "chain_result": chain_result}
+                items.append({"index": f"{base_index}.{i}", "title": _fmt(chain_cfg.get("title_template", ""), cv), "type": _fmt(chain_cfg.get("type_template", ""), cv), "step_data": step, "sub_step": f"step_{i}", "expanded_type": chain_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(chain_cfg.get("completion_title_template", ""), cv)})
             return items
         else:
-            return [{"index": base_index, "title": "Apply Transformations", "type": step_type, "step_data": step, "expanded_type": "tap_words", "completion_title": f"<strong>{step_type}</strong>"}]
+            default_cfg = tc_cfg.get("default", {})
+            return [{"index": base_index, "title": default_cfg.get("title", "Apply Transformations"), "type": step_type, "step_data": step, "expanded_type": default_cfg.get("expanded_type", "tap_words"), "completion_title": _fmt(default_cfg.get("completion_title", ""), {"step_type": step_type})}]
 
     # Default: return single item
     else:
+        default_cfg = menu_cfg.get("default", {})
         title = step_type.replace("_", " ").title()
+        v = {"step_type_title": title}
         return [{
             "index": base_index,
-            "title": title,
+            "title": _fmt(default_cfg.get("title_template", "{step_type_title}"), v),
             "type": step_type,
             "step_data": step,
-            "expanded_type": "tap_words",
-            "completion_title": f"<strong>{title}</strong>",
+            "expanded_type": default_cfg.get("expanded_type", "tap_words"),
+            "completion_title": _fmt(default_cfg.get("completion_title_template", "<strong>{step_type_title}</strong>"), v),
         }]
 
 def _build_menu_render(session, clue):
@@ -1809,7 +1083,7 @@ def get_render(clue_id, clue):
     # Handle clue type identification step (step_index == -1)
     if session["step_index"] == -1:
         step = build_clue_type_step(clue)
-        phases = STEP_TEMPLATES["clue_type_identify"]["phases"]
+        phases = RENDER_TEMPLATES["templates"]["clue_type_identify"]["phases"]
     else:
         step = steps[session["step_index"]]
         phases = get_step_phases(step, clue)
@@ -2298,7 +1572,7 @@ def handle_input(clue_id, clue, value):
     # Handle clue type identification step (step_index == -1)
     if session["step_index"] == -1:
         step = build_clue_type_step(clue)
-        phases = STEP_TEMPLATES["clue_type_identify"]["phases"]
+        phases = RENDER_TEMPLATES["templates"]["clue_type_identify"]["phases"]
     else:
         step = steps[session["step_index"]]
         phases = get_step_phases(step, clue)
@@ -2504,7 +1778,7 @@ def handle_continue(clue_id, clue):
     # Handle clue type identification step (step_index == -1)
     if session["step_index"] == -1:
         step = build_clue_type_step(clue)
-        phases = STEP_TEMPLATES["clue_type_identify"]["phases"]
+        phases = RENDER_TEMPLATES["templates"]["clue_type_identify"]["phases"]
     else:
         step = steps[session["step_index"]]
         phases = get_step_phases(step, clue)
