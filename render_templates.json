@@ -13,5 +13,15 @@
     },
     "expected_source": "indices",
     "onCorrect": "Can you find a word ({enumeration}) meaning '{words}' \u2014 {hint}."
+  },
+  "container_indicator": {
+    "inputMode": "tap_words",
+    "prompt": "Which word tells you one thing goes inside another?",
+    "menuTitle": "Spot the indicator",
+    "completedTitle": "Indicator: '{words}'",
+    "intro": "Some clues contain a word that signals insertion \u2014 one word being placed inside another. Look for words that suggest stretching, holding, containing, or wrapping.",
+    "hint": "The indicator often disguises itself as part of the surface meaning. Words like 'holding', 'within', 'nurses', 'around', or 'lengthened' can all signal insertion.",
+    "expected_source": "indices",
+    "onCorrect": "'{words}' \u2014 {hint}"
   }
 }
