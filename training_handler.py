@@ -291,12 +291,15 @@ def _build_assembly_data(session, step, clue):
     transforms_done = session["assembly_transforms_done"]
     words = clue["words"]
 
-    # Build raw fail message from clue words at transform indices
-    raw_words = []
-    for t in transforms:
-        t_words = [words[i] for i in t["indices"]]
-        raw_words.append(" ".join(t_words))
-    fail_message = "Try putting '" + "' and '".join(raw_words) + "' together \u2014 it doesn\u2019t spell anything useful, does it? So what is each word really telling you?"
+    # Fail message: step metadata overrides the default
+    if "failMessage" in step:
+        fail_message = step["failMessage"]
+    else:
+        raw_words = []
+        for t in transforms:
+            t_words = [words[i] for i in t["indices"]]
+            raw_words.append(" ".join(t_words))
+        fail_message = "Try putting '" + "' and '".join(raw_words) + "' together \u2014 it doesn\u2019t spell anything useful, does it? So what is each word really telling you?"
 
     # Transform prompt templates keyed by transform type from clue metadata
     TRANSFORM_PROMPTS = {

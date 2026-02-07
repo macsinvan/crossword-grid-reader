@@ -287,7 +287,8 @@
         },
         {
           "type": "assembly",
-          "intro": "You've found the indicators and the base word. Now work through each operation step by step — first find a synonym, then apply what the indicators tell you to do.",
+          "intro": "You know 'sharp' is your starting word, and the indicators tell you what to do with it. Let's work through it.",
+          "failMessage": "Start with the base word 'sharp'. What does it really mean? Then apply what each indicator tells you to do.",
           "transforms": [
             {
               "role": "part1",
