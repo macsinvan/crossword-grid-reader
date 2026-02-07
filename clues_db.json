@@ -649,104 +649,72 @@
     },
     "times-29453-2d": {
       "id": "times-29453-2d",
-      "clue": {
-        "number": "2D",
-        "text": "Crooked old mater — which strongly suggests criminal is mum",
-        "enumeration": "6",
-        "answer": "OMERTA",
-        "definition": [
-          {
-            "text": "which strongly suggests criminal is mom",
-            "position": "end"
-          }
-        ]
+      "clue": "Crooked old mater \u2014 which strongly suggests criminal is mum",
+      "number": "2D",
+      "enumeration": "6",
+      "answer": "OMERTA",
+      "words": ["Crooked", "old", "mater", "\u2014", "which", "strongly", "suggests", "criminal", "is", "mum"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "hard",
+        "wordplay": "easy",
+        "overall": "medium"
       },
-      "words": [
-        "Crooked",
-        "old",
-        "mater",
-        "which",
-        "strongly",
-        "suggests",
-        "criminal",
-        "is",
-        "mom"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              3,
-              4,
-              5,
-              6,
-              7,
-              8
-            ],
-            "text": "which strongly suggests criminal is mom"
-          },
+          "type": "definition",
+          "indices": [4, 5, 6, 7, 8, 9],
           "position": "end",
-          "explicit": true,
-          "hint": "The mafia code of silence - if you follow it, you keep quiet about crimes",
-          "difficulty": "Hard"
+          "hint": "The mafia code of silence \u2014 if you follow it, you keep quiet about crimes"
         },
         {
-          "type": "anagram",
-          "template": "anagram_with_fodder_pieces",
-          "indicator": {
-            "indices": [
-              0
-            ],
-            "text": "Crooked"
-          },
-          "pieces": [
+          "type": "indicator",
+          "indices": [0],
+          "menuTitle": "Find the anagram indicator",
+          "completedTitle": "Anagram indicator: '{words}'",
+          "prompt": "Can you find the anagram indicator?",
+          "intro": "An anagram indicator is a word suggesting disorder, change, or rearrangement \u2014 things like 'broken', 'mixed', 'wild', 'drunk', or 'crooked'.",
+          "hint": "'Crooked' means bent or out of shape \u2014 a classic signal to rearrange letters"
+        },
+        {
+          "type": "fodder",
+          "indices": [1, 2],
+          "menuTitle": "Find the anagram fodder",
+          "completedTitle": "Anagram fodder: '{words}'",
+          "prompt": "Which words provide the letters to rearrange?",
+          "intro": "The anagram indicator tells you to jumble some letters. Which words in the clue supply those letters?",
+          "hint": "Look at what sits next to the indicator \u2014 those are the letters you need to rearrange"
+        },
+        {
+          "type": "assembly",
+          "intro": "You've found that 'Crooked' tells you to rearrange 'old mater'. But 'old mater' has 8 letters and you need 6. So the clue words need transforming first \u2014 what does each one really contribute?",
+          "failMessage": "'old mater' gives you 8 letters, but the answer is only 6. So what does each word really mean?",
+          "transforms": [
             {
-              "fodder": {
-                "indices": [
-                  1
-                ],
-                "text": "old"
-              },
-              "result": "O",
+              "role": "part1",
+              "indices": [1],
               "type": "abbreviation",
-              "reasoning": "O is standard abbreviation for old"
+              "result": "O",
+              "hint": "In cryptics, 'old' nearly always means O. One to remember!"
             },
             {
-              "fodder": {
-                "indices": [
-                  2
-                ],
-                "text": "mater"
-              },
-              "result": "MATER",
+              "role": "part2",
+              "indices": [2],
               "type": "literal",
-              "reasoning": "mater used as-is"
+              "result": "MATER",
+              "hint": "'mater' is used as-is \u2014 it provides all 5 of its letters"
+            },
+            {
+              "role": "part3",
+              "indices": [0],
+              "type": "anagram",
+              "result": "OMERTA",
+              "hint": "'Crooked' tells you to rearrange O + MATER. What 6-letter word can you make?"
             }
           ],
-          "result": "OMERTA",
-          "assembly": "O + MATER → (anagram) → OMERTA",
-          "fodder_combined": "O + MATER = OMATER"
+          "result": "OMERTA"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "hard",
-          "hint": "The mafia code of silence - if you follow it, you keep quiet about crimes"
-        },
-        "wordplay": {
-          "rating": "easy",
-          "hint": "An abbreviation plus an anagram"
-        },
-        "overall": "medium",
-        "recommendedApproach": "definition"
-      },
-      "verified": true
+      ]
     },
     "times-29453-1a": {
       "id": "times-29453-1a",

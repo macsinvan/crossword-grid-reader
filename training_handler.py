@@ -103,8 +103,10 @@ def get_render(clue_id, clue):
         elif "intro" in template:
             current_step["intro"] = template["intro"]
 
-        # Hint (revealed on request, keyed by clue_type if dict)
-        if "hint" in template:
+        # Hint (step metadata overrides template; template hint keyed by clue_type if dict)
+        if "hint" in step:
+            current_step["hint"] = step["hint"]
+        elif "hint" in template:
             hint_data = template["hint"]
             if isinstance(hint_data, dict):
                 clue_type = clue.get("clue_type", "standard")
@@ -309,6 +311,7 @@ def _build_assembly_data(session, step, clue):
         "reversal": "'{word}' tells you to reverse. What do you get? ({n} letters)",
         "deletion": "'{word}' tells you to shorten the previous answer. What's left? ({n} letters)",
         "letter_selection": "Pick the right letters from '{word}' ({n} letters)",
+        "anagram": "Now rearrange those letters — what {n}-letter word do you get?",
     }
 
     # Build transform display data

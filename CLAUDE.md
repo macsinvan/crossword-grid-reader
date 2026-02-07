@@ -44,6 +44,15 @@ Every template's user-facing text must connect to these high-level coaching insi
 
 **connector** — Some words in the clue are just glue — "and", "with", "for" — that don't contribute any letters. Recognising them helps the student focus on the words that matter.
 
+### Step 2 Rule: Indicators vs No-Indicators
+
+After the student finds the definition, step 2 depends on whether the clue type uses indicator words:
+
+- **Clue types WITH indicators** (anagram, container, hidden, deletion, reversal): Show word chips (`tap_words`) so the student can find and tap the indicator word(s). The indicator step comes next.
+- **Clue types WITHOUT indicators** (charade, double definition): Show multiple choice options (`multiple_choice`) so the student can select the clue type. There are no indicator words to find, so word chips are not shown — the student just picks from a list.
+
+This is why 5D (deletion — has indicator "A lot of") shows word chips at step 2, while 2D (anagram — has indicator "Crooked") also shows word chips. A charade clue would show multiple choice instead because charades typically have no indicator words.
+
 ## Communication Rules
 
 **When I ask a direct question, answer it directly. Never take my question as a request to take action.**
