@@ -254,6 +254,9 @@ def _build_step_list(session, clue):
 
         if i in session["completed_steps"]:
             status = "completed"
+            # Use completedTitle if available (resolved with variables)
+            if template and "completedTitle" in template:
+                title = _resolve_variables(template["completedTitle"], step, clue)
             completion_text = _resolve_on_correct(template, step, clue) if template else ""
         elif i == step_index:
             status = "active"
@@ -306,9 +309,8 @@ def _resolve_expected(step, template):
         raise ValueError(f"Unknown expected_source: {source}")
 
 
-def _resolve_on_correct(template, step, clue):
-    """Resolve the onCorrect text with variable substitution."""
-    text = template.get("onCorrect", "")
+def _resolve_variables(text, step, clue):
+    """Replace {variable} placeholders in a template string."""
     if not text:
         return ""
 
@@ -334,3 +336,8 @@ def _resolve_on_correct(template, step, clue):
         text = text.replace("{result}", step.get("result", ""))
 
     return text
+
+
+def _resolve_on_correct(template, step, clue):
+    """Resolve the onCorrect text with variable substitution."""
+    return _resolve_variables(template.get("onCorrect", ""), step, clue)
