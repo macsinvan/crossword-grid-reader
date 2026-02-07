@@ -243,7 +243,7 @@ class TemplateTrainer {
         html += `<span>${step.prompt}</span>`;
         // Hint lightbulb
         if (step.hint) {
-            html += `<span class="hint-toggle" style="cursor: pointer; font-size: 1.25rem; opacity: ${step.hintVisible ? '1' : '0.5'};" title="Show hint">&#128161;</span>`;
+            html += `<span class="hint-toggle" style="cursor: pointer; font-size: 1.5rem; opacity: ${step.hintVisible ? '1' : '0.75'};" title="Show hint">&#128161;</span>`;
         }
         html += `</div>`;
 
@@ -325,7 +325,7 @@ class TemplateTrainer {
             html += `<div style="font-size: 0.85rem; color: #1e40af; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">`;
             html += `<span>${transform.prompt}</span>`;
             if (transform.hint) {
-                html += `<span class="assembly-hint-toggle" style="cursor: pointer; font-size: 1.25rem; opacity: ${transform.hintVisible ? '1' : '0.5'};" title="Show hint">&#128161;</span>`;
+                html += `<span class="assembly-hint-toggle" style="cursor: pointer; font-size: 1.5rem; opacity: ${transform.hintVisible ? '1' : '0.75'};" title="Show hint">&#128161;</span>`;
             }
             html += `</div>`;
 

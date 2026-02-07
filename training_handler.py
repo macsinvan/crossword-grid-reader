@@ -272,7 +272,7 @@ def _build_assembly_data(session, step, clue):
     for t in transforms:
         t_words = [words[i] for i in t["indices"]]
         raw_words.append(" ".join(t_words))
-    fail_message = " + ".join(raw_words) + " doesn\u2019t give us the right letters\u2026"
+    fail_message = "Try putting '" + "' and '".join(raw_words) + "' together \u2014 it doesn\u2019t spell anything useful, does it? So what is each word really telling you?"
 
     # Build transform display data
     transform_list = []
@@ -291,7 +291,7 @@ def _build_assembly_data(session, step, clue):
         transform_list.append({
             "role": t["role"],
             "clueWord": clue_word,
-            "prompt": f"What does \u2018{clue_word.lower()}\u2019 really mean?",
+            "prompt": f"'{clue_word}' is a clue to a {len(re.sub(r'[^A-Z]', '', t['result'].upper()))}-letter word. What\u2019s it pointing to?",
             "letterCount": len(re.sub(r'[^A-Z]', '', t["result"].upper())),
             "status": status,
             "result": result,

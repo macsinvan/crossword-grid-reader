@@ -49,7 +49,7 @@
     "prompt": "Now put it all together",
     "menuTitle": "Put it together",
     "completedTitle": "Assembled: {result}",
-    "intro": "The clue words themselves don't give you the right letters. Each one is pointing to something else.",
+    "intro": "Here\u2019s a key cryptic trick: the words in the clue almost never appear directly in the answer. Each one is really a clue to a shorter word \u2014 a synonym, abbreviation, or clever association. Your job is to figure out what each word is really pointing to.",
     "expected_source": "result",
     "onCorrect": "The letters combine to give {result}."
   }

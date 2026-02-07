@@ -117,7 +117,9 @@ class CrosswordPuzzle {
                 if (/^[a-zA-Z]$/.test(e.key)) e.preventDefault();
             } else if (e.target.id === 'trainer-text-input' ||
                 e.target.classList.contains('answer-box-input') ||
-                e.target.classList.contains('step-text-input')) {
+                e.target.classList.contains('step-text-input') ||
+                e.target.classList.contains('assembly-transform-letter') ||
+                e.target.classList.contains('assembly-result-letter')) {
                 // Don't intercept keyboard when typing in trainer inputs
                 return;
             }

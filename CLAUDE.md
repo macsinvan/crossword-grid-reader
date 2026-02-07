@@ -78,7 +78,7 @@ The trainer UI (`trainer.js`) has ZERO state. ALL state lives on the server. If 
 Answer/step input boxes sync to server on each keystroke BUT don't trigger re-render (to preserve focus). Only re-render when server sets `answerLocked=true`.
 
 **Step state resets on advance**
-When `step_index` increments, `reset_step_ui_state()` clears: `hint_visible`, `selected_indices`, `step_text_input`. Answer boxes persist across steps.
+When `step_index` increments, engine clears: `hint_visible`, `selected_indices`, `step_expanded`, `assembly_phase`, `assembly_transforms_done`. Answer boxes persist across steps.
 
 **NO AI/LLM in this app.** Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
 
@@ -114,10 +114,9 @@ Open http://localhost:8080
 | File | Purpose |
 |------|---------|
 | `trainer_routes.py` | Flask Blueprint — all `/trainer/*` routes, clues DB loading |
-| `training_handler.py` | Teaching mode logic: loads templates, get_render(), handle_input() |
-| `clue_step_templates.json` | **EXTERNAL TO CODE** - Clue step template schemas (WHAT data from clue) |
+| `training_handler.py` | Simple sequencer engine: loads templates, get_render(), handle_input() |
 | `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
-| `clues_db.json` | Pre-annotated clue database (30 clues with template metadata) |
+| `clues_db.json` | Pre-annotated clue database (30 clues with flat step metadata) |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
 
 ## Architecture
@@ -143,20 +142,31 @@ For full architecture diagrams, data models, template system details, API endpoi
 
 ## Teaching Mode — Key Concepts
 
-**Two-Layer Template System** (See SPEC.md Section 4.2.2):
-- Layer 1: Clue step metadata in `clues_db.json` — clue-specific data (which words, expected answers)
-- Layer 2: Render templates in `render_templates.json` — generic presentation logic (phases, input modes)
-- Each step `type` maps 1:1 to a render template. 19 templates total.
+**Simple Sequencer Engine:**
+The trainer engine (`training_handler.py`) is a ~460-line simple sequencer. It reads flat steps from clue metadata, looks up a render template by step type, presents each step, validates input, and advances. No nesting, no phases within steps (except `container_assembly` which has sub-phases for transforms).
 
-**Step Menu Overview:**
-When clicking "Solve", users see a step menu with inline expansion. Steps expand/collapse in place. See SPEC.md Section 6.1 for full UI spec.
+**Two-Layer Template System:**
+- Layer 1: Clue step metadata in `clues_db.json` — clue-specific data (which words, indices, expected answers, hints)
+- Layer 2: Render templates in `render_templates.json` — generic presentation logic (inputMode, prompt, intro, hint, onCorrect)
+- Each step `type` maps 1:1 to a render template
 
-**Template Expansion:**
-Templates with multiple atomic steps expand automatically:
-- `insertion_with_two_synonyms` → 4 steps (indicator, outer literal, inner synonym, assembly)
-- `charade_with_parts` → Steps for each part + assembly
-- `anagram_with_fodder_pieces` → Fodder identification + anagram
-- `transformation_chain` → Step for each transformation
+**Current render templates (5):**
+| Template | inputMode | Purpose |
+|----------|-----------|---------|
+| `definition` | `tap_words` | Find the definition at start/end of clue |
+| `container_indicator` | `tap_words` | Spot the word signalling insertion |
+| `outer_word` | `tap_words` | Identify which word wraps around |
+| `inner_word` | `tap_words` | Identify which word goes inside |
+| `container_assembly` | `assembly` | Multi-phase: transforms then assembly check |
+
+**Step Menu with Inline Expansion:**
+Steps are listed as a roadmap. The active step is collapsed by default (click chevron to expand). Completed steps show green ✓ and completion text. The `stepExpanded` flag in session state controls visibility.
+
+**Assembly Steps (container_assembly):**
+Assembly is a multi-phase step with its own sub-state (`assembly_phase`, `assembly_transforms_done`). The student first sees that the raw clue words don't work, then must find what each word really points to (synonym, abbreviation, etc.) via sequential transform inputs, then finally assemble the result. Each transform has its own hint lightbulb.
+
+**Flat Clue Metadata Format (17D example):**
+Steps are a flat array — no nesting. Each step has `type`, `indices` (word positions), and `hint`. The `container_assembly` step additionally has `transforms` (array of `{role, indices, type, result, hint}`) and `result`.
 
 ## Environment Variables
 Create `.env` file (see `.env.example`):
