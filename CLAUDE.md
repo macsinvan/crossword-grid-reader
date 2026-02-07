@@ -202,7 +202,7 @@ When changing JS/CSS files, bump version in `templates/index.html`:
 ## Mobile Design
 Grid uses CSS Grid with `1fr` units, NOT fixed pixel sizes. See `SPEC.md` Section 11 for full details.
 
-## Current Task
+## Pickup Instructions — Clue Conversion
 
 Convert all 30 clues in `clues_db.json` from the old format to the new flat format with teaching steps. Verify each converted clue works end-to-end in browser.
 
