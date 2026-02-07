@@ -202,6 +202,18 @@ When changing JS/CSS files, bump version in `templates/index.html`:
 ## Mobile Design
 Grid uses CSS Grid with `1fr` units, NOT fixed pixel sizes. See `SPEC.md` Section 11 for full details.
 
+## Current Task
+
+Convert all 30 clues in `clues_db.json` from the old format to the new flat format with teaching steps. Verify each converted clue works end-to-end in browser.
+
+**Converted clues (verified):** 5D, 17D, 1A, 4A, 25A, 2D
+
+**Key rules for conversion:**
+- Follow the Step 2 Rule (see above): clues WITH indicators → indicator step (tap_words); clues WITHOUT indicators → wordplay_type step (multiple_choice)
+- Use 5D as the model for indicator clues, existing charades as model for no-indicator clues
+- Hints must teach cryptic conventions
+- Only change the clue you are asked to change
+
 ## Worktrees
 This repo uses git worktrees:
 - `/Users/andrewmackenzie/Desktop/Grid Reader` - main branch
