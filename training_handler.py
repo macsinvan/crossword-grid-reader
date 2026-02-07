@@ -457,6 +457,11 @@ def _get_transform_results(steps, completed_steps):
 
 def _build_all_done(session, clue):
     """Build the render when all steps are completed. Same layout, no currentStep."""
+    # Populate answer boxes if not already filled
+    if not session["user_answer"]:
+        answer_letters = list(re.sub(r'[^A-Z]', '', clue["answer"].upper()))
+        session["user_answer"] = answer_letters
+
     return {
         "clue_id": session["clue_id"],
         "words": clue["words"],
