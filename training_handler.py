@@ -378,6 +378,19 @@ def _handle_assembly_input(session, step, clue, clue_id, value):
             session["assembly_transforms_done"].append(expected.upper())
             session["assembly_phase"] = phase_idx + 1
             session["hint_visible"] = False
+
+            # If this was the last transform AND its result is the final answer,
+            # skip the check phase — the student already typed the answer
+            final_result = re.sub(r'[^A-Z]', '', step["result"].upper())
+            if phase_idx + 1 == len(transforms) and expected_text == final_result:
+                step_index = session["step_index"]
+                session["completed_steps"].append(step_index)
+                session["step_index"] = step_index + 1
+                session["selected_indices"] = []
+                session["step_expanded"] = False
+                session["assembly_phase"] = 0
+                session["assembly_transforms_done"] = []
+
             return {"correct": True, "render": get_render(clue_id, clue)}
         else:
             return {"correct": False, "render": get_render(clue_id, clue)}
