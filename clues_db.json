@@ -118,8 +118,8 @@
           "hint": "No indicator words here — the parts just join end to end. That's a charade."
         },
         {
-          "type": "charade_assembly",
-          "method": "charade",
+          "type": "assembly",
+          "intro": "In a charade, the parts join end-to-end. Each clue word points to a shorter word — a synonym, abbreviation, or clever association. Work out what each one really means.",
           "transforms": [
             {
               "role": "part1",
@@ -286,8 +286,8 @@
           "hint": "'Turns' is a reversal indicator — it tells you to read the letters backwards"
         },
         {
-          "type": "charade_assembly",
-          "method": "charade",
+          "type": "assembly",
+          "intro": "You've found the indicators and the base word. Now work through each operation step by step — first find a synonym, then apply what the indicators tell you to do.",
           "transforms": [
             {
               "role": "part1",
@@ -789,8 +789,8 @@
           "hint": "Which remaining words get placed inside?"
         },
         {
-          "type": "container_assembly",
-          "method": "container",
+          "type": "assembly",
+          "intro": "You've found the container parts. Now work out what each clue word really means — the raw words almost never appear directly in the answer.",
           "transforms": [
             {
               "role": "outer",
@@ -1613,8 +1613,8 @@
           "hint": "No indicator words here — the parts just join end to end. That's a charade."
         },
         {
-          "type": "charade_assembly",
-          "method": "charade",
+          "type": "assembly",
+          "intro": "In a charade, the parts join end-to-end. Each clue word points to a shorter word — a synonym, abbreviation, or clever association. Work out what each one really means.",
           "transforms": [
             {
               "role": "part1",
@@ -2368,8 +2368,8 @@
           "hint": "Which remaining word gets placed inside?"
         },
         {
-          "type": "container_assembly",
-          "method": "container",
+          "type": "assembly",
+          "intro": "You've found the container parts. Now work out what each clue word really means — the raw words almost never appear directly in the answer.",
           "transforms": [
             {
               "role": "outer",

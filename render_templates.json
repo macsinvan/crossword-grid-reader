@@ -54,23 +54,14 @@
     "expected_source": "indices",
     "onCorrect": "'{words}' goes inside."
   },
-  "container_assembly": {
+  "assembly": {
     "inputMode": "assembly",
     "prompt": "Now put it all together",
-    "menuTitle": "Put it together",
-    "completedTitle": "Assembled: {result}",
-    "intro": "Here\u2019s a key cryptic trick: the words in the clue almost never appear directly in the answer. Each one is really a clue to a shorter word \u2014 a synonym, abbreviation, or clever association. Your job is to figure out what each word is really pointing to.",
-    "expected_source": "result",
-    "onCorrect": "The letters combine to give {result}."
-  },
-  "charade_assembly": {
-    "inputMode": "assembly",
-    "prompt": "Work out what each part means",
     "menuTitle": "Build the answer",
     "completedTitle": "Assembled: {result}",
-    "intro": "In a charade, the wordplay breaks into parts that join end-to-end \u2014 often with no indicator word at all. Each part is a clue to a shorter word: a synonym, abbreviation, or clever association. Your job is to figure out what each one is really pointing to.",
+    "intro": "The words in the clue almost never appear directly in the answer. Each one is really a clue to a shorter word \u2014 a synonym, abbreviation, or clever association. Your job is to figure out what each word is really pointing to.",
     "expected_source": "result",
-    "onCorrect": "The parts join to give {result}."
+    "onCorrect": "The letters combine to give {result}."
   },
   "fodder": {
     "inputMode": "tap_words",

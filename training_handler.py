@@ -120,7 +120,7 @@ def get_render(clue_id, clue):
                 raise ValueError(f"Step type '{step['type']}' uses multiple_choice but has no 'options' in metadata.")
             current_step["options"] = step["options"]
 
-        # Assembly-specific data (container_assembly, charade_assembly, etc.)
+        # Assembly-specific data
         if template["inputMode"] == "assembly":
             current_step["assemblyData"] = _build_assembly_data(session, step, clue)
 
@@ -285,7 +285,7 @@ def check_answer(clue_id, clue, answer):
 # --- Internal helpers ---
 
 def _build_assembly_data(session, step, clue):
-    """Build the assemblyData payload for a container_assembly step."""
+    """Build the assemblyData payload for an assembly step."""
     transforms = step["transforms"]
     phase_idx = session["assembly_phase"]
     transforms_done = session["assembly_transforms_done"]
@@ -361,7 +361,7 @@ def _build_assembly_data(session, step, clue):
 
 
 def _handle_assembly_input(session, step, clue, clue_id, value):
-    """Handle input for the container_assembly step's multi-phase flow."""
+    """Handle input for an assembly step's multi-phase flow."""
     transforms = step["transforms"]
     phase_idx = session["assembly_phase"]
 
