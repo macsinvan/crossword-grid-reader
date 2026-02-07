@@ -277,115 +277,51 @@
     },
     "times-29453-12a": {
       "id": "times-29453-12a",
-      "clue": {
-        "number": "12A",
-        "text": "Concerning sight as head of office IT struggles with PC",
-        "enumeration": "5",
-        "answer": "OPTIC",
-        "definition": [
-          {
-            "text": "Concerning sight",
-            "position": "start"
-          }
-        ]
-      },
-      "words": [
-        "Concerning",
-        "sight",
-        "as",
-        "head",
-        "of",
-        "office",
-        "IT",
-        "struggles",
-        "with",
-        "PC"
-      ],
+      "clue": "Concerning sight as head of office IT struggles with PC",
+      "number": "12A",
+      "enumeration": "5",
+      "answer": "OPTIC",
+      "words": ["Concerning", "sight", "as", "head", "of", "office", "IT", "struggles", "with", "PC"],
+      "clue_type": "anagram",
+      "difficulty": { "definition": "easy", "wordplay": "medium", "overall": "medium" },
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0,
-              1
-            ],
-            "text": "Concerning sight"
-          },
+          "type": "definition",
+          "indices": [0, 1],
           "position": "start",
-          "explicit": true,
-          "hint": "Related to vision or the eye",
-          "difficulty": "Easy"
+          "hint": "Related to vision or the eye — think of an optician"
         },
         {
-          "type": "anagram",
-          "template": "anagram_with_fodder_pieces",
-          "indicator": {
-            "indices": [
-              7,
-              8
-            ],
-            "text": "struggles with"
-          },
-          "pieces": [
-            {
-              "fodder": {
-                "indices": [
-                  5
-                ],
-                "text": "office"
-              },
-              "result": "O",
-              "type": "letter_selection",
-              "reasoning": "'head of' = first letter of office"
-            },
-            {
-              "fodder": {
-                "indices": [
-                  6
-                ],
-                "text": "IT"
-              },
-              "result": "IT",
-              "type": "literal",
-              "reasoning": "IT used as-is"
-            },
-            {
-              "fodder": {
-                "indices": [
-                  9
-                ],
-                "text": "PC"
-              },
-              "result": "PC",
-              "type": "literal",
-              "reasoning": "PC used as-is"
-            }
+          "type": "indicator",
+          "indices": [7, 8],
+          "menuTitle": "Find the anagram indicator",
+          "completedTitle": "'struggles with' — letters need rearranging",
+          "prompt": "Which words signal that letters need to be rearranged?",
+          "intro": "An anagram indicator is a word or phrase suggesting disorder, difficulty, or change — things like 'broken', 'mixed', 'confused', or 'struggling'.",
+          "hint": "'Struggles with' suggests difficulty or disorder — a classic signal to rearrange letters"
+        },
+        {
+          "type": "fodder",
+          "indices": [3, 4, 5, 6, 9],
+          "menuTitle": "Find the anagram fodder",
+          "completedTitle": "Fodder: '{words}'",
+          "prompt": "Which words supply the letters to rearrange?",
+          "intro": "The anagram indicator tells you to jumble some letters. Which words in the clue supply those letters?",
+          "hint": "'head of office', 'IT', and 'PC' — these are the words that provide letters for the anagram"
+        },
+        {
+          "type": "assembly",
+          "intro": "You've found that 'struggles with' tells you to rearrange letters from 'head of office IT PC'. But that's far too many letters for a 5-letter answer. Each part is pointing to something shorter.",
+          "failMessage": "Work out what each part really contributes — 'head of' is a clue about which letters to take.",
+          "transforms": [
+            { "role": "part1", "indices": [3, 4, 5], "type": "letter_selection", "result": "O", "hint": "'Head of office' means take the first letter — the 'head' — of the word 'office'" },
+            { "role": "part2", "indices": [6], "type": "literal", "result": "IT", "hint": "'IT' is used as-is — it contributes both its letters" },
+            { "role": "part3", "indices": [9], "type": "literal", "result": "PC", "hint": "'PC' is used as-is — it contributes both its letters" },
+            { "role": "part4", "indices": [7, 8], "type": "anagram", "result": "OPTIC", "hint": "Rearrange O + IT + PC (5 letters) — what word meaning 'concerning sight' can you make?" }
           ],
-          "result": "OPTIC",
-          "assembly": "O + IT + PC → (anagram) → OPTIC",
-          "letters_so_far": 5,
-          "letters_needed": 5,
-          "fodder_combined": "O + IT + PC = OITPC"
+          "result": "OPTIC"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "easy",
-          "hint": "Related to vision or the eye"
-        },
-        "wordplay": {
-          "rating": "medium",
-          "hint": "First letter of a word plus an anagram of some letters"
-        },
-        "overall": "medium",
-        "recommendedApproach": "definition"
-      },
-      "verified": true
+      ]
     },
     "times-29453-9d": {
       "id": "times-29453-9d",
