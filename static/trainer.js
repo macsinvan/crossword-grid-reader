@@ -3,6 +3,9 @@
  *
  * Renders server state. No client-side state beyond what the server sends.
  * Server drives all transitions via the render object.
+ *
+ * Design: Inspired by Duolingo/Brilliant — focus on ONE interaction at a time.
+ * Completed steps collapse to a single line. Active step gets full attention.
  */
 class TemplateTrainer {
     constructor(container, options) {
@@ -44,7 +47,6 @@ class TemplateTrainer {
             }
             this.renderUI();
 
-            // Clear feedback after delay
             setTimeout(() => { this.feedback = null; this.renderUI(); }, 1500);
         } catch (err) {
             console.error('submitInput error:', err);
@@ -112,18 +114,13 @@ class TemplateTrainer {
 
     renderUI() {
         if (this.loading || !this.render) {
-            this.container.innerHTML = '<div style="padding: 2rem; text-align: center; color: #666;">Loading...</div>';
+            this.container.innerHTML = '<div style="padding: 2rem; text-align: center; color: #94a3b8;">Loading...</div>';
             return;
         }
 
         const r = this.render;
 
-        if (r.complete) {
-            this.renderComplete(r);
-        } else {
-            this.renderTraining(r);
-        }
-
+        this.renderTraining(r);
         this.attachEventListeners();
     }
 
@@ -132,69 +129,84 @@ class TemplateTrainer {
     // =========================================================================
 
     renderTraining(r) {
-        const step = r.currentStep;
-
         let html = '';
 
-        // Answer boxes
-        html += this.renderAnswerBoxes(r);
+        // Progress bar
+        html += this.renderProgressBar(r);
+
+        // Answer boxes + buttons
+        html += this.renderAnswerSection(r);
 
         // Feedback banner
         if (this.feedback) {
-            const bgColor = this.feedback.type === 'success' ? '#16a34a' : '#dc2626';
-            html += `<div style="padding: 0.5rem 1rem; background: ${bgColor}; color: white; text-align: center; border-radius: 0.375rem; margin: 0.5rem 1rem; font-weight: 500;">${this.feedback.message}</div>`;
+            const bg = this.feedback.type === 'success' ? '#16a34a' : '#dc2626';
+            html += `<div class="trainer-feedback" style="padding: 0.4rem 1rem; background: ${bg}; color: white; text-align: center; font-size: 0.8rem; font-weight: 500;">${this.feedback.message}</div>`;
         }
 
-        // Step menu
-        html += this.renderStepMenu(r);
+        // Step list
+        html += this.renderStepList(r);
+
+        // Update Grid button when all done
+        if (r.complete) {
+            html += `<div style="padding: 0.75rem 1.25rem 1.25rem; text-align: center;">`;
+            html += `<button class="complete-btn" style="padding: 0.6rem 2rem; background: #16a34a; color: white; border: none; border-radius: 2rem; cursor: pointer; font-size: 0.9rem; font-weight: 600;">Update Grid</button>`;
+            html += `</div>`;
+        }
 
         this.container.innerHTML = html;
     }
 
     // =========================================================================
-    // STEP MENU
+    // PROGRESS BAR
     // =========================================================================
 
-    renderStepMenu(r) {
+    renderProgressBar(r) {
         const steps = r.steps || [];
-        const currentStep = r.currentStep;
+        const completed = steps.filter(s => s.status === 'completed').length;
+        const pct = steps.length > 0 ? (completed / steps.length) * 100 : 0;
 
-        let html = '<div style="padding: 0.5rem 1rem;">';
-        html += '<div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem;">Steps to solve:</div>';
+        return `<div style="height: 4px; background: #e2e8f0;"><div style="height: 100%; width: ${pct}%; background: #22c55e; transition: width 0.4s ease;"></div></div>`;
+    }
 
-        for (const step of steps) {
-            const isActive = currentStep && step.index === currentStep.index;
-            const isCompleted = step.status === 'completed';
+    // =========================================================================
+    // ANSWER SECTION
+    // =========================================================================
 
-            // Step header
-            const icon = isCompleted ? '<span style="color: #16a34a;">&#10003;</span>'
-                       : isActive ? '<span style="color: #3b82f6;">&#9679;</span>'
-                       : '<span style="color: #94a3b8;">&#9675;</span>';
+    renderAnswerSection(r) {
+        const enumeration = r.enumeration || this.enumeration || '';
+        const parts = enumeration.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+        const userAnswer = r.userAnswer || [];
+        const locked = r.answerLocked;
 
-            const titleColor = isCompleted ? '#16a34a' : isActive ? '#1e293b' : '#64748b';
-            const isExpanded = isActive && r.stepExpanded;
-            const cursor = isActive ? 'pointer' : isCompleted ? 'default' : 'default';
-            const chevron = isActive ? (isExpanded ? '&#9660;' : '&#9654;') : '';
+        let html = '<div style="padding: 1rem 1.25rem 0.75rem;">';
 
-            html += `<div style="margin-bottom: 0.25rem;">`;
-            html += `<div class="${isActive ? 'step-header-active' : 'step-header'}" data-step-index="${step.index}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; cursor: ${cursor}; border-radius: 0.375rem; ${isActive ? 'background: #f0f9ff;' : ''}">`;
-            html += `${icon} <span style="font-size: 0.9rem; color: ${titleColor}; font-weight: ${isActive ? '600' : '400'};">${step.index + 1}. ${step.title}</span>`;
-            if (chevron) html += `<span style="font-size: 0.6rem; color: #94a3b8; margin-left: auto;">${chevron}</span>`;
-            html += `</div>`;
+        // Letter boxes — centered
+        html += '<div style="display: flex; justify-content: center; gap: 4px; flex-wrap: wrap;">';
+        let letterIdx = 0;
+        for (let p = 0; p < parts.length; p++) {
+            if (p > 0) html += '<div style="width: 10px;"></div>';
+            for (let c = 0; c < parts[p]; c++) {
+                const letter = userAnswer[letterIdx] || '';
+                const crossLetter = this.getCrossLetter(letterIdx);
+                const displayLetter = letter || crossLetter || '';
+                const borderColor = locked ? '#16a34a' : displayLetter ? '#475569' : '#cbd5e1';
+                const bg = locked ? '#f0fdf4' : 'white';
+                const textColor = locked ? '#16a34a' : '#1e293b';
 
-            // Expanded content for active step (only when expanded)
-            if (isExpanded && currentStep) {
-                html += this.renderActiveStep(r, currentStep);
+                html += `<input type="text" class="answer-box" data-letter-index="${letterIdx}" `
+                    + `value="${displayLetter}" maxlength="1" ${locked ? 'disabled' : ''} `
+                    + `style="width: 2.4rem; height: 2.6rem; text-align: center; border: none; border-bottom: 3px solid ${borderColor}; border-radius: 0; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; background: ${bg}; color: ${textColor}; outline: none;" />`;
+                letterIdx++;
             }
+        }
+        html += '</div>';
 
-            // Completion text for completed steps
-            if (isCompleted && step.completionText) {
-                html += `<div style="margin-left: 1.75rem; padding: 0.75rem; background: #f0fdf4; border-radius: 0.375rem; border-left: 3px solid #16a34a; margin-bottom: 0.5rem;">`;
-                html += `<div style="font-size: 0.85rem; color: #166534;">${step.completionText}</div>`;
-                html += `</div>`;
-            }
-
-            html += `</div>`;
+        // Buttons row — below boxes
+        if (!locked) {
+            html += '<div style="display: flex; justify-content: center; gap: 0.75rem; margin-top: 0.75rem;">';
+            html += `<button class="check-answer-btn" style="padding: 0.35rem 1.25rem; background: #3b82f6; color: white; border: none; border-radius: 1rem; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Check</button>`;
+            html += `<button class="reveal-btn" style="padding: 0.35rem 1.25rem; background: none; color: #94a3b8; border: 1px solid #cbd5e1; border-radius: 1rem; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Reveal</button>`;
+            html += '</div>';
         }
 
         html += '</div>';
@@ -202,67 +214,122 @@ class TemplateTrainer {
     }
 
     // =========================================================================
-    // ACTIVE STEP
+    // STEP LIST
+    // =========================================================================
+
+    renderStepList(r) {
+        const steps = r.steps || [];
+        const currentStep = r.currentStep;
+
+        let html = '<div style="padding: 0.25rem 1.25rem 1rem;">';
+
+        for (const step of steps) {
+            const isActive = currentStep && step.index === currentStep.index;
+            const isCompleted = step.status === 'completed';
+            const isExpanded = isActive && r.stepExpanded;
+
+            html += this.renderStepRow(step, isActive, isCompleted, isExpanded);
+
+            // Expanded content
+            if (isExpanded && currentStep) {
+                html += this.renderActiveStep(r, currentStep);
+            }
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    renderStepRow(step, isActive, isCompleted, isExpanded) {
+        // Completed: small muted checkmark + title, single line
+        if (isCompleted) {
+            return `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; opacity: 0.6;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#22c55e" stroke-width="1.5" fill="#f0fdf4"/><path d="M5 8l2 2 4-4" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span style="font-size: 0.8rem; color: #64748b;">${step.title}</span>
+            </div>`;
+        }
+
+        // Active: bold, clickable
+        if (isActive) {
+            const chevron = isExpanded
+                ? '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 5l3 3 3-3" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>'
+                : '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M5 3l3 3-3 3" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>';
+
+            return `<div class="step-header-active" data-step-index="${step.index}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; cursor: pointer;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#3b82f6"/><circle cx="8" cy="8" r="3" fill="white"/></svg>
+                <span style="font-size: 0.9rem; color: #1e293b; font-weight: 600; flex: 1;">${step.title}</span>
+                ${chevron}
+            </div>`;
+        }
+
+        // Pending: muted
+        return `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; opacity: 0.35;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#94a3b8" stroke-width="1.5"/></svg>
+            <span style="font-size: 0.8rem; color: #94a3b8;">${step.title}</span>
+        </div>`;
+    }
+
+    // =========================================================================
+    // ACTIVE STEP CONTENT
     // =========================================================================
 
     renderActiveStep(r, step) {
-        // Assembly steps have their own rendering
         if (step.inputMode === 'assembly') {
             return this.renderAssemblyContent(r, step);
         }
 
-        let html = '<div style="margin-left: 1.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 0.375rem; border: 1px solid #e2e8f0; margin-bottom: 0.5rem;">';
+        let html = '<div style="padding: 0.5rem 0 0.75rem 1.75rem;">';
 
-        // Word chips for tap_words
+        // Word chips
         if (step.inputMode === 'tap_words') {
-            html += '<div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">';
+            html += '<div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem;">';
             for (let i = 0; i < r.words.length; i++) {
                 const word = r.words[i];
                 const highlight = this.getWordHighlight(r, i);
                 const isSelected = (r.selectedIndices || []).includes(i);
 
-                let bg = '#e2e8f0';
-                let color = '#1e293b';
-                let border = '2px solid transparent';
-
+                let bg, color, border;
                 if (highlight) {
-                    bg = highlight === 'GREEN' ? '#bbf7d0' : highlight === 'ORANGE' ? '#fed7aa' : highlight === 'BLUE' ? '#bfdbfe' : '#e2e8f0';
-                    color = highlight === 'GREEN' ? '#166534' : '#1e293b';
+                    bg = highlight === 'GREEN' ? '#dcfce7' : highlight === 'ORANGE' ? '#fef3c7' : highlight === 'BLUE' ? '#dbeafe' : '#f1f5f9';
+                    color = highlight === 'GREEN' ? '#15803d' : '#44403c';
+                    border = 'none';
                 } else if (isSelected) {
-                    bg = '#bfdbfe';
-                    border = '2px solid #3b82f6';
+                    bg = '#dbeafe';
+                    color = '#1e40af';
+                    border = 'none';
+                } else {
+                    bg = '#f1f5f9';
+                    color = '#334155';
+                    border = 'none';
                 }
 
-                html += `<span class="word-chip" data-word-index="${i}" style="padding: 0.375rem 0.75rem; border-radius: 0.375rem; background: ${bg}; color: ${color}; border: ${border}; cursor: pointer; font-size: 1rem; user-select: none; transition: background 0.15s;">${word}</span>`;
+                html += `<span class="word-chip" data-word-index="${i}" style="padding: 0.4rem 0.75rem; border-radius: 2rem; background: ${bg}; color: ${color}; border: ${border}; cursor: pointer; font-size: 0.9rem; user-select: none; transition: background 0.15s; ${isSelected ? 'box-shadow: 0 0 0 2px #3b82f6;' : ''}">${word}</span>`;
             }
             html += '</div>';
         }
 
-        // Prompt
-        html += `<div style="font-size: 0.85rem; color: #475569; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">`;
-        html += `<span>${step.prompt}</span>`;
-        // Hint lightbulb
+        // Prompt + hint
+        html += `<div style="display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.25rem;">`;
+        html += `<span style="font-size: 0.8rem; color: #64748b; flex: 1; line-height: 1.5;">${step.prompt}</span>`;
         if (step.hint) {
-            html += `<span class="hint-toggle" style="cursor: pointer; font-size: 1.5rem; opacity: ${step.hintVisible ? '1' : '0.75'};" title="Show hint">&#128161;</span>`;
+            html += `<span class="hint-toggle" style="cursor: pointer; width: 20px; height: 20px; border-radius: 50%; background: ${step.hintVisible ? '#3b82f6' : '#e2e8f0'}; color: ${step.hintVisible ? 'white' : '#94a3b8'}; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Hint">?</span>`;
         }
         html += `</div>`;
 
-        // Intro text
+        // Intro (when hint not shown)
         if (step.intro && !step.hintVisible) {
-            html += `<div style="font-size: 0.8rem; color: #64748b; line-height: 1.5; white-space: pre-line;">${step.intro}</div>`;
+            html += `<div style="font-size: 0.8rem; color: #94a3b8; line-height: 1.5; margin-top: 0.25rem;">${step.intro}</div>`;
         }
 
-        // Hint text (revealed)
+        // Hint revealed
         if (step.hintVisible && step.hint) {
-            html += `<div style="font-size: 0.85rem; color: #1e40af; background: #eff6ff; padding: 0.5rem 0.75rem; border-radius: 0.375rem; margin-top: 0.25rem;">`;
-            html += `&#128161; ${step.hint}`;
-            html += `</div>`;
+            html += `<div style="font-size: 0.8rem; color: #1e40af; margin-top: 0.5rem; padding-left: 0.75rem; border-left: 2px solid #93c5fd; line-height: 1.5;">${step.hint}</div>`;
         }
 
-        // Submit button for tap_words when words are selected
+        // Submit button
         if (step.inputMode === 'tap_words' && (r.selectedIndices || []).length > 0) {
             html += `<div style="margin-top: 0.75rem;">`;
-            html += `<button class="submit-btn" style="padding: 0.5rem 1.5rem; background: #3b82f6; color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.9rem;">Check</button>`;
+            html += `<button class="submit-btn" style="padding: 0.4rem 1.5rem; background: #3b82f6; color: white; border: none; border-radius: 1rem; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Check</button>`;
             html += `</div>`;
         }
 
@@ -277,27 +344,25 @@ class TemplateTrainer {
     renderAssemblyContent(r, step) {
         const data = step.assemblyData;
         if (!data) {
-            return '<div style="margin-left: 1.75rem; padding: 0.75rem; color: #dc2626;">Assembly data missing.</div>';
+            return '<div style="padding: 0.75rem; color: #dc2626;">Assembly data missing.</div>';
         }
 
-        let html = '<div style="margin-left: 1.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 0.375rem; border: 1px solid #e2e8f0; margin-bottom: 0.5rem;">';
+        let html = '<div style="padding: 0.5rem 0 0.75rem 1.75rem;">';
 
-        // Intro text
+        // Intro
         if (step.intro) {
-            html += `<div style="font-size: 0.85rem; color: #475569; margin-bottom: 0.75rem; line-height: 1.5;">${step.intro}</div>`;
+            html += `<div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.75rem; line-height: 1.5;">${step.intro}</div>`;
         }
 
-        // Fail message — shows the raw words don't work
-        html += `<div style="font-size: 0.85rem; color: #b45309; background: #fffbeb; padding: 0.5rem 0.75rem; border-radius: 0.375rem; margin-bottom: 0.75rem; border-left: 3px solid #f59e0b;">`;
-        html += `${data.failMessage}`;
-        html += `</div>`;
+        // Fail message — simple italic text, not a box
+        html += `<div style="font-size: 0.8rem; color: #b45309; margin-bottom: 1rem; font-style: italic; line-height: 1.5;">${data.failMessage}</div>`;
 
-        // Transform inputs
+        // Transforms
         for (let i = 0; i < data.transforms.length; i++) {
             html += this.renderTransformInput(data.transforms[i], i);
         }
 
-        // Assembly check (when all transforms done)
+        // Assembly check
         if (data.phase === 'check') {
             html += this.renderAssemblyCheck(data);
         }
@@ -310,50 +375,47 @@ class TemplateTrainer {
         let html = '';
 
         if (transform.status === 'completed') {
-            // Completed transform — green summary
-            html += `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: #f0fdf4; border-radius: 0.375rem; margin-bottom: 0.5rem; border-left: 3px solid #16a34a;">`;
-            html += `<span style="color: #16a34a;">&#10003;</span>`;
-            html += `<span style="font-size: 0.85rem; color: #166534;">${transform.prompt}</span>`;
-            html += `<span style="font-size: 0.9rem; font-weight: 600; color: #16a34a; font-family: monospace; letter-spacing: 0.1em; margin-left: auto;">${transform.result}</span>`;
+            // Completed — compact single line
+            html += `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; margin-bottom: 0.25rem; opacity: 0.7;">`;
+            html += `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#22c55e" stroke-width="1.5" fill="#f0fdf4"/><path d="M5 8l2 2 4-4" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+            html += `<span style="font-size: 0.8rem; color: #64748b;">'${transform.clueWord}'</span>`;
+            html += `<span style="font-size: 0.9rem; font-weight: 700; color: #1e293b; font-family: monospace; letter-spacing: 0.05em;">${transform.result}</span>`;
             html += `</div>`;
 
         } else if (transform.status === 'active') {
-            // Active transform — text input with letter boxes
-            html += `<div style="padding: 0.5rem 0.75rem; background: #eff6ff; border-radius: 0.375rem; margin-bottom: 0.5rem; border-left: 3px solid #3b82f6;">`;
+            // Active — prompt, hint, letter boxes
+            html += `<div style="padding: 0.75rem 0; margin-bottom: 0.25rem;">`;
 
-            // Prompt with hint lightbulb
-            html += `<div style="font-size: 0.85rem; color: #1e40af; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">`;
-            html += `<span>${transform.prompt}</span>`;
+            // Prompt with hint
+            html += `<div style="display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">`;
+            html += `<span style="font-size: 0.8rem; color: #334155; flex: 1; line-height: 1.5;">${transform.prompt}</span>`;
             if (transform.hint) {
-                html += `<span class="assembly-hint-toggle" style="cursor: pointer; font-size: 1.5rem; opacity: ${transform.hintVisible ? '1' : '0.75'};" title="Show hint">&#128161;</span>`;
+                html += `<span class="assembly-hint-toggle" style="cursor: pointer; width: 20px; height: 20px; border-radius: 50%; background: ${transform.hintVisible ? '#3b82f6' : '#e2e8f0'}; color: ${transform.hintVisible ? 'white' : '#94a3b8'}; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Hint">?</span>`;
             }
             html += `</div>`;
 
-            // Hint text (revealed)
+            // Hint
             if (transform.hintVisible && transform.hint) {
-                html += `<div style="font-size: 0.85rem; color: #1e40af; background: #dbeafe; padding: 0.5rem 0.75rem; border-radius: 0.375rem; margin-bottom: 0.5rem;">`;
-                html += `&#128161; ${transform.hint}`;
-                html += `</div>`;
+                html += `<div style="font-size: 0.8rem; color: #1e40af; margin-bottom: 0.5rem; padding-left: 0.75rem; border-left: 2px solid #93c5fd; line-height: 1.5;">${transform.hint}</div>`;
             }
 
-            // Letter input boxes
-            html += `<div style="display: flex; gap: 0.25rem; align-items: center; flex-wrap: wrap;">`;
+            // Letter boxes
+            html += `<div style="display: flex; gap: 4px; align-items: center;">`;
             for (let i = 0; i < transform.letterCount; i++) {
                 html += `<input type="text" class="assembly-transform-letter" data-transform-index="${index}" data-letter-pos="${i}" `
                     + `maxlength="1" `
-                    + `style="width: 2rem; height: 2rem; text-align: center; border: 1px solid #93c5fd; border-radius: 0.25rem; font-size: 1rem; font-weight: 600; text-transform: uppercase; background: white;" />`;
+                    + `style="width: 2.2rem; height: 2.4rem; text-align: center; border: none; border-bottom: 3px solid #93c5fd; border-radius: 0; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; background: white; outline: none;" />`;
             }
-            html += `<button class="assembly-transform-submit" data-transform-index="${index}" style="margin-left: 0.5rem; padding: 0.25rem 0.75rem; background: #3b82f6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-size: 0.8rem;">Check</button>`;
+            html += `<button class="assembly-transform-submit" data-transform-index="${index}" style="margin-left: 0.5rem; padding: 0.35rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 1rem; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Check</button>`;
             html += `</div>`;
 
             html += `</div>`;
 
         } else {
-            // Pending transform — grayed out
-            html += `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: #f1f5f9; border-radius: 0.375rem; margin-bottom: 0.5rem; opacity: 0.5;">`;
-            html += `<span style="color: #94a3b8;">&#9675;</span>`;
-            html += `<span style="font-size: 0.85rem; color: #64748b;">${transform.prompt}</span>`;
-            html += `<span style="font-size: 0.8rem; color: #94a3b8; margin-left: auto;">${transform.letterCount} letters</span>`;
+            // Pending — very minimal
+            html += `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; opacity: 0.3;">`;
+            html += `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#94a3b8" stroke-width="1.5"/></svg>`;
+            html += `<span style="font-size: 0.8rem; color: #94a3b8;">${transform.letterCount} letters</span>`;
             html += `</div>`;
         }
 
@@ -363,105 +425,26 @@ class TemplateTrainer {
     renderAssemblyCheck(data) {
         let html = '';
 
-        html += `<div style="padding: 0.5rem 0.75rem; background: #faf5ff; border-radius: 0.375rem; margin-bottom: 0.5rem; border-left: 3px solid #8b5cf6;">`;
-        html += `<div style="font-size: 0.85rem; color: #6d28d9; margin-bottom: 0.5rem;">Now combine them \u2014 type the full answer:</div>`;
+        html += `<div style="padding: 0.75rem 0;">`;
+        html += `<div style="font-size: 0.8rem; color: #334155; margin-bottom: 0.5rem;">Now combine them — type the full answer:</div>`;
 
-        // Letter tiles with word spacing from resultParts
-        html += `<div style="display: flex; gap: 0.25rem; align-items: center; flex-wrap: wrap;">`;
+        // Letter tiles
+        html += `<div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">`;
         let letterIdx = 0;
         for (let p = 0; p < data.resultParts.length; p++) {
-            if (p > 0) {
-                html += '<div style="width: 0.5rem;"></div>';
-            }
+            if (p > 0) html += '<div style="width: 10px;"></div>';
             for (let c = 0; c < data.resultParts[p]; c++) {
                 html += `<input type="text" class="assembly-result-letter" data-letter-pos="${letterIdx}" `
                     + `maxlength="1" `
-                    + `style="width: 2rem; height: 2rem; text-align: center; border: 1px solid #c4b5fd; border-radius: 0.25rem; font-size: 1rem; font-weight: 600; text-transform: uppercase; background: white;" />`;
+                    + `style="width: 2.2rem; height: 2.4rem; text-align: center; border: none; border-bottom: 3px solid #c4b5fd; border-radius: 0; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; background: white; outline: none;" />`;
                 letterIdx++;
             }
         }
-        html += `<button class="assembly-check-btn" style="margin-left: 0.5rem; padding: 0.25rem 0.75rem; background: #8b5cf6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-size: 0.8rem;">Check Answer</button>`;
+        html += `<button class="assembly-check-btn" style="margin-left: 0.5rem; padding: 0.35rem 1rem; background: #8b5cf6; color: white; border: none; border-radius: 1rem; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Check</button>`;
         html += `</div>`;
 
         html += `</div>`;
         return html;
-    }
-
-    // =========================================================================
-    // ANSWER BOXES
-    // =========================================================================
-
-    renderAnswerBoxes(r) {
-        const enumeration = r.enumeration || this.enumeration || '';
-        const parts = enumeration.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
-        const userAnswer = r.userAnswer || [];
-        const locked = r.answerLocked;
-
-        let html = '<div style="padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0;">';
-        html += '<div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">';
-
-        let letterIdx = 0;
-        for (let p = 0; p < parts.length; p++) {
-            if (p > 0) {
-                // Word gap
-                html += '<div style="width: 0.5rem;"></div>';
-            }
-            for (let c = 0; c < parts[p]; c++) {
-                const letter = userAnswer[letterIdx] || '';
-                const crossLetter = this.getCrossLetter(letterIdx);
-                const displayLetter = letter || crossLetter || '';
-
-                html += `<input type="text" class="answer-box" data-letter-index="${letterIdx}" `
-                    + `value="${displayLetter}" `
-                    + `maxlength="1" `
-                    + `${locked ? 'disabled' : ''} `
-                    + `style="width: 2rem; height: 2rem; text-align: center; border: 1px solid ${locked ? '#16a34a' : '#cbd5e1'}; border-radius: 0.25rem; font-size: 1rem; font-weight: 600; text-transform: uppercase; ${locked ? 'background: #f0fdf4; color: #16a34a;' : ''}" />`;
-                letterIdx++;
-            }
-        }
-
-        // Check / Reveal buttons
-        if (!locked) {
-            html += `<button class="check-answer-btn" style="margin-left: 0.5rem; padding: 0.25rem 0.75rem; background: #3b82f6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-size: 0.8rem;">Check</button>`;
-            html += `<button class="reveal-btn" style="padding: 0.25rem 0.75rem; background: #ef4444; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-size: 0.8rem;">Reveal</button>`;
-        }
-
-        html += '</div>';
-        html += '</div>';
-        return html;
-    }
-
-    // =========================================================================
-    // COMPLETION VIEW
-    // =========================================================================
-
-    renderComplete(r) {
-        let html = '';
-
-        // Green header with answer
-        html += `<div style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); padding: 1.5rem; text-align: center; color: white;">`;
-        html += `<div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.25rem;">Answer</div>`;
-        html += `<div style="font-size: 1.75rem; font-weight: 700; font-family: monospace; letter-spacing: 0.15em;">${r.answer}</div>`;
-        html += `</div>`;
-
-        // Steps summary
-        html += '<div style="padding: 1rem;">';
-        for (const step of (r.steps || [])) {
-            if (step.completionText) {
-                html += `<div style="padding: 0.5rem 0.75rem; background: #f0fdf4; border-radius: 0.375rem; border-left: 3px solid #16a34a; margin-bottom: 0.5rem;">`;
-                html += `<div style="font-size: 0.85rem; color: #166534;"><strong>${step.title}:</strong> ${step.completionText}</div>`;
-                html += `</div>`;
-            }
-        }
-        html += '</div>';
-
-        // Update Grid button
-        html += `<div style="padding: 1rem; text-align: center;">`;
-        html += `<button class="complete-btn" style="padding: 0.75rem 2rem; background: #16a34a; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-size: 1rem; font-weight: 600;">Update Grid</button>`;
-        html += `</div>`;
-
-        this.container.innerHTML = html;
-        this.attachEventListeners();
     }
 
     // =========================================================================
@@ -486,7 +469,8 @@ class TemplateTrainer {
 
         // Hint toggle
         this.container.querySelectorAll('.hint-toggle').forEach(el => {
-            el.addEventListener('click', () => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
                 this.updateUIState('toggle_hint');
             });
         });
@@ -497,7 +481,6 @@ class TemplateTrainer {
                 const letter = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
                 e.target.value = letter;
 
-                // Auto-advance to next letter box in same transform
                 if (letter) {
                     const next = el.nextElementSibling;
                     if (next?.classList?.contains('assembly-transform-letter')) {
@@ -531,7 +514,8 @@ class TemplateTrainer {
 
         // Assembly hint toggle
         this.container.querySelectorAll('.assembly-hint-toggle').forEach(el => {
-            el.addEventListener('click', () => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
                 this.updateUIState('toggle_hint');
             });
         });
@@ -542,10 +526,8 @@ class TemplateTrainer {
                 const letter = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
                 e.target.value = letter;
 
-                // Auto-advance to next letter box
                 if (letter) {
                     let next = el.nextElementSibling;
-                    // Skip spacing divs
                     while (next && !next.classList?.contains('assembly-result-letter')) {
                         next = next.nextElementSibling;
                     }
@@ -558,7 +540,6 @@ class TemplateTrainer {
             el.addEventListener('keydown', (e) => {
                 if (e.key === 'Backspace' && !el.value) {
                     let prev = el.previousElementSibling;
-                    // Skip spacing divs
                     while (prev && !prev.classList?.contains('assembly-result-letter')) {
                         prev = prev.previousElementSibling;
                     }
@@ -594,32 +575,46 @@ class TemplateTrainer {
         // Answer box typing
         this.container.querySelectorAll('.answer-box').forEach(el => {
             el.addEventListener('input', (e) => {
-                const idx = parseInt(el.dataset.letterIndex, 10);
                 const letter = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
                 e.target.value = letter;
 
-                // Update server silently
                 const letters = [];
                 this.container.querySelectorAll('.answer-box').forEach(box => {
                     letters.push(box.value || '');
                 });
                 this.updateUIState('type_answer', { letters });
 
-                // Auto-advance to next box
-                if (letter && el.nextElementSibling?.classList?.contains('answer-box')) {
-                    el.nextElementSibling.focus();
+                // Auto-advance — skip word gaps
+                if (letter) {
+                    let next = el.nextElementSibling;
+                    while (next && !next.classList?.contains('answer-box')) {
+                        next = next.nextElementSibling;
+                    }
+                    if (next?.classList?.contains('answer-box')) {
+                        next.focus();
+                    }
                 }
             });
 
             el.addEventListener('keydown', (e) => {
                 if (e.key === 'Backspace' && !el.value) {
-                    // Move to previous box on backspace when empty
-                    const prev = el.previousElementSibling;
+                    let prev = el.previousElementSibling;
+                    while (prev && !prev.classList?.contains('answer-box')) {
+                        prev = prev.previousElementSibling;
+                    }
                     if (prev?.classList?.contains('answer-box')) {
                         prev.focus();
                         prev.select();
                     }
                 }
+            });
+
+            // Focus style
+            el.addEventListener('focus', () => {
+                if (!el.disabled) el.style.borderBottomColor = '#3b82f6';
+            });
+            el.addEventListener('blur', () => {
+                if (!el.disabled) el.style.borderBottomColor = el.value ? '#475569' : '#cbd5e1';
             });
         });
 

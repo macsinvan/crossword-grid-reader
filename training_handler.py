@@ -68,9 +68,9 @@ def get_render(clue_id, clue):
     steps = clue["steps"]
     step_index = session["step_index"]
 
-    # All steps done → completion
+    # All steps done → show completed step list (no separate completion view)
     if step_index >= len(steps):
-        return _build_completion(session, clue)
+        return _build_all_done(session, clue)
 
     step = steps[step_index]
     template = RENDER_TEMPLATES.get(step["type"])
@@ -364,6 +364,11 @@ def _build_step_list(session, clue):
     """Build the step summary list for the sidebar/menu."""
     steps = clue["steps"]
     step_index = session["step_index"]
+
+    # Build transform results map: role → result (from assembly step data)
+    # Only backfill when the assembly step itself is completed
+    transform_results = _get_transform_results(steps, session["completed_steps"])
+
     result = []
 
     for i, step in enumerate(steps):
@@ -376,6 +381,14 @@ def _build_step_list(session, clue):
             if template and "completedTitle" in template:
                 title = _resolve_variables(template["completedTitle"], step, clue)
             completion_text = _resolve_on_correct(template, step, clue) if template else ""
+
+            # Backfill: enrich outer_word/inner_word titles with transform results
+            if step["type"] in ("outer_word", "inner_word") and transform_results:
+                role = "outer" if step["type"] == "outer_word" else "inner"
+                transform_result = transform_results.get(role)
+                if transform_result:
+                    words = " ".join(clue["words"][idx] for idx in step["indices"])
+                    title = f"'{words}' \u2192 {transform_result}"
         elif i == step_index:
             status = "active"
             completion_text = None
@@ -394,8 +407,16 @@ def _build_step_list(session, clue):
     return result
 
 
-def _build_completion(session, clue):
-    """Build the final completion render."""
+def _get_transform_results(steps, completed_steps):
+    """Extract transform role→result map from a completed assembly step."""
+    for i, step in enumerate(steps):
+        if step["type"] == "container_assembly" and i in completed_steps and "transforms" in step:
+            return {t["role"]: t["result"].upper() for t in step["transforms"]}
+    return {}
+
+
+def _build_all_done(session, clue):
+    """Build the render when all steps are completed. Same layout, no currentStep."""
     return {
         "clue_id": session["clue_id"],
         "words": clue["words"],
@@ -403,6 +424,7 @@ def _build_completion(session, clue):
         "enumeration": clue["enumeration"],
         "steps": _build_step_list(session, clue),
         "currentStep": None,
+        "stepExpanded": False,
         "highlights": session["highlights"],
         "selectedIndices": [],
         "userAnswer": session["user_answer"],
