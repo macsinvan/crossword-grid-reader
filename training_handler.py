@@ -415,13 +415,14 @@ def _build_step_list(session, clue):
 
     for i, step in enumerate(steps):
         template = RENDER_TEMPLATES.get(step["type"])
-        title = template["menuTitle"] if template else step["type"]
+        title = step.get("menuTitle") or (template["menuTitle"] if template else step["type"])
 
         if i in session["completed_steps"]:
             status = "completed"
-            # Use completedTitle if available (resolved with variables)
-            if template and "completedTitle" in template:
-                title = _resolve_variables(template["completedTitle"], step, clue)
+            # Use completedTitle if available (step overrides template)
+            completed_title = step.get("completedTitle") or (template.get("completedTitle") if template else None)
+            if completed_title:
+                title = _resolve_variables(completed_title, step, clue)
             completion_text = _resolve_on_correct(template, step, clue) if template else ""
 
             # Backfill: enrich outer_word/inner_word titles with transform results
