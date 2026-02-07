@@ -117,7 +117,6 @@ Open http://localhost:8080
 | `training_handler.py` | Teaching mode logic: loads templates, get_render(), handle_input() |
 | `clue_step_templates.json` | **EXTERNAL TO CODE** - Clue step template schemas (WHAT data from clue) |
 | `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
-| `step_display_templates.py` | Display flow templates for complex step types (container, charade) |
 | `clues_db.json` | Pre-annotated clue database (30 clues with template metadata) |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
 

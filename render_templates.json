@@ -1,15 +1,10 @@
 {
-  "version": "2.0",
+  "version": "3.0",
   "description": "Render template definitions stored EXTERNAL TO CODE. These define HOW to present each step type - phases, input modes, prompts, panel formatting. They accept clue step template data as input. Also contains menu item templates and assembly config.",
 
   "clue_type": {
     "step_to_clue_type": {
       "standard_definition": "standard",
-      "wordplay_overview": "standard",
-      "deletion_discover": "standard",
-      "container_verify": "standard",
-      "charade_verify": "standard",
-      "alternation_discover": "standard",
       "literal_phrase": "standard",
       "abbreviation": "standard",
       "synonym": "standard",
@@ -49,6 +44,8 @@
 
   "templates": {
     "clue_type_identify": {
+      "learning": null,
+      "breakdown": null,
       "phases": [
         {
           "id": "choose",
@@ -69,6 +66,11 @@
     },
 
     "standard_definition": {
+      "learning": {
+        "title": "DEFINITION FOUND",
+        "text": "\"{definition_text}\" is the definition (at {position}).{hint_suffix}"
+      },
+      "breakdown": null,
       "phases": [
         {
           "id": "select",
@@ -83,6 +85,7 @@
             "instruction": "Tap the definition words. Remember: it's always at the start or end of the clue."
           },
           "inputMode": "tap_words",
+          "expected_source": "expected.indices",
           "onCorrect": {"highlight": {"color": "GREEN", "role": "definition"}},
           "onWrong": {"message": "Hint: The definition is always at the very start OR very end \u2014 never in the middle."}
         },
@@ -95,108 +98,34 @@
           },
           "inputMode": "none",
           "button": {"label": "Continue \u2192", "action": "next_step"}
-        }
-      ]
-    },
-
-    "wordplay_overview": {
-      "phases": []
-    },
-
-    "deletion_discover": {
-      "phases": []
-    },
-
-    "container_verify": {
-      "phases": [
-        {
-          "id": "order",
-          "actionPrompt": "Select which piece goes inside which",
-          "panel": {
-            "title": "CONTAINER ORDER",
-            "instruction": "You have two pieces: {inner} and {outer}. '{indicator}' tells us one goes inside the other. To make {answer}, which arrangement works?"
-          },
-          "inputMode": "multiple_choice",
-          "onCorrect": {"message": "That's right! Container indicators tell you the structure."},
-          "onWrong": {"message": "Hint: Look at {answer} \u2014 where does {inner} appear? Is it surrounded by letters, or does it surround them?"}
         },
         {
-          "id": "teaching",
-          "actionPrompt": "Complete training",
-          "panel": {
-            "title": "VERIFIED!",
-            "instruction": "{outer_split} = {result} \u2713\nDefinition: \"{definition_text}\" = {result} \u2713\n\n**Remember:** Container indicators (about, holds, around, inside, carries) tell you to put one piece inside another."
+          "id": "solve",
+          "condition": "difficulty.recommendedApproach == definition",
+          "actionPrompt": "Type your answer",
+          "intro": {
+            "title": "Solve from Definition",
+            "text": "Clues can be solved by starting with the wordplay or the definition. Skilled solvers often hypothesize an answer based on the definition, then verify it using the wordplay.\n\n{hint}",
+            "example": ""
           },
-          "inputMode": "none",
-          "button": {"label": "Complete \u2192", "action": "complete"}
-        }
-      ]
-    },
-
-    "charade_verify": {
-      "phases": [
-        {
-          "id": "result",
-          "actionPrompt": "Type the combined result",
           "panel": {
-            "title": "COMBINE YOUR PIECES",
-            "instruction": "You've gathered these pieces: {components_display}. Put them together \u2014 what do you get?"
+            "title": "SOLVE FROM DEFINITION",
+            "instruction": "Based on the definition, type your answer."
           },
           "inputMode": "text",
-          "onCorrect": {"message": "Great! The pieces chain together nicely."},
-          "onWrong": {"message": "Hint: Simply join the pieces in order, left to right."}
-        },
-        {
-          "id": "teaching",
-          "actionPrompt": "Complete training",
-          "panel": {
-            "title": "SOLVED!",
-            "instruction": "{components_display} = {result} \u2713"
-          },
-          "inputMode": "none",
-          "button": {"label": "Complete \u2192", "action": "complete"}
-        }
-      ]
-    },
-
-    "alternation_discover": {
-      "phases": [
-        {
-          "id": "fodder",
-          "actionPrompt": "Tap the word the indicator operates on",
-          "panel": {
-            "title": "FIND THE FODDER",
-            "instruction": "'{indicator}' tells you to take alternating letters. Which word does it operate on?"
-          },
-          "inputMode": "tap_words",
-          "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
-          "onWrong": {"message": "Hint: Look for a word right next to the indicator."}
-        },
-        {
-          "id": "result",
-          "actionPrompt": "Type the alternating letters",
-          "panel": {
-            "title": "EXTRACT THE LETTERS",
-            "instruction": "Take alternating letters from '{fodder}'. Which {letters_needed} letters do you get?"
-          },
-          "inputMode": "text",
-          "onCorrect": {"message": "Well done! Alternation is a handy technique to recognize."},
-          "onWrong": {"message": "Hint: Take every other letter from '{fodder}' \u2014 try odd positions (1st, 3rd) or even (2nd, 4th)."}
-        },
-        {
-          "id": "teaching",
-          "actionPrompt": "Continue to next step",
-          "panel": {
-            "title": "ALTERNATION",
-            "instruction": "Taking alternate letters from {fodder}: {result}\n{charade_result} + {result} = {answer} \u2713\nDefinition: \"{definition_text}\" = {answer} \u2713\n\n**Remember:** Alternation indicators (by turns, oddly, evenly, regularly) tell you to take every other letter."
-          },
-          "inputMode": "none",
-          "button": {"label": "Continue \u2192", "action": "next_step"}
+          "expected_source": "$answer",
+          "onCorrect": {"message": "Correct!"},
+          "onWrong": {"message": "Think of a word that matches the definition."}
         }
       ]
     },
 
     "double_definition": {
+      "learning": {
+        "title": "DOUBLE DEFINITION",
+        "text": "Both \"{def1}\" and \"{def2}\" define {result}. No wordplay needed!"
+      },
+      "breakdown": null,
       "phases": [
         {
           "id": "first_def",
@@ -211,6 +140,7 @@
             "instruction": "Tap the first definition \u2014 one meaning of the answer."
           },
           "inputMode": "tap_words",
+          "expected_source": "definitions.0.indices",
           "onCorrect": {"highlight": {"color": "GREEN", "role": "definition1"}},
           "onWrong": {"message": "Hint: Look for a word or phrase that could define the answer on its own."}
         },
@@ -222,6 +152,7 @@
             "instruction": "Good! Now tap the second definition \u2014 a different meaning of the same word."
           },
           "inputMode": "tap_words",
+          "expected_source": "definitions.1.indices",
           "onCorrect": {"highlight": {"color": "BLUE", "role": "definition2"}},
           "onWrong": {"message": "Hint: Look for another word or phrase that also defines the answer, but in a different sense."}
         },
@@ -233,6 +164,7 @@
             "instruction": "What single word satisfies both definitions?"
           },
           "inputMode": "text",
+          "expected_source": "$answer",
           "onCorrect": {"message": "Excellent! You found the word that bridges both meanings."},
           "onWrong": {"message": "Hint: Think of a word that could mean both things \u2014 it's often a word with multiple unrelated meanings."}
         },
@@ -250,6 +182,11 @@
     },
 
     "literal_phrase": {
+      "learning": {
+        "title": "LITERAL PHRASE: {fodder} \u2192 {result}",
+        "text": "'{fodder}' sounds like '{result}' when spoken.\n\n**Remember:** Some clues hide letters in how phrases sound when spoken conversationally."
+      },
+      "breakdown": null,
       "phases": [
         {
           "id": "fodder",
@@ -264,6 +201,7 @@
             "instruction": "Tap the words that sound like something else when spoken aloud."
           },
           "inputMode": "tap_words",
+          "expected_source": "fodder.indices",
           "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
           "onWrong": {"message": "Hint: Look for a phrase that might sound different when spoken conversationally."}
         },
@@ -275,6 +213,7 @@
             "instruction": "What does '{fodder}' sound like when spoken aloud?"
           },
           "inputMode": "text",
+          "expected_source": "result",
           "onCorrect": {"message": "That's it! Reading phrases aloud can reveal hidden meanings."},
           "onWrong": {"message": "Hint: Say '{fodder}' out loud \u2014 what does it sound like?"}
         },
@@ -292,6 +231,11 @@
     },
 
     "abbreviation": {
+      "learning": {
+        "title": "ABBREVIATION: {fodder} \u2192 {result}",
+        "text": "'{fodder}' = {result}\n\n**Hint:** {hint}"
+      },
+      "breakdown": {"icon": "\u2702\ufe0f", "technique": "Abbreviation"},
       "phases": [
         {
           "id": "fodder",
@@ -308,6 +252,7 @@
             "instruction_plural": "Tap the {word_count} words to abbreviate."
           },
           "inputMode": "tap_words",
+          "expected_source": "fodder.indices",
           "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
           "onWrong": {"message": "Hint: Look for a word that has a common abbreviation (numbers, directions, titles, etc.)."}
         },
@@ -319,6 +264,7 @@
             "instruction": "What is the standard abbreviation for '{fodder}'?"
           },
           "inputMode": "text",
+          "expected_source": "result",
           "onCorrect": {"message": "Correct! Abbreviations are a staple of cryptic crosswords."},
           "onWrong": {"message": "Hint: Think of the standard abbreviation for '{fodder}'."}
         },
@@ -336,6 +282,11 @@
     },
 
     "synonym": {
+      "learning": {
+        "title": "SYNONYM: {fodder} \u2192 {result}",
+        "text": "'{fodder}' = {result}\n\n**Hint:** {hint}"
+      },
+      "breakdown": {"icon": "\ud83d\udcd6", "technique": "Synonym"},
       "phases": [
         {
           "id": "fodder",
@@ -352,6 +303,7 @@
             "instruction_plural": "Tap the {word_count} words you need to find a synonym for."
           },
           "inputMode": "tap_words",
+          "expected_source": "fodder.indices",
           "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
           "onWrong": {"message": "Hint: Look for a word that needs to be replaced with a synonym."}
         },
@@ -363,6 +315,7 @@
             "instruction": "What's a synonym for '{fodder}' that fits?"
           },
           "inputMode": "text",
+          "expected_source": "result",
           "onCorrect": {"message": "Good! Building synonym knowledge is key to cryptic solving."},
           "onWrong": {"message": "Hint: Think of words that mean the same as '{fodder}'."}
         },
@@ -380,6 +333,11 @@
     },
 
     "deletion": {
+      "learning": {
+        "title": "DELETION: {fodder} \u2192 {result}",
+        "text": "'{indicator}' removes letters from '{fodder}' = {result}\n\n**Remember:** Deletion indicators tell you which part of a word to remove."
+      },
+      "breakdown": {"icon": "\u2702\ufe0f", "technique": "Deletion"},
       "phases": [
         {
           "id": "indicator",
@@ -394,6 +352,7 @@
             "instruction": "Tap the word(s) that signal deletion."
           },
           "inputMode": "tap_words",
+          "expected_source": "indicator.indices",
           "onCorrect": {"highlight": {"color": "ORANGE", "role": "indicator"}},
           "onWrong": {"message": "Hint: Look for words suggesting removal or shortening."}
         },
@@ -405,6 +364,7 @@
             "instruction": "After applying the deletion to '{fodder}', what letters remain?"
           },
           "inputMode": "text",
+          "expected_source": "result",
           "onCorrect": {"message": "Correct! Deletion is a common cryptic technique."},
           "onWrong": {"message": "Hint: Remove the indicated letter(s) from '{fodder}'."}
         },
@@ -422,6 +382,11 @@
     },
 
     "reversal": {
+      "learning": {
+        "title": "REVERSAL: {fodder} \u2192 {result}",
+        "text": "'{indicator}' reverses '{fodder}' = {result}\n\n**Remember:** Reversal indicators (back, up, turned) tell you to read letters backwards."
+      },
+      "breakdown": {"icon": "\u21a9\ufe0f", "technique": "Reversal"},
       "phases": [
         {
           "id": "indicator",
@@ -436,6 +401,7 @@
             "instruction": "Tap the word(s) that signal reversal."
           },
           "inputMode": "tap_words",
+          "expected_source": "indicator.indices",
           "onCorrect": {"highlight": {"color": "ORANGE", "role": "indicator"}},
           "onWrong": {"message": "Hint: Look for words suggesting backwards or reversed."}
         },
@@ -447,6 +413,7 @@
             "instruction": "Reverse '{fodder}'. What do you get?"
           },
           "inputMode": "text",
+          "expected_source": "result",
           "onCorrect": {"message": "Good! Reversals can hide words in plain sight."},
           "onWrong": {"message": "Hint: Write '{fodder}' backwards."}
         },
@@ -464,6 +431,11 @@
     },
 
     "letter_selection": {
+      "learning": {
+        "title": "LETTER SELECTION: {fodder} \u2192 {result}",
+        "text": "'{indicator}' from '{fodder}' = {result}\n\n**Remember:** Selection indicators (head of, finally, heart of) pinpoint exact letters."
+      },
+      "breakdown": {"icon": "\ud83d\udd24", "technique": "Letter selection"},
       "phases": [
         {
           "id": "indicator",
@@ -478,6 +450,7 @@
             "instruction": "Tap the word(s) that tell you which letters to select."
           },
           "inputMode": "tap_words",
+          "expected_source": "indicator.indices",
           "onCorrect": {"highlight": {"color": "ORANGE", "role": "indicator"}},
           "onWrong": {"message": "Hint: Look for words indicating position (first, last, heart, etc.)."}
         },
@@ -491,6 +464,7 @@
             "instruction_plural": "Tap the {word_count} words you're extracting letters from."
           },
           "inputMode": "tap_words",
+          "expected_source": "fodder.indices",
           "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
           "onWrong": {"message": "Hint: Which word does the indicator operate on?"}
         },
@@ -502,6 +476,7 @@
             "instruction": "What letter(s) do you get from '{fodder}'?"
           },
           "inputMode": "text",
+          "expected_source": "result",
           "onCorrect": {"message": "Nice! Letter selection is a precise technique."},
           "onWrong": {"message": "Hint: Apply the indicator to '{fodder}' \u2014 which letters does it specify?"}
         },
@@ -519,6 +494,11 @@
     },
 
     "literal": {
+      "learning": {
+        "title": "LITERAL: {fodder} \u2192 {result}",
+        "text": "'{fodder}' = {result} (used as-is)\n\n**Remember:** Some letters contribute directly without any transformation."
+      },
+      "breakdown": {"icon": "\ud83d\udcdd", "technique": "Literal"},
       "phases": [
         {
           "id": "fodder",
@@ -535,6 +515,7 @@
             "instruction_plural": "Tap the {word_count} words used literally (as-is) in the answer."
           },
           "inputMode": "tap_words",
+          "expected_source": "fodder.indices",
           "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
           "onWrong": {"message": "Hint: Look for letters or abbreviations used unchanged."}
         },
@@ -552,6 +533,11 @@
     },
 
     "connector": {
+      "learning": {
+        "title": "CONNECTOR: {fodder}",
+        "text": "'{fodder}' is a linking word.\n\n**Remember:** Connectors join wordplay elements but don't contribute letters."
+      },
+      "breakdown": null,
       "phases": [
         {
           "id": "teaching",
@@ -567,6 +553,11 @@
     },
 
     "anagram": {
+      "learning": {
+        "title": "ANAGRAM \u2192 {result}",
+        "text": "'{indicator}' rearranges {fodder} = {result}\n\n**Remember:** Anagram indicators signal that letters need shuffling."
+      },
+      "breakdown": null,
       "phases": [
         {
           "id": "indicator",
@@ -581,6 +572,7 @@
             "instruction": "Tap the word(s) that signal an anagram."
           },
           "inputMode": "tap_words",
+          "expected_source": "indicator.indices",
           "onCorrect": {"highlight": {"color": "ORANGE", "role": "indicator"}},
           "onWrong": {"message": "Hint: Look for words suggesting mixing, confusion, or disorder."}
         },
@@ -592,6 +584,7 @@
             "instruction": "Rearrange the fodder letters. What word do you get?"
           },
           "inputMode": "text",
+          "expected_source": "result",
           "onCorrect": {"message": "Excellent! Anagrams are a cryptic crossword staple."},
           "onWrong": {"message": "Hint: Rearrange all the fodder letters to form a word."}
         },
@@ -609,6 +602,11 @@
     },
 
     "container": {
+      "learning": {
+        "title": "CONTAINER: {inner} in {outer} \u2192 {result}",
+        "text": "'{indicator}' puts {inner} inside {outer} = {result}\n\n**Remember:** Container indicators (in, around, holding) tell you to put one piece inside another."
+      },
+      "breakdown": null,
       "phases": [
         {
           "id": "indicator",
@@ -623,6 +621,7 @@
             "instruction": "Tap the word(s) that signal a container."
           },
           "inputMode": "tap_words",
+          "expected_source": "indicator.indices",
           "onCorrect": {"highlight": {"color": "ORANGE", "role": "indicator"}},
           "onWrong": {"message": "Hint: Look for words suggesting something inside or around something else."}
         },
@@ -651,6 +650,11 @@
     },
 
     "hidden": {
+      "learning": {
+        "title": "HIDDEN: {result}",
+        "text": "'{indicator}' reveals {result} hidden in '{fodder}'\n\n**Remember:** Hidden word clues conceal the answer in consecutive letters across words."
+      },
+      "breakdown": null,
       "phases": [
         {
           "id": "indicator",
@@ -665,6 +669,7 @@
             "instruction": "Tap the word(s) that signal a hidden word."
           },
           "inputMode": "tap_words",
+          "expected_source": "indicator.indices",
           "onCorrect": {"highlight": {"color": "ORANGE", "role": "indicator"}},
           "onWrong": {"message": "Hint: Look for words suggesting something is hidden or contained."}
         },
@@ -676,6 +681,7 @@
             "instruction": "Tap the words that contain the hidden answer."
           },
           "inputMode": "tap_words",
+          "expected_source": "fodder.indices",
           "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
           "onWrong": {"message": "Hint: Look for consecutive letters spanning word boundaries."}
         },

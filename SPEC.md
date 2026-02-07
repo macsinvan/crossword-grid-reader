@@ -898,7 +898,6 @@ Grid Reader/
 ├── clues_db.json            # Pre-annotated clue steps
 ├── teaching_hints.json      # Expert hints for step types
 ├── render_templates.json    # Render templates (HOW to present steps)
-├── step_display_templates.py # Display flow for complex types
 ├── static/
 │   ├── crossword.js         # Grid UI, keyboard navigation
 │   ├── trainer.js           # Stateless trainer UI

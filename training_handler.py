@@ -2,19 +2,16 @@
 Training Handler - Interactive Teaching System for Grid Reader
 =============================================================
 
-Ported from cryptic-trainer. Provides step-by-step guided solving
-for cryptic crossword clues using pre-annotated step data.
+Template-driven teaching engine for cryptic crossword clues.
+Uses pre-annotated step data from clues_db.json and render
+templates from render_templates.json.
 
 Architecture:
 - RAW STEP DATA: Loaded from clues_db.json (pre-annotated)
-- STEP TEMPLATES: Generic phases for each step type (90% reusable)
-- DECORATION: get_render() merges step + template → UI render object
+- RENDER TEMPLATES: External JSON defining phases, prompts, input modes
+- ENGINE: get_render() merges step + template → UI render object
 
-Step Types: standard_definition, abbreviation, synonym, literal,
-literal_phrase, anagram, reversal, deletion, letter_selection,
-hidden, container_verify, charade_verify, double_definition
-
-API (called from crossword_server.py):
+API (called from trainer_routes.py):
 - start_session(clue_id, clue) - Initialize training session
 - get_render(clue_id, clue) - Get current UI state
 - handle_input(clue_id, clue, value) - Process user input
@@ -86,6 +83,98 @@ def parse_enumeration(enum_str):
     numbers = re.findall(r'\d+', str(enum_str))
     return sum(int(n) for n in numbers) if numbers else 0
 
+def build_learning_from_template(step, clue):
+    """Build a learning dict from the template's learning block.
+
+    Returns None if the template has no learning or learning is null.
+    Uses substitute_variables() for placeholder resolution.
+    """
+    step_type = step.get("type", "")
+    template = RENDER_TEMPLATES.get("templates", {}).get(step_type)
+    if not template:
+        return None
+
+    learning_spec = template.get("learning")
+    if learning_spec is None:
+        return None
+
+    # Create a dummy session for substitute_variables (it only uses session for hints)
+    dummy_session = {}
+    title = substitute_variables(learning_spec.get("title", ""), step, dummy_session, clue)
+    text = substitute_variables(learning_spec.get("text", ""), step, dummy_session, clue)
+
+    result = {"title": title}
+    if text:
+        result["text"] = text
+    return result
+
+def resolve_expected(step, phase, clue):
+    """Resolve expected value from phase's expected_source declaration.
+
+    expected_source is a dot-path into step data, with special prefixes:
+      - "fodder.indices" → step["fodder"]["indices"] (falls back to step["fodder_word"]["indices"])
+      - "indicator.indices" → step["indicator"]["indices"]
+      - "expected.indices" → step["expected"]["indices"]
+      - "definitions.0.indices" → step["definitions"][0]["indices"]
+      - "result" → step["result"] (uppercased for text comparison)
+      - "$answer" → clue answer (uppercased for text comparison)
+    Returns None if expected_source is not declared or path doesn't resolve.
+    """
+    source = phase.get("expected_source")
+    if not source:
+        return None
+
+    input_mode = phase.get("inputMode", "")
+
+    # Special prefix: $answer resolves to clue answer
+    if source == "$answer":
+        answer = clue.get("clue", {}).get("answer", "")
+        return answer.upper() if input_mode == "text" else answer
+
+    # Split dot-path and walk the step data
+    parts = source.split(".")
+    obj = step
+    for part in parts:
+        if obj is None:
+            # Fallback: "fodder.indices" can also come from "fodder_word.indices"
+            if parts[0] == "fodder" and "fodder_word" in step:
+                obj = step["fodder_word"]
+                for fallback_part in parts[1:]:
+                    if isinstance(obj, dict):
+                        obj = obj.get(fallback_part)
+                    elif isinstance(obj, list) and fallback_part.isdigit():
+                        idx = int(fallback_part)
+                        obj = obj[idx] if idx < len(obj) else None
+                    else:
+                        return None
+                return obj
+            return None
+        if isinstance(obj, dict):
+            obj = obj.get(part)
+        elif isinstance(obj, list) and part.isdigit():
+            idx = int(part)
+            obj = obj[idx] if idx < len(obj) else None
+        else:
+            return None
+
+    # Fodder fallback: if fodder path returned None, try fodder_word
+    if obj is None and parts[0] == "fodder" and "fodder_word" in step:
+        obj = step["fodder_word"]
+        for part in parts[1:]:
+            if isinstance(obj, dict):
+                obj = obj.get(part)
+            elif isinstance(obj, list) and part.isdigit():
+                idx = int(part)
+                obj = obj[idx] if idx < len(obj) else None
+            else:
+                return None
+
+    # For text input, uppercase the expected value
+    if input_mode == "text" and isinstance(obj, str):
+        return obj.upper()
+
+    return obj
+
 # =============================================================================
 # RENDER TEMPLATES - Loaded from render_templates.json (EXTERNAL TO CODE)
 # =============================================================================
@@ -148,329 +237,6 @@ def build_clue_type_step(clue):
 # DYNAMIC PHASE GENERATION
 # =============================================================================
 
-def build_wordplay_overview_phases(step, clue):
-    """Build phases for wordplay_overview based on common_vocabulary count."""
-    phases = []
-
-    # Extract what we know for coaching prompts
-    # Get definition text from standard_definition step if not in this step
-    definition_text = step.get("definition_text")
-    if not definition_text:
-        steps = clue.get("steps", [])
-        for s in steps:
-            if s.get("type") == "standard_definition":
-                definition_text = s.get("expected", {}).get("text", "unknown")
-                break
-    if not definition_text:
-        definition_text = "unknown"
-    answer = clue.get("clue", {}).get("answer", "unknown")
-
-    # Check recommended approach to determine intro text
-    recommended_approach = clue.get("difficulty", {}).get("recommendedApproach", "definition")
-
-    # Normalize common_vocabulary to list
-    common_vocab = step.get("common_vocabulary", [])
-    if isinstance(common_vocab, dict):
-        common_vocab = [common_vocab]
-
-    # Phase for each vocabulary item: tap then type
-    for i, vocab in enumerate(common_vocab):
-        vocab_num = i + 1
-        is_first = i == 0
-
-        # Tap phase - instructions differ based on whether user knows the answer
-        if recommended_approach == "definition":
-            # User has hypothesis - can reference answer
-            if is_first:
-                tap_instruction = f"Which word has a well-known cryptic synonym that might appear in {answer}?"
-            else:
-                tap_instruction = f"Look for another word with a well-known cryptic synonym that might appear in {answer}."
-        else:
-            # User doesn't know answer - can't reference it
-            if is_first:
-                tap_instruction = "Which word has a well-known cryptic synonym?"
-            else:
-                tap_instruction = "Look for another word with a well-known cryptic synonym."
-
-        tap_phase = {
-            "id": f"vocabulary_tap_{vocab_num}",
-            "actionPrompt": "Tap a word with a common cryptic meaning",
-            "panel": {
-                "title": "FIND ANCHOR",
-                "instruction": tap_instruction
-            },
-            "inputMode": "tap_words",
-            "onCorrect": {"highlight": {"color": "BLUE", "role": f"vocabulary_{vocab_num}"}},
-            "onWrong": {"message": f"Hint: Look for common cryptic vocabulary — words like 'fool', 'love', 'nothing' have well-known short synonyms."}
-        }
-        if is_first:
-            if recommended_approach == "definition":
-                intro_text = f"We have the definition, {definition_text}, and a hypothesis: {answer}. Now let's verify it by scanning the remaining words for anchors — words with obvious cryptic meanings that might support your hypothesis."
-            else:
-                intro_text = f"We have the definition: {definition_text}. Now let's build the answer from the wordplay by finding anchors — words with obvious cryptic meanings."
-            tap_phase["intro"] = {
-                "title": "Wordplay Overview",
-                "text": intro_text,
-                "example": ""
-            }
-        phases.append(tap_phase)
-
-        # Type phase - get the vocab word text and meaning length for coaching prompt
-        vocab_text = vocab.get("text", "this word")
-        vocab_meaning = vocab.get("meaning", "")
-        meaning_len = len(vocab_meaning) if vocab_meaning else 3
-
-        # Instructions differ based on whether user knows the answer
-        if recommended_approach == "definition":
-            type_instruction = f"Nice work spotting '{vocab_text}' — this appears frequently in cryptic clues. What's its common {meaning_len}-letter synonym? Check if it appears in {answer}."
-            type_wrong_hint = f"Hint: Think of a {meaning_len}-letter word that means '{vocab_text}' and appears in {answer}."
-        else:
-            type_instruction = f"Nice work spotting '{vocab_text}' — this appears frequently in cryptic clues. What's its common {meaning_len}-letter synonym?"
-            type_wrong_hint = f"Hint: Think of a {meaning_len}-letter word that means '{vocab_text}'."
-
-        type_phase = {
-            "id": f"vocabulary_type_{vocab_num}",
-            "actionPrompt": "Type the synonym",
-            "panel": {
-                "title": "TYPE SYNONYM",
-                "instruction": type_instruction
-            },
-            "inputMode": "text",
-            "onCorrect": {"message": f"That's it! '{vocab_text}' = {vocab_meaning} — a common cryptic pairing worth remembering."},
-            "onWrong": {"message": type_wrong_hint}
-        }
-        phases.append(type_phase)
-
-    # Indicator phases - one at a time
-    indicators = step.get("expected_indicators", [])
-    num_indicators = len(indicators)
-    for i, indicator in enumerate(indicators):
-        ind_num = i + 1
-        operation = indicator.get("operation", "wordplay")
-
-        if num_indicators == 1:
-            instruction = "Now look for an indicator — a word that signals a wordplay operation like deletion, container, or reversal."
-        else:
-            instruction = f"There are {num_indicators} indicators in this clue. Can you spot one?"
-
-        indicator_phase = {
-            "id": f"indicator_tap_{ind_num}",
-            "actionPrompt": f"Tap indicator {ind_num}" if num_indicators > 1 else "Tap the indicator",
-            "panel": {
-                "title": "FIND INDICATOR",
-                "instruction": instruction
-            },
-            "inputMode": "tap_words",
-            "onCorrect": {"highlight": {"color": "ORANGE", "role": f"indicator_{ind_num}"}},
-            "onWrong": {"message": f"Hint: Look for a word that could signal {operation} — these are the 'recipe words' that tell you what to do."}
-        }
-        phases.append(indicator_phase)
-
-    # Teaching phase
-    teaching_phase = {
-        "id": "teaching",
-        "actionPrompt": "Continue to next step",
-        "panel": {
-            "title": "OVERVIEW COMPLETE",
-            "instruction": ""  # Built dynamically in get_render
-        },
-        "inputMode": "none",
-        "button": {"label": "Continue →", "action": "next_step"}
-    }
-    phases.append(teaching_phase)
-
-    return phases
-
-def build_standard_definition_phases(step, clue):
-    """Build phases for standard_definition, adding solve phase if recommendedApproach is 'definition'."""
-    base_phases = RENDER_TEMPLATES["templates"]["standard_definition"]["phases"].copy()
-
-    # Check if we should add solve phase
-    difficulty = clue.get("difficulty", {})
-    recommended_approach = difficulty.get("recommendedApproach", "wordplay")
-
-    if recommended_approach == "definition":
-        # Get hint from step (new schema)
-        definition_hint = step.get("hint", "")
-
-        # Standard intro paragraph explaining the strategy
-        strategy_intro = "Clues can be solved by starting with the wordplay or the definition. Skilled solvers often hypothesize an answer based on the definition, then verify it using the wordplay."
-
-        # Combine strategy intro with clue-specific hint
-        full_text = f"{strategy_intro}\n\n{definition_hint}"
-
-        # Insert solve phase after teaching
-        solve_phase = {
-            "id": "solve",
-            "actionPrompt": "Type your answer",
-            "intro": {
-                "title": "Solve from Definition",
-                "text": full_text,
-                "example": ""
-            },
-            "panel": {
-                "title": "SOLVE FROM DEFINITION",
-                "instruction": "Based on the definition, type your answer."
-            },
-            "inputMode": "text",
-            "onCorrect": {"message": "Correct!"},
-            "onWrong": {"message": "Think of a word that matches the definition."}
-        }
-        # Insert after teaching (index 1), before any next steps
-        phases = base_phases[:2] + [solve_phase]
-        return phases
-
-    return base_phases
-
-def build_deletion_discover_phases(step, clue):
-    """Build phases for deletion_discover with synonym input and multiple choice deletion."""
-    phases = []
-
-    answer = clue.get("clue", {}).get("answer", "")
-    indicator_text = step.get("indicator", {}).get("text", "")
-    fodder_word = step.get("fodder_word", {}).get("text", "")
-    fodder_synonym = step.get("fodder_synonym", "")
-    result = step.get("result", "")
-    letters_needed = step.get("letters_needed", len(result))
-
-    # Compute anchor_summary from wordplay_overview step
-    anchor_summary = ""
-    steps = clue.get("steps", [])
-    for s in steps:
-        if s.get("type") == "wordplay_overview":
-            common_vocab = s.get("common_vocabulary", [])
-            if isinstance(common_vocab, dict):
-                common_vocab = [common_vocab]
-            if common_vocab:
-                anchor_parts = []
-                for vocab in common_vocab:
-                    vocab_text = vocab.get("text", "")
-                    meaning = vocab.get("meaning", "")
-                    letters = vocab.get("letters", len(meaning))
-                    anchor_parts.append(f"{meaning} from '{vocab_text}' ({letters} letters)")
-                anchor_summary = ", ".join(anchor_parts)
-            break
-
-    # Phase 1: Tap the fodder word
-    fodder_phase = {
-        "id": "fodder",
-        "actionPrompt": "Tap the word the indicator operates on",
-        "panel": {
-            "title": "FIND FODDER",
-            "instruction": f"'{indicator_text}' is a deletion indicator — it shortens something. Which adjacent word does it operate on?"
-        },
-        "inputMode": "tap_words",
-        "onCorrect": {"highlight": {"color": "BLUE", "role": "fodder"}},
-        "onWrong": {"message": f"Hint: Indicators operate on adjacent words. Look right next to '{indicator_text}'."}
-    }
-    phases.append(fodder_phase)
-
-    # Phase 2: Type the synonym
-    synonym_phase = {
-        "id": "synonym",
-        "actionPrompt": "Type the synonym",
-        "panel": {
-            "title": "FIND THE SYNONYM",
-            "instruction": f"You have {anchor_summary}. '{indicator_text}' '{fodder_word}' needs to give you {letters_needed} more letters. Shortening '{fodder_word}' directly doesn't fit {answer} — what synonym of '{fodder_word}' might work?"
-        },
-        "inputMode": "text",
-        "onCorrect": {"message": f"Good — '{fodder_word}' = {fodder_synonym}!"},
-        "onWrong": {"message": f"Hint: Think of synonyms for '{fodder_word}'. Which one has {letters_needed + 1} letters that could be shortened?"}
-    }
-    phases.append(synonym_phase)
-
-    # Phase 3: Multiple choice - which letter to delete
-    # Generate options for deleting first or last letter
-    deletion_options = []
-    if len(fodder_synonym) > 0:
-        # Delete first letter
-        first_deleted = fodder_synonym[1:]
-        deletion_options.append({
-            "label": f"Delete first letter {fodder_synonym[0]} → {first_deleted}",
-            "correct": first_deleted.upper() == result.upper()
-        })
-        # Delete last letter
-        last_deleted = fodder_synonym[:-1]
-        deletion_options.append({
-            "label": f"Delete last letter {fodder_synonym[-1]} → {last_deleted}",
-            "correct": last_deleted.upper() == result.upper()
-        })
-
-    result_phase = {
-        "id": "result",
-        "actionPrompt": "Select which letter to delete",
-        "panel": {
-            "title": "SHORTEN IT",
-            "instruction": f"'{indicator_text}' means to shorten. Which letter do you remove from {fodder_synonym}?"
-        },
-        "inputMode": "multiple_choice",
-        "options": deletion_options,
-        "onCorrect": {"message": "Excellent! You discovered the deletion by working backwards from your hypothesis."},
-        "onWrong": {"message": f"Hint: Which deletion gives you letters that fit {answer}?"}
-    }
-    phases.append(result_phase)
-
-    # Phase 4: Teaching
-    teaching_phase = {
-        "id": "teaching",
-        "actionPrompt": "Continue to next step",
-        "panel": {
-            "title": "DELETION CONFIRMED",
-            "instruction": f"'{fodder_word}' = {fodder_synonym}, shortened = {result}. This is a key cryptic technique — working backwards from your hypothesis to discover synonyms."
-        },
-        "inputMode": "none",
-        "button": {"label": "Continue →", "action": "next_step"}
-    }
-    phases.append(teaching_phase)
-
-    return phases
-
-def build_container_verify_phases(step, clue):
-    """Build phases for container_verify with auto-generated options."""
-    inner = step.get("inner", "")
-    outer = step.get("outer", "")
-    result = step.get("result", "")
-    indicator_text = step.get("indicator", {}).get("text", "")
-    answer = clue.get("clue", {}).get("answer", "")
-
-    # Auto-generate options: determine which is correct by checking if inner appears inside result
-    inner_upper = inner.upper()
-    result_upper = result.upper()
-
-    # If inner appears inside result (surrounded by other letters), then inner goes inside outer
-    inner_inside_correct = inner_upper in result_upper and result_upper != inner_upper
-
-    options = [
-        {"label": f"{inner} goes inside {outer}", "correct": inner_inside_correct},
-        {"label": f"{outer} goes inside {inner}", "correct": not inner_inside_correct}
-    ]
-
-    phases = [
-        {
-            "id": "order",
-            "actionPrompt": "Select which piece goes inside which",
-            "panel": {
-                "title": "CONTAINER ORDER",
-                "instruction": f"You have two pieces: {inner} and {outer}. '{indicator_text}' tells us one goes inside the other. To make {answer}, which arrangement works?"
-            },
-            "inputMode": "multiple_choice",
-            "options": options,
-            "onCorrect": {"message": "That's right! Container indicators tell you the structure."},
-            "onWrong": {"message": f"Hint: Look at {answer} — where does {inner} appear? Is it surrounded by letters, or does it surround them?"}
-        },
-        {
-            "id": "teaching",
-            "actionPrompt": "Complete training",
-            "panel": {
-                "title": "VERIFIED!",
-                "instruction": ""  # Built dynamically in get_render
-            },
-            "inputMode": "none",
-            "button": {"label": "Continue →", "action": "next_step"}
-        }
-    ]
-
-    return phases
 
 # =============================================================================
 # SESSION MANAGEMENT
@@ -487,7 +253,6 @@ def start_session(clue_id, clue, cross_letters=None, enumeration=None):
         "highlights": [],
         "learnings": [],
         "answer_known": False,  # True if user solved from definition (now reviewing wordplay)
-        "found_indicators": [],  # Track which indicator indices have been found (any order)
         "completed_steps": [],  # Track completed step indices for status indicators
         # UI state (server-driven, client is dumb)
         "selected_indices": [],  # Words selected in tap_words mode
@@ -531,23 +296,106 @@ def reset_step_ui_state(session):
 # RENDER
 # =============================================================================
 
-def get_step_phases(step, clue):
-    """Get phases for a step, handling dynamic phase generation."""
-    step_type = step.get("type")
+def evaluate_condition(condition, step, clue):
+    """Evaluate a condition string against step and clue data.
 
-    if step_type == "wordplay_overview":
-        return build_wordplay_overview_phases(step, clue)
-    elif step_type == "standard_definition":
-        return build_standard_definition_phases(step, clue)
-    elif step_type == "deletion_discover":
-        return build_deletion_discover_phases(step, clue)
-    elif step_type == "container_verify":
-        return build_container_verify_phases(step, clue)
-    else:
-        template = RENDER_TEMPLATES.get("templates", {}).get(step_type)
-        if template:
-            return template["phases"]
+    Format: "dotpath == value" or "dotpath != value"
+    dotpath walks clue data first, then step data.
+    Example: "difficulty.recommendedApproach == definition"
+    """
+    if not condition:
+        return True
+
+    # Parse "path == value" or "path != value"
+    for op in ["!=", "=="]:
+        if op in condition:
+            path, expected_value = [s.strip() for s in condition.split(op, 1)]
+            # Walk the dot-path in clue first, then step
+            parts = path.split(".")
+            obj = clue
+            for part in parts:
+                if isinstance(obj, dict):
+                    obj = obj.get(part)
+                else:
+                    obj = None
+                    break
+            if obj is None:
+                # Try step data
+                obj = step
+                for part in parts:
+                    if isinstance(obj, dict):
+                        obj = obj.get(part)
+                    else:
+                        obj = None
+                        break
+            result = str(obj) == expected_value if obj is not None else False
+            return result if op == "==" else not result
+
+    return True  # No recognized operator, treat as always true
+
+
+def expand_template_phases(template, step, clue):
+    """Expand template phases, handling condition and repeat_for directives.
+
+    - condition: phase is only included if condition evaluates to True
+    - repeat_for: generates N copies of sub-phases, one per item in the array
+    """
+    raw_phases = template.get("phases", [])
+    expanded = []
+
+    for phase in raw_phases:
+        # Check condition
+        condition = phase.get("condition")
+        if condition and not evaluate_condition(condition, step, clue):
+            continue
+
+        # Handle repeat_for
+        repeat_for = phase.get("repeat_for")
+        if repeat_for:
+            items = step.get(repeat_for, [])
+            if isinstance(items, dict):
+                items = [items]
+            sub_phases = phase.get("phases", [])
+            for i, item in enumerate(items):
+                n = i + 1
+                for sub in sub_phases:
+                    # Deep copy and substitute {n} in IDs
+                    expanded_sub = {}
+                    for k, v in sub.items():
+                        if isinstance(v, str):
+                            expanded_sub[k] = v.replace("{n}", str(n))
+                        else:
+                            expanded_sub[k] = v
+                    # Attach the repeat item data for runtime resolution
+                    expanded_sub["_repeat_index"] = i
+                    expanded_sub["_repeat_item"] = item
+                    expanded.append(expanded_sub)
+            continue
+
+        expanded.append(phase)
+
+    return expanded
+
+
+def get_step_phases(step, clue):
+    """Get phases for a step from template, expanding directives if present."""
+    step_type = step.get("type")
+    template = RENDER_TEMPLATES.get("templates", {}).get(step_type)
+    if not template:
         return []
+
+    raw_phases = template.get("phases", [])
+
+    # Check if template has any directives (condition, repeat_for, options_generator)
+    has_directives = any(
+        p.get("condition") or p.get("repeat_for") or p.get("options_generator")
+        for p in raw_phases
+    )
+
+    if has_directives:
+        return expand_template_phases(template, step, clue)
+
+    return raw_phases
 
 def substitute_variables(text, step, session, clue=None):
     """Replace {variable} placeholders with values from step data."""
@@ -566,8 +414,7 @@ def substitute_variables(text, step, session, clue=None):
         subs["position"] = step["position"]
 
     # Direct fields
-    for key in ["result", "fodder_synonym", "letters_needed", "inner", "outer",
-                "letters_so_far", "pattern"]:
+    for key in ["result", "inner", "outer"]:
         if key in step:
             subs[key] = str(step[key])
 
@@ -594,23 +441,12 @@ def substitute_variables(text, step, session, clue=None):
     definition_hint = step.get("hint", "")
     subs["hint_suffix"] = f"\n\n**Hint:** {definition_hint}" if definition_hint else ""
 
-    # Handle fodder_word.text
-    if "fodder_word" in step and isinstance(step["fodder_word"], dict):
-        subs["fodder_word_text"] = step["fodder_word"].get("text", "")
-
     # Provide definition_text from clue's first step (for teaching summaries)
     if clue:
         clue_steps = clue.get("steps", [])
         if "definition_text" not in subs:
             if clue_steps and clue_steps[0].get("type") == "standard_definition":
                 subs["definition_text"] = clue_steps[0].get("expected", {}).get("text", "")
-        # Provide charade_result from charade_verify step (for alternation teaching)
-        if "charade_result" not in subs:
-            for s in clue_steps:
-                if s.get("type") == "charade_verify":
-                    subs["charade_result"] = s.get("result", "")
-                    break
-
     # Handle indicator
     if "indicator" in step:
         ind = step["indicator"]
@@ -619,14 +455,6 @@ def substitute_variables(text, step, session, clue=None):
         else:
             subs["indicator"] = str(ind)
 
-    # Handle fodder_word
-    if "fodder_word" in step:
-        fw = step["fodder_word"]
-        if isinstance(fw, dict):
-            subs["fodder_word"] = fw.get("text", "")
-        else:
-            subs["fodder_word"] = str(fw)
-
     # Handle fodder
     if "fodder" in step:
         f = step["fodder"]
@@ -634,27 +462,6 @@ def substitute_variables(text, step, session, clue=None):
             subs["fodder"] = f.get("text", "")
         else:
             subs["fodder"] = str(f)
-
-    # Handle components for charade_verify
-    if "components" in step:
-        components = step["components"]
-        subs["components_display"] = " + ".join(components)
-
-    # Handle outer_split for container_verify teaching
-    if "inner" in step and "outer" in step and "result" in step:
-        inner = step["inner"]
-        outer = step["outer"]
-        result = step["result"]
-        # Find where inner fits in result to show split
-        inner_upper = inner.upper()
-        result_upper = result.upper()
-        idx = result_upper.find(inner_upper)
-        if idx > 0:
-            before = result_upper[:idx]
-            after = result_upper[idx + len(inner_upper):]
-            subs["outer_split"] = f"{before} + {inner_upper} + {after}"
-        else:
-            subs["outer_split"] = f"{outer} around {inner}"
 
     # Handle definitions for double_definition
     if "definitions" in step:
@@ -670,30 +477,6 @@ def substitute_variables(text, step, session, clue=None):
         if enumeration:
             subs["letterCount"] = str(parse_enumeration(enumeration))
         subs["answer"] = clue.get("clue", {}).get("answer", "")
-
-        # Find anchor info from wordplay_overview step for context
-        steps = clue.get("steps", [])
-        anchor_letters = 0
-        anchor_summary = ""
-        for s in steps:
-            if s.get("type") == "wordplay_overview":
-                common_vocab = s.get("common_vocabulary", [])
-                if isinstance(common_vocab, dict):
-                    common_vocab = [common_vocab]
-                if common_vocab:
-                    # Build anchor summary
-                    anchor_parts = []
-                    for vocab in common_vocab:
-                        vocab_text = vocab.get("text", "")
-                        meaning = vocab.get("meaning", "")
-                        letters = vocab.get("letters", len(meaning))
-                        anchor_letters += letters
-                        anchor_parts.append(f"{meaning} from '{vocab_text}' ({letters} letters)")
-                    anchor_summary = ", ".join(anchor_parts)
-                break
-
-        subs["anchor_summary"] = anchor_summary
-        subs["letters_have"] = str(anchor_letters)
 
     # Perform substitution
     for key, val in subs.items():
@@ -1000,9 +783,6 @@ def get_render(clue_id, clue):
     if not session:
         return {"error": "No session"}
 
-    # DEBUG: Log session state
-    print(f"[DEBUG get_render] clue_id={clue_id}, step_index={session['step_index']}")
-
     steps = clue.get("steps", [])
     answer = clue.get("clue", {}).get("answer", "")
     enumeration = clue.get("clue", {}).get("enumeration", "")
@@ -1036,10 +816,7 @@ def get_render(clue_id, clue):
 
     # Handle step menu (step_index == -2)
     if session["step_index"] == -2:
-        print(f"[DEBUG] Returning step menu mode")
         return _build_menu_render(session, clue)
-    else:
-        print(f"[DEBUG] NOT returning step menu, step_index={session['step_index']}")
 
     # Handle clue type identification step (step_index == -1)
     if session["step_index"] == -1:
@@ -1059,9 +836,7 @@ def get_render(clue_id, clue):
 
     # Skip text input for final answer if answer is already known
     if session.get("answer_known") and phase.get("inputMode") == "text":
-        step_type = step.get("type", "")
-        # For charade_verify or solve phases asking for the final answer, auto-advance
-        if step_type == "charade_verify" or phase.get("id") == "solve":
+        if phase.get("id") == "solve":
             expected = step.get("result", answer).upper().replace(" ", "")
             handle_input(clue_id, clue, expected)
             return get_render(clue_id, clue)
@@ -1137,10 +912,6 @@ def get_render(clue_id, clue):
     if "button" in phase:
         render["button"] = phase["button"]
 
-    # Special handling for wordplay_overview teaching phase (too dynamic for JSON)
-    if step["type"] == "wordplay_overview" and phase["id"] == "teaching":
-        render["panel"]["instruction"] = build_wordplay_teaching(step, clue)
-
     # Fodder phase: use plural variants when multiple words expected
     if phase["id"] == "fodder" and "instruction_plural" in phase.get("panel", {}):
         fodder_indices = step.get("fodder", {}).get("indices", [])
@@ -1152,79 +923,22 @@ def get_render(clue_id, clue):
                 render["actionPrompt"] = _fmt(phase["actionPrompt_plural"], v)
 
     # Add expected for validation
-    if phase.get("inputMode") == "tap_words":
+    input_mode = phase.get("inputMode", "")
+    if input_mode in ("tap_words", "text"):
         phase_id = phase["id"]
-        if phase_id == "select" and "expected" in step:
-            render["expected"] = step["expected"]["indices"]
-        elif phase_id.startswith("indicator_tap_"):
-            # Accept any unfound indicator (user can find in any order)
-            indicators = step.get("expected_indicators", [])
-            found_indicators = session.get("found_indicators", [])
-            num_total = len(indicators)
-            num_found = len(found_indicators)
-            num_remaining = num_total - num_found
 
-            # Find first unfound indicator for expected (for autoCheck single-word logic)
-            unfound_indices = []
-            for ind in indicators:
-                ind_tuple = tuple(ind.get("indices", []))
-                if ind_tuple not in found_indicators:
-                    unfound_indices.append(ind.get("indices", []))
+        # Resolve expected from phase's expected_source declaration
+        resolved = resolve_expected(step, phase, clue)
+        if resolved is not None:
+            render["expected"] = resolved
 
-            if unfound_indices:
-                # Set expected to first unfound for autoCheck calculation
-                render["expected"] = unfound_indices[0]
-
-            # Update instruction dynamically based on progress
-            if num_total == 1:
-                instruction = "Which remaining word signals a wordplay operation?"
-            elif num_remaining == num_total:
-                instruction = f"There are {num_total} indicators. Find one."
-            elif num_remaining == 1:
-                instruction = "Find the last indicator."
+        # Add autoCheck flag for single-word tap_words
+        if input_mode == "tap_words":
+            if "expected" in render and isinstance(render["expected"], list) and len(render["expected"]) == 1:
+                render["autoCheck"] = True
             else:
-                instruction = f"Found {num_found} of {num_total}. Find another indicator."
-            render["panel"]["instruction"] = instruction
-        elif phase_id.startswith("vocabulary_tap_"):
-            # Get the vocabulary index
-            vocab_num = int(phase_id.split("_")[-1])
-            common_vocab = step.get("common_vocabulary", [])
-            if isinstance(common_vocab, dict):
-                common_vocab = [common_vocab]
-            if vocab_num <= len(common_vocab):
-                render["expected"] = common_vocab[vocab_num - 1].get("indices", [])
-        elif phase_id == "indicator":
-            if "indicator" in step and isinstance(step["indicator"], dict):
-                render["expected"] = step["indicator"]["indices"]
-        elif phase_id == "fodder":
-            if "fodder_word" in step:
-                render["expected"] = step["fodder_word"]["indices"]
-            elif "fodder" in step and isinstance(step["fodder"], dict):
-                render["expected"] = step["fodder"]["indices"]
-        elif phase_id == "first_def" and "definitions" in step:
-            render["expected"] = step["definitions"][0]["indices"]
-        elif phase_id == "second_def" and "definitions" in step:
-            render["expected"] = step["definitions"][1]["indices"]
-
-        # Add autoCheck flag for single-word taps
-        if "expected" in render and isinstance(render["expected"], list) and len(render["expected"]) == 1:
-            render["autoCheck"] = True
-        else:
-            render["autoCheck"] = False
-    elif phase.get("inputMode") == "text":
-        phase_id = phase["id"]
-        if phase_id.startswith("vocabulary_type_"):
-            vocab_num = int(phase_id.split("_")[-1])
-            common_vocab = step.get("common_vocabulary", [])
-            if isinstance(common_vocab, dict):
-                common_vocab = [common_vocab]
-            if vocab_num <= len(common_vocab):
-                render["expected"] = common_vocab[vocab_num - 1].get("meaning", "")
-        elif phase_id == "result":
-            render["expected"] = step.get("result", "")
-        elif phase_id == "solve":
-            render["expected"] = answer
-    elif phase.get("inputMode") == "multiple_choice":
+                render["autoCheck"] = False
+    elif input_mode == "multiple_choice":
         # Check phase options first (for dynamically generated phases), then step options
         options = phase.get("options") or step.get("options")
         if options:
@@ -1265,37 +979,6 @@ def get_render(clue_id, clue):
         render["hint"] = hint if hint else None
 
     return render
-
-def build_wordplay_teaching(step, clue):
-    """Build the teaching instruction for wordplay_overview."""
-    lines = []
-
-    # Common vocabulary
-    common_vocab = step.get("common_vocabulary", [])
-    if isinstance(common_vocab, dict):
-        common_vocab = [common_vocab]
-
-    total_vocab_letters = 0
-    for vocab in common_vocab:
-        text = vocab.get("text", "")
-        meaning = vocab.get("meaning", "")
-        letters = vocab.get("letters", len(meaning))
-        total_vocab_letters += letters
-        lines.append(f"• {text} = {meaning} ({letters} letters) — your anchor")
-
-    # Indicators
-    indicators = step.get("expected_indicators", [])
-    for ind in indicators:
-        text = ind.get("text", "")
-        operation = ind.get("operation", "")
-        lines.append(f"• \"{text}\" = {operation} indicator")
-
-    # Letter math
-    enumeration = parse_enumeration(clue.get("clue", {}).get("enumeration", "0"))
-    letters_needed = enumeration - total_vocab_letters
-    lines.append(f"• You have {total_vocab_letters} letters. You need {letters_needed} more.")
-
-    return "\n".join(lines)
 
 # =============================================================================
 # MENU NAVIGATION
@@ -1460,56 +1143,13 @@ def handle_input(clue_id, clue, value):
     expected = None
     phase_id = phase["id"]
 
-    if phase.get("inputMode") == "tap_words":
-        if phase_id == "select" and "expected" in step:
-            expected = step["expected"]["indices"]
-        elif phase_id.startswith("indicator_tap_"):
-            # Accept ANY unfound indicator (user can find them in any order)
-            indicators = step.get("expected_indicators", [])
-            found_indicators = session.get("found_indicators", [])
-            # Collect all unfound indicator indices
-            unfound_indices = []
-            for ind in indicators:
-                ind_indices = tuple(ind.get("indices", []))
-                if ind_indices not in found_indicators:
-                    unfound_indices.append(ind.get("indices", []))
-            # expected will be checked against any of the unfound indicators
-            expected = unfound_indices  # List of valid index lists
-        elif phase_id.startswith("vocabulary_tap_"):
-            vocab_num = int(phase_id.split("_")[-1])
-            common_vocab = step.get("common_vocabulary", [])
-            if isinstance(common_vocab, dict):
-                common_vocab = [common_vocab]
-            if vocab_num <= len(common_vocab):
-                expected = common_vocab[vocab_num - 1].get("indices", [])
-        elif phase_id == "indicator":
-            if "indicator" in step and isinstance(step["indicator"], dict):
-                expected = step["indicator"]["indices"]
-        elif phase_id == "fodder":
-            if "fodder_word" in step:
-                expected = step["fodder_word"]["indices"]
-            elif "fodder" in step and isinstance(step["fodder"], dict):
-                expected = step["fodder"]["indices"]
-        elif phase_id == "first_def" and "definitions" in step:
-            expected = step["definitions"][0]["indices"]
-        elif phase_id == "second_def" and "definitions" in step:
-            expected = step["definitions"][1]["indices"]
-    elif phase.get("inputMode") == "text":
-        if phase_id.startswith("vocabulary_type_"):
-            vocab_num = int(phase_id.split("_")[-1])
-            common_vocab = step.get("common_vocabulary", [])
-            if isinstance(common_vocab, dict):
-                common_vocab = [common_vocab]
-            if vocab_num <= len(common_vocab):
-                expected = common_vocab[vocab_num - 1].get("meaning", "").upper()
-        elif phase_id == "synonym":
-            # For deletion_discover synonym phase
-            expected = step.get("fodder_synonym", "").upper()
-        elif phase_id == "result":
-            expected = step.get("result", "").upper()
-        elif phase_id == "solve":
-            expected = answer.upper()
-    elif phase.get("inputMode") == "multiple_choice":
+    input_mode = phase.get("inputMode", "")
+    if input_mode in ("tap_words", "text"):
+        # Resolve expected from phase's expected_source declaration
+        resolved = resolve_expected(step, phase, clue)
+        if resolved is not None:
+            expected = resolved
+    elif input_mode == "multiple_choice":
         # Check phase options first (for dynamically generated phases), then step options
         options = phase.get("options") or step.get("options", [])
         for i, opt in enumerate(options):
@@ -1519,19 +1159,9 @@ def handle_input(clue_id, clue, value):
 
     # Check answer
     correct = False
-    matched_indicator = None  # Track which indicator was matched (for any-order indicators)
     if phase.get("inputMode") == "tap_words":
         if isinstance(value, list) and isinstance(expected, list):
-            # Check if this is an indicator tap with multiple valid options
-            if phase_id.startswith("indicator_tap_") and expected and isinstance(expected[0], list):
-                # expected is a list of valid index lists - check if value matches any
-                for valid_indices in expected:
-                    if set(value) == set(valid_indices):
-                        correct = True
-                        matched_indicator = valid_indices
-                        break
-            else:
-                correct = set(value) == set(expected)
+            correct = set(value) == set(expected)
     elif phase.get("inputMode") == "text":
         if isinstance(value, str) and expected:
             user_letters = re.sub(r'[^A-Z]', '', value.upper())
@@ -1541,57 +1171,14 @@ def handle_input(clue_id, clue, value):
         correct = value == expected
 
     if correct:
-        # Track found indicator if this was an indicator tap
-        if phase_id.startswith("indicator_tap_") and matched_indicator:
-            if "found_indicators" not in session:
-                session["found_indicators"] = []
-            session["found_indicators"].append(tuple(matched_indicator))
-
         # Add highlight if specified
         if "onCorrect" in phase and "highlight" in phase["onCorrect"]:
-            # Use matched_indicator for indicator taps, otherwise use expected
-            if matched_indicator:
-                highlight_indices = matched_indicator
-            elif isinstance(expected, list) and not (expected and isinstance(expected[0], list)):
-                highlight_indices = expected
-            else:
-                highlight_indices = []
+            highlight_indices = expected if isinstance(expected, list) else []
             session["highlights"].append({
                 "indices": highlight_indices,
                 "color": phase["onCorrect"]["highlight"]["color"],
                 "role": phase["onCorrect"]["highlight"].get("role", "")
             })
-
-        # Add breadcrumb learnings for key phases
-        if phase_id.startswith("vocabulary_type_"):
-            # Extract vocab info from step data
-            common_vocab = step.get("common_vocabulary", [])
-            if isinstance(common_vocab, dict):
-                common_vocab = [common_vocab]
-            # Find which vocab this is (vocab_num from phase_id)
-            vocab_idx = int(phase_id.split("_")[-1]) - 1  # raises ValueError if malformed
-            if vocab_idx >= len(common_vocab):
-                raise IndexError(f"Vocab index {vocab_idx} out of range for common_vocabulary (len={len(common_vocab)}) in phase '{phase_id}'")
-            vocab = common_vocab[vocab_idx]
-            vocab_text = vocab.get("text", "")
-            vocab_meaning = vocab.get("meaning", "")
-            session["learnings"].append({
-                "title": f"ANCHOR: {vocab_text} = {vocab_meaning}"
-            })
-
-        if phase_id.startswith("indicator_tap_"):
-            # Find which indicator was found
-            indicators = step.get("expected_indicators", [])
-            if matched_indicator:
-                # Find the indicator that matches
-                for ind in indicators:
-                    if ind.get("indices") == list(matched_indicator):
-                        ind_text = ind.get("text", "")
-                        operation = ind.get("operation", "wordplay")
-                        session["learnings"].append({
-                            "title": f"INDICATOR: {ind_text} ({operation})"
-                        })
-                        break
 
         # Check if this is a solve phase (definition approach)
         if phase_id == "solve" and step["type"] == "standard_definition":
@@ -1660,104 +1247,11 @@ def handle_continue(clue_id, clue):
 
     phase = phases[session["phase_index"]]
 
-    # If this is a teaching phase, capture the learning
-    if phase["id"] == "teaching" and "panel" in phase:
-        learning_text = substitute_variables(phase["panel"].get("instruction", ""), step, session, clue)
-        learning_title = None  # Will be set later if custom title needed
-
-        # Apply special handling for various step types
-        if step["type"] == "wordplay_overview":
-            learning_text = None  # Skip - already shown in individual breadcrumbs
-        elif step["type"] == "deletion_discover":
-            fodder_word = step.get("fodder_word", {}).get("text", "")
-            fodder_synonym = step.get("fodder_synonym", "")
-            result = step.get("result", "")
-            learning_text = f"{fodder_word} = {fodder_synonym}, shortened = {result}\n\n**Remember:** Deletion indicators often require finding a synonym first, then shortening it."
-        elif step["type"] == "container_verify":
-            inner = step.get("inner", "")
-            result = step.get("result", "")
-            inner_upper = inner.upper()
-            result_upper = result.upper()
-            idx = result_upper.find(inner_upper)
-            if idx > 0:
-                before = result_upper[:idx]
-                after = result_upper[idx + len(inner_upper):]
-                split_display = f"{before} + {inner_upper} + {after}"
-            else:
-                split_display = f"{step.get('outer', '')} around {inner}"
-
-            definition_text = ""
-            if steps and steps[0].get("type") == "standard_definition":
-                definition_text = steps[0].get("expected", {}).get("text", "")
-
-            learning_text = f"{split_display} = {result} ✓\nDefinition: \"{definition_text}\" = {result} ✓\n\n**Remember:** Container indicators (about, holds, around, inside, carries) tell you to put one piece inside another."
-        elif step["type"] == "alternation_discover":
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            charade_result = ""
-            for s in steps:
-                if s.get("type") == "charade_verify":
-                    charade_result = s.get("result", "")
-                    break
-            definition_text = ""
-            if steps and steps[0].get("type") == "standard_definition":
-                definition_text = steps[0].get("expected", {}).get("text", "")
-            final_answer = clue.get("clue", {}).get("answer", "")
-            learning_text = f"Taking alternate letters from {fodder}: {result}\n{charade_result} + {result} = {final_answer} ✓\nDefinition: \"{definition_text}\" = {final_answer} ✓\n\n**Remember:** Alternation indicators (by turns, oddly, evenly, regularly) tell you to take every other letter."
-
-        # Custom titles for step types that need key info in breadcrumb
-        if step["type"] == "abbreviation":
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            learning_title = f"ABBREVIATION: {fodder} → {result}"
-        elif step["type"] == "literal_phrase":
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            learning_title = f"LITERAL PHRASE: {fodder} → {result}"
-        elif step["type"] == "synonym":
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            learning_title = f"SYNONYM: {fodder} → {result}"
-        elif step["type"] == "deletion":
-            fodder = step.get("fodder", "")
-            result = step.get("result", "")
-            learning_title = f"DELETION: {fodder} → {result}"
-        elif step["type"] == "reversal":
-            fodder = step.get("fodder", "")
-            result = step.get("result", "")
-            learning_title = f"REVERSAL: {fodder} → {result}"
-        elif step["type"] == "letter_selection":
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            learning_title = f"LETTER SELECTION: {fodder} → {result}"
-        elif step["type"] == "literal":
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            learning_title = f"LITERAL: {fodder} → {result}"
-        elif step["type"] == "connector":
-            fodder = get_fodder_text(step)
-            learning_title = f"CONNECTOR: {fodder}"
-        elif step["type"] == "anagram":
-            result = step.get("result", "")
-            learning_title = f"ANAGRAM → {result}"
-        elif step["type"] == "container":
-            inner = step.get("inner", "")
-            outer = step.get("outer", "")
-            result = step.get("result", "")
-            learning_title = f"CONTAINER: {inner} in {outer} → {result}"
-        elif step["type"] == "hidden":
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            learning_title = f"HIDDEN: {result}"
-
-        if learning_text:
-            # Use custom title if set, otherwise use template title
-            if not learning_title:
-                learning_title = substitute_variables(phase["panel"].get("title", ""), step, session, clue)
-            session["learnings"].append({
-                "title": learning_title,
-                "text": learning_text
-            })
+    # If this is a teaching phase, capture the learning from template
+    if phase["id"] == "teaching":
+        learning = build_learning_from_template(step, clue)
+        if learning:
+            session["learnings"].append(learning)
 
     # Advance to next phase
     session["phase_index"] += 1
@@ -1781,221 +1275,6 @@ def handle_continue(clue_id, clue):
 
     return get_render(clue_id, clue)
 
-def get_all_learnings(clue):
-    """Generate all learnings for a clue (used when user solves early)."""
-    learnings = []
-    steps = clue.get("steps", [])
-    answer = clue.get("clue", {}).get("answer", "")
-
-    for step in steps:
-        step_type = step.get("type")
-
-        if step_type == "standard_definition":
-            definition_text = step.get("expected", {}).get("text", "")
-            position = step.get("position", "")
-            definition_hint = step.get("hint", "")
-
-            text = f"\"{definition_text}\" is the definition (at {position})."
-            if definition_hint:
-                text += f"\n\n**Hint:** {definition_hint}"
-            learnings.append({
-                "title": "DEFINITION FOUND",
-                "text": text
-            })
-
-        elif step_type == "wordplay_overview":
-            # Add individual ANCHOR and INDICATOR learnings
-            common_vocab = step.get("common_vocabulary", [])
-            if isinstance(common_vocab, dict):
-                common_vocab = [common_vocab]
-            for vocab in common_vocab:
-                vocab_text = vocab.get("text", "")
-                vocab_meaning = vocab.get("meaning", "")
-                learnings.append({
-                    "title": f"ANCHOR: {vocab_text} = {vocab_meaning}"
-                })
-
-            indicators = step.get("expected_indicators", [])
-            for ind in indicators:
-                ind_text = ind.get("text", "")
-                operation = ind.get("operation", "wordplay")
-                learnings.append({
-                    "title": f"INDICATOR: {ind_text} ({operation})"
-                })
-
-        elif step_type == "deletion_discover":
-            fodder_word = step.get("fodder_word", {}).get("text", "")
-            fodder_synonym = step.get("fodder_synonym", "")
-            result = step.get("result", "")
-            learnings.append({
-                "title": "DELETION",
-                "text": f"{fodder_word} = {fodder_synonym}, shortened = {result}\n\n**Remember:** Deletion indicators often require finding a synonym first, then shortening it."
-            })
-
-        elif step_type == "container_verify":
-            inner = step.get("inner", "")
-            result = step.get("result", "")
-            inner_upper = inner.upper()
-            result_upper = result.upper()
-            idx = result_upper.find(inner_upper)
-            if idx > 0:
-                before = result_upper[:idx]
-                after = result_upper[idx + len(inner_upper):]
-                split_display = f"{before} + {inner_upper} + {after}"
-            else:
-                split_display = f"{step.get('outer', '')} around {inner}"
-
-            definition_text = ""
-            if steps and steps[0].get("type") == "standard_definition":
-                definition_text = steps[0].get("expected", {}).get("text", "")
-
-            learnings.append({
-                "title": "CONTAINER",
-                "text": f"{split_display} = {result} ✓\nDefinition: \"{definition_text}\" = {result} ✓\n\n**Remember:** Container indicators (about, holds, around, inside, carries) tell you to put one piece inside another."
-            })
-
-        elif step_type == "charade_verify":
-            components = step.get("components", [])
-            result = step.get("result", "")
-            letters_so_far = step.get("letters_so_far", len(result))
-            letters_needed = step.get("letters_needed", parse_enumeration(clue.get("clue", {}).get("enumeration", "0")))
-            components_display = " + ".join(components)
-            # Use SOLVED! if this completes the answer
-            if letters_so_far == letters_needed:
-                learnings.append({
-                    "title": "SOLVED!",
-                    "text": f"{components_display} = {result} ✓"
-                })
-            else:
-                learnings.append({
-                    "title": "CHARADE",
-                    "text": f"{components_display} = {result} ({letters_so_far} of {letters_needed} letters)"
-                })
-
-        elif step_type == "alternation_discover":
-            indicator = step.get("indicator", {}).get("text", "")
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            learnings.append({
-                "title": "ALTERNATION",
-                "text": f"'{indicator}' on '{fodder}' = {result}"
-            })
-
-        elif step_type == "double_definition":
-            definitions = step.get("definitions", [])
-            def1 = definitions[0].get("text", "") if len(definitions) > 0 else ""
-            def2 = definitions[1].get("text", "") if len(definitions) > 1 else ""
-            result = step.get("result", "")
-            learnings.append({
-                "title": "DOUBLE DEFINITION",
-                "text": f"Both \"{def1}\" and \"{def2}\" define {result}. No wordplay needed!"
-            })
-
-        elif step_type == "literal_phrase":
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            learnings.append({
-                "title": f"LITERAL PHRASE: {fodder} → {result}",
-                "text": f"'{fodder}' sounds like '{result}' when spoken.\n\n**Remember:** Some clues hide letters in how phrases sound when spoken conversationally."
-            })
-
-        elif step_type == "abbreviation":
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            # Use metadata hint, or fall back to teaching_hints.json
-            hint = step.get("hint", "") or get_teaching_hint("abbreviations", fodder,
-                "Build a mental library of common cryptic abbreviations — they appear frequently!")
-            learnings.append({
-                "title": f"ABBREVIATION: {fodder} → {result}",
-                "text": f"'{fodder}' = {result}\n\n**Hint:** {hint}"
-            })
-
-        elif step_type == "synonym":
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            # Use metadata hint, or fall back to teaching_hints.json
-            hint = step.get("hint", "") or get_teaching_hint("synonyms", fodder,
-                "Cryptic crosswords often use unexpected synonyms. This pairing is worth remembering!")
-            learnings.append({
-                "title": f"SYNONYM: {fodder} → {result}",
-                "text": f"'{fodder}' = {result}\n\n**Hint:** {hint}"
-            })
-
-        elif step_type == "deletion":
-            indicator = step.get("indicator", {}).get("text", "")
-            fodder = step.get("fodder", "")
-            result = step.get("result", "")
-            learnings.append({
-                "title": f"DELETION: {fodder} → {result}",
-                "text": f"'{indicator}' removes letters from '{fodder}' = {result}\n\n**Remember:** Deletion indicators tell you which part of a word to remove."
-            })
-
-        elif step_type == "reversal":
-            indicator = step.get("indicator", {}).get("text", "")
-            fodder = step.get("fodder", "")
-            result = step.get("result", "")
-            learnings.append({
-                "title": f"REVERSAL: {fodder} → {result}",
-                "text": f"'{indicator}' reverses '{fodder}' = {result}\n\n**Remember:** Reversal indicators (back, up, turned) tell you to read letters backwards."
-            })
-
-        elif step_type == "letter_selection":
-            indicator = step.get("indicator", {}).get("text", "")
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            learnings.append({
-                "title": f"LETTER SELECTION: {fodder} → {result}",
-                "text": f"'{indicator}' from '{fodder}' = {result}\n\n**Remember:** Selection indicators (head of, finally, heart of) pinpoint exact letters."
-            })
-
-        elif step_type == "literal":
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            learnings.append({
-                "title": f"LITERAL: {fodder} → {result}",
-                "text": f"'{fodder}' = {result} (used as-is)\n\n**Remember:** Some letters contribute directly without any transformation."
-            })
-
-        elif step_type == "connector":
-            fodder = get_fodder_text(step)
-            learnings.append({
-                "title": f"CONNECTOR: {fodder}",
-                "text": f"'{fodder}' is a linking word.\n\n**Remember:** Connectors join wordplay elements but don't contribute letters."
-            })
-
-        elif step_type == "anagram":
-            indicator = step.get("indicator", {}).get("text", "")
-            fodder = step.get("fodder", [])
-            if isinstance(fodder, list):
-                fodder_display = " + ".join(fodder)
-            else:
-                fodder_display = str(fodder)
-            result = step.get("result", "")
-            learnings.append({
-                "title": f"ANAGRAM → {result}",
-                "text": f"'{indicator}' rearranges {fodder_display} = {result}\n\n**Remember:** Anagram indicators signal that letters need shuffling."
-            })
-
-        elif step_type == "container":
-            indicator = step.get("indicator", {}).get("text", "")
-            inner = step.get("inner", "")
-            outer = step.get("outer", "")
-            result = step.get("result", "")
-            learnings.append({
-                "title": f"CONTAINER: {inner} in {outer} → {result}",
-                "text": f"'{indicator}' puts {inner} inside {outer} = {result}\n\n**Remember:** Container indicators (in, around, holding) tell you to put one piece inside another."
-            })
-
-        elif step_type == "hidden":
-            indicator = step.get("indicator", {}).get("text", "")
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            learnings.append({
-                "title": f"HIDDEN: {result}",
-                "text": f"'{indicator}' reveals {result} hidden in '{fodder}'\n\n**Remember:** Hidden word clues conceal the answer in consecutive letters across words."
-            })
-
-    return learnings
 
 
 def handle_hypothesis(clue_id, clue, answer):
@@ -2058,62 +1337,16 @@ def solve_step(clue_id, clue):
     phase_index = session.get("phase_index", 0)
     steps = clue.get("steps", [])
 
-    # Get the expected value for the current phase
-    expected = None
+    # Get the expected value for the current phase using declarative resolution
     step = steps[step_index] if 0 <= step_index < len(steps) else {}
-    step_type = step.get("type", "")
-
-    # Determine what the expected answer is based on phase
-    current_phase_id = session.get("current_phase_id", "")
-
-    if current_phase_id == "fodder":
-        # Expected is the fodder word indices - show the fodder text
-        fodder = step.get("fodder", {})
-        expected = fodder.get("text", "") if isinstance(fodder, dict) else str(fodder)
-    elif current_phase_id == "result":
-        # Expected is the result text
-        expected = step.get("result", "")
-    elif current_phase_id == "indicator":
-        # Expected is indicator indices - show indicator text
-        indicator = step.get("indicator", {})
-        expected = indicator.get("text", "") if isinstance(indicator, dict) else str(indicator)
-    elif current_phase_id == "select":
-        # Expected is definition indices - show definition text
+    phases = get_step_phases(step, clue)
+    phase = phases[phase_index] if phase_index < len(phases) else {}
+    expected = resolve_expected(step, phase, clue)
+    # For display purposes, convert indices to text
+    if isinstance(expected, list):
+        # expected is indices — get the text representation instead
         exp = step.get("expected", {})
-        expected = exp.get("text", "") if isinstance(exp, dict) else ""
-    elif current_phase_id == "first_def" and "definitions" in step:
-        expected = step["definitions"][0].get("text", "")
-    elif current_phase_id == "second_def" and "definitions" in step:
-        expected = step["definitions"][1].get("text", "")
-    elif current_phase_id == "solve":
-        expected = clue.get("clue", {}).get("answer", "")
-    elif current_phase_id.startswith("vocabulary_type_"):
-        vocab_num = int(current_phase_id.split("_")[-1])
-        common_vocab = step.get("common_vocabulary", [])
-        if isinstance(common_vocab, dict):
-            common_vocab = [common_vocab]
-        if vocab_num <= len(common_vocab):
-            expected = common_vocab[vocab_num - 1].get("meaning", "")
-    elif current_phase_id.startswith("vocabulary_tap_"):
-        vocab_num = int(current_phase_id.split("_")[-1])
-        common_vocab = step.get("common_vocabulary", [])
-        if isinstance(common_vocab, dict):
-            common_vocab = [common_vocab]
-        if vocab_num <= len(common_vocab):
-            expected = common_vocab[vocab_num - 1].get("text", "")
-    elif current_phase_id.startswith("indicator_tap_"):
-        # Find unfound indicators
-        indicators = step.get("expected_indicators", [])
-        found_indicators = session.get("found_indicators", [])
-        for ind in indicators:
-            ind_tuple = tuple(ind.get("indices", []))
-            if ind_tuple not in found_indicators:
-                expected = ind.get("text", "")
-                break
-    else:
-        # Default: try to get from step.expected
-        exp = step.get("expected", {})
-        expected = exp.get("text", "") if isinstance(exp, dict) else ""
+        expected = exp.get("text", "") if isinstance(exp, dict) else str(expected)
 
     # Record that the step was solved (not learned)
     session["learnings"].append({
@@ -2144,6 +1377,11 @@ def build_breakdown(steps):
 
     Returns:
         tuple: (breakdown list, techniques list, definition string or None)
+
+    Simple step types (synonym, abbreviation, reversal, deletion, letter_selection, literal)
+    use the breakdown declaration from render_templates.json.
+    Complex step types (charade, container, anagram, hidden, transformation_chain) have
+    nested data requiring explicit handling.
     """
     breakdown = []
     techniques = []
@@ -2153,55 +1391,41 @@ def build_breakdown(steps):
         step_type = step.get("type", "")
 
         if step_type == "standard_definition":
-            def_text = step.get("expected", {}).get("text", "")
-            definition = def_text
+            definition = step.get("expected", {}).get("text", "")
+            continue
 
-        elif step_type == "synonym":
+        # Check template for simple breakdown declaration
+        tmpl = RENDER_TEMPLATES.get("templates", {}).get(step_type, {})
+        bd = tmpl.get("breakdown")
+        if bd is not None:
+            # Simple type: use template declaration
             fodder = get_fodder_text(step)
-            result = step.get("result", "")
+            result = step.get("result", fodder if step_type == "literal" else "")
             breakdown.append({
-                "type": "synonym",
+                "type": step_type,
                 "from": fodder,
                 "to": result,
-                "icon": "📖"
+                "icon": bd["icon"]
             })
-            if "Synonym" not in [t["name"] for t in techniques]:
-                techniques.append({"name": "Synonym", "icon": "📖"})
+            technique_name = bd["technique"]
+            if technique_name not in [t["name"] for t in techniques]:
+                techniques.append({"name": technique_name, "icon": bd["icon"]})
+            continue
 
-        elif step_type == "abbreviation":
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            breakdown.append({
-                "type": "abbreviation",
-                "from": fodder,
-                "to": result,
-                "icon": "✂️"
-            })
-            if "Abbreviation" not in [t["name"] for t in techniques]:
-                techniques.append({"name": "Abbreviation", "icon": "✂️"})
-
-        elif step_type == "anagram":
+        # Complex types: explicit handling for nested data structures
+        if step_type == "anagram":
             template = step.get("template", "")
             indicator_obj = step.get("indicator", {})
             indicator = indicator_obj.get("text", "") if isinstance(indicator_obj, dict) else ""
-            pieces = step.get("pieces", [])
-            fodder_raw = step.get("fodder", {})
             result = step.get("result", "")
-            assembly = step.get("assembly", "")
-
             if template == "anagram_with_fodder_pieces":
-                # New format with pieces
                 breakdown.append({
-                    "type": "anagram",
-                    "template": template,
-                    "indicator": indicator,
-                    "pieces": pieces,
-                    "to": result,
-                    "assembly": assembly,
-                    "icon": "🔀"
+                    "type": "anagram", "template": template,
+                    "indicator": indicator, "pieces": step.get("pieces", []),
+                    "to": result, "assembly": step.get("assembly", ""), "icon": "🔀"
                 })
             else:
-                # Old format
+                fodder_raw = step.get("fodder", {})
                 if isinstance(fodder_raw, list):
                     fodder = " + ".join(str(f) for f in fodder_raw)
                 elif isinstance(fodder_raw, dict):
@@ -2209,201 +1433,257 @@ def build_breakdown(steps):
                 else:
                     fodder = str(fodder_raw)
                 breakdown.append({
-                    "type": "anagram",
-                    "from": fodder,
-                    "to": result,
-                    "indicator": indicator,
-                    "icon": "🔀"
+                    "type": "anagram", "from": fodder, "to": result,
+                    "indicator": indicator, "icon": "🔀"
                 })
             if "Anagram" not in [t["name"] for t in techniques]:
                 techniques.append({"name": "Anagram", "icon": "🔀"})
 
-        elif step_type == "reversal":
-            indicator = step.get("indicator", {}).get("text", "")
-            fodder = step.get("fodder", "")
-            result = step.get("result", "")
-            breakdown.append({
-                "type": "reversal",
-                "from": fodder,
-                "to": result,
-                "indicator": indicator,
-                "icon": "↩️"
-            })
-            if "Reversal" not in [t["name"] for t in techniques]:
-                techniques.append({"name": "Reversal", "icon": "↩️"})
-
-        elif step_type == "container_verify":
-            outer = step.get("outer", "")
-            inner = step.get("inner", "")
-            result = step.get("result", "")
-            breakdown.append({
-                "type": "container",
-                "outer": outer,
-                "inner": inner,
-                "to": result,
-                "icon": "📦"
-            })
-            if "Container" not in [t["name"] for t in techniques]:
-                techniques.append({"name": "Container", "icon": "📦"})
-
         elif step_type == "container":
-            # New format with template reference
             template = step.get("template", "")
             indicator = step.get("indicator", {})
             outer_obj = step.get("outer", {})
             inner_obj = step.get("inner", {})
             result = step.get("result", "")
-            assembly = step.get("assembly", "")
 
-            # Extract outer component
             if isinstance(outer_obj, dict):
                 outer_fodder = outer_obj.get("fodder", {}).get("text", "")
                 outer_result = outer_obj.get("result", "")
                 outer_reasoning = outer_obj.get("reasoning", "")
             else:
-                outer_fodder = ""
-                outer_result = outer_obj
-                outer_reasoning = ""
+                outer_fodder, outer_result, outer_reasoning = "", outer_obj, ""
 
-            # Extract inner component - may have pieces for charade_inner template
             if isinstance(inner_obj, dict):
                 if "pieces" in inner_obj:
-                    # Inner is a charade of pieces
-                    inner_breakdown = inner_obj  # Pass the whole object
+                    inner_breakdown = inner_obj
                 else:
-                    inner_fodder = inner_obj.get("fodder", {}).get("text", "")
-                    inner_result = inner_obj.get("result", "")
-                    inner_reasoning = inner_obj.get("reasoning", "")
                     inner_breakdown = {
-                        "fodder": inner_fodder,
-                        "result": inner_result,
-                        "reasoning": inner_reasoning
+                        "fodder": inner_obj.get("fodder", {}).get("text", ""),
+                        "result": inner_obj.get("result", ""),
+                        "reasoning": inner_obj.get("reasoning", "")
                     }
             else:
-                inner_breakdown = {
-                    "fodder": "",
-                    "result": inner_obj,
-                    "reasoning": ""
-                }
+                inner_breakdown = {"fodder": "", "result": inner_obj, "reasoning": ""}
 
             breakdown.append({
-                "type": "container",
-                "template": template,
+                "type": "container", "template": template,
                 "indicator": indicator.get("text", ""),
-                "outer": {
-                    "fodder": outer_fodder,
-                    "result": outer_result,
-                    "reasoning": outer_reasoning
-                },
-                "inner": inner_breakdown,
-                "to": result,
-                "assembly": assembly,
-                "icon": "📦"
+                "outer": {"fodder": outer_fodder, "result": outer_result, "reasoning": outer_reasoning},
+                "inner": inner_breakdown, "to": result,
+                "assembly": step.get("assembly", ""), "icon": "📦"
             })
             if "Container" not in [t["name"] for t in techniques]:
                 techniques.append({"name": "Container", "icon": "📦"})
 
-        elif step_type == "charade_verify":
-            components = step.get("components", [])
-            result = step.get("result", "")
-            breakdown.append({
-                "type": "charade",
-                "parts": components,
-                "to": result,
-                "icon": "🔗"
-            })
-            if "Charade" not in [t["name"] for t in techniques]:
-                techniques.append({"name": "Charade", "icon": "🔗"})
-
         elif step_type == "charade":
-            # New format with template reference
-            template = step.get("template", "")
-            parts = step.get("parts", [])
-            result = step.get("result", "")
-            assembly = step.get("assembly", "")
             breakdown.append({
-                "type": "charade",
-                "template": template,
-                "parts": parts,
-                "to": result,
-                "assembly": assembly,
-                "icon": "🔗"
+                "type": "charade", "template": step.get("template", ""),
+                "parts": step.get("parts", []), "to": step.get("result", ""),
+                "assembly": step.get("assembly", ""), "icon": "🔗"
             })
             if "Charade" not in [t["name"] for t in techniques]:
                 techniques.append({"name": "Charade", "icon": "🔗"})
 
         elif step_type == "transformation_chain":
-            # New format: transformation chain with template
-            template = step.get("template", "")
-            chain_steps = step.get("steps", [])
-            result = step.get("result", "")
             breakdown.append({
-                "type": "transformation_chain",
-                "template": template,
-                "steps": chain_steps,
-                "to": result,
-                "icon": "🔄"
+                "type": "transformation_chain", "template": step.get("template", ""),
+                "steps": step.get("steps", []), "to": step.get("result", ""), "icon": "🔄"
             })
             if "Transformation" not in [t["name"] for t in techniques]:
                 techniques.append({"name": "Transformation", "icon": "🔄"})
 
         elif step_type == "hidden":
-            template = step.get("template", "")
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            indicator = step.get("indicator", {}).get("text", "") if isinstance(step.get("indicator"), dict) else ""
-            hidden_letters = step.get("hidden_letters", "")
-            reasoning = step.get("reasoning", "")
+            indicator = step.get("indicator", {})
             breakdown.append({
-                "type": "hidden",
-                "template": template,
-                "from": fodder,
-                "to": result,
-                "indicator": indicator,
-                "hidden_letters": hidden_letters,
-                "reasoning": reasoning,
-                "icon": "👁️"
+                "type": "hidden", "template": step.get("template", ""),
+                "from": get_fodder_text(step), "to": step.get("result", ""),
+                "indicator": indicator.get("text", "") if isinstance(indicator, dict) else "",
+                "hidden_letters": step.get("hidden_letters", ""),
+                "reasoning": step.get("reasoning", ""), "icon": "👁️"
             })
             if "Hidden word" not in [t["name"] for t in techniques]:
                 techniques.append({"name": "Hidden word", "icon": "👁️"})
 
-        elif step_type == "deletion":
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            breakdown.append({
-                "type": "deletion",
-                "from": fodder,
-                "to": result,
-                "icon": "✂️"
-            })
-            if "Deletion" not in [t["name"] for t in techniques]:
-                techniques.append({"name": "Deletion", "icon": "✂️"})
-
-        elif step_type == "letter_selection":
-            fodder = get_fodder_text(step)
-            result = step.get("result", "")
-            breakdown.append({
-                "type": "letter_selection",
-                "from": fodder,
-                "to": result,
-                "icon": "🔤"
-            })
-            if "Letter selection" not in [t["name"] for t in techniques]:
-                techniques.append({"name": "Letter selection", "icon": "🔤"})
-
-        elif step_type == "literal":
-            fodder = get_fodder_text(step)
-            result = step.get("result", fodder)  # literal: fodder IS the result
-            breakdown.append({
-                "type": "literal",
-                "from": fodder,
-                "to": result,
-                "icon": "📝"
-            })
-            if "Literal" not in [t["name"] for t in techniques]:
-                techniques.append({"name": "Literal", "icon": "📝"})
-
     return breakdown, techniques, definition
+
+
+def _build_learnings_from_breakdown(breakdown):
+    """Convert a breakdown list into learnings entries for display.
+
+    Shared by reveal_answer() and get_solved_view() — the sole source of
+    truth for how breakdown items become user-visible learnings.
+    """
+    learnings = []
+    for item in breakdown:
+        item_type = item["type"]
+        template = item.get("template", "")
+
+        if item_type == "charade":
+            parts = item.get("parts", [])
+            assembly = item.get("assembly", "")
+            if template != "charade_with_parts":
+                raise ValueError(f"Charade type requires a valid template. Got template='{template}' with parts={parts}")
+            learnings.append({"title": "🔗 CHARADE: Parts join together", "text": ""})
+            for part in parts:
+                if isinstance(part, dict):
+                    part_display = f"   \"{part.get('fodder', {}).get('text', '')}\" → {part.get('result', '')}"
+                    if part.get("reasoning"):
+                        part_display += f" ({part['reasoning']})"
+                    learnings.append({"title": part_display, "text": ""})
+                else:
+                    learnings.append({"title": f"   {part}", "text": ""})
+            learnings.append({"title": f"   {assembly} ✓", "text": ""})
+
+        elif item_type == "transformation_chain":
+            chain_steps = item.get("steps", [])
+            result = item.get("to", "")
+            if template != "transformation_chain":
+                raise ValueError(f"Transformation chain requires a valid template. Got template='{template}'")
+            learnings.append({"title": "🔄 TRANSFORMATION CHAIN: Word transforms through steps", "text": ""})
+            for cs in chain_steps:
+                cs_type = cs.get("type", "")
+                fodder_raw = cs.get("fodder", "")
+                fodder_text = fodder_raw.get("text", "") if isinstance(fodder_raw, dict) else fodder_raw
+                cs_result = cs.get("result", "")
+                reasoning = cs.get("reasoning", "")
+                ind_raw = cs.get("indicator", {})
+                ind_text = ind_raw.get("text", "") if isinstance(ind_raw, dict) else ""
+                if cs_type == "synonym":
+                    step_display = f"   \"{fodder_text}\" → {cs_result}"
+                elif cs_type == "deletion":
+                    step_display = f"   \"{ind_text}\" removes from {fodder_text} → {cs_result}"
+                elif cs_type == "reversal":
+                    step_display = f"   \"{ind_text}\" reverses {fodder_text} → {cs_result}"
+                else:
+                    step_display = f"   {fodder_text} → {cs_result}"
+                if reasoning:
+                    step_display += f" ({reasoning})"
+                learnings.append({"title": step_display, "text": ""})
+            learnings.append({"title": f"   → {result} ✓", "text": ""})
+
+        elif item_type == "container":
+            outer = item.get("outer", {})
+            inner = item.get("inner", {})
+            indicator = item.get("indicator", "")
+            answer = item.get("to", "")
+            if isinstance(outer, dict):
+                outer_fodder = outer.get("fodder", "")
+                outer_result = outer.get("result", "")
+                outer_reasoning = outer.get("reasoning", "")
+            else:
+                outer_fodder, outer_result, outer_reasoning = "", outer, ""
+            if isinstance(inner, dict):
+                inner_fodder = inner.get("fodder", "")
+                inner_result = inner.get("result", "")
+                inner_reasoning = inner.get("reasoning", "")
+            else:
+                inner_fodder, inner_result, inner_reasoning = "", inner, ""
+
+            if template == "insertion_with_two_synonyms":
+                learnings.append({"title": f"📦 CONTAINER: \"{indicator}\" tells us A takes B inside (A {indicator} B)", "text": ""})
+                outer_words = outer_fodder.upper().split()
+                inner_words = inner_fodder.upper().split()
+                if len(outer_words) >= 2:
+                    literal_attempt = f"{outer_words[0]} + {' '.join(inner_words)} + {outer_words[-1]}"
+                else:
+                    literal_attempt = f"{outer_fodder.upper()} + {inner_fodder.upper()}"
+                learnings.append({"title": f"   Literal attempt:\n   A = \"{outer_fodder}\", B = \"{inner_fodder}\"\n   → {literal_attempt} = ❌ doesn't work", "text": ""})
+                synonym_text = f"   Need synonyms:\n   A: \"{outer_fodder}\" → {outer_result}"
+                if outer_reasoning:
+                    synonym_text += f" ({outer_reasoning})"
+                synonym_text += f"\n   B: \"{inner_fodder}\" → {inner_result}"
+                if inner_reasoning:
+                    synonym_text += f" ({inner_reasoning})"
+                learnings.append({"title": synonym_text, "text": ""})
+                assembly = item.get("assembly", f"{outer_result[0]} + {inner_result} + {outer_result[1:]} = {answer}")
+                learnings.append({"title": f"   Assembly with synonyms:\n   {assembly} ✓", "text": ""})
+            elif template == "insertion_with_one_synonym_outer":
+                learnings.append({"title": f"📦 CONTAINER: \"{indicator}\" tells us A takes B inside", "text": ""})
+                learnings.append({"title": f"   B: \"{inner_fodder}\" → {inner_result} ({inner_reasoning})", "text": ""})
+                learnings.append({"title": f"   A: \"{outer_fodder}\" → {outer_result} ({outer_reasoning})", "text": ""})
+                assembly = item.get("assembly", "")
+                learnings.append({"title": f"   Assembly: {assembly} ✓", "text": ""})
+            elif template == "insertion_with_charade_inner":
+                learnings.append({"title": f"📦 CONTAINER: \"{indicator}\" tells us A takes B inside", "text": ""})
+                learnings.append({"title": f"   A: \"{outer_fodder}\" → {outer_result} ({outer_reasoning})", "text": ""})
+                learnings.append({"title": "   B built from pieces:", "text": ""})
+                inner_obj = item.get("inner", {})
+                inner_pieces = inner_obj.get("pieces", []) if isinstance(inner_obj, dict) else []
+                for piece in inner_pieces:
+                    piece_fodder = piece.get("fodder", {})
+                    ft = piece_fodder.get("text", "") if isinstance(piece_fodder, dict) else str(piece_fodder)
+                    piece_display = f"      \"{ft}\" → {piece.get('result', '')}"
+                    if piece.get("reasoning"):
+                        piece_display += f" ({piece['reasoning']})"
+                    learnings.append({"title": piece_display, "text": ""})
+                inner_assembly = inner_obj.get("assembly", "") if isinstance(inner_obj, dict) else ""
+                learnings.append({"title": f"   B: {inner_assembly}", "text": ""})
+                assembly = item.get("assembly", "")
+                learnings.append({"title": f"   Assembly: {assembly} ✓", "text": ""})
+            else:
+                raise ValueError(f"Container type requires a valid template. Got template='{template}' for container with outer={outer}, inner={inner}")
+
+        elif item_type == "anagram":
+            indicator = item.get("indicator", "")
+            pieces = item.get("pieces", [])
+            result = item.get("to", "")
+            if template == "anagram_with_fodder_pieces":
+                learnings.append({"title": "🔀 ANAGRAM: Pieces combine then rearrange", "text": ""})
+                fodder_parts = []
+                for piece in pieces:
+                    piece_fodder = piece.get("fodder", {})
+                    ft = piece_fodder.get("text", "") if isinstance(piece_fodder, dict) else str(piece_fodder)
+                    fodder_parts.append(piece.get("result", ""))
+                    piece_display = f"   \"{ft}\" → {piece.get('result', '')}"
+                    if piece.get("reasoning"):
+                        piece_display += f" ({piece['reasoning']})"
+                    learnings.append({"title": piece_display, "text": ""})
+                learnings.append({"title": f"   \"{indicator}\" rearranges {' + '.join(fodder_parts)} → {result}", "text": ""})
+                learnings.append({"title": f"   → {result} ✓", "text": ""})
+            else:
+                fodder = item.get("from", "")
+                learnings.append({"title": f"🔀 \"{indicator}\" rearranges {fodder} → {result}", "text": ""})
+
+        elif item_type == "hidden":
+            indicator = item.get("indicator", "")
+            fodder = item.get("from", "")
+            result = item.get("to", "")
+            hidden_letters = item.get("hidden_letters", "")
+            if template == "hidden_reversed":
+                learnings.append({"title": f"👁️↩️ HIDDEN REVERSED: \"{indicator}\" reveals answer hidden backwards", "text": ""})
+                learnings.append({"title": f"   In \"{fodder}\" find: {hidden_letters}", "text": ""})
+                learnings.append({"title": f"   Reversed: {hidden_letters} → {result} ✓", "text": ""})
+            else:
+                learnings.append({"title": f"👁️ \"{indicator}\" reveals {result} hidden in \"{fodder}\"", "text": ""})
+
+        else:
+            learnings.append({"title": f"{item['icon']} {item.get('from', '')} → {item['to']}", "text": ""})
+
+    return learnings
+
+
+def _build_highlights_from_steps(steps):
+    """Build highlights array from all steps for summary display.
+
+    Shared by reveal_answer() and get_solved_view().
+    """
+    highlights = []
+    for step in steps:
+        if "fodder" in step and isinstance(step["fodder"], dict):
+            highlights.append({"indices": step["fodder"].get("indices", []), "color": "BLUE"})
+        if "indicator" in step and isinstance(step["indicator"], dict):
+            highlights.append({"indices": step["indicator"].get("indices", []), "color": "YELLOW"})
+        if "expected" in step and isinstance(step["expected"], dict):
+            highlights.append({"indices": step["expected"].get("indices", []), "color": "GREEN"})
+        if "outer" in step and isinstance(step["outer"], dict):
+            outer_fodder = step["outer"].get("fodder", {})
+            if isinstance(outer_fodder, dict) and "indices" in outer_fodder:
+                highlights.append({"indices": outer_fodder.get("indices", []), "color": "BLUE"})
+        if "inner" in step and isinstance(step["inner"], dict):
+            inner_fodder = step["inner"].get("fodder", {})
+            if isinstance(inner_fodder, dict) and "indices" in inner_fodder:
+                highlights.append({"indices": inner_fodder.get("indices", []), "color": "BLUE"})
+    return highlights
 
 
 def reveal_answer(clue_id, clue):
@@ -2427,322 +1707,13 @@ def reveal_answer(clue_id, clue):
     # Use helper to build breakdown
     breakdown, techniques, definition = build_breakdown(steps)
 
-    # Build legacy learnings for backward compatibility (but cleaner)
-    learnings = []
-    for item in breakdown:
-        if item["type"] == "charade":
-            template = item.get("template", "")
-            parts = item.get("parts", [])
-            result = item.get("to", "")
-            assembly = item.get("assembly", "")
-
-            if template == "charade_with_parts":
-                # New format: render each part with its transformation
-                learnings.append({
-                    "title": "🔗 CHARADE: Parts join together",
-                    "text": ""
-                })
-                for part in parts:
-                    if isinstance(part, dict):
-                        part_fodder = part.get("fodder", {}).get("text", "")
-                        part_result = part.get("result", "")
-                        reasoning = part.get("reasoning", "")
-                        part_display = f"   \"{part_fodder}\" → {part_result}"
-                        if reasoning:
-                            part_display += f" ({reasoning})"
-                        learnings.append({
-                            "title": part_display,
-                            "text": ""
-                        })
-                    else:
-                        # Old format (string)
-                        learnings.append({
-                            "title": f"   {part}",
-                            "text": ""
-                        })
-                # Assembly
-                learnings.append({
-                    "title": f"   {assembly} ✓",
-                    "text": ""
-                })
-            else:
-                # Old charade format - require template
-                if isinstance(parts[0], str):
-                    raise ValueError(f"Charade type requires a valid template. Got template='{template}' with parts={parts}")
-                else:
-                    raise ValueError(f"Charade type requires a valid template. Got template='{template}' for charade with parts={parts}")
-        elif item["type"] == "transformation_chain":
-            # Transformation chain - render each step in the chain
-            template = item.get("template", "")
-            chain_steps = item.get("steps", [])
-            result = item.get("to", "")
-
-            if template == "transformation_chain":
-                learnings.append({
-                    "title": "🔄 TRANSFORMATION CHAIN: Word transforms through steps",
-                    "text": ""
-                })
-                for step in chain_steps:
-                    step_type = step.get("type", "")
-                    fodder = step.get("fodder", "")
-                    if isinstance(fodder, dict):
-                        fodder_text = fodder.get("text", "")
-                    else:
-                        fodder_text = fodder
-                    step_result = step.get("result", "")
-                    reasoning = step.get("reasoning", "")
-                    indicator = step.get("indicator", {})
-                    indicator_text = indicator.get("text", "") if isinstance(indicator, dict) else ""
-
-                    if step_type == "synonym":
-                        step_display = f"   \"{fodder_text}\" → {step_result}"
-                    elif step_type == "deletion":
-                        step_display = f"   \"{indicator_text}\" removes from {fodder_text} → {step_result}"
-                    elif step_type == "reversal":
-                        step_display = f"   \"{indicator_text}\" reverses {fodder_text} → {step_result}"
-                    else:
-                        step_display = f"   {fodder_text} → {step_result}"
-
-                    if reasoning:
-                        step_display += f" ({reasoning})"
-                    learnings.append({
-                        "title": step_display,
-                        "text": ""
-                    })
-                learnings.append({
-                    "title": f"   → {result} ✓",
-                    "text": ""
-                })
-            else:
-                raise ValueError(f"Transformation chain requires a valid template. Got template='{template}'")
-        elif item["type"] == "container":
-            # Container - render based on template
-            template = item.get("template", "")
-            outer = item.get("outer", {})
-            inner = item.get("inner", {})
-            indicator = item.get("indicator", "")
-            answer = item.get("to", "")
-
-            # Handle both new format (dict) and old format (string)
-            if isinstance(outer, dict):
-                outer_fodder = outer.get("fodder", "")
-                outer_result = outer.get("result", "")
-                outer_reasoning = outer.get("reasoning", "")
-            else:
-                outer_fodder = ""
-                outer_result = outer
-                outer_reasoning = ""
-
-            if isinstance(inner, dict):
-                inner_fodder = inner.get("fodder", "")
-                inner_result = inner.get("result", "")
-                inner_reasoning = inner.get("reasoning", "")
-            else:
-                inner_fodder = ""
-                inner_result = inner
-                inner_reasoning = ""
-
-            if template == "insertion_with_two_synonyms":
-                # Step 1: Indicator tells us the structure
-                learnings.append({
-                    "title": f"📦 CONTAINER: \"{indicator}\" tells us A takes B inside (A {indicator} B)",
-                    "text": ""
-                })
-
-                # Step 2: Literal attempt - show it fails
-                outer_words = outer_fodder.upper().split()
-                inner_words = inner_fodder.upper().split()
-                if len(outer_words) >= 2:
-                    literal_attempt = f"{outer_words[0]} + {' '.join(inner_words)} + {outer_words[-1]}"
-                else:
-                    literal_attempt = f"{outer_fodder.upper()} + {inner_fodder.upper()}"
-                learnings.append({
-                    "title": f"   Literal attempt:\n   A = \"{outer_fodder}\", B = \"{inner_fodder}\"\n   → {literal_attempt} = ❌ doesn't work",
-                    "text": ""
-                })
-
-                # Step 3: Need synonyms - show what they are
-                synonym_text = f"   Need synonyms:\n   A: \"{outer_fodder}\" → {outer_result}"
-                if outer_reasoning:
-                    synonym_text += f" ({outer_reasoning})"
-                synonym_text += f"\n   B: \"{inner_fodder}\" → {inner_result}"
-                if inner_reasoning:
-                    synonym_text += f" ({inner_reasoning})"
-                learnings.append({
-                    "title": synonym_text,
-                    "text": ""
-                })
-
-                # Step 4: Assembly with synonyms
-                assembly = item.get("assembly", f"{outer_result[0]} + {inner_result} + {outer_result[1:]} = {answer}")
-                learnings.append({
-                    "title": f"   Assembly with synonyms:\n   {assembly} ✓",
-                    "text": ""
-                })
-            elif template == "insertion_with_one_synonym_outer":
-                # Container where outer requires synonym, inner is explicit
-                learnings.append({
-                    "title": f"📦 CONTAINER: \"{indicator}\" tells us A takes B inside",
-                    "text": ""
-                })
-                # Inner explicit
-                learnings.append({
-                    "title": f"   B: \"{inner_fodder}\" → {inner_result} ({inner_reasoning})",
-                    "text": ""
-                })
-                # Outer synonym
-                learnings.append({
-                    "title": f"   A: \"{outer_fodder}\" → {outer_result} ({outer_reasoning})",
-                    "text": ""
-                })
-                # Assembly
-                assembly = item.get("assembly", "")
-                learnings.append({
-                    "title": f"   Assembly: {assembly} ✓",
-                    "text": ""
-                })
-            elif template == "insertion_with_charade_inner":
-                # Container where inner is built from charade pieces
-                learnings.append({
-                    "title": f"📦 CONTAINER: \"{indicator}\" tells us A takes B inside",
-                    "text": ""
-                })
-                # Outer synonym
-                learnings.append({
-                    "title": f"   A: \"{outer_fodder}\" → {outer_result} ({outer_reasoning})",
-                    "text": ""
-                })
-                # Inner pieces
-                learnings.append({
-                    "title": "   B built from pieces:",
-                    "text": ""
-                })
-                inner_obj = item.get("inner", {})
-                inner_pieces = inner_obj.get("pieces", []) if isinstance(inner_obj, dict) else []
-                for piece in inner_pieces:
-                    piece_fodder = piece.get("fodder", {})
-                    fodder_text = piece_fodder.get("text", "") if isinstance(piece_fodder, dict) else str(piece_fodder)
-                    piece_result = piece.get("result", "")
-                    reasoning = piece.get("reasoning", "")
-                    piece_display = f"      \"{fodder_text}\" → {piece_result}"
-                    if reasoning:
-                        piece_display += f" ({reasoning})"
-                    learnings.append({
-                        "title": piece_display,
-                        "text": ""
-                    })
-                inner_assembly = inner_obj.get("assembly", "") if isinstance(inner_obj, dict) else ""
-                learnings.append({
-                    "title": f"   B: {inner_assembly}",
-                    "text": ""
-                })
-                # Final assembly
-                assembly = item.get("assembly", "")
-                learnings.append({
-                    "title": f"   Assembly: {assembly} ✓",
-                    "text": ""
-                })
-            else:
-                # No fallback - require explicit template
-                raise ValueError(f"Container type requires a valid template. Got template='{template}' for container with outer={outer}, inner={inner}")
-        elif item["type"] == "anagram":
-            # Anagram - render based on template
-            template = item.get("template", "")
-            indicator = item.get("indicator", "")
-            pieces = item.get("pieces", [])
-            result = item.get("to", "")
-            assembly = item.get("assembly", "")
-
-            if template == "anagram_with_fodder_pieces":
-                learnings.append({
-                    "title": "🔀 ANAGRAM: Pieces combine then rearrange",
-                    "text": ""
-                })
-                fodder_parts = []
-                for piece in pieces:
-                    piece_fodder = piece.get("fodder", {})
-                    fodder_text = piece_fodder.get("text", "") if isinstance(piece_fodder, dict) else str(piece_fodder)
-                    piece_result = piece.get("result", "")
-                    reasoning = piece.get("reasoning", "")
-                    fodder_parts.append(piece_result)
-                    piece_display = f"   \"{fodder_text}\" → {piece_result}"
-                    if reasoning:
-                        piece_display += f" ({reasoning})"
-                    learnings.append({
-                        "title": piece_display,
-                        "text": ""
-                    })
-                fodder_combined = " + ".join(fodder_parts)
-                learnings.append({
-                    "title": f"   \"{indicator}\" rearranges {fodder_combined} → {result}",
-                    "text": ""
-                })
-                learnings.append({
-                    "title": f"   → {result} ✓",
-                    "text": ""
-                })
-            else:
-                # Old format - show simple anagram display
-                fodder = item.get("from", "")
-                learnings.append({
-                    "title": f"🔀 \"{indicator}\" rearranges {fodder} → {result}",
-                    "text": ""
-                })
-        elif item["type"] == "hidden":
-            # Hidden word - render based on template
-            template = item.get("template", "")
-            indicator = item.get("indicator", "")
-            fodder = item.get("from", "")
-            result = item.get("to", "")
-            hidden_letters = item.get("hidden_letters", "")
-
-            if template == "hidden_reversed":
-                learnings.append({
-                    "title": f"👁️↩️ HIDDEN REVERSED: \"{indicator}\" reveals answer hidden backwards",
-                    "text": ""
-                })
-                learnings.append({
-                    "title": f"   In \"{fodder}\" find: {hidden_letters}",
-                    "text": ""
-                })
-                learnings.append({
-                    "title": f"   Reversed: {hidden_letters} → {result} ✓",
-                    "text": ""
-                })
-            else:
-                # Standard hidden word
-                learnings.append({
-                    "title": f"👁️ \"{indicator}\" reveals {result} hidden in \"{fodder}\"",
-                    "text": ""
-                })
-        else:
-            learnings.append({
-                "title": f"{item['icon']} {item.get('from', '')} → {item['to']}",
-                "text": ""
-            })
+    learnings = _build_learnings_from_breakdown(breakdown)
 
     # Update session to final state
     session["learnings"] = learnings
     session["step_index"] = len(steps)  # Past all steps
 
-    # Build highlights for all wordplay parts
-    highlights = []
-    for step in steps:
-        if "fodder" in step and isinstance(step["fodder"], dict):
-            highlights.append({
-                "indices": step["fodder"].get("indices", []),
-                "color": "BLUE"
-            })
-        if "indicator" in step and isinstance(step["indicator"], dict):
-            highlights.append({
-                "indices": step["indicator"].get("indices", []),
-                "color": "YELLOW"
-            })
-        if "expected" in step and isinstance(step["expected"], dict):
-            highlights.append({
-                "indices": step["expected"].get("indices", []),
-                "color": "GREEN"
-            })
+    highlights = _build_highlights_from_steps(steps)
 
     # Get difficulty ratings for summary
     difficulty = clue.get("difficulty", {})
@@ -2782,337 +1753,8 @@ def get_solved_view(clue_id, clue):
     # Use helper to build breakdown (same as reveal_answer)
     breakdown, techniques, definition = build_breakdown(steps)
 
-    # Build learnings from breakdown for display
-    learnings = []
-    for item in breakdown:
-        if item["type"] == "charade":
-            template = item.get("template", "")
-            parts = item.get("parts", [])
-            result = item.get("to", "")
-            assembly = item.get("assembly", "")
-
-            if template == "charade_with_parts":
-                # New format: render each part with its transformation
-                learnings.append({
-                    "title": "🔗 CHARADE: Parts join together",
-                    "text": ""
-                })
-                for part in parts:
-                    if isinstance(part, dict):
-                        part_fodder = part.get("fodder", {}).get("text", "")
-                        part_result = part.get("result", "")
-                        part_type = part.get("type", "")
-                        reasoning = part.get("reasoning", "")
-                        part_display = f"   \"{part_fodder}\" → {part_result}"
-                        if reasoning:
-                            part_display += f" ({reasoning})"
-                        learnings.append({
-                            "title": part_display,
-                            "text": ""
-                        })
-                    else:
-                        # Old format (string)
-                        learnings.append({
-                            "title": f"   {part}",
-                            "text": ""
-                        })
-                # Assembly
-                learnings.append({
-                    "title": f"   {assembly} ✓",
-                    "text": ""
-                })
-            else:
-                # Old charade format - require template
-                if isinstance(parts[0], str):
-                    # Old format without template - error out
-                    raise ValueError(f"Charade type requires a valid template. Got template='{template}' with parts={parts}")
-                else:
-                    raise ValueError(f"Charade type requires a valid template. Got template='{template}' for charade with parts={parts}")
-        elif item["type"] == "transformation_chain":
-            # Transformation chain - render each step in the chain
-            template = item.get("template", "")
-            chain_steps = item.get("steps", [])
-            result = item.get("to", "")
-
-            if template == "transformation_chain":
-                learnings.append({
-                    "title": "🔄 TRANSFORMATION CHAIN: Word transforms through steps",
-                    "text": ""
-                })
-                for step in chain_steps:
-                    step_type = step.get("type", "")
-                    fodder = step.get("fodder", "")
-                    if isinstance(fodder, dict):
-                        fodder_text = fodder.get("text", "")
-                    else:
-                        fodder_text = fodder
-                    step_result = step.get("result", "")
-                    reasoning = step.get("reasoning", "")
-                    indicator = step.get("indicator", {})
-                    indicator_text = indicator.get("text", "") if isinstance(indicator, dict) else ""
-
-                    if step_type == "synonym":
-                        step_display = f"   \"{fodder_text}\" → {step_result}"
-                    elif step_type == "deletion":
-                        step_display = f"   \"{indicator_text}\" removes from {fodder_text} → {step_result}"
-                    elif step_type == "reversal":
-                        step_display = f"   \"{indicator_text}\" reverses {fodder_text} → {step_result}"
-                    else:
-                        step_display = f"   {fodder_text} → {step_result}"
-
-                    if reasoning:
-                        step_display += f" ({reasoning})"
-                    learnings.append({
-                        "title": step_display,
-                        "text": ""
-                    })
-                learnings.append({
-                    "title": f"   → {result} ✓",
-                    "text": ""
-                })
-            else:
-                raise ValueError(f"Transformation chain requires a valid template. Got template='{template}'")
-        elif item["type"] == "container":
-            # Container - render based on template
-            template = item.get("template", "")
-            outer = item.get("outer", {})
-            inner = item.get("inner", {})
-            indicator = item.get("indicator", "")
-            answer = item.get("to", "")
-
-            # Handle both new format (dict) and old format (string)
-            if isinstance(outer, dict):
-                outer_fodder = outer.get("fodder", "")
-                outer_result = outer.get("result", "")
-                outer_reasoning = outer.get("reasoning", "")
-            else:
-                outer_fodder = ""
-                outer_result = outer
-                outer_reasoning = ""
-
-            if isinstance(inner, dict):
-                inner_fodder = inner.get("fodder", "")
-                inner_result = inner.get("result", "")
-                inner_reasoning = inner.get("reasoning", "")
-            else:
-                inner_fodder = ""
-                inner_result = inner
-                inner_reasoning = ""
-
-            if template == "insertion_with_two_synonyms":
-                # Step 1: Indicator tells us the structure
-                learnings.append({
-                    "title": f"📦 CONTAINER: \"{indicator}\" tells us A takes B inside (A {indicator} B)",
-                    "text": ""
-                })
-
-                # Step 2: Literal attempt - show it fails
-                outer_words = outer_fodder.upper().split()
-                inner_words = inner_fodder.upper().split()
-                if len(outer_words) >= 2:
-                    literal_attempt = f"{outer_words[0]} + {' '.join(inner_words)} + {outer_words[-1]}"
-                else:
-                    literal_attempt = f"{outer_fodder.upper()} + {inner_fodder.upper()}"
-                learnings.append({
-                    "title": f"   Literal attempt:\n   A = \"{outer_fodder}\", B = \"{inner_fodder}\"\n   → {literal_attempt} = ❌ doesn't work",
-                    "text": ""
-                })
-
-                # Step 3: Need synonyms - show what they are
-                synonym_text = f"   Need synonyms:\n   A: \"{outer_fodder}\" → {outer_result}"
-                if outer_reasoning:
-                    synonym_text += f" ({outer_reasoning})"
-                synonym_text += f"\n   B: \"{inner_fodder}\" → {inner_result}"
-                if inner_reasoning:
-                    synonym_text += f" ({inner_reasoning})"
-                learnings.append({
-                    "title": synonym_text,
-                    "text": ""
-                })
-
-                # Step 4: Assembly with synonyms
-                assembly = item.get("assembly", f"{outer_result[0]} + {inner_result} + {outer_result[1:]} = {answer}")
-                learnings.append({
-                    "title": f"   Assembly with synonyms:\n   {assembly} ✓",
-                    "text": ""
-                })
-            elif template == "insertion_with_one_synonym_outer":
-                # Container where outer requires synonym, inner is explicit
-                learnings.append({
-                    "title": f"📦 CONTAINER: \"{indicator}\" tells us A takes B inside",
-                    "text": ""
-                })
-                # Inner explicit
-                learnings.append({
-                    "title": f"   B: \"{inner_fodder}\" → {inner_result} ({inner_reasoning})",
-                    "text": ""
-                })
-                # Outer synonym
-                learnings.append({
-                    "title": f"   A: \"{outer_fodder}\" → {outer_result} ({outer_reasoning})",
-                    "text": ""
-                })
-                # Assembly
-                assembly = item.get("assembly", "")
-                learnings.append({
-                    "title": f"   Assembly: {assembly} ✓",
-                    "text": ""
-                })
-            elif template == "insertion_with_charade_inner":
-                # Container where inner is built from charade pieces
-                learnings.append({
-                    "title": f"📦 CONTAINER: \"{indicator}\" tells us A takes B inside",
-                    "text": ""
-                })
-                # Outer synonym
-                learnings.append({
-                    "title": f"   A: \"{outer_fodder}\" → {outer_result} ({outer_reasoning})",
-                    "text": ""
-                })
-                # Inner pieces
-                learnings.append({
-                    "title": "   B built from pieces:",
-                    "text": ""
-                })
-                inner_obj = item.get("inner", {})
-                inner_pieces = inner_obj.get("pieces", []) if isinstance(inner_obj, dict) else []
-                for piece in inner_pieces:
-                    piece_fodder = piece.get("fodder", {})
-                    fodder_text = piece_fodder.get("text", "") if isinstance(piece_fodder, dict) else str(piece_fodder)
-                    piece_result = piece.get("result", "")
-                    reasoning = piece.get("reasoning", "")
-                    piece_display = f"      \"{fodder_text}\" → {piece_result}"
-                    if reasoning:
-                        piece_display += f" ({reasoning})"
-                    learnings.append({
-                        "title": piece_display,
-                        "text": ""
-                    })
-                inner_assembly = inner_obj.get("assembly", "") if isinstance(inner_obj, dict) else ""
-                learnings.append({
-                    "title": f"   B: {inner_assembly}",
-                    "text": ""
-                })
-                # Final assembly
-                assembly = item.get("assembly", "")
-                learnings.append({
-                    "title": f"   Assembly: {assembly} ✓",
-                    "text": ""
-                })
-            else:
-                # No fallback - require explicit template
-                raise ValueError(f"Container type requires a valid template. Got template='{template}' for container with outer={outer}, inner={inner}")
-        elif item["type"] == "anagram":
-            # Anagram - render based on template
-            template = item.get("template", "")
-            indicator = item.get("indicator", "")
-            pieces = item.get("pieces", [])
-            result = item.get("to", "")
-            assembly = item.get("assembly", "")
-
-            if template == "anagram_with_fodder_pieces":
-                learnings.append({
-                    "title": "🔀 ANAGRAM: Pieces combine then rearrange",
-                    "text": ""
-                })
-                fodder_parts = []
-                for piece in pieces:
-                    piece_fodder = piece.get("fodder", {})
-                    fodder_text = piece_fodder.get("text", "") if isinstance(piece_fodder, dict) else str(piece_fodder)
-                    piece_result = piece.get("result", "")
-                    piece_type = piece.get("type", "")
-                    reasoning = piece.get("reasoning", "")
-                    fodder_parts.append(piece_result)
-                    piece_display = f"   \"{fodder_text}\" → {piece_result}"
-                    if reasoning:
-                        piece_display += f" ({reasoning})"
-                    learnings.append({
-                        "title": piece_display,
-                        "text": ""
-                    })
-                fodder_combined = " + ".join(fodder_parts)
-                learnings.append({
-                    "title": f"   \"{indicator}\" rearranges {fodder_combined} → {result}",
-                    "text": ""
-                })
-                learnings.append({
-                    "title": f"   → {result} ✓",
-                    "text": ""
-                })
-            else:
-                # Old format - show simple anagram display
-                fodder = item.get("from", "")
-                learnings.append({
-                    "title": f"🔀 \"{indicator}\" rearranges {fodder} → {result}",
-                    "text": ""
-                })
-        elif item["type"] == "hidden":
-            # Hidden word - render based on template
-            template = item.get("template", "")
-            indicator = item.get("indicator", "")
-            fodder = item.get("from", "")
-            result = item.get("to", "")
-            hidden_letters = item.get("hidden_letters", "")
-            reasoning = item.get("reasoning", "")
-
-            if template == "hidden_reversed":
-                learnings.append({
-                    "title": f"👁️↩️ HIDDEN REVERSED: \"{indicator}\" reveals answer hidden backwards",
-                    "text": ""
-                })
-                learnings.append({
-                    "title": f"   In \"{fodder}\" find: {hidden_letters}",
-                    "text": ""
-                })
-                learnings.append({
-                    "title": f"   Reversed: {hidden_letters} → {result} ✓",
-                    "text": ""
-                })
-            else:
-                # Standard hidden word
-                learnings.append({
-                    "title": f"👁️ \"{indicator}\" reveals {result} hidden in \"{fodder}\"",
-                    "text": ""
-                })
-        else:
-            learnings.append({
-                "title": f"{item['icon']} {item.get('from', '')} → {item['to']}",
-                "text": ""
-            })
-
-    # Build highlights for all wordplay parts
-    highlights = []
-    for step in steps:
-        if "fodder" in step and isinstance(step["fodder"], dict):
-            highlights.append({
-                "indices": step["fodder"].get("indices", []),
-                "color": "BLUE"
-            })
-        if "indicator" in step and isinstance(step["indicator"], dict):
-            highlights.append({
-                "indices": step["indicator"].get("indices", []),
-                "color": "YELLOW"
-            })
-        if "expected" in step and isinstance(step["expected"], dict):
-            highlights.append({
-                "indices": step["expected"].get("indices", []),
-                "color": "GREEN"
-            })
-        # Handle new container format with nested outer/inner
-        if "outer" in step and isinstance(step["outer"], dict):
-            outer_fodder = step["outer"].get("fodder", {})
-            if isinstance(outer_fodder, dict) and "indices" in outer_fodder:
-                highlights.append({
-                    "indices": outer_fodder.get("indices", []),
-                    "color": "BLUE"
-                })
-        if "inner" in step and isinstance(step["inner"], dict):
-            inner_fodder = step["inner"].get("fodder", {})
-            if isinstance(inner_fodder, dict) and "indices" in inner_fodder:
-                highlights.append({
-                    "indices": inner_fodder.get("indices", []),
-                    "color": "BLUE"
-                })
+    learnings = _build_learnings_from_breakdown(breakdown)
+    highlights = _build_highlights_from_steps(steps)
 
     # Get definition hint from standard_definition step (new schema)
     definition_hint = ""

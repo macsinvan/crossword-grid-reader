@@ -245,22 +245,6 @@ def import_puzzle_to_trainer(puzzle_number):
         return False, str(e), []
 
 
-def find_clue_in_annotated_data(puzzle_number, clue_number, direction):
-    """
-    Find a specific clue in the annotated puzzle data.
-    Returns the clue entry or None if not found.
-    """
-    puzzle_data = load_annotated_puzzle(puzzle_number)
-    if not puzzle_data:
-        return None
-
-    # Build the clue ID format: times-XXXXX-Na or times-XXXXX-Nd
-    dir_suffix = 'a' if direction.lower() == 'across' else 'd'
-    clue_id = f'times-{puzzle_number}-{clue_number}{dir_suffix}'
-
-    return puzzle_data.get(clue_id)
-
-
 # ---------------------------------------------------------------------------
 # Startup — load clues database
 # ---------------------------------------------------------------------------

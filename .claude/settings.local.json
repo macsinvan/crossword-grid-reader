@@ -35,7 +35,9 @@
       "Bash(# Clear old log and restart fresh lsof -ti:8080)",
       "Bash(# Kill server and restart with output capture kill -9 78349 78369 sleep 1 cd /Users/andrewmackenzie/Desktop/Grid\\\\ Reader && python3 crossword_server.py 2>&1)",
       "Bash(__NEW_LINE_c4ec0120dc905c7d__ curl -s -X POST \"http://127.0.0.1:8080/trainer/input\" -H \"Content-Type: application/json\" -d '{\"\"clue_id\"\":\"\"times-29453-25a\"\",\"\"value\"\":\"\"DRIVE\"\"}')",
-      "Bash(__NEW_LINE_a662d0cdf4d3c86a__ curl -s -X POST \"http://127.0.0.1:8080/trainer/input\" -H \"Content-Type: application/json\" -d '{\"\"clue_id\"\":\"\"times-29453-25a\"\",\"\"value\"\":\"\"DRIVE\"\"}')"
+      "Bash(__NEW_LINE_a662d0cdf4d3c86a__ curl -s -X POST \"http://127.0.0.1:8080/trainer/input\" -H \"Content-Type: application/json\" -d '{\"\"clue_id\"\":\"\"times-29453-25a\"\",\"\"value\"\":\"\"DRIVE\"\"}')",
+      "Bash(grep:*)",
+      "Bash(# Test reveal on 12A \\(anagram with pieces\\) curl -s -X POST ''http://127.0.0.1:8080/trainer/start'' -H ''Content-Type: application/json'' -d ''{\"\"puzzle_number\"\":\"\"29453\"\",\"\"clue_number\"\":\"\"12\"\",\"\"direction\"\":\"\"across\"\",\"\"clue_text\"\":\"\"Concerning sight as head of office IT struggles with PC\"\"}'' && \\\\ curl -s -X POST ''http://127.0.0.1:8080/trainer/reveal'' -H ''Content-Type: application/json'' -d ''{\"\"clue_id\"\":\"\"times-29453-12a\"\"}'')"
     ]
   }
 }
