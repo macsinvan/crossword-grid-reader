@@ -259,14 +259,23 @@
           "hint": "An exclamation of fright, often seen in comics"
         },
         {
-          "type": "wordplay_type",
-          "expected": "Transformation chain",
-          "options": ["Charade", "Container", "Anagram", "Transformation chain"],
-          "hint": "Look for indicator words: 'a lot of' and 'turns' each tell you to do something to the word. That's a chain — one word transformed step by step."
+          "type": "indicator",
+          "indices": [0, 1, 2],
+          "hint": "'A lot of' is a deletion indicator — it tells you to take most of something, dropping a letter"
         },
         {
-          "type": "chain_assembly",
-          "method": "chain",
+          "type": "fodder",
+          "indices": [3],
+          "hint": "This is the word the deletion indicator is acting on"
+        },
+        {
+          "type": "indicator",
+          "indices": [4],
+          "hint": "'Turns' is a reversal indicator — it tells you to read the letters backwards"
+        },
+        {
+          "type": "charade_assembly",
+          "method": "charade",
           "transforms": [
             {
               "role": "part1",

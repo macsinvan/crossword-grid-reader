@@ -72,13 +72,14 @@
     "expected_source": "result",
     "onCorrect": "The parts join to give {result}."
   },
-  "chain_assembly": {
-    "inputMode": "assembly",
-    "prompt": "Follow the chain of operations",
-    "menuTitle": "Build the answer",
-    "completedTitle": "Result: {result}",
-    "intro": "This clue transforms a single word step by step. Start by finding the base word, then apply each operation in turn \u2014 the indicator words tell you what to do at each stage.",
-    "expected_source": "result",
-    "onCorrect": "The chain of operations gives {result}."
+  "fodder": {
+    "inputMode": "tap_words",
+    "prompt": "Tap the word being operated on",
+    "menuTitle": "Find the fodder",
+    "completedTitle": "Fodder: '{words}'",
+    "intro": "Now find the word that the indicators are acting on \u2014 the raw material.",
+    "hint": "Look at what's left after the definition and indicators. That's your starting word.",
+    "expected_source": "indices",
+    "onCorrect": "'{words}' \u2014 {hint}"
   }
 }
