@@ -112,8 +112,8 @@ def get_render(clue_id, clue):
 
         current_step["hintVisible"] = session["hint_visible"]
 
-        # Assembly-specific data
-        if step["type"] == "container_assembly":
+        # Assembly-specific data (container_assembly, charade_assembly, etc.)
+        if template["inputMode"] == "assembly":
             current_step["assemblyData"] = _build_assembly_data(session, step, clue)
 
         # Completion text for completed steps
@@ -154,7 +154,7 @@ def handle_input(clue_id, clue, value):
         raise ValueError(f"No render template for step type '{step['type']}'. Add it to render_templates.json.")
 
     # Assembly steps have their own multi-phase validation
-    if step["type"] == "container_assembly":
+    if template["inputMode"] == "assembly":
         return _handle_assembly_input(session, step, clue, clue_id, value)
 
     input_mode = template["inputMode"]
@@ -424,7 +424,7 @@ def _build_step_list(session, clue):
 def _get_transform_results(steps, completed_steps):
     """Extract transform role→result map from a completed assembly step."""
     for i, step in enumerate(steps):
-        if step["type"] == "container_assembly" and i in completed_steps and "transforms" in step:
+        if "transforms" in step and i in completed_steps:
             return {t["role"]: t["result"].upper() for t in step["transforms"]}
     return {}
 

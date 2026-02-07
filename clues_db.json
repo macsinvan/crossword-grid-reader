@@ -93,89 +93,46 @@
     },
     "times-29453-1d": {
       "id": "times-29453-1d",
-      "clue": {
-        "number": "1D",
-        "text": "See boss bungle work",
-        "enumeration": "6",
-        "answer": "BISHOP",
-        "definition": [
-          {
-            "text": "See boss",
-            "position": "start"
-          }
-        ]
+      "clue": "See boss bungle work",
+      "number": "1D",
+      "enumeration": "6",
+      "answer": "BISHOP",
+      "words": ["See", "boss", "bungle", "work"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "medium",
+        "wordplay": "easy",
+        "overall": "medium"
       },
-      "words": [
-        "See",
-        "boss",
-        "bungle",
-        "work"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0,
-              1
-            ],
-            "text": "See boss"
-          },
+          "type": "definition",
+          "indices": [0, 1],
           "position": "start",
-          "explicit": true,
-          "hint": "A 'see' is a diocese - who runs one?",
-          "difficulty": "Medium"
+          "hint": "A 'see' is a diocese \u2014 who runs one?"
         },
         {
-          "type": "charade",
-          "template": "charade_with_parts",
-          "parts": [
+          "type": "charade_assembly",
+          "method": "charade",
+          "transforms": [
             {
-              "fodder": {
-                "indices": [
-                  2
-                ],
-                "text": "bungle"
-              },
-              "result": "BISH",
+              "role": "part1",
+              "indices": [2],
               "type": "synonym",
-              "reasoning": "To 'bish' something is British slang for bungling it"
+              "result": "BISH",
+              "hint": "British slang for making a mistake or bungling something"
             },
             {
-              "fodder": {
-                "indices": [
-                  3
-                ],
-                "text": "work"
-              },
-              "result": "OP",
+              "role": "part2",
+              "indices": [3],
               "type": "abbreviation",
-              "reasoning": "OP = opus, a musical work or composition"
+              "result": "OP",
+              "hint": "Short for opus \u2014 a musical work or composition"
             }
           ],
-          "result": "BISHOP",
-          "assembly": "BISH + OP = BISHOP",
-          "wordplay_hint": "The clue builds the answer from two parts in sequence"
+          "result": "BISHOP"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "medium",
-          "hint": "A 'see' is a diocese - who runs one?"
-        },
-        "wordplay": {
-          "rating": "easy",
-          "hint": "A slang word for making a mistake plus an abbreviation for a musical composition"
-        },
-        "overall": "medium",
-        "recommendedApproach": "wordplay"
-      },
-      "verified": true
+      ]
     },
     "times-29453-6d": {
       "id": "times-29453-6d",
