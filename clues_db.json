@@ -3,93 +3,52 @@
   "training_items": {
     "times-29453-11a": {
       "id": "times-29453-11a",
-      "clue": {
-        "number": "11A",
-        "text": "Come by five, do you mean?",
-        "enumeration": "5",
-        "answer": "VISIT",
-        "definition": [
-          {
-            "text": "Come by",
-            "position": "start"
-          }
-        ]
+      "clue": "Come by five, do you mean?",
+      "number": "11A",
+      "enumeration": "5",
+      "answer": "VISIT",
+      "words": ["Come", "by", "five", "do", "you", "mean"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "easy",
+        "wordplay": "easy",
+        "overall": "easy"
       },
-      "words": [
-        "Come",
-        "by",
-        "five",
-        "do",
-        "you",
-        "mean"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0,
-              1
-            ],
-            "text": "Come by"
-          },
+          "type": "definition",
+          "indices": [0, 1],
           "position": "start",
-          "explicit": true,
-          "hint": "'Come by' suggests dropping in on someone - find a common 5-letter word for this",
-          "difficulty": "Easy"
+          "hint": "'Come by' means to drop in on someone — a common 5-letter word"
         },
         {
-          "type": "charade",
-          "template": "charade_with_parts",
-          "parts": [
+          "type": "wordplay_type",
+          "expected": "Charade",
+          "options": ["Charade", "Container", "Anagram", "Hidden word"],
+          "hint": "No indicator words here — the parts just join end to end. That's a charade."
+        },
+        {
+          "type": "assembly",
+          "intro": "In a charade, the parts join end-to-end. Each clue word points to a shorter word — a synonym, abbreviation, or clever association. Work out what each one really means.",
+          "transforms": [
             {
-              "fodder": {
-                "indices": [
-                  2
-                ],
-                "text": "five"
-              },
-              "result": "V",
+              "role": "part1",
+              "indices": [2],
               "type": "abbreviation",
-              "reasoning": "Roman numeral V = 5"
+              "result": "V",
+              "hint": "Roman numerals are everywhere in cryptics. Five = V. One to remember!"
             },
             {
-              "fodder": {
-                "indices": [
-                  3,
-                  4,
-                  5
-                ],
-                "text": "do you mean?"
-              },
+              "role": "part2",
+              "indices": [3, 4, 5],
+              "type": "synonym",
               "result": "ISIT",
-              "type": "literal_phrase",
-              "reasoning": "The question 'do you mean?' reads as 'IS IT'"
+              "hint": "'Do you mean?' is another way of asking 'is it?' — read it aloud"
             }
           ],
-          "result": "VISIT",
-          "assembly": "V + ISIT = VISIT",
-          "wordplay_hint": "The clue builds the answer from two parts in sequence"
+          "result": "VISIT"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "easy",
-          "hint": "'Come by' suggests dropping in on someone - find a common 5-letter word for this"
-        },
-        "wordplay": {
-          "rating": "easy",
-          "hint": "A Roman numeral followed by a conversational phrase that reads as spoken"
-        },
-        "overall": "easy",
-        "recommendedApproach": "wordplay"
-      },
-      "verified": true
+      ]
     },
     "times-29453-1d": {
       "id": "times-29453-1d",
