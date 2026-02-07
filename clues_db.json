@@ -2480,24 +2480,21 @@
           "hint": "'Lengthened' suggests stretching a word by putting letters inside it"
         },
         {
-          "type": "synonym",
-          "role": "outer",
+          "type": "outer_word",
           "indices": [1],
-          "result": "ADAM",
-          "hint": "Think of a famous British architect"
+          "hint": "The indicator tells you this word gets stretched — which one wraps around the other?"
         },
         {
-          "type": "synonym",
-          "role": "inner",
+          "type": "inner_word",
           "indices": [4],
-          "result": "SWAN",
-          "hint": "What kind of bird is a cob?"
+          "hint": "Which remaining word gets placed inside?"
         },
         {
           "type": "assembly",
-          "parts": ["ADAM", "SWAN"],
-          "result": "ASWAN DAM",
-          "method": "container"
+          "method": "container",
+          "outer": {"indices": [1], "result": "ADAM", "hint": "Think of a famous British architect"},
+          "inner": {"indices": [4], "result": "SWAN", "hint": "What kind of bird is a cob?"},
+          "result": "ASWAN DAM"
         },
         {
           "type": "answer",

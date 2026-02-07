@@ -23,5 +23,25 @@
     "hint": "The indicator often disguises itself as part of the surface meaning. Words like 'holding', 'within', 'nurses', 'around', or 'lengthened' can all signal insertion.",
     "expected_source": "indices",
     "onCorrect": "'{words}' \u2014 {hint}"
+  },
+  "outer_word": {
+    "inputMode": "tap_words",
+    "prompt": "Which word provides the outer letters?",
+    "menuTitle": "Find the outer word",
+    "completedTitle": "Outer word: '{words}'",
+    "intro": "The indicator tells you one word gets stretched to wrap around another. Which word in the clue provides the outer letters?",
+    "hint": "Look at the words either side of the indicator \u2014 the indicator often points toward the word that does the wrapping.",
+    "expected_source": "indices",
+    "onCorrect": "'{words}' provides the outer letters."
+  },
+  "inner_word": {
+    "inputMode": "tap_words",
+    "prompt": "Which word goes inside?",
+    "menuTitle": "Find the inner word",
+    "completedTitle": "Inner word: '{words}'",
+    "intro": "Now find the word whose letters get placed inside the outer word.",
+    "hint": "Which remaining word in the clue hasn\u2019t been used yet?",
+    "expected_source": "indices",
+    "onCorrect": "'{words}' goes inside."
   }
 }
