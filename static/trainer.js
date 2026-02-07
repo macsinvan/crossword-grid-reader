@@ -308,6 +308,15 @@ class TemplateTrainer {
             html += '</div>';
         }
 
+        // Multiple choice options
+        if (step.inputMode === 'multiple_choice' && step.options) {
+            html += '<div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.75rem;">';
+            for (const option of step.options) {
+                html += `<button class="mc-option" data-value="${option}" style="padding: 0.5rem 1rem; background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; border-radius: 0.5rem; cursor: pointer; font-size: 0.85rem; text-align: left; transition: background 0.15s;">${option}</button>`;
+            }
+            html += '</div>';
+        }
+
         // Prompt + hint
         html += `<div style="display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.25rem;">`;
         html += `<span style="font-size: 0.8rem; color: #64748b; flex: 1; line-height: 1.5;">${step.prompt}</span>`;
@@ -559,6 +568,13 @@ class TemplateTrainer {
                     letters.push(box.value || '');
                 });
                 this.submitInput(letters.join(''));
+            });
+        });
+
+        // Multiple choice options
+        this.container.querySelectorAll('.mc-option').forEach(el => {
+            el.addEventListener('click', () => {
+                this.submitInput(el.dataset.value);
             });
         });
 

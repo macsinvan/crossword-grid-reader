@@ -112,6 +112,12 @@ def get_render(clue_id, clue):
 
         current_step["hintVisible"] = session["hint_visible"]
 
+        # Multiple choice options (from step metadata)
+        if template["inputMode"] == "multiple_choice":
+            if "options" not in step:
+                raise ValueError(f"Step type '{step['type']}' uses multiple_choice but has no 'options' in metadata.")
+            current_step["options"] = step["options"]
+
         # Assembly-specific data (container_assembly, charade_assembly, etc.)
         if template["inputMode"] == "assembly":
             current_step["assemblyData"] = _build_assembly_data(session, step, clue)
@@ -167,6 +173,8 @@ def handle_input(clue_id, clue, value):
         user_text = re.sub(r'[^A-Z]', '', str(value).upper())
         expected_text = re.sub(r'[^A-Z]', '', str(expected).upper())
         correct = user_text == expected_text
+    elif input_mode == "multiple_choice":
+        correct = str(value).strip().lower() == str(expected).strip().lower()
     else:
         raise ValueError(f"Unsupported input mode: {input_mode}")
 
@@ -294,7 +302,7 @@ def _build_assembly_data(session, step, clue):
         "abbreviation": "What's the common abbreviation for '{word}'? ({n} letters)",
         "literal": "'{word}' is used as-is — type it in ({n} letters)",
         "reversal": "Reverse '{word}' — what do you get? ({n} letters)",
-        "deletion": "Remove a letter from '{word}' — what's left? ({n} letters)",
+        "deletion": "'{word}' tells you to shorten the previous answer. What's left? ({n} letters)",
         "letter_selection": "Pick the right letters from '{word}' ({n} letters)",
     }
 
@@ -506,6 +514,10 @@ def _resolve_variables(text, step, clue):
     # {result}
     if "{result}" in text:
         text = text.replace("{result}", step.get("result", ""))
+
+    # {expected}
+    if "{expected}" in text:
+        text = text.replace("{expected}", str(step.get("expected", "")))
 
     return text
 

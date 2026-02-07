@@ -112,6 +112,12 @@
           "hint": "A 'see' is a diocese \u2014 who runs one?"
         },
         {
+          "type": "wordplay_type",
+          "expected": "Charade",
+          "options": ["Charade", "Container", "Anagram", "Hidden word"],
+          "hint": "No indicator words here — the parts just join end to end. That's a charade."
+        },
+        {
           "type": "charade_assembly",
           "method": "charade",
           "transforms": [
@@ -787,7 +793,13 @@
           "hint": "Something you use to stay dry when it rains"
         },
         {
-          "type": "container_indicator",
+          "type": "wordplay_type",
+          "expected": "Container",
+          "options": ["Charade", "Container", "Anagram", "Hidden word"],
+          "hint": "'Nurses' is a container indicator — to nurse something is to hold or wrap around it."
+        },
+        {
+          "type": "indicator",
           "indices": [6],
           "hint": "'Nurses' suggests caring for or wrapping around — containment"
         },
@@ -1601,92 +1613,59 @@
     },
     "times-29453-4a": {
       "id": "times-29453-4a",
-      "clue": {
-        "number": "4A",
-        "text": "Twit copying antique with pine, mostly",
-        "enumeration": "8",
-        "answer": "REPROACH",
-        "definition": [
-          {
-            "text": "Twit",
-            "position": "start"
-          }
-        ]
+      "clue": "Twit copying antique with pine, mostly",
+      "number": "4A",
+      "enumeration": "8",
+      "answer": "REPROACH",
+      "words": ["Twit", "copying", "antique", "with", "pine", "mostly"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "medium",
+        "wordplay": "easy",
+        "overall": "medium"
       },
-      "words": [
-        "Twit",
-        "copying",
-        "antique",
-        "with",
-        "pine",
-        "mostly"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0
-            ],
-            "text": "Twit"
-          },
+          "type": "definition",
+          "indices": [0],
           "position": "start",
-          "explicit": true,
-          "hint": "To criticize or scold someone",
-          "difficulty": "Medium"
-        },
-        {
-          "type": "charade",
-          "template": "charade_with_parts",
-          "parts": [
-            {
-              "fodder": {
-                "indices": [
-                  1,
-                  2
-                ],
-                "text": "copying antique"
-              },
-              "result": "REPRO",
-              "type": "synonym",
-              "reasoning": "A repro is a reproduction or copy of an antique"
-            },
-            {
-              "fodder": {
-                "indices": [
-                  4
-                ],
-                "text": "pine"
-              },
-              "intermediate": "ACHE",
-              "result": "ACH",
-              "type": "synonym_then_deletion",
-              "reasoning": "pine = ACHE (to pine is to ache), then 'mostly' removes last letter"
-            }
-          ],
-          "result": "REPROACH",
-          "assembly": "REPRO + ACH = REPROACH",
-          "wordplay_hint": "The clue builds the answer from two parts in sequence"
-        }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "medium",
           "hint": "To criticize or scold someone"
         },
-        "wordplay": {
-          "rating": "easy",
-          "hint": "A word for copy plus most of a word for longing"
+        {
+          "type": "wordplay_type",
+          "expected": "Charade",
+          "options": ["Charade", "Container", "Anagram", "Hidden word"],
+          "hint": "No indicator words here — the parts just join end to end. That's a charade."
         },
-        "overall": "medium",
-        "recommendedApproach": "wordplay"
-      },
-      "verified": true
+        {
+          "type": "charade_assembly",
+          "method": "charade",
+          "transforms": [
+            {
+              "role": "part1",
+              "indices": [1, 2],
+              "type": "synonym",
+              "result": "REPRO",
+              "hint": "A repro is a reproduction or copy of an antique"
+            },
+            {
+              "role": "part2",
+              "indices": [4],
+              "type": "synonym",
+              "result": "ACHE",
+              "hint": "To pine is to ache — to long painfully for something"
+            },
+            {
+              "role": "part3",
+              "indices": [5],
+              "type": "deletion",
+              "result": "ACH",
+              "hint": "'Mostly' means take most of the letters — drop the last one"
+            }
+          ],
+          "result": "REPROACH"
+        }
+      ]
     },
     "times-29453-18d": {
       "id": "times-29453-18d",
@@ -2393,7 +2372,13 @@
           "hint": "A famous structure on the Nile river"
         },
         {
-          "type": "container_indicator",
+          "type": "wordplay_type",
+          "expected": "Container",
+          "options": ["Charade", "Container", "Anagram", "Hidden word"],
+          "hint": "'Lengthened' is a container indicator — it tells you one word gets stretched by putting letters inside it."
+        },
+        {
+          "type": "indicator",
           "indices": [2],
           "hint": "'Lengthened' suggests stretching a word by putting letters inside it"
         },

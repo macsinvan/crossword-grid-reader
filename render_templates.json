@@ -14,13 +14,23 @@
     "expected_source": "indices",
     "onCorrect": "Can you find a word ({enumeration}) meaning '{words}' \u2014 {hint}."
   },
-  "container_indicator": {
+  "wordplay_type": {
+    "inputMode": "multiple_choice",
+    "prompt": "What type of wordplay is this?",
+    "menuTitle": "Identify the wordplay",
+    "completedTitle": "Wordplay: {expected}",
+    "intro": "Now look at the rest of the clue \u2014 the part that isn\u2019t the definition. How is the answer being built? Look for indicator words that signal a specific technique. If there are no indicators, that\u2019s a clue in itself.",
+    "hint": "Scan for indicator words: 'mixed/confused' = anagram, 'holding/nurses' = container, 'in/from/some' = hidden word. No indicators at all? Probably a charade \u2014 parts joining end to end.",
+    "expected_source": "expected",
+    "onCorrect": "{hint}"
+  },
+  "indicator": {
     "inputMode": "tap_words",
-    "prompt": "Which word tells you one thing goes inside another?",
+    "prompt": "Tap the indicator word",
     "menuTitle": "Spot the indicator",
-    "completedTitle": "Container indicator found: '{words}'",
-    "intro": "Some clues contain a word that signals insertion \u2014 one word being placed inside another. Look for words that suggest stretching, holding, containing, or wrapping.",
-    "hint": "The indicator often disguises itself as part of the surface meaning. Words like 'holding', 'within', 'nurses', 'around', or 'lengthened' can all signal insertion.",
+    "completedTitle": "Indicator: '{words}'",
+    "intro": "You\u2019ve identified the wordplay type. Now find the word that signals it \u2014 the indicator.",
+    "hint": "The indicator often disguises itself as part of the surface meaning. It tells you what to do with the other words.",
     "expected_source": "indices",
     "onCorrect": "'{words}' \u2014 {hint}"
   },
