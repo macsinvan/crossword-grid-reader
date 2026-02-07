@@ -288,10 +288,28 @@ def _build_assembly_data(session, step, clue):
         raw_words.append(" ".join(t_words))
     fail_message = "Try putting '" + "' and '".join(raw_words) + "' together \u2014 it doesn\u2019t spell anything useful, does it? So what is each word really telling you?"
 
+    # Transform prompt templates keyed by transform type from clue metadata
+    TRANSFORM_PROMPTS = {
+        "synonym": "Find a {n}-letter synonym for '{word}'",
+        "abbreviation": "What's the common abbreviation for '{word}'? ({n} letters)",
+        "literal": "'{word}' is used as-is — type it in ({n} letters)",
+        "reversal": "Reverse '{word}' — what do you get? ({n} letters)",
+        "deletion": "Remove a letter from '{word}' — what's left? ({n} letters)",
+        "letter_selection": "Pick the right letters from '{word}' ({n} letters)",
+    }
+
     # Build transform display data
     transform_list = []
     for i, t in enumerate(transforms):
         clue_word = " ".join(words[idx] for idx in t["indices"])
+        letter_count = len(re.sub(r'[^A-Z]', '', t["result"].upper()))
+        t_type = t.get("type", "")
+
+        if t_type not in TRANSFORM_PROMPTS:
+            raise ValueError(f"Unknown transform type '{t_type}' in clue metadata. Add it to TRANSFORM_PROMPTS in training_handler.py.")
+
+        prompt = TRANSFORM_PROMPTS[t_type].format(word=clue_word, n=letter_count)
+
         if i < len(transforms_done):
             status = "completed"
             result = transforms_done[i]
@@ -305,8 +323,8 @@ def _build_assembly_data(session, step, clue):
         transform_list.append({
             "role": t["role"],
             "clueWord": clue_word,
-            "prompt": f"'{clue_word}' is a clue to a {len(re.sub(r'[^A-Z]', '', t['result'].upper()))}-letter word. What\u2019s it pointing to?",
-            "letterCount": len(re.sub(r'[^A-Z]', '', t["result"].upper())),
+            "prompt": prompt,
+            "letterCount": letter_count,
             "status": status,
             "result": result,
             "hint": t.get("hint", ""),
