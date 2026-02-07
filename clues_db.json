@@ -811,100 +811,61 @@
     },
     "times-29453-1a": {
       "id": "times-29453-1a",
-      "clue": {
-        "number": "1A",
-        "text": "Cover up in shower? Not after nurses turn round",
-        "enumeration": "6",
-        "answer": "BROLLY",
-        "definition": [
-          {
-            "text": "Cover up in shower",
-            "position": "start"
-          }
-        ]
+      "clue": "Cover up in shower? Not after nurses turn round",
+      "number": "1A",
+      "enumeration": "6",
+      "answer": "BROLLY",
+      "words": ["Cover", "up", "in", "shower", "Not", "after", "nurses", "turn", "round"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "easy",
+        "wordplay": "hard",
+        "overall": "medium"
       },
-      "words": [
-        "Cover",
-        "up",
-        "in",
-        "shower",
-        "not",
-        "after",
-        "nurses",
-        "turn",
-        "around"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0,
-              1,
-              2,
-              3
-            ],
-            "text": "Cover up in shower"
-          },
+          "type": "definition",
+          "indices": [0, 1, 2, 3],
           "position": "start",
-          "explicit": true,
-          "hint": "Something you use to stay dry when it rains",
-          "difficulty": "Easy"
-        },
-        {
-          "type": "container",
-          "template": "insertion_with_two_synonyms",
-          "indicator": {
-            "indices": [
-              6
-            ],
-            "text": "nurses",
-            "reasoning": "'nurses' suggests caring for/wrapping around — containment"
-          },
-          "outer": {
-            "fodder": {
-              "indices": [
-                4,
-                5
-              ],
-              "text": "not after"
-            },
-            "result": "BY",
-            "reasoning": "not after = before = by"
-          },
-          "inner": {
-            "fodder": {
-              "indices": [
-                7,
-                8
-              ],
-              "text": "turn around"
-            },
-            "result": "ROLL",
-            "reasoning": "to nurse/roll = to turn"
-          },
-          "result": "BROLLY",
-          "assembly": "B + ROLL + Y = BROLLY"
-        }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "easy",
           "hint": "Something you use to stay dry when it rains"
         },
-        "wordplay": {
-          "rating": "hard",
-          "hint": "The indicator tells you the structure, but you need to work out what goes inside"
+        {
+          "type": "container_indicator",
+          "indices": [6],
+          "hint": "'Nurses' suggests caring for or wrapping around — containment"
         },
-        "overall": "medium",
-        "recommendedApproach": "definition"
-      },
-      "verified": true
+        {
+          "type": "outer_word",
+          "indices": [4, 5],
+          "hint": "The indicator tells you this word gets stretched — which pair wraps around the other?"
+        },
+        {
+          "type": "inner_word",
+          "indices": [7, 8],
+          "hint": "Which remaining words get placed inside?"
+        },
+        {
+          "type": "container_assembly",
+          "method": "container",
+          "transforms": [
+            {
+              "role": "outer",
+              "indices": [4, 5],
+              "type": "synonym",
+              "result": "BY",
+              "hint": "'Not after' means before — another word for that is BY"
+            },
+            {
+              "role": "inner",
+              "indices": [7, 8],
+              "type": "synonym",
+              "result": "ROLL",
+              "hint": "To turn round — think of a drum roll, or a bread roll"
+            }
+          ],
+          "result": "BROLLY"
+        }
+      ]
     },
     "times-29453-10a": {
       "id": "times-29453-10a",
