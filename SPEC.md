@@ -10,7 +10,7 @@ This document specifies the Grid Reader application at a level of detail suffici
 
 ### 1.1 Target Stack
 - **Backend**: Flask (Python 3.9+)
-- **Database**: Supabase PostgreSQL (with local file fallback)
+- **Database**: Supabase PostgreSQL (required — no local fallback)
 - **Frontend**: Static HTML/JS/CSS
 - **Deployment**: Local development (Vercel planned for Phase 3)
 
@@ -125,7 +125,11 @@ ALL intelligence lives on the server. The client is a pure view layer.
 ┌─────────────────────────────────────────────────────────────┐
 │                   Flask Server (8080)                        │
 ├─────────────────────────────────────────────────────────────┤
-│  crossword_server.py                                        │
+│  crossword_server.py (infrastructure routes)                │
+│  ├── /, /status, /upload, /puzzles, /validate              │
+│  └── puzzle_store_supabase.py → Supabase PostgreSQL        │
+├─────────────────────────────────────────────────────────────┤
+│  trainer_routes.py (Blueprint: /trainer/*)                  │
 │  ├── /trainer/start    → training_handler.start_session()  │
 │  ├── /trainer/input    → training_handler.handle_input()   │
 │  ├── /trainer/continue → training_handler.advance_to_next()│
@@ -143,11 +147,11 @@ ALL intelligence lives on the server. The client is a pure view layer.
 ┌─────────────────────────────────────────────────────────────┐
 │                    Data Storage                              │
 ├─────────────────────────────────────────────────────────────┤
-│  Supabase PostgreSQL   │  Local Fallback                    │
-│  - publications        │  - puzzles/ directory              │
-│  - puzzles             │  - clues_db.json                   │
-│  - clues               │                                    │
-│  - user_progress       │                                    │
+│  Supabase PostgreSQL (required)                             │
+│  - publications                                             │
+│  - puzzles                                                  │
+│  - clues                                                    │
+│  - user_progress                                            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -886,20 +890,21 @@ Reveal answer for current step only.
 
 ```
 Grid Reader/
-├── crossword_server.py      # Flask server, routes
+├── crossword_server.py      # Flask server — infrastructure routes only
+├── trainer_routes.py        # Flask Blueprint — all /trainer/* routes
 ├── training_handler.py      # Session state, STEP_TEMPLATES, get_render()
-├── puzzle_store_supabase.py # Supabase database client
-├── puzzle_store.py          # Local file fallback
+├── puzzle_store_supabase.py # Supabase database client (required)
 ├── pdf_processor.py         # PDF parsing, OCR correction
 ├── clues_db.json            # Pre-annotated clue steps
 ├── teaching_hints.json      # Expert hints for step types
+├── render_templates.json    # Render templates (HOW to present steps)
+├── step_display_templates.py # Display flow for complex types
 ├── static/
 │   ├── crossword.js         # Grid UI, keyboard navigation
 │   ├── trainer.js           # Stateless trainer UI
 │   └── crossword.css        # Styles
 ├── templates/
 │   └── index.html           # Main page template
-├── puzzles/                  # Local puzzle storage (fallback)
 ├── requirements.txt
 └── .env                      # SUPABASE_URL, SUPABASE_ANON_KEY
 ```
@@ -1140,9 +1145,8 @@ gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 ## 12. Development Phases
 
 ### Phase 1: Supabase Database Integration ✓
-- Supabase PostgreSQL backend
+- Supabase PostgreSQL backend (required — no local fallback)
 - Publications, puzzles, clues, user_progress tables
-- Auto-fallback to local storage
 - DB status indicator in header
 
 ### Phase 2: Interactive Teaching Mode ✓

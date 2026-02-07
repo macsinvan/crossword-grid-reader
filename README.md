@@ -7,7 +7,7 @@ A web-based tool for importing, solving, and learning to solve Times Cryptic cro
 ## Features
 
 - **PDF Import**: Upload Times Cryptic PDF files to extract grid and clues automatically
-- **Cloud Storage**: Puzzles stored in Supabase PostgreSQL (with local fallback)
+- **Cloud Storage**: Puzzles stored in Supabase PostgreSQL
 - **Interactive Grid**: Solve puzzles in the browser with keyboard navigation
 - **Guided Solving**: Step-by-step teaching mode for learning cryptic techniques
 - **Answer Validation**: Optionally provide an answers file to validate your solutions
@@ -113,7 +113,7 @@ Or JSON (Times Puzzle Import format):
 ### Supabase connection failed
 - Check `.env` file has correct `SUPABASE_URL` and `SUPABASE_ANON_KEY`
 - Run migrations in Supabase SQL Editor (see `migrations/001_initial_schema.sql`)
-- App falls back to local file storage if Supabase unavailable
+- Supabase is required — the server will not start without a valid connection
 
 ## Supported Formats
 
@@ -136,6 +136,8 @@ See [PLAN.md](PLAN.md) for detailed roadmap.
 
 - Teaching mode uses pre-annotated step data (no AI/LLM)
 - 30 clues pre-loaded in `clues_db.json`
+- Infrastructure routes in `crossword_server.py`, trainer routes in `trainer_routes.py` (Flask Blueprint)
+- Supabase is required — no local file fallback
 - See [TECH_DEBT_AUDIT.md](TECH_DEBT_AUDIT.md) for architecture details
 
 ## License
