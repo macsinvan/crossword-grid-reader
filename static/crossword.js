@@ -182,12 +182,12 @@ class CrosswordPuzzle {
         // Store current word data for later
         this.trainerWordData = wordData;
 
-        // Show the modal — clear stale content immediately to prevent flash
-        document.getElementById('trainer-modal').classList.remove('hidden');
+        // Clear stale content BEFORE showing modal to prevent flash
+        this.templateTrainer = null;
+        document.getElementById('trainer-container').innerHTML = '';
         document.getElementById('trainer-clue-number').textContent = `${wordData.clueNumber}${wordData.direction === 'across' ? 'A' : 'D'}`;
         document.getElementById('trainer-clue-text').textContent = wordData.clueText;
-        document.getElementById('trainer-container').innerHTML = '<div style="padding: 2rem; text-align: center; color: #94a3b8;">Loading...</div>';
-        this.templateTrainer = null;
+        document.getElementById('trainer-modal').classList.remove('hidden');
 
         // Get puzzle number for clue lookup
         const puzzleNumber = this.currentPuzzleInfo?.number || this.puzzle?.number;
