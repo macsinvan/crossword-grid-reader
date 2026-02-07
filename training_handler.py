@@ -53,8 +53,8 @@ def start_session(clue_id, clue):
         "user_answer": [],
         "answer_locked": False,
         "highlights": [],
-        "assembly_phase": 0,
-        "assembly_transforms_done": [],
+        "assembly_transforms_done": {},
+        "assembly_hint_index": None,
     }
     return get_render(clue_id, clue)
 
@@ -146,7 +146,7 @@ def get_render(clue_id, clue):
     }
 
 
-def handle_input(clue_id, clue, value):
+def handle_input(clue_id, clue, value, transform_index=None):
     """Validate user input for the current step. Returns {correct, render, message?}."""
     session = _sessions.get(clue_id)
     if not session:
@@ -165,7 +165,7 @@ def handle_input(clue_id, clue, value):
 
     # Assembly steps have their own multi-phase validation
     if template["inputMode"] == "assembly":
-        return _handle_assembly_input(session, step, clue, clue_id, value)
+        return _handle_assembly_input(session, step, clue, clue_id, value, transform_index)
 
     input_mode = template["inputMode"]
     expected = _resolve_expected(step, template)
@@ -197,8 +197,8 @@ def handle_input(clue_id, clue, value):
         session["selected_indices"] = []
         session["hint_visible"] = False
         session["step_expanded"] = False
-        session["assembly_phase"] = 0
-        session["assembly_transforms_done"] = []
+        session["assembly_transforms_done"] = {}
+        session["assembly_hint_index"] = None
 
         return {"correct": True, "render": get_render(clue_id, clue)}
     else:
@@ -213,6 +213,14 @@ def update_ui_state(clue_id, clue, action, data):
 
     if action == "toggle_hint":
         session["hint_visible"] = not session["hint_visible"]
+
+    elif action == "toggle_assembly_hint":
+        transform_idx = data.get("transform_index")
+        if transform_idx is not None:
+            if session.get("assembly_hint_index") == transform_idx:
+                session["assembly_hint_index"] = None
+            else:
+                session["assembly_hint_index"] = transform_idx
 
     elif action == "select_word":
         index = data.get("index")
@@ -287,10 +295,14 @@ def check_answer(clue_id, clue, answer):
 # --- Internal helpers ---
 
 def _build_assembly_data(session, step, clue):
-    """Build the assemblyData payload for an assembly step."""
+    """Build the assemblyData payload for an assembly step.
+
+    Transforms can be solved in any order (parallel), except dependent types
+    (deletion, reversal, anagram) which are locked until all prior transforms complete.
+    """
     transforms = step["transforms"]
-    phase_idx = session["assembly_phase"]
-    transforms_done = session["assembly_transforms_done"]
+    transforms_done = session["assembly_transforms_done"]  # dict: {index: result}
+    assembly_hint_index = session.get("assembly_hint_index")
     words = clue["words"]
 
     # Fail message: step metadata overrides the default
@@ -307,12 +319,15 @@ def _build_assembly_data(session, step, clue):
     TRANSFORM_PROMPTS = {
         "synonym": "Find a {n}-letter synonym for '{word}'",
         "abbreviation": "What's the common abbreviation for '{word}'? ({n} letters)",
-        "literal": "'{word}' is used as-is — type it in ({n} letters)",
+        "literal": "'{word}' is used as-is \u2014 type it in ({n} letters)",
         "reversal": "'{word}' tells you to reverse. What do you get? ({n} letters)",
         "deletion": "'{word}' tells you to shorten the previous answer. What's left? ({n} letters)",
         "letter_selection": "Pick the right letters from '{word}' ({n} letters)",
-        "anagram": "Now rearrange those letters — what {n}-letter word do you get?",
+        "anagram": "Now rearrange those letters \u2014 what {n}-letter word do you get?",
     }
+
+    # Independent types can be solved in any order; dependent types wait for predecessors
+    INDEPENDENT_TYPES = {"synonym", "abbreviation", "literal", "letter_selection"}
 
     # Build transform display data
     transform_list = []
@@ -326,14 +341,18 @@ def _build_assembly_data(session, step, clue):
 
         prompt = TRANSFORM_PROMPTS[t_type].format(word=clue_word, n=letter_count)
 
-        if i < len(transforms_done):
+        # Determine status: completed, active, or locked
+        if i in transforms_done:
             status = "completed"
             result = transforms_done[i]
-        elif i == phase_idx:
+        elif t_type in INDEPENDENT_TYPES or i == 0:
+            # Independent types and the first transform are always available
             status = "active"
             result = None
         else:
-            status = "pending"
+            # Dependent type — check if all prior transforms are done
+            all_prior_done = all(j in transforms_done for j in range(i))
+            status = "active" if all_prior_done else "locked"
             result = None
 
         transform_list.append({
@@ -344,62 +363,74 @@ def _build_assembly_data(session, step, clue):
             "status": status,
             "result": result,
             "hint": t.get("hint", ""),
-            "hintVisible": (i == phase_idx and session["hint_visible"]),
+            "hintVisible": (assembly_hint_index == i),
+            "index": i,
         })
 
-    # Determine phase and result parts
-    if phase_idx < len(transforms):
-        phase = "transform"
-    else:
-        phase = "check"
+    # Determine phase: check only when all transforms are done
+    all_done = len(transforms_done) == len(transforms)
+    phase = "check" if all_done else "transforms"
 
     # Compute result letter grouping for tile spacing (e.g. "ASWAN DAM" → [5, 3])
     result_text = step["result"]
     result_parts = [len(word) for word in result_text.split()]
 
+    # Compute position map and completed letters for the combined display
+    position_map = _compute_position_map(step)
+    completed_letters = _compute_completed_letters(transforms_done, position_map, step)
+
     return {
         "phase": phase,
         "failMessage": fail_message,
-        "transformIndex": phase_idx if phase_idx < len(transforms) else None,
         "transforms": transform_list,
         "resultParts": result_parts,
+        "positionMap": {str(k): v for k, v in position_map.items()},
+        "completedLetters": completed_letters,
     }
 
 
-def _handle_assembly_input(session, step, clue, clue_id, value):
-    """Handle input for an assembly step's multi-phase flow."""
+def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=None):
+    """Handle input for an assembly step. Transforms can be submitted in any order."""
     transforms = step["transforms"]
-    phase_idx = session["assembly_phase"]
+    transforms_done = session["assembly_transforms_done"]
 
-    if phase_idx < len(transforms):
-        # Transform phase: validate text input
-        expected = transforms[phase_idx]["result"]
+    if transform_index is not None and 0 <= transform_index < len(transforms):
+        # Transform submission: validate against this specific transform
+        expected = transforms[transform_index]["result"]
         user_text = re.sub(r'[^A-Z]', '', str(value).upper())
         expected_text = re.sub(r'[^A-Z]', '', expected.upper())
 
         if user_text == expected_text:
-            session["assembly_transforms_done"].append(expected.upper())
-            session["assembly_phase"] = phase_idx + 1
-            session["hint_visible"] = False
+            transforms_done[transform_index] = expected.upper()
+            session["assembly_hint_index"] = None
 
-            # If this was the last transform AND its result is the final answer,
-            # skip the check phase — the student already typed the answer
-            final_result = re.sub(r'[^A-Z]', '', step["result"].upper())
-            if phase_idx + 1 == len(transforms) and expected_text == final_result:
-                step_index = session["step_index"]
-                session["completed_steps"].append(step_index)
-                session["step_index"] = step_index + 1
-                session["selected_indices"] = []
-                session["step_expanded"] = False
-                session["assembly_phase"] = 0
-                session["assembly_transforms_done"] = []
+            # Check if all transforms now complete → auto-skip if answer is spelled out
+            if len(transforms_done) == len(transforms):
+                position_map = _compute_position_map(step)
+                completed_letters = _compute_completed_letters(transforms_done, position_map, step)
+                final_result = re.sub(r'[^A-Z]', '', step["result"].upper())
+                assembled = "".join(l for l in completed_letters if l)
+
+                if assembled == final_result:
+                    # Auto-skip check phase
+                    step_index = session["step_index"]
+                    session["completed_steps"].append(step_index)
+                    session["step_index"] = step_index + 1
+                    session["selected_indices"] = []
+                    session["step_expanded"] = False
+                    session["assembly_transforms_done"] = {}
+                    session["assembly_hint_index"] = None
 
             return {"correct": True, "render": get_render(clue_id, clue)}
         else:
             return {"correct": False, "render": get_render(clue_id, clue)}
 
-    elif phase_idx == len(transforms):
-        # Assembly check phase: validate assembled result
+    elif transform_index is None:
+        # Check phase: validate the full assembled result
+        all_done = len(transforms_done) == len(transforms)
+        if not all_done:
+            raise ValueError("Cannot check assembly: not all transforms completed")
+
         expected = step["result"]
         user_text = re.sub(r'[^A-Z]', '', str(value).upper())
         expected_text = re.sub(r'[^A-Z]', '', expected.upper())
@@ -411,14 +442,100 @@ def _handle_assembly_input(session, step, clue, clue_id, value):
             session["selected_indices"] = []
             session["hint_visible"] = False
             session["step_expanded"] = False
-            session["assembly_phase"] = 0
-            session["assembly_transforms_done"] = []
+            session["assembly_transforms_done"] = {}
+            session["assembly_hint_index"] = None
             return {"correct": True, "render": get_render(clue_id, clue)}
         else:
             return {"correct": False, "render": get_render(clue_id, clue)}
 
     else:
-        raise ValueError(f"Invalid assembly_phase: {phase_idx}")
+        raise ValueError(f"Invalid transform_index: {transform_index}")
+
+
+def _compute_position_map(step):
+    """Compute which final-answer positions each terminal transform fills.
+
+    A transform is 'terminal' if no later dependent transform supersedes it.
+    For containers: find where inner sits inside outer via pattern matching.
+    For charades/chains: terminal transforms concatenate left-to-right.
+    """
+    transforms = step["transforms"]
+    result = re.sub(r'[^A-Z]', '', step["result"].upper())
+    DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
+
+    # Identify terminal transforms (those not superseded by a later dependent)
+    terminal = set(range(len(transforms)))
+    for i, t in enumerate(transforms):
+        if i > 0 and t.get("type", "") in DEPENDENT_TYPES:
+            if t.get("type", "") == "anagram":
+                # Anagram rearranges ALL prior results — discard all predecessors
+                for j in range(i):
+                    terminal.discard(j)
+            else:
+                # Deletion/reversal only modifies the immediately preceding result
+                terminal.discard(i - 1)
+
+    # Check if this is a container clue (has outer/inner roles)
+    roles = {t["role"] for t in transforms}
+
+    if "outer" in roles and "inner" in roles:
+        return _compute_container_positions(transforms, terminal, result)
+    else:
+        return _compute_charade_positions(transforms, terminal, result)
+
+
+def _compute_container_positions(transforms, terminal, result):
+    """For container clues: find where inner word sits inside outer word."""
+    outer_idx = None
+    inner_idx = None
+    for i, t in enumerate(transforms):
+        if t["role"] == "outer" and i in terminal:
+            outer_idx = i
+        if t["role"] == "inner" and i in terminal:
+            inner_idx = i
+
+    if outer_idx is None or inner_idx is None:
+        return {}
+
+    outer_result = re.sub(r'[^A-Z]', '', transforms[outer_idx]["result"].upper())
+    inner_result = re.sub(r'[^A-Z]', '', transforms[inner_idx]["result"].upper())
+
+    for insert_pos in range(len(result) - len(inner_result) + 1):
+        if result[insert_pos:insert_pos + len(inner_result)] == inner_result:
+            remaining = result[:insert_pos] + result[insert_pos + len(inner_result):]
+            if remaining == outer_result:
+                outer_positions = list(range(0, insert_pos)) + list(range(insert_pos + len(inner_result), len(result)))
+                inner_positions = list(range(insert_pos, insert_pos + len(inner_result)))
+                return {outer_idx: outer_positions, inner_idx: inner_positions}
+
+    return {}
+
+
+def _compute_charade_positions(transforms, terminal, result):
+    """For charade/chain clues: terminal transforms concatenate left-to-right."""
+    position_map = {}
+    pos = 0
+    for idx in sorted(terminal):
+        t_result = re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper())
+        positions = list(range(pos, pos + len(t_result)))
+        position_map[idx] = positions
+        pos += len(t_result)
+    return position_map
+
+
+def _compute_completed_letters(transforms_done, position_map, step):
+    """Build the partially-filled answer array from completed transforms."""
+    result = re.sub(r'[^A-Z]', '', step["result"].upper())
+    letters = [None] * len(result)
+
+    for idx, transform_result in transforms_done.items():
+        if idx in position_map:
+            clean_result = re.sub(r'[^A-Z]', '', transform_result.upper())
+            for i, pos in enumerate(position_map[idx]):
+                if i < len(clean_result) and pos < len(letters):
+                    letters[pos] = clean_result[i]
+
+    return letters
 
 
 def _build_step_list(session, clue):

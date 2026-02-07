@@ -53,6 +53,32 @@ class TemplateTrainer {
         }
     }
 
+    async submitAssemblyTransform(transformIndex, value) {
+        try {
+            const resp = await fetch('/trainer/input', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clue_id: this.clueId, value, transform_index: transformIndex })
+            });
+            const data = await resp.json();
+
+            if (data.correct) {
+                this.feedback = { type: 'success', message: 'Correct!' };
+            } else {
+                this.feedback = { type: 'error', message: 'Not quite — try again.' };
+            }
+
+            if (data.render) {
+                this.render = data.render;
+            }
+            this.renderUI();
+
+            setTimeout(() => { this.feedback = null; this.renderUI(); }, 1500);
+        } catch (err) {
+            console.error('submitAssemblyTransform error:', err);
+        }
+    }
+
     async updateUIState(action, data = {}) {
         try {
             const resp = await fetch('/trainer/ui-state', {
@@ -366,12 +392,15 @@ class TemplateTrainer {
         // Fail message — simple italic text, not a box
         html += `<div style="font-size: 0.8rem; color: #b45309; margin-bottom: 1rem; font-style: italic; line-height: 1.5;">${data.failMessage}</div>`;
 
-        // Transforms
+        // Transforms — all visible at once (active, completed, or locked)
         for (let i = 0; i < data.transforms.length; i++) {
             html += this.renderTransformInput(data.transforms[i], i);
         }
 
-        // Assembly check
+        // Combined result display — shows answer forming below transforms
+        html += this.renderCombinedResult(data);
+
+        // Assembly check (only when all transforms done but auto-skip didn't fire)
         if (data.phase === 'check') {
             html += this.renderAssemblyCheck(data);
         }
@@ -382,6 +411,7 @@ class TemplateTrainer {
 
     renderTransformInput(transform, index) {
         let html = '';
+        const tIdx = transform.index !== undefined ? transform.index : index;
 
         if (transform.status === 'completed') {
             // Completed — compact single line
@@ -399,7 +429,7 @@ class TemplateTrainer {
             html += `<div style="display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">`;
             html += `<span style="font-size: 0.8rem; color: #334155; flex: 1; line-height: 1.5;">${transform.prompt}</span>`;
             if (transform.hint) {
-                html += `<span class="assembly-hint-toggle" style="cursor: pointer; width: 20px; height: 20px; border-radius: 50%; background: ${transform.hintVisible ? '#3b82f6' : '#e2e8f0'}; color: ${transform.hintVisible ? 'white' : '#94a3b8'}; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Hint">?</span>`;
+                html += `<span class="assembly-hint-toggle" data-transform-index="${tIdx}" style="cursor: pointer; width: 20px; height: 20px; border-radius: 50%; background: ${transform.hintVisible ? '#3b82f6' : '#e2e8f0'}; color: ${transform.hintVisible ? 'white' : '#94a3b8'}; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Hint">?</span>`;
             }
             html += `</div>`;
 
@@ -411,23 +441,54 @@ class TemplateTrainer {
             // Letter boxes
             html += `<div style="display: flex; gap: 4px; align-items: center;">`;
             for (let i = 0; i < transform.letterCount; i++) {
-                html += `<input type="text" class="assembly-transform-letter" data-transform-index="${index}" data-letter-pos="${i}" `
+                html += `<input type="text" class="assembly-transform-letter" data-transform-index="${tIdx}" data-letter-pos="${i}" `
                     + `maxlength="1" `
                     + `style="width: 2.2rem; height: 2.4rem; text-align: center; border: none; border-bottom: 3px solid #93c5fd; border-radius: 0; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; background: white; outline: none;" />`;
             }
-            html += `<button class="assembly-transform-submit" data-transform-index="${index}" style="margin-left: 0.5rem; padding: 0.35rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 1rem; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Check</button>`;
+            html += `<button class="assembly-transform-submit" data-transform-index="${tIdx}" style="margin-left: 0.5rem; padding: 0.35rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 1rem; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Check</button>`;
             html += `</div>`;
 
             html += `</div>`;
 
-        } else {
-            // Pending — very minimal
-            html += `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; opacity: 0.3;">`;
-            html += `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#94a3b8" stroke-width="1.5"/></svg>`;
-            html += `<span style="font-size: 0.8rem; color: #94a3b8;">${transform.letterCount} letters</span>`;
+        } else if (transform.status === 'locked') {
+            // Locked — waiting for predecessor transforms
+            html += `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; margin-bottom: 0.25rem; opacity: 0.4;">`;
+            html += `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="4" y="7" width="8" height="6" rx="1" stroke="#94a3b8" stroke-width="1.2" fill="none"/><path d="M6 7V5a2 2 0 0 1 4 0v2" stroke="#94a3b8" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>`;
+            html += `<span style="font-size: 0.8rem; color: #94a3b8;">'${transform.clueWord}' (${transform.letterCount} letters) \u2014 solve earlier steps first</span>`;
             html += `</div>`;
         }
 
+        return html;
+    }
+
+    renderCombinedResult(data) {
+        const letters = data.completedLetters;
+        if (!letters || !data.resultParts) return '';
+
+        // Only show if at least one letter is filled in
+        const anyFilled = letters.some(l => l !== null);
+        if (!anyFilled) return '';
+
+        let html = '<div style="margin: 0.75rem 0; padding: 0.6rem 0; border-top: 1px solid #e2e8f0;">';
+        html += '<div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.4rem;">Building the answer:</div>';
+        html += '<div style="display: flex; gap: 3px; flex-wrap: wrap;">';
+
+        let letterIdx = 0;
+        for (let p = 0; p < data.resultParts.length; p++) {
+            if (p > 0) html += '<div style="width: 8px;"></div>';
+            for (let c = 0; c < data.resultParts[p]; c++) {
+                const letter = letters[letterIdx];
+                const filled = letter !== null;
+                const borderColor = filled ? '#22c55e' : '#e2e8f0';
+                const bg = filled ? '#f0fdf4' : '#fafafa';
+                const textColor = filled ? '#15803d' : '#94a3b8';
+
+                html += `<div style="width: 2rem; height: 2.2rem; display: flex; align-items: center; justify-content: center; border-bottom: 3px solid ${borderColor}; background: ${bg}; font-size: 1rem; font-weight: 700; font-family: monospace; color: ${textColor}; letter-spacing: 0.05em;">${letter || ''}</div>`;
+                letterIdx++;
+            }
+        }
+
+        html += '</div></div>';
         return html;
     }
 
@@ -509,23 +570,24 @@ class TemplateTrainer {
             });
         });
 
-        // Assembly transform submit
+        // Assembly transform submit — sends transform_index to server
         this.container.querySelectorAll('.assembly-transform-submit').forEach(el => {
             el.addEventListener('click', () => {
-                const transformIdx = el.dataset.transformIndex;
+                const transformIdx = parseInt(el.dataset.transformIndex, 10);
                 const letters = [];
                 this.container.querySelectorAll(`.assembly-transform-letter[data-transform-index="${transformIdx}"]`).forEach(box => {
                     letters.push(box.value || '');
                 });
-                this.submitInput(letters.join(''));
+                this.submitAssemblyTransform(transformIdx, letters.join(''));
             });
         });
 
-        // Assembly hint toggle
+        // Assembly hint toggle — per-transform hint visibility
         this.container.querySelectorAll('.assembly-hint-toggle').forEach(el => {
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this.updateUIState('toggle_hint');
+                const transformIdx = parseInt(el.dataset.transformIndex, 10);
+                this.updateUIState('toggle_assembly_hint', { transform_index: transformIdx });
             });
         });
 

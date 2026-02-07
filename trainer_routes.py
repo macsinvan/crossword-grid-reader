@@ -165,7 +165,8 @@ def trainer_input():
         return jsonify({'error': 'Invalid clue_id'}), 400
 
     try:
-        result = training_handler.handle_input(clue_id, CLUES_DB[clue_id], value)
+        transform_index = data.get('transform_index')  # None for non-assembly inputs
+        result = training_handler.handle_input(clue_id, CLUES_DB[clue_id], value, transform_index=transform_index)
         return jsonify(result)
     except Exception as e:
         import traceback
