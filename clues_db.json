@@ -1429,90 +1429,74 @@
     },
     "times-29453-7d": {
       "id": "times-29453-7d",
-      "clue": {
-        "number": "7D",
-        "text": "Summits welcoming American patronage",
-        "enumeration": "8",
-        "answer": "AUSPICES",
-        "definition": [
-          {
-            "text": "patronage",
-            "position": "end"
-          }
-        ]
+      "clue": "Summits welcoming American patronage",
+      "number": "7D",
+      "enumeration": "8",
+      "answer": "AUSPICES",
+      "words": ["Summits", "welcoming", "American", "patronage"],
+      "clue_type": "container",
+      "difficulty": {
+        "definition": "medium",
+        "wordplay": "medium",
+        "overall": "medium"
       },
-      "words": [
-        "Summits",
-        "welcoming",
-        "American",
-        "patronage"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              3
-            ],
-            "text": "patronage"
-          },
+          "type": "definition",
+          "indices": [3],
           "position": "end",
-          "explicit": true,
-          "hint": "Support or protection from a powerful person or organization",
-          "difficulty": "Medium"
+          "hint": "Support or protection from someone powerful — think of acting 'under the auspices of' an organisation"
         },
         {
-          "type": "container",
-          "template": "insertion_with_one_synonym_outer",
-          "indicator": {
-            "indices": [
-              1
-            ],
-            "text": "welcoming",
-            "reasoning": "'welcoming' suggests receiving something inside"
-          },
-          "outer": {
-            "fodder": {
-              "indices": [
-                0
-              ],
-              "text": "Summits"
+          "type": "indicator",
+          "indices": [1],
+          "menuTitle": "Find the indicator",
+          "completedTitle": "'welcoming' — one word goes inside another",
+          "prompt": "One word here tells you that something is being placed inside something else. Which word?",
+          "intro": "Now that you have the definition, look at the remaining words. One of them is a signal — it tells you HOW the wordplay works.",
+          "hint": "'Welcoming' suggests receiving something into yourself — a container indicator"
+        },
+        {
+          "type": "outer_word",
+          "indices": [0],
+          "menuTitle": "What wraps around?",
+          "completedTitle": "'Summits' is the outer word",
+          "prompt": "Which word provides the letters that wrap around the outside?",
+          "intro": "In a container clue, one word goes inside another. Which word here is doing the 'welcoming' — providing the space for something to fit inside?",
+          "hint": "'Summits' is the host — it 'welcomes' something into itself"
+        },
+        {
+          "type": "inner_word",
+          "indices": [2],
+          "menuTitle": "What goes inside?",
+          "completedTitle": "'American' goes inside",
+          "prompt": "Which word provides the letters that go inside?",
+          "intro": "You've found what wraps around. Now which word provides the letters that slot inside?",
+          "hint": "'American' is the guest being welcomed in"
+        },
+        {
+          "type": "assembly",
+          "intro": "You've identified all the pieces. But 'Summits' is 7 letters and 'American' is 8 — far too many for an 8-letter answer. Each clue word is pointing to a shorter word. Work out what each one really means.",
+          "failMessage": "Put the short word for 'American' inside the short word for 'Summits'. The letters should spell the answer.",
+          "transforms": [
+            {
+              "role": "outer",
+              "indices": [0],
+              "type": "synonym",
+              "result": "APICES",
+              "hint": "Summits = peaks. The plural of 'apex' is a less common word — think Latin plurals"
             },
-            "result": "APICES",
-            "reasoning": "Apices is plural of apex (summit/peak)"
-          },
-          "inner": {
-            "fodder": {
-              "indices": [
-                2
-              ],
-              "text": "American"
-            },
-            "result": "US",
-            "reasoning": "US = United States (American)"
-          },
-          "result": "AUSPICES",
-          "assembly": "A + US + PICES = AUSPICES"
+            {
+              "role": "inner",
+              "indices": [2],
+              "type": "abbreviation",
+              "result": "US",
+              "hint": "A two-letter abbreviation for American that you see every day"
+            }
+          ],
+          "result": "AUSPICES"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "medium",
-          "hint": "Support or protection from a powerful person or organization"
-        },
-        "wordplay": {
-          "rating": "medium",
-          "hint": "A word for peaks contains an abbreviation"
-        },
-        "overall": "medium",
-        "recommendedApproach": "definition"
-      },
-      "verified": true
+      ]
     },
     "times-29453-4a": {
       "id": "times-29453-4a",
