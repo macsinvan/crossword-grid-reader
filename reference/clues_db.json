@@ -2456,54 +2456,91 @@
     },
     "times-29453-17d": {
       "id": "times-29453-17d",
-      "clue": "Embankment architect lengthened with cob?",
-      "number": "17D",
-      "enumeration": "5,3",
-      "answer": "ASWAN DAM",
-      "words": ["Embankment", "architect", "lengthened", "with", "cob"],
-      "clue_type": "standard",
-      "difficulty": {
-        "definition": "medium",
-        "wordplay": "hard",
-        "overall": "hard"
+      "clue": {
+        "number": "17D",
+        "text": "Embankment architect lengthened with cob?",
+        "enumeration": "5,3",
+        "answer": "ASWAN DAM",
+        "definition": [
+          {
+            "text": "Embankment",
+            "position": "start"
+          }
+        ]
       },
+      "words": [
+        "Embankment",
+        "architect",
+        "lengthened",
+        "with",
+        "cob"
+      ],
       "steps": [
         {
-          "type": "definition",
-          "indices": [0],
+          "type": "standard_definition",
+          "expected": {
+            "indices": [
+              0
+            ],
+            "text": "Embankment"
+          },
           "position": "start",
+          "explicit": true,
+          "hint": "A famous structure on the Nile river",
+          "difficulty": "Medium"
+        },
+        {
+          "type": "container",
+          "template": "insertion_with_two_synonyms",
+          "indicator": {
+            "indices": [
+              2
+            ],
+            "text": "lengthened",
+            "reasoning": "'lengthened' suggests stretching one word by adding letters from another word"
+          },
+          "outer": {
+            "fodder": {
+              "indices": [
+                1
+              ],
+              "text": "architect"
+            },
+            "result": "ADAM",
+            "reasoning": "Robert Adam was a famous British architect"
+          },
+          "inner": {
+            "fodder": {
+              "indices": [
+                4
+              ],
+              "text": "cob?"
+            },
+            "result": "SWAN",
+            "reasoning": "A cob is a male swan"
+          },
+          "result": "ASWAN DAM",
+          "assembly": "A + (SWAN) + DAM = ASWAN DAM"
+        }
+      ],
+      "metadata": {
+        "publisher": "Times",
+        "puzzle_number": "29453"
+      },
+      "publicationId": "times",
+      "difficulty": {
+        "definition": {
+          "rating": "medium",
           "hint": "A famous structure on the Nile river"
         },
-        {
-          "type": "container_indicator",
-          "indices": [2],
-          "hint": "'Lengthened' suggests stretching a word by putting letters inside it"
+        "wordplay": {
+          "rating": "hard",
+          "hint": "A famous architect's name with a bird inserted"
         },
-        {
-          "type": "synonym",
-          "role": "outer",
-          "indices": [1],
-          "result": "ADAM",
-          "hint": "Think of a famous British architect"
-        },
-        {
-          "type": "synonym",
-          "role": "inner",
-          "indices": [4],
-          "result": "SWAN",
-          "hint": "What kind of bird is a cob?"
-        },
-        {
-          "type": "assembly",
-          "parts": ["ADAM", "SWAN"],
-          "result": "ASWAN DAM",
-          "method": "container"
-        },
-        {
-          "type": "answer",
-          "expected": "ASWAN DAM"
-        }
-      ]
+        "overall": "hard",
+        "recommendedApproach": "definition"
+      },
+      "verified": true
     },
     "times-29453-22a": {
       "id": "times-29453-22a",
