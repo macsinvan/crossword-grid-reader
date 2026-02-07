@@ -172,15 +172,18 @@ class TemplateTrainer {
                        : '<span style="color: #94a3b8;">&#9675;</span>';
 
             const titleColor = isCompleted ? '#16a34a' : isActive ? '#1e293b' : '#64748b';
-            const cursor = isCompleted || isActive ? 'default' : 'pointer';
+            const isExpanded = isActive && r.stepExpanded;
+            const cursor = isActive ? 'pointer' : isCompleted ? 'default' : 'default';
+            const chevron = isActive ? (isExpanded ? '&#9660;' : '&#9654;') : '';
 
             html += `<div style="margin-bottom: 0.25rem;">`;
-            html += `<div class="step-header" data-step-index="${step.index}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; cursor: ${cursor}; border-radius: 0.375rem; ${isActive ? 'background: #f0f9ff;' : ''}">`;
+            html += `<div class="${isActive ? 'step-header-active' : 'step-header'}" data-step-index="${step.index}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem; cursor: ${cursor}; border-radius: 0.375rem; ${isActive ? 'background: #f0f9ff;' : ''}">`;
             html += `${icon} <span style="font-size: 0.9rem; color: ${titleColor}; font-weight: ${isActive ? '600' : '400'};">${step.index + 1}. ${step.title}</span>`;
+            if (chevron) html += `<span style="font-size: 0.6rem; color: #94a3b8; margin-left: auto;">${chevron}</span>`;
             html += `</div>`;
 
-            // Expanded content for active step
-            if (isActive && currentStep) {
+            // Expanded content for active step (only when expanded)
+            if (isExpanded && currentStep) {
                 html += this.renderActiveStep(r, currentStep);
             }
 
@@ -344,6 +347,13 @@ class TemplateTrainer {
     // =========================================================================
 
     attachEventListeners() {
+        // Active step header click (expand/collapse)
+        this.container.querySelectorAll('.step-header-active').forEach(el => {
+            el.addEventListener('click', () => {
+                this.updateUIState('expand_step');
+            });
+        });
+
         // Word chip clicks
         this.container.querySelectorAll('.word-chip').forEach(el => {
             el.addEventListener('click', () => {

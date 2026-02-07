@@ -49,6 +49,7 @@ def start_session(clue_id, clue):
         "completed_steps": [],
         "selected_indices": [],
         "hint_visible": False,
+        "step_expanded": False,
         "user_answer": [],
         "answer_locked": False,
         "highlights": [],
@@ -120,6 +121,7 @@ def get_render(clue_id, clue):
         "enumeration": clue["enumeration"],
         "steps": step_list,
         "currentStep": current_step,
+        "stepExpanded": session["step_expanded"],
         "highlights": session["highlights"],
         "selectedIndices": session["selected_indices"],
         "userAnswer": session["user_answer"],
@@ -172,6 +174,7 @@ def handle_input(clue_id, clue, value):
         session["step_index"] = step_index + 1
         session["selected_indices"] = []
         session["hint_visible"] = False
+        session["step_expanded"] = False
 
         return {"correct": True, "render": get_render(clue_id, clue)}
     else:
@@ -197,6 +200,9 @@ def update_ui_state(clue_id, clue, action, data):
 
     elif action == "type_answer":
         session["user_answer"] = data.get("letters", [])
+
+    elif action == "expand_step":
+        session["step_expanded"] = True
 
     elif action == "type_step_input":
         # For text input steps (not used in definition, but ready)
