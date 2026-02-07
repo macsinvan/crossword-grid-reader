@@ -2490,15 +2490,25 @@
           "hint": "Which remaining word gets placed inside?"
         },
         {
-          "type": "assembly",
+          "type": "container_assembly",
           "method": "container",
-          "outer": {"indices": [1], "result": "ADAM", "hint": "Think of a famous British architect"},
-          "inner": {"indices": [4], "result": "SWAN", "hint": "What kind of bird is a cob?"},
+          "transforms": [
+            {
+              "role": "outer",
+              "indices": [1],
+              "type": "synonym",
+              "result": "ADAM",
+              "hint": "Robert Adam was a famous British architect"
+            },
+            {
+              "role": "inner",
+              "indices": [4],
+              "type": "synonym",
+              "result": "SWAN",
+              "hint": "A male swan is called a cob"
+            }
+          ],
           "result": "ASWAN DAM"
-        },
-        {
-          "type": "answer",
-          "expected": "ASWAN DAM"
         }
       ]
     },

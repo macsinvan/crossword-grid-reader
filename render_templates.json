@@ -43,5 +43,14 @@
     "hint": "Which remaining word in the clue hasn\u2019t been used yet?",
     "expected_source": "indices",
     "onCorrect": "'{words}' goes inside."
+  },
+  "container_assembly": {
+    "inputMode": "assembly",
+    "prompt": "Now put it all together",
+    "menuTitle": "Put it together",
+    "completedTitle": "Assembled: {result}",
+    "intro": "The clue words themselves don't give you the right letters. Each one is pointing to something else.",
+    "expected_source": "result",
+    "onCorrect": "The letters combine to give {result}."
   }
 }

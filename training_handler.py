@@ -53,6 +53,8 @@ def start_session(clue_id, clue):
         "user_answer": [],
         "answer_locked": False,
         "highlights": [],
+        "assembly_phase": 0,
+        "assembly_transforms_done": [],
     }
     return get_render(clue_id, clue)
 
@@ -110,6 +112,10 @@ def get_render(clue_id, clue):
 
         current_step["hintVisible"] = session["hint_visible"]
 
+        # Assembly-specific data
+        if step["type"] == "container_assembly":
+            current_step["assemblyData"] = _build_assembly_data(session, step, clue)
+
         # Completion text for completed steps
         if step_index in session["completed_steps"]:
             current_step["completionText"] = _resolve_on_correct(template, step, clue)
@@ -147,6 +153,10 @@ def handle_input(clue_id, clue, value):
     if not template:
         raise ValueError(f"No render template for step type '{step['type']}'. Add it to render_templates.json.")
 
+    # Assembly steps have their own multi-phase validation
+    if step["type"] == "container_assembly":
+        return _handle_assembly_input(session, step, clue, clue_id, value)
+
     input_mode = template["inputMode"]
     expected = _resolve_expected(step, template)
 
@@ -175,6 +185,8 @@ def handle_input(clue_id, clue, value):
         session["selected_indices"] = []
         session["hint_visible"] = False
         session["step_expanded"] = False
+        session["assembly_phase"] = 0
+        session["assembly_transforms_done"] = []
 
         return {"correct": True, "render": get_render(clue_id, clue)}
     else:
@@ -247,6 +259,106 @@ def check_answer(clue_id, clue, answer):
 
 
 # --- Internal helpers ---
+
+def _build_assembly_data(session, step, clue):
+    """Build the assemblyData payload for a container_assembly step."""
+    transforms = step["transforms"]
+    phase_idx = session["assembly_phase"]
+    transforms_done = session["assembly_transforms_done"]
+    words = clue["words"]
+
+    # Build raw fail message from clue words at transform indices
+    raw_words = []
+    for t in transforms:
+        t_words = [words[i] for i in t["indices"]]
+        raw_words.append(" ".join(t_words))
+    fail_message = " + ".join(raw_words) + " doesn\u2019t give us the right letters\u2026"
+
+    # Build transform display data
+    transform_list = []
+    for i, t in enumerate(transforms):
+        clue_word = " ".join(words[idx] for idx in t["indices"])
+        if i < len(transforms_done):
+            status = "completed"
+            result = transforms_done[i]
+        elif i == phase_idx:
+            status = "active"
+            result = None
+        else:
+            status = "pending"
+            result = None
+
+        transform_list.append({
+            "role": t["role"],
+            "clueWord": clue_word,
+            "prompt": f"What does \u2018{clue_word.lower()}\u2019 really mean?",
+            "letterCount": len(re.sub(r'[^A-Z]', '', t["result"].upper())),
+            "status": status,
+            "result": result,
+            "hint": t.get("hint", ""),
+            "hintVisible": (i == phase_idx and session["hint_visible"]),
+        })
+
+    # Determine phase and result parts
+    if phase_idx < len(transforms):
+        phase = "transform"
+    else:
+        phase = "check"
+
+    # Compute result letter grouping for tile spacing (e.g. "ASWAN DAM" → [5, 3])
+    result_text = step["result"]
+    result_parts = [len(word) for word in result_text.split()]
+
+    return {
+        "phase": phase,
+        "failMessage": fail_message,
+        "transformIndex": phase_idx if phase_idx < len(transforms) else None,
+        "transforms": transform_list,
+        "resultParts": result_parts,
+    }
+
+
+def _handle_assembly_input(session, step, clue, clue_id, value):
+    """Handle input for the container_assembly step's multi-phase flow."""
+    transforms = step["transforms"]
+    phase_idx = session["assembly_phase"]
+
+    if phase_idx < len(transforms):
+        # Transform phase: validate text input
+        expected = transforms[phase_idx]["result"]
+        user_text = re.sub(r'[^A-Z]', '', str(value).upper())
+        expected_text = re.sub(r'[^A-Z]', '', expected.upper())
+
+        if user_text == expected_text:
+            session["assembly_transforms_done"].append(expected.upper())
+            session["assembly_phase"] = phase_idx + 1
+            session["hint_visible"] = False
+            return {"correct": True, "render": get_render(clue_id, clue)}
+        else:
+            return {"correct": False, "render": get_render(clue_id, clue)}
+
+    elif phase_idx == len(transforms):
+        # Assembly check phase: validate assembled result
+        expected = step["result"]
+        user_text = re.sub(r'[^A-Z]', '', str(value).upper())
+        expected_text = re.sub(r'[^A-Z]', '', expected.upper())
+
+        if user_text == expected_text:
+            step_index = session["step_index"]
+            session["completed_steps"].append(step_index)
+            session["step_index"] = step_index + 1
+            session["selected_indices"] = []
+            session["hint_visible"] = False
+            session["step_expanded"] = False
+            session["assembly_phase"] = 0
+            session["assembly_transforms_done"] = []
+            return {"correct": True, "render": get_render(clue_id, clue)}
+        else:
+            return {"correct": False, "render": get_render(clue_id, clue)}
+
+    else:
+        raise ValueError(f"Invalid assembly_phase: {phase_idx}")
+
 
 def _build_step_list(session, clue):
     """Build the step summary list for the sidebar/menu."""

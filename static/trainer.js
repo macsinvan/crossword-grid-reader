@@ -206,6 +206,11 @@ class TemplateTrainer {
     // =========================================================================
 
     renderActiveStep(r, step) {
+        // Assembly steps have their own rendering
+        if (step.inputMode === 'assembly') {
+            return this.renderAssemblyContent(r, step);
+        }
+
         let html = '<div style="margin-left: 1.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 0.375rem; border: 1px solid #e2e8f0; margin-bottom: 0.5rem;">';
 
         // Word chips for tap_words
@@ -262,6 +267,123 @@ class TemplateTrainer {
         }
 
         html += '</div>';
+        return html;
+    }
+
+    // =========================================================================
+    // ASSEMBLY STEP
+    // =========================================================================
+
+    renderAssemblyContent(r, step) {
+        const data = step.assemblyData;
+        if (!data) {
+            return '<div style="margin-left: 1.75rem; padding: 0.75rem; color: #dc2626;">Assembly data missing.</div>';
+        }
+
+        let html = '<div style="margin-left: 1.75rem; padding: 0.75rem; background: #f8fafc; border-radius: 0.375rem; border: 1px solid #e2e8f0; margin-bottom: 0.5rem;">';
+
+        // Intro text
+        if (step.intro) {
+            html += `<div style="font-size: 0.85rem; color: #475569; margin-bottom: 0.75rem; line-height: 1.5;">${step.intro}</div>`;
+        }
+
+        // Fail message — shows the raw words don't work
+        html += `<div style="font-size: 0.85rem; color: #b45309; background: #fffbeb; padding: 0.5rem 0.75rem; border-radius: 0.375rem; margin-bottom: 0.75rem; border-left: 3px solid #f59e0b;">`;
+        html += `${data.failMessage}`;
+        html += `</div>`;
+
+        // Transform inputs
+        for (let i = 0; i < data.transforms.length; i++) {
+            html += this.renderTransformInput(data.transforms[i], i);
+        }
+
+        // Assembly check (when all transforms done)
+        if (data.phase === 'check') {
+            html += this.renderAssemblyCheck(data);
+        }
+
+        html += '</div>';
+        return html;
+    }
+
+    renderTransformInput(transform, index) {
+        let html = '';
+
+        if (transform.status === 'completed') {
+            // Completed transform — green summary
+            html += `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: #f0fdf4; border-radius: 0.375rem; margin-bottom: 0.5rem; border-left: 3px solid #16a34a;">`;
+            html += `<span style="color: #16a34a;">&#10003;</span>`;
+            html += `<span style="font-size: 0.85rem; color: #166534;">${transform.prompt}</span>`;
+            html += `<span style="font-size: 0.9rem; font-weight: 600; color: #16a34a; font-family: monospace; letter-spacing: 0.1em; margin-left: auto;">${transform.result}</span>`;
+            html += `</div>`;
+
+        } else if (transform.status === 'active') {
+            // Active transform — text input with letter boxes
+            html += `<div style="padding: 0.5rem 0.75rem; background: #eff6ff; border-radius: 0.375rem; margin-bottom: 0.5rem; border-left: 3px solid #3b82f6;">`;
+
+            // Prompt with hint lightbulb
+            html += `<div style="font-size: 0.85rem; color: #1e40af; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">`;
+            html += `<span>${transform.prompt}</span>`;
+            if (transform.hint) {
+                html += `<span class="assembly-hint-toggle" style="cursor: pointer; font-size: 1.25rem; opacity: ${transform.hintVisible ? '1' : '0.5'};" title="Show hint">&#128161;</span>`;
+            }
+            html += `</div>`;
+
+            // Hint text (revealed)
+            if (transform.hintVisible && transform.hint) {
+                html += `<div style="font-size: 0.85rem; color: #1e40af; background: #dbeafe; padding: 0.5rem 0.75rem; border-radius: 0.375rem; margin-bottom: 0.5rem;">`;
+                html += `&#128161; ${transform.hint}`;
+                html += `</div>`;
+            }
+
+            // Letter input boxes
+            html += `<div style="display: flex; gap: 0.25rem; align-items: center; flex-wrap: wrap;">`;
+            for (let i = 0; i < transform.letterCount; i++) {
+                html += `<input type="text" class="assembly-transform-letter" data-transform-index="${index}" data-letter-pos="${i}" `
+                    + `maxlength="1" `
+                    + `style="width: 2rem; height: 2rem; text-align: center; border: 1px solid #93c5fd; border-radius: 0.25rem; font-size: 1rem; font-weight: 600; text-transform: uppercase; background: white;" />`;
+            }
+            html += `<button class="assembly-transform-submit" data-transform-index="${index}" style="margin-left: 0.5rem; padding: 0.25rem 0.75rem; background: #3b82f6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-size: 0.8rem;">Check</button>`;
+            html += `</div>`;
+
+            html += `</div>`;
+
+        } else {
+            // Pending transform — grayed out
+            html += `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: #f1f5f9; border-radius: 0.375rem; margin-bottom: 0.5rem; opacity: 0.5;">`;
+            html += `<span style="color: #94a3b8;">&#9675;</span>`;
+            html += `<span style="font-size: 0.85rem; color: #64748b;">${transform.prompt}</span>`;
+            html += `<span style="font-size: 0.8rem; color: #94a3b8; margin-left: auto;">${transform.letterCount} letters</span>`;
+            html += `</div>`;
+        }
+
+        return html;
+    }
+
+    renderAssemblyCheck(data) {
+        let html = '';
+
+        html += `<div style="padding: 0.5rem 0.75rem; background: #faf5ff; border-radius: 0.375rem; margin-bottom: 0.5rem; border-left: 3px solid #8b5cf6;">`;
+        html += `<div style="font-size: 0.85rem; color: #6d28d9; margin-bottom: 0.5rem;">Now combine them \u2014 type the full answer:</div>`;
+
+        // Letter tiles with word spacing from resultParts
+        html += `<div style="display: flex; gap: 0.25rem; align-items: center; flex-wrap: wrap;">`;
+        let letterIdx = 0;
+        for (let p = 0; p < data.resultParts.length; p++) {
+            if (p > 0) {
+                html += '<div style="width: 0.5rem;"></div>';
+            }
+            for (let c = 0; c < data.resultParts[p]; c++) {
+                html += `<input type="text" class="assembly-result-letter" data-letter-pos="${letterIdx}" `
+                    + `maxlength="1" `
+                    + `style="width: 2rem; height: 2rem; text-align: center; border: 1px solid #c4b5fd; border-radius: 0.25rem; font-size: 1rem; font-weight: 600; text-transform: uppercase; background: white;" />`;
+                letterIdx++;
+            }
+        }
+        html += `<button class="assembly-check-btn" style="margin-left: 0.5rem; padding: 0.25rem 0.75rem; background: #8b5cf6; color: white; border: none; border-radius: 0.25rem; cursor: pointer; font-size: 0.8rem;">Check Answer</button>`;
+        html += `</div>`;
+
+        html += `</div>`;
         return html;
     }
 
@@ -366,6 +488,96 @@ class TemplateTrainer {
         this.container.querySelectorAll('.hint-toggle').forEach(el => {
             el.addEventListener('click', () => {
                 this.updateUIState('toggle_hint');
+            });
+        });
+
+        // Assembly transform letter inputs
+        this.container.querySelectorAll('.assembly-transform-letter').forEach(el => {
+            el.addEventListener('input', (e) => {
+                const letter = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                e.target.value = letter;
+
+                // Auto-advance to next letter box in same transform
+                if (letter) {
+                    const next = el.nextElementSibling;
+                    if (next?.classList?.contains('assembly-transform-letter')) {
+                        next.focus();
+                    }
+                }
+            });
+
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !el.value) {
+                    const prev = el.previousElementSibling;
+                    if (prev?.classList?.contains('assembly-transform-letter')) {
+                        prev.focus();
+                        prev.select();
+                    }
+                }
+            });
+        });
+
+        // Assembly transform submit
+        this.container.querySelectorAll('.assembly-transform-submit').forEach(el => {
+            el.addEventListener('click', () => {
+                const transformIdx = el.dataset.transformIndex;
+                const letters = [];
+                this.container.querySelectorAll(`.assembly-transform-letter[data-transform-index="${transformIdx}"]`).forEach(box => {
+                    letters.push(box.value || '');
+                });
+                this.submitInput(letters.join(''));
+            });
+        });
+
+        // Assembly hint toggle
+        this.container.querySelectorAll('.assembly-hint-toggle').forEach(el => {
+            el.addEventListener('click', () => {
+                this.updateUIState('toggle_hint');
+            });
+        });
+
+        // Assembly result letter inputs
+        this.container.querySelectorAll('.assembly-result-letter').forEach(el => {
+            el.addEventListener('input', (e) => {
+                const letter = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+                e.target.value = letter;
+
+                // Auto-advance to next letter box
+                if (letter) {
+                    let next = el.nextElementSibling;
+                    // Skip spacing divs
+                    while (next && !next.classList?.contains('assembly-result-letter')) {
+                        next = next.nextElementSibling;
+                    }
+                    if (next?.classList?.contains('assembly-result-letter')) {
+                        next.focus();
+                    }
+                }
+            });
+
+            el.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !el.value) {
+                    let prev = el.previousElementSibling;
+                    // Skip spacing divs
+                    while (prev && !prev.classList?.contains('assembly-result-letter')) {
+                        prev = prev.previousElementSibling;
+                    }
+                    if (prev?.classList?.contains('assembly-result-letter')) {
+                        prev.focus();
+                        prev.select();
+                    }
+                }
+            });
+        });
+
+        // Assembly check button
+        this.container.querySelectorAll('.assembly-check-btn').forEach(el => {
+            el.addEventListener('click', () => {
+                const letters = [];
+                this.container.querySelectorAll('.assembly-result-letter').forEach(box => {
+                    letters.push(box.value || '');
+                });
+                this.submitInput(letters.join(''));
             });
         });
 
