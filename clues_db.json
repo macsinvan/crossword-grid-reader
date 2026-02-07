@@ -240,105 +240,59 @@
     },
     "times-29453-5d": {
       "id": "times-29453-5d",
-      "clue": {
-        "number": "5D",
-        "text": "A lot of sharp turns, I'm afraid",
-        "enumeration": "3",
-        "answer": "EEK",
-        "definition": [
-          {
-            "text": "I'm afraid",
-            "position": "end"
-          }
-        ]
+      "clue": "A lot of sharp turns, I'm afraid",
+      "number": "5D",
+      "enumeration": "3",
+      "answer": "EEK",
+      "words": ["A", "lot", "of", "sharp", "turns", "I'm", "afraid"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "easy",
+        "wordplay": "medium",
+        "overall": "medium"
       },
-      "words": [
-        "A",
-        "lot",
-        "of",
-        "sharp",
-        "turns",
-        "I'm",
-        "afraid"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              5,
-              6
-            ],
-            "text": "I'm afraid"
-          },
+          "type": "definition",
+          "indices": [5, 6],
           "position": "end",
-          "explicit": true,
-          "hint": "An exclamation of fright, often seen in comics",
-          "difficulty": "Easy"
+          "hint": "An exclamation of fright, often seen in comics"
         },
         {
-          "type": "transformation_chain",
-          "template": "transformation_chain",
-          "steps": [
+          "type": "wordplay_type",
+          "expected": "Transformation chain",
+          "options": ["Charade", "Container", "Anagram", "Transformation chain"],
+          "hint": "Look for indicator words: 'a lot of' and 'turns' each tell you to do something to the word. That's a chain — one word transformed step by step."
+        },
+        {
+          "type": "chain_assembly",
+          "method": "chain",
+          "transforms": [
             {
-              "fodder": {
-                "indices": [
-                  3
-                ],
-                "text": "sharp"
-              },
-              "result": "KEEN",
+              "role": "part1",
+              "indices": [3],
               "type": "synonym",
-              "reasoning": "Keen means sharp, as in a keen edge"
+              "result": "KEEN",
+              "hint": "Keen means sharp, as in a keen edge or a keen blade"
             },
             {
-              "indicator": {
-                "indices": [
-                  0,
-                  1,
-                  2
-                ],
-                "text": "a lot of"
-              },
-              "fodder": "KEEN",
-              "result": "KEE",
+              "role": "part2",
+              "indices": [0, 1, 2],
               "type": "deletion",
-              "reasoning": "'A lot of' means take most - remove final letter"
+              "result": "KEE",
+              "hint": "'A lot of' means take most of the letters — drop the last one"
             },
             {
-              "indicator": {
-                "indices": [
-                  4
-                ],
-                "text": "turns"
-              },
-              "fodder": "KEE",
-              "result": "EEK",
+              "role": "part3",
+              "indices": [4],
               "type": "reversal",
-              "reasoning": "'turns' reverses KEE"
+              "result": "EEK",
+              "hint": "'Turns' tells you to reverse the letters"
             }
           ],
           "result": "EEK"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "easy",
-          "hint": "An exclamation of fright, often seen in comics"
-        },
-        "wordplay": {
-          "rating": "medium",
-          "hint": "Take most of a word meaning sharp/eager, then reverse it"
-        },
-        "overall": "medium",
-        "recommendedApproach": "definition"
-      },
-      "verified": true
+      ]
     },
     "times-29453-12a": {
       "id": "times-29453-12a",

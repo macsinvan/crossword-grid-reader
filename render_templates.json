@@ -71,5 +71,14 @@
     "intro": "In a charade, the wordplay breaks into parts that join end-to-end \u2014 often with no indicator word at all. Each part is a clue to a shorter word: a synonym, abbreviation, or clever association. Your job is to figure out what each one is really pointing to.",
     "expected_source": "result",
     "onCorrect": "The parts join to give {result}."
+  },
+  "chain_assembly": {
+    "inputMode": "assembly",
+    "prompt": "Follow the chain of operations",
+    "menuTitle": "Build the answer",
+    "completedTitle": "Result: {result}",
+    "intro": "This clue transforms a single word step by step. Start by finding the base word, then apply each operation in turn \u2014 the indicator words tell you what to do at each stage.",
+    "expected_source": "result",
+    "onCorrect": "The chain of operations gives {result}."
   }
 }

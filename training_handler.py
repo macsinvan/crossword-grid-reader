@@ -301,7 +301,7 @@ def _build_assembly_data(session, step, clue):
         "synonym": "Find a {n}-letter synonym for '{word}'",
         "abbreviation": "What's the common abbreviation for '{word}'? ({n} letters)",
         "literal": "'{word}' is used as-is — type it in ({n} letters)",
-        "reversal": "Reverse '{word}' — what do you get? ({n} letters)",
+        "reversal": "'{word}' tells you to reverse. What do you get? ({n} letters)",
         "deletion": "'{word}' tells you to shorten the previous answer. What's left? ({n} letters)",
         "letter_selection": "Pick the right letters from '{word}' ({n} letters)",
     }
