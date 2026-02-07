@@ -206,12 +206,39 @@ Grid uses CSS Grid with `1fr` units, NOT fixed pixel sizes. See `SPEC.md` Sectio
 
 Convert all 30 clues in `clues_db.json` from the old format to the new flat format with teaching steps. Verify each converted clue works end-to-end in browser.
 
-**Converted clues (verified):** 5D, 17D, 1A, 4A, 25A, 2D
+**Converted clues (verified):** 5D, 17D, 1A, 4A, 25A
+**Converted (not yet verified in browser):** 2D
 
-**Key rules for conversion:**
-- Follow the Step 2 Rule (see above): clues WITH indicators → indicator step (tap_words); clues WITHOUT indicators → wordplay_type step (multiple_choice)
-- Use 5D as the model for indicator clues, existing charades as model for no-indicator clues
-- Hints must teach cryptic conventions
+**Reference clues — study these BEFORE converting any new clue:**
+- **5D** — deletion + reversal chain (indicator clues, tap_words flow)
+- **1A** — container (indicator clue with wordplay_type step, then indicator, outer_word, inner_word)
+- **17D** — container (same pattern as 1A)
+- **4A** — charade (no indicators, multiple_choice wordplay_type step)
+- **25A** — charade (same pattern as 4A)
+
+**Old format** has nested `clue` object with `text`/`enumeration`/`answer`/`definition`, separate `metadata`, `publicationId`, `difficulty` with nested ratings, `verified` flag, and steps using `standard_definition`/`anagram`/etc types with `indicator`/`pieces`/`fodder` sub-objects.
+
+**New flat format** — top-level fields:
+```
+clue (string), number, enumeration, answer, words (array matching clue text exactly),
+clue_type, difficulty ({definition, wordplay, overall}), steps (array)
+```
+
+**Step types and flows:**
+- Step 1 always: `definition` (tap_words) — indices, position, hint
+- Step 2 depends on clue type (Step 2 Rule above):
+  - WITH indicators → `indicator` (tap_words) with menuTitle, completedTitle, prompt, intro, hint
+  - WITHOUT indicators → `wordplay_type` (multiple_choice) with expected, options, hint
+- Then type-specific steps: `fodder`, `outer_word`, `inner_word` (all tap_words)
+- Final step: `assembly` with intro, failMessage, transforms array, result
+- Each transform: `{role, indices, type, result, hint}` — type is synonym/abbreviation/literal/reversal/deletion/anagram/letter_selection
+
+**Key rules:**
+- Follow the Step 2 Rule (see above)
+- Hints must teach cryptic conventions (e.g. "'work' nearly always means OP"), not just define words
+- Transform `type` must be accurate: use "abbreviation" not "synonym" for standard cryptic mappings
+- `words` array must exactly match the clue text (case, spelling, punctuation including —)
+- Assembly intro should teach through consequence: show what happens with raw words first, then ask why it doesn't work
 - Only change the clue you are asked to change
 
 ## Worktrees
