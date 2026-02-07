@@ -51,15 +51,12 @@ def get_fodder_text(step, default=""):
 TEACHING_HINTS = {}
 
 def _load_teaching_hints():
-    """Load teaching hints from JSON file."""
+    """Load teaching hints from JSON file. Raises on failure."""
     global TEACHING_HINTS
     hints_path = os.path.join(os.path.dirname(__file__), "teaching_hints.json")
-    try:
-        with open(hints_path, "r") as f:
-            TEACHING_HINTS = json.load(f)
-    except Exception as e:
-        print(f"Warning: Could not load teaching_hints.json: {e}")
-        TEACHING_HINTS = {"abbreviations": {}, "synonyms": {}, "indicators": {}, "patterns": {}}
+    with open(hints_path, "r") as f:
+        TEACHING_HINTS = json.load(f)
+    print(f"Loaded teaching hints from {hints_path}")
 
 # Load hints on module import
 _load_teaching_hints()
@@ -108,13 +105,10 @@ def _load_render_templates():
 
 def maybe_reload_render_templates():
     """Check if render_templates.json has been modified and reload if needed."""
-    try:
-        current_mtime = os.path.getmtime(RENDER_TEMPLATES_PATH)
-        if current_mtime != RENDER_TEMPLATES_MTIME:
-            print(f"[Auto-reload] render_templates.json changed, reloading...")
-            _load_render_templates()
-    except OSError:
-        pass
+    current_mtime = os.path.getmtime(RENDER_TEMPLATES_PATH)  # raises OSError if deleted
+    if current_mtime != RENDER_TEMPLATES_MTIME:
+        print(f"[Auto-reload] render_templates.json changed, reloading...")
+        _load_render_templates()
 
 # Load on module import — error out if missing
 _load_render_templates()
@@ -1575,17 +1569,15 @@ def handle_input(clue_id, clue, value):
             if isinstance(common_vocab, dict):
                 common_vocab = [common_vocab]
             # Find which vocab this is (vocab_num from phase_id)
-            try:
-                vocab_idx = int(phase_id.split("_")[-1]) - 1
-                if vocab_idx < len(common_vocab):
-                    vocab = common_vocab[vocab_idx]
-                    vocab_text = vocab.get("text", "")
-                    vocab_meaning = vocab.get("meaning", "")
-                    session["learnings"].append({
-                        "title": f"ANCHOR: {vocab_text} = {vocab_meaning}"
-                    })
-            except (ValueError, IndexError):
-                pass
+            vocab_idx = int(phase_id.split("_")[-1]) - 1  # raises ValueError if malformed
+            if vocab_idx >= len(common_vocab):
+                raise IndexError(f"Vocab index {vocab_idx} out of range for common_vocabulary (len={len(common_vocab)}) in phase '{phase_id}'")
+            vocab = common_vocab[vocab_idx]
+            vocab_text = vocab.get("text", "")
+            vocab_meaning = vocab.get("meaning", "")
+            session["learnings"].append({
+                "title": f"ANCHOR: {vocab_text} = {vocab_meaning}"
+            })
 
         if phase_id.startswith("indicator_tap_"):
             # Find which indicator was found

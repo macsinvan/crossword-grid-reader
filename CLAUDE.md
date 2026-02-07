@@ -94,8 +94,8 @@ When `step_index` increments, `reset_step_ui_state()` clears: `hint_visible`, `s
 **Auto-reload clues_db.json**
 The server checks file modification time on each `/trainer/start` request. If `clues_db.json` has changed, it reloads automatically - no server restart needed.
 
-**Error out, don't fallback**
-Don't build in silent fallbacks that get forgotten and cause confusion. Error out explicitly instead.
+**Error out, don't fallback — MANDATORY**
+Do NOT add fallbacks in the code without explicit approval from the user. Never silently swallow errors, substitute defaults for missing data, or degrade functionality without raising an error. If something is wrong, crash with a clear message. Silent fallbacks hide bugs and cause confusion.
 
 ## What This Is
 Web-based Times Cryptic crossword solver. Import PDFs, solve interactively, get step-by-step teaching via template-based step display system.

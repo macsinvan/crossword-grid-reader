@@ -15,12 +15,45 @@ Tables:
 
 import os
 import json
+import subprocess
 from datetime import datetime
 from typing import Optional, Dict, List, Any
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables — search multiple locations for .env
+# (worktrees don't share the main repo's .env)
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+
+def _find_dotenv():
+    """Find .env file: local dir, then main git repo root."""
+    # 1. Standard: same directory as this script
+    local_env = os.path.join(_script_dir, '.env')
+    if os.path.isfile(local_env):
+        return local_env
+    # 2. Git worktree: find the main repo and check there
+    try:
+        main_tree = subprocess.check_output(
+            ['git', 'worktree', 'list', '--porcelain'],
+            cwd=_script_dir, stderr=subprocess.DEVNULL
+        ).decode()
+        for line in main_tree.splitlines():
+            if line.startswith('worktree '):
+                candidate = os.path.join(line.split(' ', 1)[1], '.env')
+                if os.path.isfile(candidate):
+                    return candidate
+    except Exception:
+        pass
+    return None
+
+_env_path = _find_dotenv()
+if _env_path:
+    load_dotenv(_env_path)
+    print(f"Loaded .env from {_env_path}")
+else:
+    raise FileNotFoundError(
+        f".env file not found in {_script_dir} or any git worktree root. "
+        "Create a .env with SUPABASE_URL and SUPABASE_ANON_KEY."
+    )
 
 try:
     from supabase import create_client, Client
@@ -71,14 +104,23 @@ class PuzzleStoreSupabase:
         Returns:
             Dict with storage info
         """
-        series = puzzle_data.get('series', '') or puzzle_data.get('publication', 'Unknown')
-        puzzle_number = str(puzzle_data.get('number', 'unknown'))
+        series = puzzle_data.get('series') or puzzle_data.get('publication')
+        if not series:
+            raise ValueError("puzzle_data must contain 'series' or 'publication'")
+        puzzle_number = puzzle_data.get('number')
+        if puzzle_number is None:
+            raise ValueError("puzzle_data must contain 'number'")
+        puzzle_number = str(puzzle_number)
         publication_id = self._map_series_to_publication(series)
 
         # Extract grid info
-        grid = puzzle_data.get('grid', {})
-        grid_layout = grid.get('layout', [])
-        grid_size = grid.get('size', len(grid_layout) if grid_layout else 15)
+        grid = puzzle_data.get('grid')
+        if not grid:
+            raise ValueError("puzzle_data must contain 'grid'")
+        grid_layout = grid.get('layout')
+        if not grid_layout:
+            raise ValueError("puzzle_data.grid must contain 'layout'")
+        grid_size = grid.get('size', len(grid_layout))
 
         # Insert or update puzzle
         puzzle_record = {
@@ -144,7 +186,9 @@ class PuzzleStoreSupabase:
             for clue in clues_data.get(direction, []):
                 clue_num = clue.get('number')
                 pos_key = f"{clue_num}{direction}"
-                row, col = clue_positions.get(pos_key, (0, 0))
+                if pos_key not in clue_positions:
+                    raise ValueError(f"No grid position found for clue {clue_num} {direction}. Available: {list(clue_positions.keys())}")
+                row, col = clue_positions[pos_key]
 
                 # Get answer if available
                 answer = None
@@ -359,7 +403,10 @@ class PuzzleStoreSupabase:
 
         puzzles = []
         for p in result.data or []:
-            pub_name = p.get('publications', {}).get('name', 'Unknown') if p.get('publications') else 'Unknown'
+            pub_data = p.get('publications')
+            if not pub_data or 'name' not in pub_data:
+                raise ValueError(f"Puzzle {p['id']} has no linked publication. Check publications table.")
+            pub_name = pub_data['name']
 
             # Check if has answers
             clues_result = self.client.table('clues').select('answer').eq(
@@ -432,21 +479,10 @@ class PuzzleStoreSupabase:
         return bool(result.data)
 
 
-# Factory function to get appropriate store
-def get_puzzle_store(use_supabase: bool = None):
-    """
-    Get puzzle store instance.
-
-    Args:
-        use_supabase: Force Supabase (True) or file-based (False).
-                     If None, auto-detect based on environment.
-    """
-    if use_supabase is None:
-        # Auto-detect: use Supabase if configured
-        use_supabase = bool(os.environ.get("SUPABASE_URL"))
-
-    if use_supabase:
-        return PuzzleStoreSupabase()
-    else:
-        from puzzle_store import PuzzleStore
-        return PuzzleStore()
+# Factory function — Supabase is required
+def get_puzzle_store():
+    """Get Supabase puzzle store instance. Raises if not configured."""
+    url = os.environ.get("SUPABASE_URL")
+    if not url:
+        raise ValueError("SUPABASE_URL not set in environment. Check .env file.")
+    return PuzzleStoreSupabase()

@@ -25,15 +25,10 @@ import yaml
 from crossword_processor import CrosswordGridProcessor
 from pdf_processor import process_times_pdf
 
-# Use Supabase if configured, otherwise fall back to file-based storage
-try:
-    from puzzle_store_supabase import get_puzzle_store
-    puzzle_store = get_puzzle_store()
-    print(f"Using puzzle store: {type(puzzle_store).__name__}")
-except Exception as e:
-    print(f"Supabase not available ({e}), using file-based storage")
-    from puzzle_store import PuzzleStore
-    puzzle_store = PuzzleStore(os.path.join(os.path.dirname(__file__), 'puzzles'))
+# Supabase is required — no silent fallback to local storage
+from puzzle_store_supabase import get_puzzle_store
+puzzle_store = get_puzzle_store()
+print(f"Using puzzle store: {type(puzzle_store).__name__}")
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
@@ -126,22 +121,17 @@ def load_clues_file(filepath):
     filename = os.path.basename(filepath).lower()
 
     if filename.endswith('.json') or content.strip().startswith('{'):
-        try:
-            data = json.loads(content)
-            first_key = next(iter(data.keys()), '')
-            if re.match(r'times-\d+-\d+[ad]', first_key.lower()):
-                return convert_times_json_to_yaml_format(data)
-            return data
-        except json.JSONDecodeError:
-            pass
-
-    try:
-        data = yaml.safe_load(content)
+        data = json.loads(content)  # raises JSONDecodeError with details
+        first_key = next(iter(data.keys()), '')
+        if re.match(r'times-\d+-\d+[ad]', first_key.lower()):
+            return convert_times_json_to_yaml_format(data)
         return data
-    except yaml.YAMLError:
-        pass
 
-    raise ValueError("Could not parse clues file as JSON or YAML")
+    if filename.endswith(('.yaml', '.yml')):
+        data = yaml.safe_load(content)  # raises YAMLError with details
+        return data
+
+    raise ValueError(f"Unsupported clues file format: {filename}. Expected .json, .yaml, or .yml")
 
 
 def process_pdf_and_store(pdf_file, answers_file=None):
@@ -455,50 +445,44 @@ def load_clues_db(force=False):
     """
     global CLUES_DB, CLUES_DB_MTIME
 
-    try:
-        current_mtime = os.path.getmtime(CLUES_DB_PATH)
-    except OSError:
-        return  # File doesn't exist
+    current_mtime = os.path.getmtime(CLUES_DB_PATH)  # raises OSError if missing
 
     # Skip if file hasn't changed (unless forced)
     if not force and current_mtime == CLUES_DB_MTIME:
         return
 
-    try:
-        with open(CLUES_DB_PATH, 'r') as f:
-            data = json.load(f)
-            CLUES_DB = data.get('training_items', {})
-            CLUES_DB_MTIME = current_mtime
-            print(f"Loaded {len(CLUES_DB)} clues from clues_db.json (mtime: {current_mtime})")
+    with open(CLUES_DB_PATH, 'r') as f:
+        data = json.load(f)  # raises JSONDecodeError if malformed
 
-            # Validate all clues on load
-            validation_errors = []
-            for clue_id, clue_data in CLUES_DB.items():
-                errors = validate_clue_annotation(clue_id, clue_data)
-                validation_errors.extend(errors)
+    if 'training_items' not in data:
+        raise KeyError(f"clues_db.json missing required 'training_items' key. Keys found: {list(data.keys())}")
 
-            if validation_errors:
-                print(f"WARNING: {len(validation_errors)} validation errors found in clues_db.json:")
-                for e in validation_errors[:10]:  # Show first 10
-                    print(f"  {e}")
-                if len(validation_errors) > 10:
-                    print(f"  ... and {len(validation_errors) - 10} more")
-            else:
-                print("All clue annotations validated successfully")
-    except Exception as e:
-        print(f"Warning: Could not load clues_db.json: {e}")
-        CLUES_DB = {}
+    CLUES_DB = data['training_items']
+    CLUES_DB_MTIME = current_mtime
+    print(f"Loaded {len(CLUES_DB)} clues from clues_db.json (mtime: {current_mtime})")
+
+    # Validate all clues on load
+    validation_errors = []
+    for clue_id, clue_data in CLUES_DB.items():
+        errors = validate_clue_annotation(clue_id, clue_data)
+        validation_errors.extend(errors)
+
+    if validation_errors:
+        print(f"WARNING: {len(validation_errors)} validation errors found in clues_db.json:")
+        for e in validation_errors[:10]:
+            print(f"  {e}")
+        if len(validation_errors) > 10:
+            print(f"  ... and {len(validation_errors) - 10} more")
+    else:
+        print("All clue annotations validated successfully")
 
 
 def maybe_reload_clues_db():
     """Check if clues_db.json has been modified and reload if needed."""
-    try:
-        current_mtime = os.path.getmtime(CLUES_DB_PATH)
-        if current_mtime != CLUES_DB_MTIME:
-            print(f"[Auto-reload] clues_db.json changed, reloading...")
-            load_clues_db(force=True)
-    except OSError:
-        pass  # File doesn't exist
+    current_mtime = os.path.getmtime(CLUES_DB_PATH)  # raises OSError if file deleted
+    if current_mtime != CLUES_DB_MTIME:
+        print(f"[Auto-reload] clues_db.json changed, reloading...")
+        load_clues_db(force=True)
 
 
 # Load on startup
@@ -529,17 +513,17 @@ def find_annotated_puzzle_file(puzzle_number):
 def load_annotated_puzzle(puzzle_number):
     """
     Load the annotated puzzle data from file.
-    Returns the puzzle data dict or None if not found.
+    Returns the puzzle data dict or None if file doesn't exist.
+    Raises on corrupt/unreadable files.
     """
     filepath = find_annotated_puzzle_file(puzzle_number)
     if not filepath:
         return None
 
-    try:
-        with open(filepath, 'r') as f:
-            return json.load(f)
-    except (json.JSONDecodeError, IOError):
-        return None
+    with open(filepath, 'r') as f:
+        data = json.load(f)  # raises JSONDecodeError if corrupt
+    print(f"Loaded annotated puzzle from {filepath}")
+    return data
 
 
 def import_puzzle_to_trainer(puzzle_number):
