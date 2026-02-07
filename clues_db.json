@@ -261,16 +261,22 @@
         {
           "type": "indicator",
           "indices": [0, 1, 2],
+          "prompt": "Can you find a deletion indicator?",
+          "intro": "A deletion indicator tells you to remove or shorten something — look for words suggesting 'most of', 'nearly', 'not quite', or similar.",
           "hint": "'A lot of' is a deletion indicator — it tells you to take most of something, dropping a letter"
         },
         {
           "type": "fodder",
           "indices": [3],
+          "prompt": "What word is being shortened?",
+          "intro": "The deletion indicator is acting on a nearby word. Which one?",
           "hint": "This is the word the deletion indicator is acting on"
         },
         {
           "type": "indicator",
           "indices": [4],
+          "prompt": "Can you find a reversal indicator?",
+          "intro": "A reversal indicator tells you to read letters backwards — look for words suggesting turning, spinning, or going back.",
           "hint": "'Turns' is a reversal indicator — it tells you to read the letters backwards"
         },
         {

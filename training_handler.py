@@ -94,11 +94,13 @@ def get_render(clue_id, clue):
             "index": step_index,
             "type": step["type"],
             "inputMode": template["inputMode"],
-            "prompt": template["prompt"],
+            "prompt": step.get("prompt") or template["prompt"],
         }
 
-        # Intro (always visible)
-        if "intro" in template:
+        # Intro (step metadata overrides template)
+        if "intro" in step:
+            current_step["intro"] = step["intro"]
+        elif "intro" in template:
             current_step["intro"] = template["intro"]
 
         # Hint (revealed on request, keyed by clue_type if dict)

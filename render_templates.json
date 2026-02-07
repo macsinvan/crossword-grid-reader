@@ -29,7 +29,7 @@
     "prompt": "Tap the indicator word",
     "menuTitle": "Spot the indicator",
     "completedTitle": "Indicator: '{words}'",
-    "intro": "You\u2019ve identified the wordplay type. Now find the word that signals it \u2014 the indicator.",
+    "intro": "Look for a word that signals what to do with the other words \u2014 the indicator.",
     "hint": "The indicator often disguises itself as part of the surface meaning. It tells you what to do with the other words.",
     "expected_source": "indices",
     "onCorrect": "'{words}' \u2014 {hint}"
