@@ -143,30 +143,33 @@ For full architecture diagrams, data models, template system details, API endpoi
 ## Teaching Mode — Key Concepts
 
 **Simple Sequencer Engine:**
-The trainer engine (`training_handler.py`) is a ~460-line simple sequencer. It reads flat steps from clue metadata, looks up a render template by step type, presents each step, validates input, and advances. No nesting, no phases within steps (except `container_assembly` which has sub-phases for transforms).
+The trainer engine (`training_handler.py`) is a ~550-line simple sequencer. It reads flat steps from clue metadata, looks up a render template by step type, presents each step, validates input, and advances. No nesting, no phases within steps (except `assembly` which has sub-phases for transforms).
 
 **Two-Layer Template System:**
 - Layer 1: Clue step metadata in `clues_db.json` — clue-specific data (which words, indices, expected answers, hints)
 - Layer 2: Render templates in `render_templates.json` — generic presentation logic (inputMode, prompt, intro, hint, onCorrect)
 - Each step `type` maps 1:1 to a render template
+- Step metadata can override template defaults for `prompt`, `intro`, `menuTitle`, `completedTitle`, `failMessage`
 
-**Current render templates (5):**
+**Current render templates (7):**
 | Template | inputMode | Purpose |
 |----------|-----------|---------|
 | `definition` | `tap_words` | Find the definition at start/end of clue |
-| `container_indicator` | `tap_words` | Spot the word signalling insertion |
+| `wordplay_type` | `multiple_choice` | Identify the type of wordplay (Charade, Container, etc.) |
+| `indicator` | `tap_words` | Spot an indicator word (any type — step metadata specifies which) |
 | `outer_word` | `tap_words` | Identify which word wraps around |
 | `inner_word` | `tap_words` | Identify which word goes inside |
-| `container_assembly` | `assembly` | Multi-phase: transforms then assembly check |
+| `fodder` | `tap_words` | Identify the word being operated on by an indicator |
+| `assembly` | `assembly` | Multi-phase: transforms then assembly check |
 
 **Step Menu with Inline Expansion:**
 Steps are listed as a roadmap. The active step is collapsed by default (click chevron to expand). Completed steps show green ✓ and completion text. The `stepExpanded` flag in session state controls visibility.
 
-**Assembly Steps (container_assembly):**
-Assembly is a multi-phase step with its own sub-state (`assembly_phase`, `assembly_transforms_done`). The student first sees that the raw clue words don't work, then must find what each word really points to (synonym, abbreviation, etc.) via sequential transform inputs, then finally assemble the result. Each transform has its own hint lightbulb.
+**Assembly Steps (assembly):**
+Assembly is a multi-phase step with its own sub-state (`assembly_phase`, `assembly_transforms_done`). The student first sees that the raw clue words don't work, then must find what each word really points to (synonym, abbreviation, etc.) via sequential transform inputs, then finally assemble the result. Each transform has its own hint lightbulb. Transform prompts are type-specific (synonym, abbreviation, literal, reversal, deletion, letter_selection). When the last transform result equals the final answer, the check phase is auto-skipped.
 
 **Flat Clue Metadata Format (17D example):**
-Steps are a flat array — no nesting. Each step has `type`, `indices` (word positions), and `hint`. The `container_assembly` step additionally has `transforms` (array of `{role, indices, type, result, hint}`) and `result`.
+Steps are a flat array — no nesting. Each step has `type`, `indices` (word positions), and `hint`. The `assembly` step additionally has `transforms` (array of `{role, indices, type, result, hint}`) and `result`. Steps like `wordplay_type` have `expected` and `options`. Any step can override template `prompt`, `intro`, `menuTitle`, `completedTitle` for clue-specific teaching.
 
 ## Environment Variables
 Create `.env` file (see `.env.example`):

@@ -60,10 +60,11 @@ This defeats the purpose of teaching. The user sees the answer without thinking.
 │ Steps to solve:                             │
 │                                             │
 │ ● 1. Find the definition              ▶    │
-│ ○ 2. Spot the indicator                     │
-│ ○ 3. Find the outer word                    │
-│ ○ 4. Find the inner word                    │
-│ ○ 5. Put it together                        │
+│ ○ 2. Identify the wordplay                  │
+│ ○ 3. Spot the indicator                     │
+│ ○ 4. Find the outer part                    │
+│ ○ 5. Find the inner part                    │
+│ ○ 6. Build the answer                       │
 └─────────────────────────────────────────────┘
 ```
 
@@ -81,20 +82,23 @@ This defeats the purpose of teaching. The user sees the answer without thinking.
 ```
 │ ✓ 1. Definition found: 'Embankment'        │
 │   Can you find a word (5,3) meaning...      │
-│ ● 2. Spot the indicator                ▶    │
-│ ○ 3. Find the outer word                    │
+│ ● 2. Identify the wordplay              ▶    │
+│ ○ 3. Spot the indicator                     │
+│ ○ 4. Find the outer part                    │
 ```
 
 **Progressive completion:** User works through each step sequentially. Completed steps show green ✓ with completion text. Only after all steps are completed does the completion view appear.
 
 ### 2.4 Implementation Status
-✅ **Current State (v2 — Redesigned Engine):** The trainer engine has been redesigned from ~4,400 lines to ~460 lines. It uses a simple sequencer with flat steps and render templates stored in external JSON. Steps are collapsed by default and require a click to expand. Each step requires user interaction (tap words or type answers) before advancing. The step menu shows inline expansion — no separate screens.
+✅ **Current State (v2 — Redesigned Engine):** The trainer engine has been redesigned from ~4,400 lines to ~550 lines. It uses a simple sequencer with flat steps and render templates stored in external JSON. Steps are collapsed by default and require a click to expand. Each step requires user interaction (tap words, type answers, or choose from options) before advancing. The step menu shows inline expansion — no separate screens.
 
 **Implemented vertical slices:**
 - Slice 1: `definition` step (tap_words)
-- Slice 2: `container_indicator` step (tap_words)
-- Slice 3: `outer_word` and `inner_word` steps (tap_words)
-- Slice 4: `container_assembly` step (multi-phase assembly with transforms)
+- Slice 2: `wordplay_type` step (multiple_choice — identify the wordplay technique)
+- Slice 3: `indicator` step (tap_words — generic for any indicator type: container, deletion, reversal, anagram)
+- Slice 4: `outer_word` and `inner_word` steps (tap_words)
+- Slice 5: `fodder` step (tap_words — identify the word being operated on)
+- Slice 6: `assembly` step (multi-phase assembly with transforms, auto-skip when last transform equals answer)
 
 ### 2.5 Design Rules
 1. **One insight per interaction** - Never reveal multiple facts simultaneously
@@ -144,7 +148,7 @@ ALL intelligence lives on the server. The client is a pure view layer.
 │  ├── /trainer/check-answer→ training_handler.check_answer() │
 │  └── /trainer/ui-state    → training_handler.update_ui_state│
 ├─────────────────────────────────────────────────────────────┤
-│  training_handler.py (~460 lines, simple sequencer)         │
+│  training_handler.py (~550 lines, simple sequencer)         │
 │  ├── _sessions dict    (all UI state)                       │
 │  ├── RENDER_TEMPLATES  (loaded from render_templates.json)  │
 │  ├── get_render()      (build render object from state)     │
@@ -192,7 +196,7 @@ ALL intelligence lives on the server. The client is a pure view layer.
 
 ### 4.2 Clue Metadata Format (Flat Steps)
 
-**Key Principle:** We control this metadata format completely. It's our own design, optimized for interactive teaching. The format uses flat steps — no nesting, no phases within steps (except `container_assembly` which has sub-phases for transforms).
+**Key Principle:** We control this metadata format completely. It's our own design, optimized for interactive teaching. The format uses flat steps — no nesting, no phases within steps (except `assembly` which has sub-phases for transforms).
 
 **Flat Step Architecture:**
 - Steps are a flat array in `clues_db.json` — each step is one student interaction
@@ -222,7 +226,13 @@ ALL intelligence lives on the server. The client is a pure view layer.
           "hint": "A famous structure on the Nile river"
         },
         {
-          "type": "container_indicator",
+          "type": "wordplay_type",
+          "expected": "Container",
+          "options": ["Charade", "Container", "Anagram", "Hidden word"],
+          "hint": "'Lengthened' is a container indicator — it tells you one word gets stretched by putting letters inside it."
+        },
+        {
+          "type": "indicator",
           "indices": [2],
           "hint": "'Lengthened' suggests stretching a word by putting letters inside it"
         },
@@ -237,8 +247,8 @@ ALL intelligence lives on the server. The client is a pure view layer.
           "hint": "Which remaining word gets placed inside?"
         },
         {
-          "type": "container_assembly",
-          "method": "container",
+          "type": "assembly",
+          "intro": "You've found the container parts. Now work out what each clue word really means — the raw words almost never appear directly in the answer.",
           "transforms": [
             { "role": "outer", "indices": [1], "type": "synonym", "result": "ADAM",
               "hint": "Robert Adam was a famous British architect" },
@@ -258,28 +268,38 @@ ALL intelligence lives on the server. The client is a pure view layer.
 - `indices` (for tap_words steps): Word positions (0-indexed) into the `words` array
 - `hint`: Per-step hint text revealed via 💡 lightbulb
 - `position`: For definition steps — "start" or "end"
+- `expected` (for multiple_choice steps): The correct option string
+- `options` (for multiple_choice steps): Array of option strings to display
 - `transforms`: For assembly steps — array of `{role, indices, type, result, hint}`
-- `method`: For assembly steps — "container" or "charade"
 - `result`: For assembly steps — the assembled answer
+
+**Step metadata can override template defaults** for clue-specific teaching:
+- `prompt`: Overrides template `prompt` (e.g. "Can you find a deletion indicator?")
+- `intro`: Overrides template `intro` (e.g. clue-specific teaching text)
+- `menuTitle`: Overrides template `menuTitle` (e.g. "Find the deletion indicator")
+- `completedTitle`: Overrides template `completedTitle` (e.g. "Deletion indicator: '{words}'")
+- `failMessage`: Overrides the default assembly fail message
 
 **Why This Flat Format:**
 1. **Simple:** No nesting, no phases — each step is one interaction
 2. **Teachable:** Each step maps directly to one render template
 3. **Data-driven:** All hints, expected answers, and prompts come from the metadata + template
-4. **Composable:** Container clues use 5 steps; charades will use different combinations
+4. **Composable:** Container clues use 6 steps; charades use different combinations; deletion/reversal chains use yet another
 5. **Self-contained:** Includes all data needed for validation and teaching
 
-**Current Render Templates (5):**
+**Current Render Templates (7):**
 
 | Template | inputMode | Purpose |
 |----------|-----------|---------|
 | `definition` | `tap_words` | Find the definition at start/end of clue |
-| `container_indicator` | `tap_words` | Spot the word signalling insertion |
-| `outer_word` | `tap_words` | Identify which word wraps around |
-| `inner_word` | `tap_words` | Identify which word goes inside |
-| `container_assembly` | `assembly` | Multi-phase: transforms then assembly check |
+| `wordplay_type` | `multiple_choice` | Identify the type of wordplay (Charade, Container, Anagram, etc.) |
+| `indicator` | `tap_words` | Spot an indicator word (container, deletion, reversal, anagram — step metadata specifies which) |
+| `outer_word` | `tap_words` | Identify which word wraps around (container clues) |
+| `inner_word` | `tap_words` | Identify which word goes inside (container clues) |
+| `fodder` | `tap_words` | Identify the word being operated on by an indicator |
+| `assembly` | `assembly` | Multi-phase: transforms then assembly check (used for containers, charades, and other types) |
 
-More templates will be added as new clue types are implemented (charades, anagrams, etc.).
+More templates will be added as new clue types are implemented (anagrams, hidden words, etc.).
 
 ### 4.2.1 Critical: Template System Enables Automated Annotation
 
@@ -310,10 +330,12 @@ OUTPUT (generated flat steps):
 {
   "steps": [
     {"type": "definition", "indices": [0], "position": "start", "hint": "..."},
-    {"type": "container_indicator", "indices": [2], "hint": "..."},
+    {"type": "wordplay_type", "expected": "Container",
+     "options": ["Charade", "Container", "Anagram", "Hidden word"], "hint": "..."},
+    {"type": "indicator", "indices": [2], "hint": "..."},
     {"type": "outer_word", "indices": [1], "hint": "..."},
     {"type": "inner_word", "indices": [4], "hint": "..."},
-    {"type": "container_assembly", "method": "container",
+    {"type": "assembly",
      "transforms": [
        {"role": "outer", "indices": [1], "type": "synonym", "result": "ADAM", "hint": "..."},
        {"role": "inner", "indices": [4], "type": "synonym", "result": "SWAN", "hint": "..."}
@@ -372,10 +394,11 @@ LAYER 2: Render Template (render_templates.json)
    - Per-step hint text for the 💡 lightbulb
 
 2. **Render template defines HOW** (generic presentation):
-   - Input mode (`tap_words` or `assembly`)
+   - Input mode (`tap_words`, `multiple_choice`, or `assembly`)
    - Prompt text, intro text, hint text (with {variable} substitution)
    - Menu titles (before/after completion)
    - Completion message (`onCorrect`)
+   - Step metadata can override: `prompt`, `intro`, `menuTitle`, `completedTitle`, `failMessage`
 
 **Variable Substitution:**
 Templates use `{variable}` placeholders resolved from step + clue data:
@@ -384,6 +407,7 @@ Templates use `{variable}` placeholders resolved from step + clue data:
 - `{hint}` → step hint text
 - `{position}` → definition position (start/end)
 - `{result}` → step result
+- `{expected}` → expected answer (for multiple_choice steps)
 
 **Example: Definition Step**
 
@@ -410,12 +434,14 @@ Templates use `{variable}` placeholders resolved from step + clue data:
 | Step Type (metadata) | Render Template | inputMode | Purpose |
 |----------------------|-----------------|-----------|---------|
 | `definition` | `definition` | `tap_words` | Find definition |
-| `container_indicator` | `container_indicator` | `tap_words` | Spot insertion indicator |
-| `outer_word` | `outer_word` | `tap_words` | Identify outer word |
-| `inner_word` | `inner_word` | `tap_words` | Identify inner word |
-| `container_assembly` | `container_assembly` | `assembly` | Transforms + assembly |
+| `wordplay_type` | `wordplay_type` | `multiple_choice` | Identify wordplay technique |
+| `indicator` | `indicator` | `tap_words` | Spot indicator word (any type — step metadata specifies which) |
+| `outer_word` | `outer_word` | `tap_words` | Identify outer word (container clues) |
+| `inner_word` | `inner_word` | `tap_words` | Identify inner word (container clues) |
+| `fodder` | `fodder` | `tap_words` | Identify word being operated on |
+| `assembly` | `assembly` | `assembly` | Transforms + assembly check |
 
-More templates will be added as new clue types are implemented.
+More templates will be added as new clue types are implemented (anagrams, hidden words, etc.).
 
 **Why This Separation Matters:**
 1. **Reusability:** Same template works for thousands of different clues
@@ -528,27 +554,31 @@ class Trainer {
 
 **See section 4.2.2 for the complete metadata → render template mapping.**
 
-The engine uses a simple sequencer with flat steps. Each step type has one interaction (except `container_assembly` which has sub-phases). Current templates:
+The engine uses a simple sequencer with flat steps. Each step type has one interaction (except `assembly` which has sub-phases). Current templates:
 
 | Type | inputMode | Description |
 |------|-----------|-------------|
 | `definition` | `tap_words` | Find definition at start/end of clue |
-| `container_indicator` | `tap_words` | Spot the insertion indicator word |
+| `wordplay_type` | `multiple_choice` | Identify the wordplay technique (Charade, Container, etc.) |
+| `indicator` | `tap_words` | Spot an indicator word (step metadata specifies which type) |
 | `outer_word` | `tap_words` | Identify the outer (wrapping) word |
 | `inner_word` | `tap_words` | Identify the inner (inserted) word |
-| `container_assembly` | `assembly` | Multi-phase: transforms → assembly check |
+| `fodder` | `tap_words` | Identify the word being operated on by an indicator |
+| `assembly` | `assembly` | Multi-phase: transforms → assembly check |
 
-**Container Assembly Sub-phases:**
-The `container_assembly` step has its own multi-phase flow tracked by `assembly_phase` and `assembly_transforms_done` in session state:
-1. **Fail message**: Shows that raw clue words don't work
-2. **Transform inputs** (sequential): Student discovers what each word really points to
-3. **Assembly check**: Student combines the transformed words into the final answer
+**Assembly Sub-phases:**
+The `assembly` step has its own multi-phase flow tracked by `assembly_phase` and `assembly_transforms_done` in session state:
+1. **Fail message**: Shows that raw clue words don't work (step metadata can override via `failMessage`)
+2. **Transform inputs** (sequential): Student discovers what each word really points to. Prompts are type-specific based on each transform's `type` field (synonym, abbreviation, literal, reversal, deletion, letter_selection).
+3. **Assembly check**: Student combines the transformed words into the final answer. **Auto-skipped** when the last transform result equals the final answer (avoids redundant retyping).
 
 ### 5.2 Input Modes
 
 | Mode | User Action | Validation |
 |------|-------------|------------|
 | `tap_words` | Tap word chips in clue | Check selected indices match `step.indices` |
+| `multiple_choice` | Click one of the option buttons | Case-insensitive string match against `step.expected` |
+| `text` | Type in a text input | Stripped uppercase comparison against expected |
 | `assembly` | Type in letter boxes (transforms then assembly) | Sequential transform validation then final result check |
 
 ### 5.3 Render Object Structure
@@ -570,17 +600,23 @@ The `container_assembly` step has its own multi-phase flow tracked by `assembly_
   "steps": [
     {"index": 0, "type": "definition", "title": "Definition found: 'Embankment'",
      "status": "completed", "completionText": "Can you find a word (5,3) meaning 'Embankment'..."},
-    {"index": 1, "type": "container_indicator", "title": "Spot the indicator",
+    {"index": 1, "type": "wordplay_type", "title": "Wordplay: Container",
+     "status": "completed", "completionText": "..."},
+    {"index": 2, "type": "indicator", "title": "Spot the indicator",
      "status": "active", "completionText": null},
-    {"index": 2, "type": "outer_word", "title": "Find the outer word",
+    {"index": 3, "type": "outer_word", "title": "Find the outer part",
+     "status": "pending", "completionText": null},
+    {"index": 4, "type": "inner_word", "title": "Find the inner part",
+     "status": "pending", "completionText": null},
+    {"index": 5, "type": "assembly", "title": "Build the answer",
      "status": "pending", "completionText": null}
   ],
   "currentStep": {
-    "index": 1,
-    "type": "container_indicator",
+    "index": 2,
+    "type": "indicator",
     "inputMode": "tap_words",
-    "prompt": "Which word tells you one thing goes inside another?",
-    "intro": "Some clues contain a word that signals insertion...",
+    "prompt": "Tap the indicator word",
+    "intro": "Look for a word that signals what to do with the other words — the indicator.",
     "hint": "The indicator often disguises itself...",
     "hintVisible": false
   }
@@ -671,10 +707,10 @@ The `container_assembly` step has its own multi-phase flow tracked by `assembly_
 
 ### 6.3 Assembly Step Detail
 
-The `container_assembly` step has a multi-phase inline UI:
+The `assembly` step has a multi-phase inline UI (used for containers, charades, and other clue types):
 
 ```
-│ ● 5. Put it together                                  ▼    │
+│ ● 6. Build the answer                                 ▼    │
 │   ┌─────────────────────────────────────────────────┐       │
 │   │ Here's a key cryptic trick: the words in the    │       │
 │   │ clue almost never appear directly in the answer.│       │
@@ -796,7 +832,7 @@ Check if typed answer is correct.
 Grid Reader/
 ├── crossword_server.py      # Flask server — infrastructure routes only
 ├── trainer_routes.py        # Flask Blueprint — all /trainer/* routes
-├── training_handler.py      # Simple sequencer engine (~460 lines)
+├── training_handler.py      # Simple sequencer engine (~550 lines)
 ├── puzzle_store_supabase.py # Supabase database client (required)
 ├── pdf_processor.py         # PDF parsing, OCR correction
 ├── clues_db.json            # Pre-annotated clue steps (flat format)
@@ -1024,12 +1060,15 @@ gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 - DB status indicator in header
 
 ### Phase 2: Interactive Teaching Mode ✓
-- Redesigned training_handler.py — simple sequencer (~460 lines)
+- Redesigned training_handler.py — simple sequencer (~550 lines)
 - Flat clue metadata with render templates in external JSON
 - 1:1 mapping between metadata step types and render templates
 - Server-driven rendering, stateless client
 - Step menu with inline expansion (collapsed by default)
-- Container clue full flow: definition → indicator → outer/inner → assembly with transforms
+- Container clue full flow: definition → wordplay_type → indicator → outer/inner → assembly with transforms
+- Charade clue flow: definition → wordplay_type → assembly with transforms
+- Deletion/reversal chain flow: definition → indicator(s) → fodder → assembly with transforms
+- Step metadata overrides for clue-specific teaching text
 
 ### Phase 3: Vercel Deployment (Planned)
 - Serverless Flask on Vercel
@@ -1093,6 +1132,9 @@ Currently, clues must be manually annotated in `clues_db.json`. The solver will 
 3. **Annotation Fixes**: Align clues_db.json with puzzle text
 4. **Multi-word Answers**: Handle spaces in answers (e.g. "ASWAN DAM")
 5. **Mobile Responsive Grid**: CSS Grid with `1fr` units, `aspect-ratio: 1` cells, viewport-based sizing
-6. **Engine Redesign (v2)**: Replaced ~4,400-line engine with ~460-line simple sequencer, flat steps, external render templates
+6. **Engine Redesign (v2)**: Replaced ~4,400-line engine with ~550-line simple sequencer, flat steps, external render templates
 7. **Container Assembly**: Multi-phase assembly step with transforms
+8. **Template Expansion**: Renamed `container_indicator` → `indicator` (generic for any indicator type), unified `container_assembly`/`charade_assembly` → `assembly`, added `wordplay_type` (multiple_choice), `fodder` (tap_words)
+9. **Step Metadata Overrides**: Steps can override template `prompt`, `intro`, `menuTitle`, `completedTitle`, `failMessage` for clue-specific teaching
+10. **Auto-skip Assembly Check**: When last transform result equals the final answer, assembly auto-completes without redundant retyping
 
