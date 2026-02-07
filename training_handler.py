@@ -227,13 +227,27 @@ def update_ui_state(clue_id, clue, action, data):
 
 
 def reveal_answer(clue_id, clue):
-    """Skip to completion, revealing the answer."""
+    """Skip to completion, revealing the full decode."""
     session = _sessions.get(clue_id)
     if not session:
         raise ValueError(f"No session for clue_id: {clue_id}")
 
-    session["step_index"] = len(clue["steps"])
+    steps = clue["steps"]
+
+    # Mark ALL steps as completed so the full decode is shown
+    session["completed_steps"] = list(range(len(steps)))
+    session["step_index"] = len(steps)
     session["answer_locked"] = True
+
+    # Add highlights for all tap_words steps
+    session["highlights"] = []
+    for step in steps:
+        if "indices" in step:
+            session["highlights"].append({
+                "indices": step["indices"],
+                "color": "GREEN",
+                "role": step["type"],
+            })
 
     # Populate answer boxes
     answer_letters = list(re.sub(r'[^A-Z]', '', clue["answer"].upper()))
