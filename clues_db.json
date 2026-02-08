@@ -2431,94 +2431,60 @@
     },
     "times-29453-20d": {
       "id": "times-29453-20d",
-      "clue": {
-        "number": "20D",
-        "text": "Many academics divided by gender-neutral pronoun",
-        "enumeration": "6",
-        "answer": "DOZENS",
-        "definition": [
-          {
-            "text": "Many",
-            "position": "start"
-          }
-        ]
+      "clue": "Many academics divided by gender-neutral pronoun",
+      "number": "20D",
+      "enumeration": "6",
+      "answer": "DOZENS",
+      "words": ["Many", "academics", "divided", "by", "gender-neutral", "pronoun"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "easy",
+        "wordplay": "medium",
+        "overall": "medium"
       },
-      "words": [
-        "Many",
-        "academics",
-        "divided",
-        "by",
-        "gender-neutral",
-        "pronoun"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0
-            ],
-            "text": "Many"
-          },
+          "type": "definition",
+          "indices": [0],
           "position": "start",
-          "explicit": true,
-          "hint": "A word meaning a large quantity, often used colloquially",
-          "difficulty": "Easy"
+          "hint": "A word meaning a large number of something"
         },
         {
-          "type": "container",
-          "template": "insertion_with_two_synonyms",
-          "indicator": {
-            "indices": [
-              2,
-              3
-            ],
-            "text": "divided by",
-            "reasoning": "'divided by' suggests splitting one word to insert another"
-          },
-          "outer": {
-            "fodder": {
-              "indices": [
-                1
-              ],
-              "text": "academics"
+          "type": "indicator",
+          "indices": [2, 3],
+          "hint": "'Divided by' is a container indicator — to divide something is to split it apart and put something in between."
+        },
+        {
+          "type": "outer_word",
+          "indices": [1],
+          "hint": "Which word gets split apart to wrap around the other?"
+        },
+        {
+          "type": "inner_word",
+          "indices": [4, 5],
+          "hint": "What goes inside the split?"
+        },
+        {
+          "type": "assembly",
+          "transforms": [
+            {
+              "role": "outer",
+              "indices": [1],
+              "type": "synonym",
+              "result": "DONS",
+              "hint": "In British English, 'academics' are 'dons' — university fellows at Oxford and Cambridge"
             },
-            "result": "DONS",
-            "reasoning": "British term for university professors or fellows"
-          },
-          "inner": {
-            "fodder": {
-              "indices": [
-                4,
-                5
-              ],
-              "text": "gender-neutral pronoun"
-            },
-            "result": "ZE",
-            "reasoning": "A modern gender-neutral pronoun (between HE and SHE)"
-          },
-          "result": "DOZENS",
-          "assembly": "DO + (ZE) + NS = DOZENS"
+            {
+              "role": "inner",
+              "indices": [4, 5],
+              "type": "synonym",
+              "result": "ZE",
+              "hint": "'Ze' is a modern gender-neutral pronoun — a less common word that cryptic setters love"
+            }
+          ],
+          "result": "DOZENS"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "easy",
-          "hint": "A word meaning a large quantity, often used colloquially"
-        },
-        "wordplay": {
-          "rating": "medium",
-          "hint": "A word for university teachers with a modern pronoun inserted"
-        },
-        "overall": "medium",
-        "recommendedApproach": "definition"
-      },
-      "verified": true
+      ]
     },
     "times-29453-26a": {
       "id": "times-29453-26a",

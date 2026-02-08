@@ -232,7 +232,7 @@ Grid uses CSS Grid with `1fr` units, NOT fixed pixel sizes. See `SPEC.md` Sectio
 
 Convert all 30 clues in `clues_db.json` from the old format to the new flat format with teaching steps. Verify each converted clue works end-to-end in browser.
 
-**Converted clues (verified):** 5D, 17D, 1A, 4A, 25A, 1D, 12A
+**Converted clues (verified):** 5D, 17D, 1A, 4A, 25A, 1D, 12A, 20D
 **Converted (not yet verified in browser):** 2D
 
 **Reference clues — study these BEFORE converting any new clue:**
