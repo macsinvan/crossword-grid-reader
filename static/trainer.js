@@ -441,16 +441,6 @@ class TemplateTrainer {
                 html += `<div style="font-size: 0.8rem; color: #1e40af; margin-bottom: 0.5rem; padding-left: 0.75rem; border-left: 2px solid #93c5fd; line-height: 1.5;">${transform.hint}</div>`;
             }
 
-            // Letter boxes
-            html += `<div style="display: flex; gap: 4px; align-items: center;">`;
-            for (let i = 0; i < transform.letterCount; i++) {
-                html += `<input type="text" class="assembly-transform-letter" data-transform-index="${tIdx}" data-letter-pos="${i}" `
-                    + `maxlength="1" `
-                    + `style="width: 2.2rem; height: 2.4rem; text-align: center; border: none; border-bottom: 3px solid #93c5fd; border-radius: 0; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; background: white; outline: none;" />`;
-            }
-            html += `<button class="assembly-transform-submit" data-transform-index="${tIdx}" style="margin-left: 0.5rem; padding: 0.35rem 1rem; background: #3b82f6; color: white; border: none; border-radius: 1rem; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Check</button>`;
-            html += `</div>`;
-
             html += `</div>`;
 
         } else if (transform.status === 'locked') {
@@ -479,11 +469,14 @@ class TemplateTrainer {
             if (g > 0) html += '<div style="font-size: 1rem; font-weight: 700; color: #94a3b8; padding: 0 0.2rem;">+</div>';
             for (const pos of groups[g]) {
                 const letter = letters[pos];
+                const crossLetter = this.getCrossLetter(pos);
                 const filled = letter !== null;
-                const borderColor = filled ? '#22c55e' : '#e2e8f0';
+                const hasCross = !filled && crossLetter;
+                const borderColor = filled ? '#22c55e' : hasCross ? '#cbd5e1' : '#e2e8f0';
                 const bg = filled ? '#f0fdf4' : '#fafafa';
-                const textColor = filled ? '#15803d' : '#94a3b8';
-                html += `<div style="width: 2rem; height: 2.2rem; display: flex; align-items: center; justify-content: center; border-bottom: 3px solid ${borderColor}; background: ${bg}; font-size: 1rem; font-weight: 700; font-family: monospace; color: ${textColor}; letter-spacing: 0.05em;">${letter || ''}</div>`;
+                const textColor = filled ? '#15803d' : hasCross ? '#94a3b8' : '#94a3b8';
+                const displayLetter = letter || crossLetter || '';
+                html += `<div style="width: 2rem; height: 2.2rem; display: flex; align-items: center; justify-content: center; border-bottom: 3px solid ${borderColor}; background: ${bg}; font-size: 1rem; font-weight: 700; font-family: monospace; color: ${textColor}; letter-spacing: 0.05em;">${displayLetter}</div>`;
             }
         }
         html += '</div></div>';
