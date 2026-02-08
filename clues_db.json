@@ -632,15 +632,9 @@
           "hint": "Something you use to stay dry when it rains"
         },
         {
-          "type": "wordplay_type",
-          "expected": "Container",
-          "options": ["Charade", "Container", "Anagram", "Hidden word"],
-          "hint": "'Nurses' is a container indicator — to nurse something is to hold or wrap around it."
-        },
-        {
           "type": "indicator",
           "indices": [6],
-          "hint": "'Nurses' suggests caring for or wrapping around — containment"
+          "hint": "'Nurses' is a container indicator — to nurse something is to hold or wrap around it."
         },
         {
           "type": "outer_word",

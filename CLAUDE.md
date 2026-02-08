@@ -22,6 +22,25 @@ In charades and container insertions, the clue words are rarely used directly. E
 - Completed steps should summarise the insight, not label the category
 - Before writing ANY user-facing text, think as a cryptic crossword teacher — research the domain if needed, don't hypothesise from code structure
 
+**Assembly transform prompts — deliver the aha moment:**
+Every transform prompt in the assembly step must teach a cryptic convention, not just label an operation. The student should understand *why* this word points to those letters. Mechanical prompts like "Find a 2-letter synonym for 'in'" or "'IT' is used as-is — type it in (2 letters)" tell the student what to do but not what to learn. Instead, each clue's transform `hint` and the per-clue `prompt` override (in `clues_db.json`) should connect the clue word to the convention being used:
+- **synonym**: guide the student to the specific crossword convention (e.g. "In cryptics, 'work' almost always means OP — it's one of the most common abbreviations")
+- **abbreviation**: explain the shorthand (e.g. "'number' in cryptics usually points to NO — a standard abbreviation")
+- **literal**: explain why this word is taken at face value, not as a clue to something else
+- **letter_selection**: teach the pattern (e.g. "'head of office' = take the first letter — 'head of' always means first letter in cryptics")
+- **reversal/deletion/anagram**: connect the indicator word to the operation it signals
+
+The generic `TRANSFORM_PROMPTS` in `training_handler.py` provide a baseline, but the real teaching happens through per-clue `prompt` overrides and `hint` text in `clues_db.json`. When writing clue metadata, always ask: "will the student understand the cryptic trick after reading this?"
+
+### Template Rules — MANDATORY
+
+When writing or modifying step metadata for clues:
+
+1. **Check existing templates first.** Read `render_templates.json` — can an existing template handle this step? If so, use it. If it needs a small extension, extend it. Don't invent new templates without explicit approval.
+2. **If using an existing template, follow its patterns exactly.** Templates define `completedTitle`, `onCorrect`, `menuTitle`, etc. with specific variable substitution patterns. Match them. For example, the `indicator` template's `completedTitle` is `"Indicator: '{words}'"` and its `onCorrect` is `"'{words}' — {hint}"`. Use per-clue overrides (`menuTitle`, `completedTitle`, `prompt`, `intro`) to customise the teaching, but keep the same structural pattern.
+3. **If a new template is genuinely needed, model it on the closest existing one.** Copy the structure (inputMode, prompt, menuTitle, completedTitle, onCorrect, expected_source) and adapt the content.
+4. **Every step must deliver a teaching moment, not a robotic instruction.** We are building a teaching app. Each step should help the student understand a cryptic crossword convention — why something works, not just what to type. Prompts like "Enter the 3-letter result" are mechanical. Prompts like "What does 'work' mean in cryptic crosswords?" teach.
+
 ### Coaching Guidance Per Template Type
 
 Every template's user-facing text must connect to these high-level coaching insights. Step instructions should flow naturally from this guidance.
