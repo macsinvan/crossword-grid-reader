@@ -90,18 +90,37 @@ def get_render(clue_id, clue):
         }
     else:
         # Build current step render
+        # Resolve prompt (template may be dict keyed by indicator_type)
+        prompt_data = template["prompt"]
+        if isinstance(prompt_data, dict):
+            if "indicator_type" not in step:
+                raise ValueError(f"Step type '{step['type']}' has dict-based prompt template but step metadata is missing 'indicator_type'")
+            itype = step["indicator_type"]
+            if itype not in prompt_data:
+                raise ValueError(f"No prompt for indicator_type '{itype}' in template. Available: {list(prompt_data.keys())}")
+            resolved_prompt = prompt_data[itype]
+        else:
+            resolved_prompt = prompt_data
+
         current_step = {
             "index": step_index,
             "type": step["type"],
             "inputMode": template["inputMode"],
-            "prompt": step.get("prompt") or template["prompt"],
+            "prompt": resolved_prompt,
         }
 
-        # Intro (step metadata overrides template)
-        if "intro" in step:
-            current_step["intro"] = step["intro"]
-        elif "intro" in template:
-            current_step["intro"] = template["intro"]
+        # Intro (template may be dict keyed by indicator_type)
+        if "intro" in template:
+            intro_data = template["intro"]
+            if isinstance(intro_data, dict):
+                if "indicator_type" not in step:
+                    raise ValueError(f"Step type '{step['type']}' has dict-based intro template but step metadata is missing 'indicator_type'")
+                itype = step["indicator_type"]
+                if itype not in intro_data:
+                    raise ValueError(f"No intro for indicator_type '{itype}' in template. Available: {list(intro_data.keys())}")
+                current_step["intro"] = intro_data[itype]
+            else:
+                current_step["intro"] = intro_data
 
         # Hint (step metadata overrides template; template hint keyed by clue_type if dict)
         if "hint" in step:
@@ -636,12 +655,13 @@ def _build_step_list(session, clue):
 
     for i, step in enumerate(steps):
         template = RENDER_TEMPLATES.get(step["type"])
-        title = step.get("menuTitle") or (template["menuTitle"] if template else step["type"])
+        if not template:
+            raise ValueError(f"No render template for step type '{step['type']}'")
+        title = _resolve_variables(template["menuTitle"], step, clue)
 
         if i in session["completed_steps"]:
             status = "completed"
-            # Use completedTitle if available (step overrides template)
-            completed_title = step.get("completedTitle") or (template.get("completedTitle") if template else None)
+            completed_title = template.get("completedTitle")
             if completed_title:
                 title = _resolve_variables(completed_title, step, clue)
             completion_text = _resolve_on_correct(template, step, clue) if template else ""
@@ -755,6 +775,13 @@ def _resolve_variables(text, step, clue):
     # {indicatorHint} — extracted from indicator step
     if "{indicatorHint}" in text:
         text = text.replace("{indicatorHint}", step.get("indicatorHint", ""))
+
+    # {indicatorType} — from indicator step's indicator_type field (e.g. "container", "anagram")
+    if "{indicatorType}" in text:
+        if "indicator_type" not in step:
+            raise ValueError(f"Template uses {{indicatorType}} but step metadata is missing 'indicator_type'")
+        # Convert snake_case to display form: "letter_selection" -> "letter selection"
+        text = text.replace("{indicatorType}", step["indicator_type"].replace("_", " "))
 
     # {indicatorWords} — the indicator word(s) from the indicator step
     if "{indicatorWords}" in text:

@@ -61,7 +61,7 @@ This defeats the purpose of teaching. The user sees the answer without thinking.
 │                                             │
 │ ● 1. Find the definition              ▶    │
 │ ○ 2. Identify the wordplay                  │
-│ ○ 3. Spot the indicator                     │
+│ ○ 3. Find the container indicator            │
 │ ○ 4. Find the outer part                    │
 │ ○ 5. Find the inner part                    │
 │ ○ 6. Build the answer                       │
@@ -83,7 +83,7 @@ This defeats the purpose of teaching. The user sees the answer without thinking.
 │ ✓ 1. Definition found: 'Embankment'        │
 │   Can you find a word (5,3) meaning...      │
 │ ● 2. Identify the wordplay              ▶    │
-│ ○ 3. Spot the indicator                     │
+│ ○ 3. Find the container indicator            │
 │ ○ 4. Find the outer part                    │
 ```
 
@@ -95,7 +95,7 @@ This defeats the purpose of teaching. The user sees the answer without thinking.
 **Implemented vertical slices:**
 - Slice 1: `definition` step (tap_words)
 - Slice 2: `wordplay_type` step (multiple_choice — identify the wordplay technique)
-- Slice 3: `indicator` step (tap_words — generic for any indicator type: container, deletion, reversal, anagram)
+- Slice 3: `indicator` step (tap_words — `indicator_type` field drives type-specific menuTitle, prompt, intro, completedTitle)
 - Slice 4: `outer_word` and `inner_word` steps (tap_words)
 - Slice 5: `fodder` step (tap_words — identify the word being operated on)
 - Slice 6: `assembly` step (multi-phase assembly with transforms, auto-skip when last transform equals answer)
@@ -267,11 +267,8 @@ ALL intelligence lives on the server. The client is a pure view layer.
 - `transforms`: For assembly steps — array of `{role, indices, type, result, hint}`
 - `result`: For assembly steps — the assembled answer
 
-**Step metadata can override template defaults** for clue-specific teaching:
-- `prompt`: Overrides template `prompt` (e.g. "Can you find a deletion indicator?")
-- `intro`: Overrides template `intro` (e.g. clue-specific teaching text)
-- `menuTitle`: Overrides template `menuTitle` (e.g. "Find the deletion indicator")
-- `completedTitle`: Overrides template `completedTitle` (e.g. "Deletion indicator: '{words}'")
+**Step metadata fields** (beyond type/indices/hint):
+- `indicator_type`: For indicator steps — the type of indicator (container, anagram, deletion, reversal, ordering, letter_selection, hidden_word). Used by the template for type-specific prompt, intro, menuTitle, and completedTitle via `{indicatorType}` variable and dict-keyed lookup.
 - `failMessage`: Overrides the default assembly fail message
 
 **Why This Flat Format:**
@@ -287,7 +284,7 @@ ALL intelligence lives on the server. The client is a pure view layer.
 |----------|-----------|---------|
 | `definition` | `tap_words` | Find the definition at start/end of clue |
 | `wordplay_type` | `multiple_choice` | Identify the type of wordplay (Charade, Container, Anagram, etc.) |
-| `indicator` | `tap_words` | Spot an indicator word (container, deletion, reversal, anagram — step metadata specifies which) |
+| `indicator` | `tap_words` | Find indicator word — `indicator_type` field drives type-specific prompt, intro, menuTitle, completedTitle |
 | `outer_word` | `tap_words` | Identify which word wraps around (container clues) |
 | `inner_word` | `tap_words` | Identify which word goes inside (container clues) |
 | `fodder` | `tap_words` | Identify the word being operated on by an indicator |
@@ -390,7 +387,8 @@ LAYER 2: Render Template (render_templates.json)
    - Prompt text, intro text, hint text (with {variable} substitution)
    - Menu titles (before/after completion)
    - Completion message (`onCorrect`)
-   - Step metadata can override: `prompt`, `intro`, `menuTitle`, `completedTitle`, `failMessage`
+   - For indicator steps: `indicator_type` drives type-specific text via dict-keyed lookup and `{indicatorType}` variable
+   - Assembly steps can override `failMessage`
 
 **Variable Substitution:**
 Templates use `{variable}` placeholders resolved from step + clue data:
@@ -400,6 +398,7 @@ Templates use `{variable}` placeholders resolved from step + clue data:
 - `{position}` → definition position (start/end)
 - `{result}` → step result
 - `{expected}` → expected answer (for multiple_choice steps)
+- `{indicatorType}` → indicator type from step metadata, display form (e.g. "letter selection" from "letter_selection")
 
 **Example: Definition Step**
 
@@ -427,7 +426,7 @@ Templates use `{variable}` placeholders resolved from step + clue data:
 |----------------------|-----------------|-----------|---------|
 | `definition` | `definition` | `tap_words` | Find definition |
 | `wordplay_type` | `wordplay_type` | `multiple_choice` | Identify wordplay technique |
-| `indicator` | `indicator` | `tap_words` | Spot indicator word (any type — step metadata specifies which) |
+| `indicator` | `indicator` | `tap_words` | Find indicator word — `indicator_type` drives type-specific text |
 | `outer_word` | `outer_word` | `tap_words` | Identify outer word (container clues) |
 | `inner_word` | `inner_word` | `tap_words` | Identify inner word (container clues) |
 | `fodder` | `fodder` | `tap_words` | Identify word being operated on |
@@ -552,7 +551,7 @@ The engine uses a simple sequencer with flat steps. Each step type has one inter
 |------|-----------|-------------|
 | `definition` | `tap_words` | Find definition at start/end of clue |
 | `wordplay_type` | `multiple_choice` | Identify the wordplay technique (Charade, Container, etc.) |
-| `indicator` | `tap_words` | Spot an indicator word (step metadata specifies which type) |
+| `indicator` | `tap_words` | Find indicator word — `indicator_type` drives type-specific text |
 | `outer_word` | `tap_words` | Identify the outer (wrapping) word |
 | `inner_word` | `tap_words` | Identify the inner (inserted) word |
 | `fodder` | `tap_words` | Identify the word being operated on by an indicator |
@@ -664,7 +663,7 @@ The `assembly` step has its own sub-state tracked by `assembly_phase` and `assem
 │ Steps to solve:                                             │
 │                                                             │
 │ ● 1. Find the definition                              ▶    │
-│ ○ 2. Spot the indicator                                     │
+│ ○ 2. Find the container indicator                            │
 │ ○ 3. Find the outer word                                    │
 │ ○ 4. Find the inner word                                    │
 │ ○ 5. Put it together                                        │
@@ -679,7 +678,7 @@ The `assembly` step has its own sub-state tracked by `assembly_phase` and `assem
 │   │ Tap the definition words                💡  │           │
 │   │ Every cryptic clue contains a straight...   │           │
 │   └─────────────────────────────────────────────┘           │
-│ ○ 2. Spot the indicator                                     │
+│ ○ 2. Find the container indicator                            │
 ```
 
 **State Indicators:**
@@ -1209,6 +1208,6 @@ Currently, clues must be manually annotated in `clues_db.json`. The solver will 
 6. **Engine Redesign (v2)**: Replaced ~4,400-line engine with ~550-line simple sequencer, flat steps, external render templates
 7. **Container Assembly**: Multi-phase assembly step with transforms
 8. **Template Expansion**: Renamed `container_indicator` → `indicator` (generic for any indicator type), unified `container_assembly`/`charade_assembly` → `assembly`, added `wordplay_type` (multiple_choice), `fodder` (tap_words)
-9. **Step Metadata Overrides**: Steps can override template `prompt`, `intro`, `menuTitle`, `completedTitle`, `failMessage` for clue-specific teaching
+9. **Indicator Type System**: Indicator steps use `indicator_type` field to drive type-specific template text (menuTitle, prompt, intro, completedTitle) via dict-keyed lookup and `{indicatorType}` variable. Assembly steps can override `failMessage`.
 10. **Auto-skip Assembly Check**: When last transform result equals the final answer, assembly auto-completes without redundant retyping
 

@@ -37,7 +37,7 @@ The generic `transformPrompts` in `render_templates.json` (under the `assembly` 
 When writing or modifying step metadata for clues:
 
 1. **Check existing templates first.** Read `render_templates.json` — can an existing template handle this step? If so, use it. If it needs a small extension, extend it. Don't invent new templates without explicit approval.
-2. **If using an existing template, follow its patterns exactly.** Templates define `completedTitle`, `onCorrect`, `menuTitle`, etc. with specific variable substitution patterns. Match them. For example, the `indicator` template's `completedTitle` is `"Indicator found: '{words}' — {hint}"` and its `onCorrect` is `"'{words}' — {hint}"`. Use per-clue overrides (`menuTitle`, `completedTitle`, `prompt`, `intro`) to customise the teaching, but keep the same structural pattern.
+2. **If using an existing template, follow its patterns exactly.** Templates define `completedTitle`, `onCorrect`, `menuTitle`, etc. with specific variable substitution patterns. Match them. For example, the `indicator` template uses `{indicatorType}` in menuTitle/completedTitle and dict-keyed lookup for prompt/intro — indicator steps just need the `indicator_type` field in their metadata.
 3. **If a new template is genuinely needed, model it on the closest existing one.** Copy the structure (inputMode, prompt, menuTitle, completedTitle, onCorrect, expected_source) and adapt the content.
 4. **Every step must deliver a teaching moment, not a robotic instruction.** We are building a teaching app. Each step should help the student understand a cryptic crossword convention — why something works, not just what to type. Prompts like "Enter the 3-letter result" are mechanical. Prompts like "What does 'work' mean in cryptic crosswords?" teach.
 
@@ -177,14 +177,15 @@ The trainer engine (`training_handler.py`) is a ~550-line simple sequencer. It r
 - Layer 1: Clue step metadata in `clues_db.json` — clue-specific data (which words, indices, expected answers, hints)
 - Layer 2: Render templates in `render_templates.json` — generic presentation logic (inputMode, prompt, intro, hint, onCorrect)
 - Each step `type` maps 1:1 to a render template
-- Step metadata can override template defaults for `prompt`, `intro`, `menuTitle`, `completedTitle`, `failMessage`
+- For indicator steps: `indicator_type` field drives type-specific text via dict-keyed lookup and `{indicatorType}` variable
+- Assembly steps can override `failMessage`
 
 **Current render templates (7):**
 | Template | inputMode | Purpose |
 |----------|-----------|---------|
 | `definition` | `tap_words` | Find the definition at start/end of clue |
 | `wordplay_type` | `multiple_choice` | Identify the type of wordplay (Charade, Container, etc.) |
-| `indicator` | `tap_words` | Spot an indicator word (any type — step metadata specifies which) |
+| `indicator` | `tap_words` | Find indicator word — `indicator_type` drives type-specific text |
 | `outer_word` | `tap_words` | Identify which word wraps around |
 | `inner_word` | `tap_words` | Identify which word goes inside |
 | `fodder` | `tap_words` | Identify the word being operated on by an indicator |
@@ -204,7 +205,7 @@ Assembly is a multi-phase step with its own sub-state (`assembly_phase`, `assemb
 Transform prompts are template-driven from `transformPrompts` in `render_templates.json`. Definition/indicator lines use `{variable}` substitution via `_resolve_variables()`. When the last transform result equals the final answer, the check phase is auto-skipped.
 
 **Flat Clue Metadata Format (17D example):**
-Steps are a flat array — no nesting. Each step has `type`, `indices` (word positions), and `hint`. The `assembly` step additionally has `transforms` (array of `{role, indices, type, result, hint}`) and `result`. Steps like `wordplay_type` have `expected` and `options`. Any step can override template `prompt`, `intro`, `menuTitle`, `completedTitle` for clue-specific teaching.
+Steps are a flat array — no nesting. Each step has `type`, `indices` (word positions), and `hint`. Indicator steps also have `indicator_type` (container, anagram, deletion, reversal, ordering, letter_selection, hidden_word) which drives type-specific template text. The `assembly` step additionally has `transforms` (array of `{role, indices, type, result, hint}`) and `result`. Steps like `wordplay_type` have `expected` and `options`.
 
 ## Environment Variables
 Create `.env` file (see `.env.example`):
@@ -295,6 +296,7 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 
 **Key rules:**
 - Follow the Step 2 Rule (see above)
+- Indicator steps must have `indicator_type` field (container, anagram, deletion, reversal, ordering, letter_selection, hidden_word) — the template uses this for type-specific text
 - Indicator indices must be ONLY the indicator word itself, not connectors like "by", "with", "in"
 - Hints must teach cryptic conventions (e.g. "'work' nearly always means OP"), not just define words
 - Transform `type` must be accurate: use "abbreviation" not "synonym" for standard cryptic mappings

@@ -189,11 +189,8 @@
           "indices": [
             2
           ],
-          "prompt": "Which word tells you about the ordering of the parts?",
-          "menuTitle": "Find the ordering indicator",
-          "completedTitle": "Ordering indicator: '{words}' — the parts join in a specific order",
-          "intro": "In a charade, the parts join end to end. Sometimes a word like 'after', 'before', or 'following' tells you the order.",
-          "hint": "'After' tells you the first part ('any number') comes after the second part ('dance party')"
+          "hint": "'After' tells you the first part ('any number') comes after the second part ('dance party')",
+          "indicator_type": "ordering"
         },
         {
           "type": "assembly",
@@ -271,11 +268,8 @@
             1,
             2
           ],
-          "prompt": "Can you find a deletion indicator?",
-          "menuTitle": "Find the deletion indicator",
-          "completedTitle": "Deletion indicator: '{words}'",
-          "intro": "A deletion indicator tells you to remove or shorten something — look for words suggesting 'most of', 'nearly', 'not quite', or similar.",
-          "hint": "'A lot of' is a deletion indicator — it tells you to take most of something, dropping a letter"
+          "hint": "'A lot of' is a deletion indicator — it tells you to take most of something, dropping a letter",
+          "indicator_type": "deletion"
         },
         {
           "type": "fodder",
@@ -293,11 +287,8 @@
           "indices": [
             4
           ],
-          "prompt": "Can you find a reversal indicator?",
-          "menuTitle": "Find the reversal indicator",
-          "completedTitle": "Reversal indicator: '{words}'",
-          "intro": "A reversal indicator tells you to read letters backwards — look for words suggesting turning, spinning, or going back.",
-          "hint": "'Turns' is a reversal indicator — it tells you to read the letters backwards"
+          "hint": "'Turns' is a reversal indicator — it tells you to read the letters backwards",
+          "indicator_type": "reversal"
         },
         {
           "type": "assembly",
@@ -383,33 +374,23 @@
         {
           "type": "indicator",
           "indices": [
-            7
+            3,
+            4
           ],
-          "menuTitle": "Find the anagram indicator",
-          "completedTitle": "'struggles' — letters need rearranging",
-          "prompt": "Which word signals that letters need to be rearranged?",
-          "intro": "An anagram indicator is a word suggesting disorder, difficulty, or change — things like 'broken', 'mixed', 'confused', or 'struggling'.",
-          "hint": "'Struggles' suggests difficulty or disorder — a classic signal to rearrange letters"
+          "hint": "take the first letter of the next word",
+          "indicator_type": "letter_selection"
         },
         {
-          "type": "fodder",
+          "type": "indicator",
           "indices": [
-            3,
-            4,
-            5,
-            6,
-            9
+            7
           ],
-          "menuTitle": "Find the anagram fodder",
-          "completedTitle": "Fodder: '{words}'",
-          "prompt": "Which words supply the letters to rearrange?",
-          "intro": "The anagram indicator tells you to jumble some letters. Which words in the clue supply those letters?",
-          "hint": "'head of office', 'IT', and 'PC' — these are the words that provide letters for the anagram"
+          "hint": "difficulty or disorder — a classic signal to rearrange letters",
+          "indicator_type": "anagram"
         },
         {
           "type": "assembly",
-          "intro": "You've found that 'struggles' tells you to rearrange letters from 'head of office IT PC'. But that's far too many letters for a 5-letter answer. Each part is pointing to something shorter.",
-          "failMessage": "Work out what each part really contributes — 'head of' is a clue about which letters to take.",
+          "intro": "You're looking for a 5-letter word meaning 'Concerning sight'",
           "transforms": [
             {
               "role": "part1",
@@ -420,7 +401,8 @@
               ],
               "type": "letter_selection",
               "result": "O",
-              "hint": "'Head of office' means take the first letter — the 'head' — of the word 'office'"
+              "hint": "'Head of office' means take the first letter — the 'head' — of the word 'office'",
+              "prompt": "'head of' signals: take the first letter of 'office' (1 letter)"
             },
             {
               "role": "part2",
@@ -429,7 +411,8 @@
               ],
               "type": "literal",
               "result": "IT",
-              "hint": "'IT' is used as-is — it contributes both its letters"
+              "hint": "'IT' is used as-is — it contributes both its letters",
+              "prompt": "'IT' — these letters go straight in (2 letters)"
             },
             {
               "role": "part3",
@@ -438,7 +421,8 @@
               ],
               "type": "literal",
               "result": "PC",
-              "hint": "'PC' is used as-is — it contributes both its letters"
+              "hint": "'PC' is used as-is — it contributes both its letters",
+              "prompt": "'PC' — these letters go straight in (2 letters)"
             },
             {
               "role": "part4",
@@ -448,10 +432,12 @@
               ],
               "type": "anagram",
               "result": "OPTIC",
-              "hint": "Rearrange O + IT + PC (5 letters) — what word meaning 'concerning sight' can you make?"
+              "hint": "Rearrange O + IT + PC (5 letters) — what word meaning 'concerning sight' can you make?",
+              "prompt": "'struggles' signals: rearrange the letters above (5 letters)"
             }
           ],
-          "result": "OPTIC"
+          "result": "OPTIC",
+          "explicit": true
         }
       ]
     },
@@ -684,11 +670,8 @@
           "indices": [
             0
           ],
-          "menuTitle": "Find the anagram indicator",
-          "completedTitle": "Anagram indicator: '{words}'",
-          "prompt": "Can you find the anagram indicator?",
-          "intro": "An anagram indicator is a word suggesting disorder, change, or rearrangement — things like 'broken', 'mixed', 'wild', 'drunk', or 'crooked'.",
-          "hint": "'Crooked' means bent or out of shape — a classic signal to rearrange letters"
+          "hint": "'Crooked' means bent or out of shape — a classic signal to rearrange letters",
+          "indicator_type": "anagram"
         },
         {
           "type": "fodder",
@@ -783,7 +766,8 @@
           "indices": [
             6
           ],
-          "hint": "'Nurses' is a container indicator — to nurse something is to hold or wrap around it."
+          "hint": "'Nurses' is a container indicator — to nurse something is to hold or wrap around it.",
+          "indicator_type": "container"
         },
         {
           "type": "outer_word",
@@ -868,7 +852,8 @@
           "indices": [
             2
           ],
-          "hint": "'Takes' is a container indicator — to take something in is to absorb or contain it."
+          "hint": "'Takes' is a container indicator — to take something in is to absorb or contain it.",
+          "indicator_type": "container"
         },
         {
           "type": "outer_word",
@@ -969,7 +954,8 @@
           "indices": [
             6
           ],
-          "hint": "'Wear' is a container indicator — to wear something is to put it around you, wrapping the outside around the inside"
+          "hint": "'Wear' is a container indicator — to wear something is to put it around you, wrapping the outside around the inside",
+          "indicator_type": "container"
         },
         {
           "type": "outer_word",
@@ -1319,11 +1305,8 @@
           "indices": [
             2
           ],
-          "prompt": "Which word signals that a letter needs to be removed?",
-          "menuTitle": "Find the deletion indicator",
-          "completedTitle": "Deletion indicator: '{words}' — something is being taken away",
-          "intro": "A deletion indicator tells you to remove something — look for words suggesting loss, departure, or taking away.",
-          "hint": "'Absence' tells you something is missing — a letter needs to be removed"
+          "hint": "'Absence' tells you something is missing — a letter needs to be removed",
+          "indicator_type": "deletion"
         },
         {
           "type": "fodder",
@@ -1479,11 +1462,8 @@
           "indices": [
             1
           ],
-          "menuTitle": "Find the indicator",
-          "completedTitle": "'welcoming' — one word goes inside another",
-          "prompt": "One word here tells you that something is being placed inside something else. Which word?",
-          "intro": "Now that you have the definition, look at the remaining words. One of them is a signal — it tells you HOW the wordplay works.",
-          "hint": "'Welcoming' suggests receiving something into yourself — a container indicator"
+          "hint": "'Welcoming' suggests receiving something into yourself — a container indicator",
+          "indicator_type": "container"
         },
         {
           "type": "outer_word",
@@ -1663,11 +1643,8 @@
           "indices": [
             4
           ],
-          "prompt": "Which word signals that letters need to be reversed?",
-          "menuTitle": "Find the reversal indicator",
-          "completedTitle": "Reversal indicator: '{words}' — letters get turned around",
-          "intro": "A reversal indicator tells you to read letters backwards — look for words suggesting disorder or turning upside down.",
-          "hint": "'Upset' means turned upside down — letters get reversed"
+          "hint": "'Upset' means turned upside down — letters get reversed",
+          "indicator_type": "reversal"
         },
         {
           "type": "assembly",
@@ -1762,9 +1739,7 @@
             5
           ],
           "hint": "Two separate words work together as the indicator. 'Raised' in a down clue means reversed (going upward), and 'limits' tells you the letters are bounded within other words — a hidden reversed word.",
-          "menuTitle": "Spot the indicators",
-          "completedTitle": "Indicators found: '{words}' — hidden and reversed",
-          "prompt": "Tap both indicator words"
+          "indicator_type": "hidden_word"
         },
         {
           "type": "fodder",
@@ -1841,11 +1816,8 @@
           "indices": [
             5
           ],
-          "prompt": "Which word signals that letters need to be reversed?",
-          "menuTitle": "Find the reversal indicator",
-          "completedTitle": "Reversal indicator: '{words}' — letters get turned around",
-          "intro": "A reversal indicator tells you to read letters backwards — look for words suggesting turning, spinning, or going back.",
-          "hint": "'Revolution' means a full turn — letters get reversed"
+          "hint": "'Revolution' means a full turn — letters get reversed",
+          "indicator_type": "reversal"
         },
         {
           "type": "assembly",
@@ -1930,11 +1902,8 @@
           "indices": [
             2
           ],
-          "menuTitle": "Find the first indicator",
-          "completedTitle": "Indicator found: '{words}' — {hint}",
-          "prompt": "One indicator tells you to take specific letters. Which word?",
-          "intro": "This clue has two indicators — two different instructions hiding in the surface. Start with the one that tells you which letters to pick.",
-          "hint": "take the first letter of each word"
+          "hint": "take the first letter of each word",
+          "indicator_type": "letter_selection"
         },
         {
           "type": "indicator",
@@ -1942,11 +1911,8 @@
             7,
             8
           ],
-          "menuTitle": "Find the second indicator",
-          "completedTitle": "Indicator found: '{words}' — {hint}",
-          "prompt": "The second indicator signals rearrangement. Which words?",
-          "intro": "There’s a second instruction in this clue — one that tells you to rearrange letters.",
-          "hint": "things being shaken up — an anagram indicator"
+          "hint": "things being shaken up — an anagram indicator",
+          "indicator_type": "anagram"
         },
         {
           "type": "assembly",
@@ -2031,11 +1997,8 @@
           "indices": [
             3
           ],
-          "prompt": "Which word tells you that letters need to be reversed?",
-          "menuTitle": "Find the reversal indicator",
-          "completedTitle": "Reversal indicator: '{words}' — in a down clue, going up means reversed",
-          "intro": "In a down clue, 'mounted' means going upward — the opposite of down. That signals a reversal.",
-          "hint": "'Mounted' means going up — in a down clue, that's a reversal indicator"
+          "hint": "'Mounted' means going up — in a down clue, that's a reversal indicator",
+          "indicator_type": "reversal"
         },
         {
           "type": "fodder",
@@ -2144,7 +2107,8 @@
             3,
             4
           ],
-          "hint": "'Coming inside' is a container indicator — something is being placed inside something else."
+          "hint": "'Coming inside' is a container indicator — something is being placed inside something else.",
+          "indicator_type": "container"
         },
         {
           "type": "outer_word",
@@ -2252,11 +2216,8 @@
           "indices": [
             4
           ],
-          "prompt": "Which word signals that letters need rearranging?",
-          "menuTitle": "Find the anagram indicator",
-          "completedTitle": "Anagram indicator: '{words}' — letters get rearranged",
-          "intro": "An anagram indicator tells you that some letters need to be shuffled into a new order. Look for words suggesting disorder, change, or confusion.",
-          "hint": "'Misrepresented' means shown wrongly — a classic anagram indicator"
+          "hint": "'Misrepresented' means shown wrongly — a classic anagram indicator",
+          "indicator_type": "anagram"
         },
         {
           "type": "fodder",
@@ -2356,7 +2317,8 @@
           "indices": [
             2
           ],
-          "hint": "'Lengthened' suggests stretching a word by putting letters inside it"
+          "hint": "'Lengthened' suggests stretching a word by putting letters inside it",
+          "indicator_type": "container"
         },
         {
           "type": "outer_word",
@@ -2541,11 +2503,8 @@
           "indices": [
             2
           ],
-          "menuTitle": "Find the anagram indicator",
-          "completedTitle": "'remade' — letters need rearranging",
-          "prompt": "Which word signals that letters need to be rearranged?",
-          "intro": "An anagram indicator is a word suggesting change, disorder, or reconstruction — things like 'broken', 'mixed', 'rebuilt'.",
-          "hint": "'Remade' means reconstructed — the letters need to be rearranged into something new"
+          "hint": "'Remade' means reconstructed — the letters need to be rearranged into something new",
+          "indicator_type": "anagram"
         },
         {
           "type": "fodder",
@@ -2633,7 +2592,8 @@
           "indices": [
             2
           ],
-          "hint": "'Divided' is a container indicator — to divide something is to split it apart and put something in between."
+          "hint": "'Divided' is a container indicator — to divide something is to split it apart and put something in between.",
+          "indicator_type": "container"
         },
         {
           "type": "outer_word",

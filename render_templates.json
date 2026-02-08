@@ -26,10 +26,26 @@
   },
   "indicator": {
     "inputMode": "tap_words",
-    "prompt": "Tap the indicator word",
-    "menuTitle": "Spot the indicator",
-    "completedTitle": "Indicator found: '{words}' — {hint}",
-    "intro": "Look for a word that signals what to do with the other words \u2014 the indicator.",
+    "menuTitle": "Find the {indicatorType} indicator",
+    "completedTitle": "{indicatorType} indicator: '{words}' — {hint}",
+    "prompt": {
+      "container": "Which word tells you something is being placed inside something else?",
+      "anagram": "Which word signals that letters need rearranging?",
+      "deletion": "Which word signals that something is being removed or shortened?",
+      "reversal": "Which word signals that letters need to be reversed?",
+      "ordering": "Which word tells you about the ordering of the parts?",
+      "letter_selection": "Which words tell you to pick specific letters?",
+      "hidden_word": "Which words signal the answer is hiding in plain sight?"
+    },
+    "intro": {
+      "container": "A container indicator tells you one word goes inside another — look for words suggesting holding, wrapping, or containing.",
+      "anagram": "An anagram indicator suggests disorder or change — look for words like 'broken', 'mixed', 'confused', or 'struggling'.",
+      "deletion": "A deletion indicator tells you to remove or shorten something — look for words suggesting 'most of', 'nearly', or 'not quite'.",
+      "reversal": "A reversal indicator tells you to read letters backwards — look for words suggesting turning, spinning, or going back.",
+      "ordering": "In a charade, the parts join end to end. Sometimes a word like 'after', 'before', or 'following' tells you the order.",
+      "letter_selection": "A letter selection indicator tells you to pick specific letters — look for words like 'head', 'initially', 'first', or 'finally'.",
+      "hidden_word": "A hidden word indicator tells you the answer is spelled out inside the clue — look for words like 'in', 'from', 'some', or 'limits'."
+    },
     "hint": "The indicator often disguises itself as part of the surface meaning. It tells you what to do with the other words.",
     "expected_source": "indices",
     "onCorrect": "'{words}' \u2014 {hint}"
