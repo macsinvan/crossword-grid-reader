@@ -672,6 +672,10 @@ class CrosswordPuzzle {
                     cell.addEventListener('click', () => {
                         this.selectCell(r, c);
                     });
+                    cell.addEventListener('dblclick', () => {
+                        this.selectCell(r, c);
+                        this.openTrainer();
+                    });
                 }
 
                 gridEl.appendChild(cell);
