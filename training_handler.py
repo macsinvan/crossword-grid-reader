@@ -379,7 +379,7 @@ def _build_assembly_data(session, step, clue):
     position_map = _compute_position_map(step)
     completed_letters = _compute_completed_letters(transforms_done, position_map, step)
 
-    # Build coaching context strings — all logic stays on server
+    # Extract raw data from earlier steps for template variable resolution
     definition_words = ""
     indicator_hint = ""
     for s in clue["steps"]:
@@ -388,19 +388,15 @@ def _build_assembly_data(session, step, clue):
         elif s["type"] == "indicator" and "indices" in s:
             indicator_hint = s.get("hint", "")
 
-    enumeration = clue.get("enumeration", "")
-    definition_line = ""
-    if definition_words and enumeration:
-        definition_line = f"You're looking for a {enumeration}-letter word meaning '{definition_words}'"
+    # Resolve coaching lines from assembly render template
+    template = RENDER_TEMPLATES.get("assembly", {})
+    # Build a virtual step with the extra variables for resolution
+    virtual_step = dict(step)
+    virtual_step["definitionWords"] = definition_words
+    virtual_step["indicatorHint"] = indicator_hint
 
-    # Indicator context line: use hint from the indicator step
-    # For clues without indicators (charades), describe the pieces
-    indicator_line = ""
-    if indicator_hint:
-        indicator_line = indicator_hint
-    else:
-        piece_names = " + ".join(f"'{t['clueWord']}'" for t in transform_list)
-        indicator_line = f"The parts join end-to-end: {piece_names}"
+    definition_line = _resolve_variables(template.get("definitionLine", ""), virtual_step, clue)
+    indicator_line = _resolve_variables(template.get("indicatorLine", ""), virtual_step, clue)
 
     return {
         "phase": phase,
@@ -687,6 +683,14 @@ def _resolve_variables(text, step, clue):
     # {expected}
     if "{expected}" in text:
         text = text.replace("{expected}", str(step.get("expected", "")))
+
+    # {definitionWords} — extracted from definition step
+    if "{definitionWords}" in text:
+        text = text.replace("{definitionWords}", step.get("definitionWords", ""))
+
+    # {indicatorHint} — extracted from indicator step
+    if "{indicatorHint}" in text:
+        text = text.replace("{indicatorHint}", step.get("indicatorHint", ""))
 
     return text
 
