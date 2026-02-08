@@ -1927,7 +1927,7 @@
           ],
           "position": "all",
           "intro": "This is an &lit clue — a rare and elegant construction where the entire clue reads as both the definition AND the wordplay simultaneously. There’s no split between definition and wordplay; the whole thing works both ways.",
-          "prompt": "This is an &lit clue. Tap all the words — the entire clue is the definition.",
+          "prompt": "Tap all the words",
           "hint": "Read it as a description: someone who was one missing initially, admitted to Electra with some upheaval. Who would that be?",
           "lookup": {
             "word": "latecomer",
