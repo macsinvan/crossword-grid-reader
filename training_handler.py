@@ -466,10 +466,13 @@ def _build_assembly_data(session, step, clue):
             # Build completed text from templates
             completed_templates = template["completedTextTemplates"]
             if t_type in DEPENDENT_TYPES and i > 0:
-                # All dependent types operate on the immediately prior result
-                if (i - 1) not in transforms_done:
-                    raise ValueError(f"Transform {i} is dependent but predecessor {i-1} has no result in transforms_done")
-                prev_result = transforms_done[i - 1]
+                # Dependent types may consume multiple predecessors
+                consumed = _find_consumed_predecessors(transforms, i)
+                for c in consumed:
+                    if c not in transforms_done:
+                        raise ValueError(f"Transform {i} is dependent but predecessor {c} has no result in transforms_done")
+                prev_parts = [transforms_done[c] for c in consumed]
+                prev_result = " + ".join(prev_parts)
                 completed_text = completed_templates["dependent"].format(
                     prevResult=prev_result, result=result)
             else:
@@ -570,14 +573,16 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
             transforms_done[transform_index] = expected.upper()
             session["assembly_hint_index"] = None
 
-            # Auto-complete the immediate predecessor superseded by dependent transforms
+            # Auto-complete all predecessors consumed by this dependent transform
             DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
             if "type" not in transforms[transform_index]:
                 raise ValueError(f"Transform {transform_index} is missing 'type' field")
             t_type = transforms[transform_index]["type"]
             if t_type in DEPENDENT_TYPES and transform_index > 0:
-                if (transform_index - 1) not in transforms_done:
-                    transforms_done[transform_index - 1] = transforms[transform_index - 1]["result"].upper()
+                consumed = _find_consumed_predecessors(transforms, transform_index)
+                for c in consumed:
+                    if c not in transforms_done:
+                        transforms_done[c] = transforms[c]["result"].upper()
 
             # Check if all transforms now complete → auto-skip if answer is spelled out
             if len(transforms_done) == len(transforms):
@@ -635,6 +640,56 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
         raise ValueError(f"Invalid transform_index: {transform_index}")
 
 
+def _find_consumed_predecessors(transforms, dep_index):
+    """Find ALL predecessor indices consumed by a dependent transform.
+
+    Works backwards from dep_index, accumulating predecessors until the
+    combined letter count matches what the dependent transform needs:
+    - reversal/anagram: combined input length == result length
+    - deletion: combined input length == result length + 1
+
+    Returns a list of predecessor indices in ascending order.
+    """
+    DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
+    t = transforms[dep_index]
+    t_type = t["type"]
+    result_len = len(re.sub(r'[^A-Z]', '', t["result"].upper()))
+
+    if t_type == "deletion":
+        target_len = result_len + 1
+    else:
+        target_len = result_len
+
+    consumed = []
+    accumulated = 0
+    for j in range(dep_index - 1, -1, -1):
+        pred_len = len(re.sub(r'[^A-Z]', '', transforms[j]["result"].upper()))
+        consumed.append(j)
+        accumulated += pred_len
+        if accumulated >= target_len:
+            break
+
+    consumed.reverse()
+    return consumed
+
+
+def _find_terminal_transforms(transforms):
+    """Identify terminal transforms — those not consumed by a later dependent.
+
+    Returns a set of terminal transform indices.
+    """
+    DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
+    terminal = set(range(len(transforms)))
+    for i, t in enumerate(transforms):
+        if "type" not in t:
+            raise ValueError(f"Transform {i} is missing 'type' field")
+        if i > 0 and t["type"] in DEPENDENT_TYPES:
+            consumed = _find_consumed_predecessors(transforms, i)
+            for c in consumed:
+                terminal.discard(c)
+    return terminal
+
+
 def _compute_position_map(step):
     """Compute which final-answer positions each terminal transform fills.
 
@@ -644,17 +699,9 @@ def _compute_position_map(step):
     """
     transforms = step["transforms"]
     result = re.sub(r'[^A-Z]', '', step["result"].upper())
-    DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
 
     # Identify terminal transforms (those not superseded by a later dependent)
-    terminal = set(range(len(transforms)))
-    for i, t in enumerate(transforms):
-        if "type" not in t:
-            raise ValueError(f"Transform {i} is missing 'type' field in position map computation")
-        if i > 0 and t["type"] in DEPENDENT_TYPES:
-            # All dependent types (deletion, reversal, anagram) supersede
-            # only the immediately preceding transform
-            terminal.discard(i - 1)
+    terminal = _find_terminal_transforms(transforms)
 
     # Check if this is a container clue (has outer/inner roles)
     roles = {t["role"] for t in transforms}
@@ -919,13 +966,7 @@ def _resolve_variables(text, step, clue):
 
         if is_container:
             # Container: show insertion notation like SOL(ARE + C + LIPS)E
-            # Find terminal transforms (same logic as _compute_position_map)
-            terminal = set(range(len(transforms)))
-            for i, t in enumerate(transforms):
-                if "type" not in t:
-                    raise ValueError(f"Transform is missing 'type' field in assembly step")
-                if i > 0 and t["type"] in DEPENDENT_TYPES:
-                    terminal.discard(i - 1)
+            terminal = _find_terminal_transforms(transforms)
 
             # Find terminal outer and collect terminal inner parts
             outer_idx = None
@@ -964,21 +1005,35 @@ def _resolve_variables(text, step, clue):
             else:
                 raise ValueError("Container clue has outer/inner roles but no terminal outer or inner transforms found")
         else:
-            # Charade/chain: collect independent results, show dependent operations
-            # All dependent types (deletion, reversal, anagram) only transform
-            # the immediate predecessor — show as (predecessor → result)
-            parts = []
+            # Charade/chain: show clue word attribution for independent transforms,
+            # and dependent operations with arrows
+            # e.g. 'doldrums' → LOW + 'Sailor' → TAR
+            # e.g. (PICS + ID → DISCIP) + 'cover the inside of' → LINE
+            words = clue.get("words", [])
+            # Track both display text and raw result for each part
+            # display: what the student sees; raw: just the result letters (for dependent arrows)
+            parts = []  # list of (display_text, raw_result)
             for i, t in enumerate(transforms):
                 if "type" not in t:
                     raise ValueError(f"Transform is missing 'type' field in assembly step")
                 t_type = t["type"]
                 result = t["result"].upper()
                 if t_type in DEPENDENT_TYPES and parts:
-                    prev = parts.pop()
-                    parts.append("(" + prev + " \u2192 " + result + ")")
+                    consumed = _find_consumed_predecessors(transforms, i)
+                    # Pop all consumed predecessors — use raw results for the arrow
+                    consumed_raws = []
+                    for _ in consumed:
+                        if parts:
+                            _, raw = parts.pop()
+                            consumed_raws.insert(0, raw)
+                    display = "(" + " + ".join(consumed_raws) + " \u2192 " + result + ")"
+                    parts.append((display, result))
                 else:
-                    parts.append(result)
-            text = text.replace("{assemblyBreakdown}", " + ".join(parts))
+                    # Independent transform: show 'clueWord' → RESULT
+                    clue_word = " ".join(words[idx] for idx in t["indices"]) if words else ""
+                    display = "'" + clue_word + "' \u2192 " + result
+                    parts.append((display, result))
+            text = text.replace("{assemblyBreakdown}", " + ".join(d for d, _ in parts))
 
     return text
 

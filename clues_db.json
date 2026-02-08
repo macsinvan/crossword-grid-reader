@@ -1180,18 +1180,10 @@
     },
     "times-29453-25a": {
       "id": "times-29453-25a",
-      "clue": {
-        "number": "25A",
-        "text": "Urge removal of line from silly speech",
-        "enumeration": "5",
-        "answer": "DRIVE",
-        "definition": [
-          {
-            "text": "Urge",
-            "position": "start"
-          }
-        ]
-      },
+      "clue": "Urge removal of line from silly speech",
+      "number": "25A",
+      "enumeration": "5",
+      "answer": "DRIVE",
       "words": [
         "Urge",
         "removal",
@@ -1201,72 +1193,80 @@
         "silly",
         "speech"
       ],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "easy",
+        "wordplay": "easy",
+        "overall": "easy"
+      },
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0
-            ],
-            "text": "Urge"
-          },
+          "type": "definition",
+          "indices": [
+            0
+          ],
           "position": "start",
-          "explicit": true,
-          "hint": "To push or propel forward, or a strong motivation",
-          "difficulty": "Easy"
+          "hint": "To push or propel forward — 'drive' can mean to urge someone on",
+          "lookup": {
+            "word": "urge",
+            "url": "https://www.merriam-webster.com/dictionary/urge"
+          }
         },
         {
-          "type": "transformation_chain",
-          "template": "transformation_chain",
-          "steps": [
+          "type": "indicator",
+          "indices": [
+            1
+          ],
+          "hint": "'Removal' is a deletion indicator — it tells you a letter needs to be taken away",
+          "indicator_type": "deletion"
+        },
+        {
+          "type": "fodder",
+          "indices": [
+            5,
+            6
+          ],
+          "prompt": "Which words provide the raw material?",
+          "menuTitle": "Find what gets shortened",
+          "completedTitle": "Fodder found: '{words}' — this supplies the letters before deletion",
+          "intro": "The deletion indicator tells you a letter is removed from something. Which words in the clue provide the starting material?",
+          "hint": "'Silly speech' is the phrase that points to the word you'll delete a letter from"
+        },
+        {
+          "type": "assembly",
+          "intro": "You've found that 'removal' tells you to delete something from 'silly speech'. But 'silly speech' is two words — far too many letters for a 5-letter answer. What does 'silly speech' really mean? And 'line' tells you which letter to remove.",
+          "failMessage": "'Silly speech' doesn't work directly — what shorter word does it point to?",
+          "transforms": [
             {
-              "fodder": {
-                "indices": [
-                  5,
-                  6
-                ],
-                "text": "silly speech"
-              },
-              "result": "DRIVEL",
+              "role": "part1",
+              "indices": [
+                5,
+                6
+              ],
               "type": "synonym",
-              "reasoning": "Drivel is silly, nonsensical speech"
+              "result": "DRIVEL",
+              "hint": "Drivel is silly, nonsensical speech — a perfect synonym",
+              "lookup": {
+                "word": "drivel",
+                "url": "https://www.merriam-webster.com/dictionary/drivel"
+              }
             },
             {
-              "indicator": {
-                "indices": [
-                  1,
-                  2,
-                  3,
-                  4
-                ],
-                "text": "removal of line from"
-              },
-              "fodder": "DRIVEL",
-              "result": "DRIVE",
+              "role": "part2",
+              "indices": [
+                1,
+                2,
+                3,
+                4
+              ],
               "type": "deletion",
-              "reasoning": "Remove L (line) from DRIVEL"
+              "result": "DRIVE",
+              "hint": "'Removal of line from' means remove L — in cryptics, 'line' is a standard abbreviation for the letter L"
             }
           ],
           "result": "DRIVE"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "easy",
-          "hint": "To push or propel forward, or a strong motivation"
-        },
-        "wordplay": {
-          "rating": "easy",
-          "hint": "Remove a letter from a word meaning nonsense"
-        },
-        "overall": "easy",
-        "recommendedApproach": "wordplay"
-      }
+      ]
     },
     "times-29453-26d": {
       "id": "times-29453-26d",

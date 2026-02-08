@@ -97,6 +97,15 @@ This is why 5D (deletion — has indicator "A lot of") shows word chips at step 
 - [ ] No JavaScript console errors
 - [ ] No Python server errors
 
+### 2a. Test-First Bug Fixes — MANDATORY
+**When fixing a bug, always follow this process:**
+1. **Write a test case** that detects the bug (add to `test_regression.py`)
+2. **Run tests → confirm FAIL** — the new test must fail, proving it catches the bug
+3. **Fix the code** — make the minimal change to fix the bug
+4. **Run tests → confirm PASS** — all tests pass, including the new one
+
+Never fix code before proving the test catches the bug. If the test passes before the fix, the test is wrong.
+
 ### 3. Key Constraints
 
 **STATELESS CLIENT ARCHITECTURE** (See SPEC.md Section 4.4)
@@ -146,7 +155,7 @@ Open http://localhost:8080
 | `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
 | `clues_db.json` | Pre-annotated clue database (30 clues with flat step metadata) |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
-| `test_regression.py` | Regression test suite: 72 tests (12 clues × 6 tests), stdlib only |
+| `test_regression.py` | Regression test suite: 210 tests (30 clues × 7 tests), stdlib only |
 
 ## Architecture
 
@@ -240,14 +249,8 @@ Convert all 30 clues in `clues_db.json` from the old format to the new flat form
 
 ### Progress
 
-**Converted and verified (29 clues):**
-1A, 1D, 2D, 3D, 4A, 5D, 6D, 7D, 8D, 9D, 10A, 11A, 12A, 13A, 14D, 15A, 16D, 17D, 18D, 19A, 20D, 21D, 22A, 23D, 24A, 26A, 26D, 27A, 28A
-
-**Remaining (1 clue):**
-
-| Clue | Answer | Status |
-|------|--------|--------|
-| **25A** | ? | Still in old format — needs conversion |
+**Converted and verified (30 clues — all complete):**
+1A, 1D, 2D, 3D, 4A, 5D, 6D, 7D, 8D, 9D, 10A, 11A, 12A, 13A, 14D, 15A, 16D, 17D, 18D, 19A, 20D, 21D, 22A, 23D, 24A, 25A, 26A, 26D, 27A, 28A
 
 ### Conversion Method
 

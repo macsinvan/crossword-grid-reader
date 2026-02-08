@@ -13,6 +13,10 @@ Every change must be verified before committing:
 - No JavaScript console errors
 - No Python server errors
 
+## Test-First Bug Fixes
+When fixing a bug: write test → confirm FAIL → fix code → confirm PASS.
+Never fix code before proving the test catches the bug.
+
 ## Communication
 - When asked a direct question, answer it directly — do not take action
 - Never guess or hallucinate — read the code first

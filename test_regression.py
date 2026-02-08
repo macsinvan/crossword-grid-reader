@@ -4,7 +4,7 @@ Trainer Regression Tests
 ========================
 
 Tests all trainer API endpoints against a running server.
-Walks through all 29 converted clues covering all step flow patterns,
+Walks through all 30 converted clues covering all step flow patterns,
 all indicator types, all transform types, and key edge cases.
 
 Usage:
@@ -27,7 +27,7 @@ import urllib.error
 DEFAULT_SERVER = "http://127.0.0.1:8080"
 
 # ---------------------------------------------------------------------------
-# 29 Test Clues — 100% coverage of all converted clues
+# 30 Test Clues — 100% coverage of all converted clues
 # ---------------------------------------------------------------------------
 #
 # Each clue dict contains:
@@ -64,6 +64,8 @@ TEST_CLUES = [
         "num_assembly_transforms": 2,
         "dependent_transform_indices": [],
         "wrong_value_step0": [3, 4],
+        "check_clue_word_attribution": True,
+        "expected_clue_words_in_breakdown": ["five", "mean"],
     },
 
     # 2. 6D RAVEN — def→indicator(ordering)→assembly
@@ -86,6 +88,8 @@ TEST_CLUES = [
         "num_assembly_transforms": 2,
         "dependent_transform_indices": [],
         "wrong_value_step0": [0, 1],
+        "check_clue_word_attribution": True,
+        "expected_clue_words_in_breakdown": ["dance", "number"],
     },
 
     # 3. 1A BROLLY — def→indicator(container)→outer→inner→assembly
@@ -243,6 +247,8 @@ TEST_CLUES = [
         "num_assembly_transforms": 3,
         "dependent_transform_indices": [],
         "wrong_value_step0": [2, 3],
+        "check_clue_word_attribution": True,
+        "expected_clue_words_in_breakdown": ["also", "opposed", "referendum"],
     },
 
     # 9. 4A REPROACH — def→indicator(deletion)→assembly (charade with deletion)
@@ -269,6 +275,8 @@ TEST_CLUES = [
         "num_assembly_transforms": 3,
         "dependent_transform_indices": [2],  # deletion at index 2
         "wrong_value_step0": [1, 2],
+        "check_clue_word_attribution": True,
+        "expected_clue_words_in_breakdown": ["antique"],
     },
 
     # 10. 28A CAESAR — def→indicator(reversal)→assembly (reversal chain)
@@ -295,6 +303,8 @@ TEST_CLUES = [
         "num_assembly_transforms": 3,
         "dependent_transform_indices": [2],  # reversal at index 2
         "wrong_value_step0": [2, 3],
+        "check_clue_word_attribution": True,
+        "expected_clue_words_in_breakdown": ["roughly"],
     },
 
     # 11. 26A WINDSWEPT — def→wordplay→assembly (5 transforms, mixed chain)
@@ -323,6 +333,8 @@ TEST_CLUES = [
         "num_assembly_transforms": 5,
         "dependent_transform_indices": [2, 4],  # reversal at 2, anagram at 4
         "wrong_value_step0": [0, 1],
+        "check_clue_word_attribution": True,
+        "expected_clue_words_in_breakdown": ["Turn"],
     },
 
     # 12. 23D PSEUD — def→indicator(hidden_word)→fodder→assembly
@@ -408,6 +420,8 @@ TEST_CLUES = [
         "wrong_value_step0": [2, 3],
         "has_anagram_chain": True,  # flag for anagram breakdown test
         "expected_breakdown_contains": "(ADHAS \u2192 DASHA)",  # arrow must be parenthesised to show only ADHAS transforms
+        "check_clue_word_attribution": True,
+        "expected_clue_words_in_breakdown": ["beauty"],
     },
 
     # 15. 1D BISHOP — charade: def→wordplay→assembly (2 independent synonyms)
@@ -430,6 +444,8 @@ TEST_CLUES = [
         "num_assembly_transforms": 2,
         "dependent_transform_indices": [],
         "wrong_value_step0": [2, 3],
+        "check_clue_word_attribution": True,
+        "expected_clue_words_in_breakdown": ["bungle", "work"],
     },
 
     # 16. 7D AUSPICES — container: def→indicator(container)→outer→inner→assembly
@@ -507,6 +523,8 @@ TEST_CLUES = [
         "num_assembly_transforms": 4,
         "dependent_transform_indices": [],
         "wrong_value_step0": [1, 2],
+        "check_clue_word_attribution": True,
+        "expected_clue_words_in_breakdown": ["lunch", "Turkish", "coach"],
     },
 
     # 19. 10A SWEET TALK — container with charade inner: def→indicator→outer→inner→assembly
@@ -592,6 +610,10 @@ TEST_CLUES = [
         "num_assembly_transforms": 4,
         "dependent_transform_indices": [2],
         "wrong_value_step0": [0, 1],
+        "has_multi_predecessor_chain": True,  # reversal at index 2 consumes PICS(4)+ID(2)=6 letters
+        "expected_breakdown_contains": "(PICS + ID \u2192 DISCIP)",  # NOT just (ID → DISCIP)
+        "check_clue_word_attribution": True,
+        "expected_clue_words_in_breakdown": ["cover"],
     },
 
     # 22. 15A AMBASSADRESS — charade: def→wordplay→assembly (4 independent)
@@ -619,6 +641,8 @@ TEST_CLUES = [
         "num_assembly_transforms": 4,
         "dependent_transform_indices": [],
         "wrong_value_step0": [0, 1],
+        "check_clue_word_attribution": True,
+        "expected_clue_words_in_breakdown": ["Live", "singer", "costume"],
     },
 
     # 23. 18D FLEETING — charade with reversal: def→indicator(reversal)→assembly
@@ -646,6 +670,8 @@ TEST_CLUES = [
         "num_assembly_transforms": 4,
         "dependent_transform_indices": [3],
         "wrong_value_step0": [1, 2],
+        "check_clue_word_attribution": True,
+        "expected_clue_words_in_breakdown": ["escape"],
     },
 
     # 24. 20D DOZENS — container: def→indicator(container)→outer→inner→assembly
@@ -693,6 +719,8 @@ TEST_CLUES = [
         "num_assembly_transforms": 2,
         "dependent_transform_indices": [],
         "wrong_value_step0": [0, 1],
+        "check_clue_word_attribution": True,  # assembly title must show clue words, not just results
+        "expected_clue_words_in_breakdown": ["doldrums", "Sailor"],  # each transform's source word
     },
 
     # 26. 22A ATEMPORAL — charade with anagram: def→wordplay→assembly (4 transforms)
@@ -720,6 +748,8 @@ TEST_CLUES = [
         "num_assembly_transforms": 4,
         "dependent_transform_indices": [1],
         "wrong_value_step0": [0, 1],
+        "check_clue_word_attribution": True,
+        "expected_clue_words_in_breakdown": ["piano", "exam"],
     },
 
     # 27. 24A DUOMO — charade: def→wordplay→assembly (2 independent)
@@ -742,6 +772,8 @@ TEST_CLUES = [
         "num_assembly_transforms": 2,
         "dependent_transform_indices": [],
         "wrong_value_step0": [0, 1],
+        "check_clue_word_attribution": True,
+        "expected_clue_words_in_breakdown": ["Couple", "second"],
     },
 
     # 28. 26D WAS — deletion chain: def→indicator(deletion)→fodder→assembly
@@ -792,6 +824,32 @@ TEST_CLUES = [
         "num_assembly_transforms": 3,
         "dependent_transform_indices": [2],
         "wrong_value_step0": [2, 3],
+    },
+
+    # 30. 25A DRIVE — deletion chain: def→indicator(deletion)→fodder→assembly
+    {
+        "id": "times-29453-25a",
+        "clue_text": "Urge removal of line from silly speech",
+        "puzzle_number": "29453",
+        "clue_number": "25",
+        "direction": "across",
+        "answer": "DRIVE",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [0]},
+            {"type": "indicator", "inputMode": "tap_words", "value": [1]},
+            {"type": "fodder", "inputMode": "tap_words", "value": [5, 6]},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [
+                 {"index": 0, "value": "DRIVEL"},
+                 {"index": 1, "value": "DRIVE"},
+             ]},
+        ],
+        "has_indicator_steps": True,
+        "indicator_types": ["deletion"],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 2,
+        "dependent_transform_indices": [1],  # deletion at index 1
+        "wrong_value_step0": [5, 6],
     },
 ]
 
@@ -1099,7 +1157,8 @@ def test_template_text(server, clue):
 
 def test_assembly_completion_text(server, clue):
     """Verify assembly completion title shows correct notation for the clue type."""
-    if not clue.get("is_container") and not clue.get("has_anagram_chain"):
+    if (not clue.get("is_container") and not clue.get("has_anagram_chain")
+            and not clue.get("has_multi_predecessor_chain") and not clue.get("check_clue_word_attribution")):
         return True, ""  # skip for clues without specific completion text requirements
 
     # Walk through entire clue to completion
@@ -1147,9 +1206,29 @@ def test_assembly_completion_text(server, clue):
         if expected not in title:
             return False, (
                 f"Assembly completion title '{title}' doesn't contain "
-                f"the final answer '{expected}' — anagram arrow should "
+                f"the expected '{expected}' — anagram arrow should "
                 f"show the full assembled result, not just the anagram output"
             )
+
+    if clue.get("has_multi_predecessor_chain"):
+        # Dependent transform consumes multiple predecessors (e.g. reversal of PICS+ID → DISCIP)
+        expected = clue["expected_breakdown_contains"]
+        if expected not in title:
+            return False, (
+                f"Assembly completion title '{title}' doesn't contain "
+                f"the expected '{expected}' — dependent transform should "
+                f"show ALL consumed predecessors in brackets, not just the immediate one"
+            )
+
+    if clue.get("check_clue_word_attribution"):
+        # Assembly title must attribute results to their source clue words
+        for word in clue["expected_clue_words_in_breakdown"]:
+            if word.lower() not in title.lower():
+                return False, (
+                    f"Assembly completion title '{title}' doesn't mention "
+                    f"clue word '{word}' — breakdown should show where each "
+                    f"result comes from, not just the results"
+                )
 
     return True, ""
 
