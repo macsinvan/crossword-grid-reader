@@ -58,7 +58,8 @@
     "intro": "The indicator tells you something gets stretched to wrap around another part. What in the clue provides the outer letters?",
     "hint": "Look at the words either side of the indicator \u2014 the indicator often points toward what does the wrapping.",
     "expected_source": "indices",
-    "onCorrect": "'{words}' provides the outer letters."
+    "onCorrect": "'{words}' provides the outer letters.",
+    "backfillTitle": "'{words}' \u2192 {transformResult}"
   },
   "inner_word": {
     "inputMode": "tap_words",
@@ -68,7 +69,8 @@
     "intro": "Now find what gets placed inside the outer part.",
     "hint": "What in the clue hasn\u2019t been used yet?",
     "expected_source": "indices",
-    "onCorrect": "'{words}' goes inside."
+    "onCorrect": "'{words}' goes inside.",
+    "backfillTitle": "'{words}' \u2192 {transformResult}"
   },
   "assembly": {
     "inputMode": "assembly",
@@ -87,6 +89,12 @@
       "letter_selection": "{role}, pick the right letters from '{word}' ({n} letters)",
       "anagram": "now rearrange those letters — what {n}-letter word do you get?"
     },
+    "defaultFailMessage": "Try putting {rawWordsList} together \u2014 it doesn\u2019t spell anything useful, does it? So what is each word really telling you?",
+    "completedTextTemplates": {
+      "independent": "'{clueWord}' \u2192 {result}",
+      "dependent": "{prevResult} \u2192 {result}",
+      "anagram": "{inputParts} \u2192 {result}"
+    },
     "expected_source": "result",
     "onCorrect": "The letters combine to give {result}."
   },
@@ -99,5 +107,11 @@
     "hint": "Look at what's left after the definition and indicators. That's your starting word.",
     "expected_source": "indices",
     "onCorrect": "'{words}' \u2014 {hint}"
+  },
+  "feedback": {
+    "step_correct": "Correct!",
+    "step_incorrect": "Not quite \u2014 try again.",
+    "answer_correct": "Correct!",
+    "answer_incorrect": "Not the right answer."
   }
 }

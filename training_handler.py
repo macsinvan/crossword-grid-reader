@@ -36,6 +36,90 @@ def maybe_reload_render_templates():
 
 _load_render_templates()
 
+# --- Clues database (auto-reload) ---
+
+_CLUES_DB = {}
+_CLUES_DB_PATH = os.path.join(os.path.dirname(__file__), "clues_db.json")
+_CLUES_DB_MTIME = 0
+
+
+def _normalize_quotes(text):
+    """Normalize curly quotes to straight quotes for comparison."""
+    if not text:
+        return text
+    text = text.replace('\u2018', "'").replace('\u2019', "'").replace('\u201a', "'")
+    text = text.replace('\u201c', '"').replace('\u201d', '"').replace('\u201e', '"')
+    return text
+
+
+def _get_clue_text(clue_data):
+    """Extract clue text from either old or new format."""
+    clue_field = clue_data.get('clue', '')
+    if isinstance(clue_field, dict):
+        return clue_field.get('text', '')
+    return clue_field
+
+
+def load_clues_db(force=False):
+    """Load the clues database from JSON file."""
+    global _CLUES_DB, _CLUES_DB_MTIME
+
+    current_mtime = os.path.getmtime(_CLUES_DB_PATH)
+    if not force and current_mtime == _CLUES_DB_MTIME:
+        return
+
+    with open(_CLUES_DB_PATH, 'r') as f:
+        data = json.load(f)
+
+    if 'training_items' not in data:
+        raise KeyError(f"clues_db.json missing 'training_items'. Keys: {list(data.keys())}")
+
+    _CLUES_DB = data['training_items']
+    _CLUES_DB_MTIME = current_mtime
+    print(f"Loaded {len(_CLUES_DB)} clues from clues_db.json (mtime: {current_mtime})")
+
+
+def maybe_reload_clues_db():
+    """Reload clues_db.json if it has changed on disk."""
+    current_mtime = os.path.getmtime(_CLUES_DB_PATH)
+    if current_mtime != _CLUES_DB_MTIME:
+        print("[Auto-reload] clues_db.json changed, reloading...")
+        load_clues_db(force=True)
+
+
+def lookup_clue(clue_text, puzzle_number, clue_number, direction):
+    """Find a clue in the database. Returns (clue_id, clue_data) or (None, None)."""
+    clue_text_normalized = _normalize_quotes(clue_text.strip()) if clue_text else ''
+    clue_text_no_enum = _normalize_quotes(re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip()) if clue_text else ''
+
+    # Primary: construct ID from puzzle/clue/direction
+    if puzzle_number and clue_number and direction:
+        dir_suffix = 'a' if direction.lower() == 'across' else 'd'
+        expected_id = f'times-{puzzle_number}-{clue_number}{dir_suffix}'
+        if expected_id in _CLUES_DB:
+            candidate = _CLUES_DB[expected_id]
+            annotation_text = _normalize_quotes(_get_clue_text(candidate).strip())
+            if annotation_text == clue_text_normalized or annotation_text == clue_text_no_enum:
+                return expected_id, candidate
+            else:
+                return None, None  # Mismatch
+
+    # Fallback: match by text
+    for cid, cdata in _CLUES_DB.items():
+        candidate_text = _normalize_quotes(_get_clue_text(cdata).strip())
+        if candidate_text == clue_text_normalized or candidate_text == clue_text_no_enum:
+            return cid, cdata
+
+    return None, None
+
+
+def get_clue_data(clue_id):
+    """Get clue data by ID. Returns clue_data or None if not found."""
+    return _CLUES_DB.get(clue_id)
+
+
+load_clues_db(force=True)
+
 # --- Sessions ---
 
 _sessions = {}
@@ -128,8 +212,12 @@ def get_render(clue_id, clue):
         elif "hint" in template:
             hint_data = template["hint"]
             if isinstance(hint_data, dict):
-                clue_type = clue.get("clue_type", "standard")
-                current_step["hint"] = hint_data.get(clue_type, "")
+                if "clue_type" not in clue:
+                    raise ValueError(f"Template hint is dict-keyed but clue metadata is missing 'clue_type'")
+                clue_type = clue["clue_type"]
+                if clue_type not in hint_data:
+                    raise ValueError(f"No hint for clue_type '{clue_type}' in template. Available: {list(hint_data.keys())}")
+                current_step["hint"] = hint_data[clue_type]
             else:
                 current_step["hint"] = hint_data
 
@@ -205,6 +293,8 @@ def handle_input(clue_id, clue, value, transform_index=None):
     else:
         raise ValueError(f"Unsupported input mode: {input_mode}")
 
+    feedback = RENDER_TEMPLATES["feedback"]
+
     if correct:
         # Add highlight for tap_words
         if input_mode == "tap_words":
@@ -223,9 +313,9 @@ def handle_input(clue_id, clue, value, transform_index=None):
         session["assembly_transforms_done"] = {}
         session["assembly_hint_index"] = None
 
-        return {"correct": True, "render": get_render(clue_id, clue)}
+        return {"correct": True, "message": feedback["step_correct"], "render": get_render(clue_id, clue)}
     else:
-        return {"correct": False, "render": get_render(clue_id, clue)}
+        return {"correct": False, "message": feedback["step_incorrect"], "render": get_render(clue_id, clue)}
 
 
 def update_ui_state(clue_id, clue, action, data):
@@ -307,12 +397,13 @@ def check_answer(clue_id, clue, answer):
 
     user_text = re.sub(r'[^A-Z]', '', str(answer).upper())
     expected_text = re.sub(r'[^A-Z]', '', clue["answer"].upper())
+    feedback = RENDER_TEMPLATES["feedback"]
 
     if user_text == expected_text:
         session["answer_locked"] = True
-        return {"correct": True, "render": get_render(clue_id, clue)}
+        return {"correct": True, "message": feedback["answer_correct"], "render": get_render(clue_id, clue)}
     else:
-        return {"correct": False, "render": get_render(clue_id, clue)}
+        return {"correct": False, "message": feedback["answer_incorrect"], "render": get_render(clue_id, clue)}
 
 
 # --- Internal helpers ---
@@ -331,7 +422,11 @@ def _build_assembly_data(session, step, clue):
     # Explicit wordplay: indicators already told the student what to do — no fail message
     is_explicit = step.get("explicit", False)
 
-    # Fail message: explicit skips it; step metadata overrides the default
+    # Transform prompt templates from render template (template-driven, not hardcoded)
+    template = RENDER_TEMPLATES.get("assembly", {})
+    TRANSFORM_PROMPTS = template.get("transformPrompts", {})
+
+    # Fail message: explicit skips it; step metadata overrides the default; otherwise template
     if is_explicit:
         fail_message = ""
     elif "failMessage" in step:
@@ -341,11 +436,8 @@ def _build_assembly_data(session, step, clue):
         for t in transforms:
             t_words = [words[i] for i in t["indices"]]
             raw_words.append(" ".join(t_words))
-        fail_message = "Try putting '" + "' and '".join(raw_words) + "' together \u2014 it doesn\u2019t spell anything useful, does it? So what is each word really telling you?"
-
-    # Transform prompt templates from render template (template-driven, not hardcoded)
-    template = RENDER_TEMPLATES.get("assembly", {})
-    TRANSFORM_PROMPTS = template.get("transformPrompts", {})
+        raw_list = "'" + "' and '".join(raw_words) + "'"
+        fail_message = template["defaultFailMessage"].format(rawWordsList=raw_list)
 
     # Independent types can be solved in any order; dependent types wait for predecessors
     INDEPENDENT_TYPES = {"synonym", "abbreviation", "literal", "letter_selection"}
@@ -356,7 +448,9 @@ def _build_assembly_data(session, step, clue):
     for i, t in enumerate(transforms):
         clue_word = " ".join(words[idx] for idx in t["indices"])
         letter_count = len(re.sub(r'[^A-Z]', '', t["result"].upper()))
-        t_type = t.get("type", "")
+        if "type" not in t:
+            raise ValueError(f"Transform {i} is missing 'type' field in assembly step")
+        t_type = t["type"]
 
         if t_type not in TRANSFORM_PROMPTS:
             raise ValueError(f"Unknown transform type '{t_type}' in clue metadata. Add it to transformPrompts in render_templates.json.")
@@ -371,7 +465,8 @@ def _build_assembly_data(session, step, clue):
         if i in transforms_done:
             status = "completed"
             result = transforms_done[i]
-            # Build completed text: dependent transforms show inputs → result
+            # Build completed text from templates
+            completed_templates = template["completedTextTemplates"]
             if t_type in DEPENDENT_TYPES and i > 0:
                 if t_type == "anagram":
                     # Anagram rearranges ALL prior results
@@ -379,13 +474,18 @@ def _build_assembly_data(session, step, clue):
                     for j in range(i):
                         if j in transforms_done:
                             input_parts.append(transforms_done[j])
-                    completed_text = " + ".join(input_parts) + " \u2192 " + result
+                    completed_text = completed_templates["anagram"].format(
+                        inputParts=" + ".join(input_parts), result=result)
                 else:
                     # Deletion/reversal operates on the immediately prior result
-                    prev_result = transforms_done.get(i - 1, "?")
-                    completed_text = prev_result + " \u2192 " + result
+                    if (i - 1) not in transforms_done:
+                        raise ValueError(f"Transform {i} is dependent but predecessor {i-1} has no result in transforms_done")
+                    prev_result = transforms_done[i - 1]
+                    completed_text = completed_templates["dependent"].format(
+                        prevResult=prev_result, result=result)
             else:
-                completed_text = "'" + clue_word + "' \u2192 " + result
+                completed_text = completed_templates["independent"].format(
+                    clueWord=clue_word, result=result)
         elif is_explicit or t_type in INDEPENDENT_TYPES or i == 0:
             # Explicit wordplay: all transforms active (student sees the full plan)
             # Independent types and the first transform are always available
@@ -475,6 +575,7 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
     """Handle input for an assembly step. Transforms can be submitted in any order."""
     transforms = step["transforms"]
     transforms_done = session["assembly_transforms_done"]
+    feedback = RENDER_TEMPLATES["feedback"]
 
     if transform_index is not None and 0 <= transform_index < len(transforms):
         # Transform submission: validate against this specific transform
@@ -488,7 +589,9 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
 
             # Auto-complete predecessors superseded by dependent transforms
             DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
-            t_type = transforms[transform_index].get("type", "")
+            if "type" not in transforms[transform_index]:
+                raise ValueError(f"Transform {transform_index} is missing 'type' field")
+            t_type = transforms[transform_index]["type"]
             if t_type in DEPENDENT_TYPES and transform_index > 0:
                 if t_type == "anagram":
                     # Anagram supersedes ALL prior transforms
@@ -521,9 +624,9 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
                     answer_letters = list(re.sub(r'[^A-Z]', '', clue["answer"].upper()))
                     session["user_answer"] = answer_letters
 
-            return {"correct": True, "render": get_render(clue_id, clue)}
+            return {"correct": True, "message": feedback["step_correct"], "render": get_render(clue_id, clue)}
         else:
-            return {"correct": False, "render": get_render(clue_id, clue)}
+            return {"correct": False, "message": feedback["step_incorrect"], "render": get_render(clue_id, clue)}
 
     elif transform_index is None:
         # Check phase: validate the full assembled result
@@ -548,9 +651,9 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
             session["answer_locked"] = True
             answer_letters = list(re.sub(r'[^A-Z]', '', clue["answer"].upper()))
             session["user_answer"] = answer_letters
-            return {"correct": True, "render": get_render(clue_id, clue)}
+            return {"correct": True, "message": feedback["step_correct"], "render": get_render(clue_id, clue)}
         else:
-            return {"correct": False, "render": get_render(clue_id, clue)}
+            return {"correct": False, "message": feedback["step_incorrect"], "render": get_render(clue_id, clue)}
 
     else:
         raise ValueError(f"Invalid transform_index: {transform_index}")
@@ -570,8 +673,10 @@ def _compute_position_map(step):
     # Identify terminal transforms (those not superseded by a later dependent)
     terminal = set(range(len(transforms)))
     for i, t in enumerate(transforms):
-        if i > 0 and t.get("type", "") in DEPENDENT_TYPES:
-            if t.get("type", "") == "anagram":
+        if "type" not in t:
+            raise ValueError(f"Transform {i} is missing 'type' field in position map computation")
+        if i > 0 and t["type"] in DEPENDENT_TYPES:
+            if t["type"] == "anagram":
                 # Anagram rearranges ALL prior results — discard all predecessors
                 for j in range(i):
                     terminal.discard(j)
@@ -671,8 +776,9 @@ def _build_step_list(session, clue):
                 role = "outer" if step["type"] == "outer_word" else "inner"
                 transform_result = transform_results.get(role)
                 if transform_result:
-                    words = " ".join(clue["words"][idx] for idx in step["indices"])
-                    title = f"'{words}' \u2192 {transform_result}"
+                    words_str = " ".join(clue["words"][idx] for idx in step["indices"])
+                    backfill_tmpl = template["backfillTitle"]
+                    title = backfill_tmpl.replace("{words}", words_str).replace("{transformResult}", transform_result)
         elif i == step_index:
             status = "active"
             completion_text = None
@@ -750,31 +856,45 @@ def _resolve_variables(text, step, clue):
 
     # {enumeration}
     if "{enumeration}" in text:
-        text = text.replace("{enumeration}", clue.get("enumeration", ""))
+        if "enumeration" not in clue:
+            raise ValueError(f"Template uses {{enumeration}} but clue metadata is missing 'enumeration'")
+        text = text.replace("{enumeration}", clue["enumeration"])
 
     # {hint} — from step hint field
     if "{hint}" in text:
-        text = text.replace("{hint}", step.get("hint", ""))
+        if "hint" not in step:
+            raise ValueError(f"Template uses {{hint}} but step metadata is missing 'hint' for step type '{step.get('type', '?')}'")
+        text = text.replace("{hint}", step["hint"])
 
     # {position}
     if "{position}" in text:
-        text = text.replace("{position}", step.get("position", ""))
+        if "position" not in step:
+            raise ValueError(f"Template uses {{position}} but step metadata is missing 'position' for step type '{step.get('type', '?')}'")
+        text = text.replace("{position}", step["position"])
 
     # {result}
     if "{result}" in text:
-        text = text.replace("{result}", step.get("result", ""))
+        if "result" not in step:
+            raise ValueError(f"Template uses {{result}} but step metadata is missing 'result' for step type '{step.get('type', '?')}'")
+        text = text.replace("{result}", step["result"])
 
     # {expected}
     if "{expected}" in text:
-        text = text.replace("{expected}", str(step.get("expected", "")))
+        if "expected" not in step:
+            raise ValueError(f"Template uses {{expected}} but step metadata is missing 'expected' for step type '{step.get('type', '?')}'")
+        text = text.replace("{expected}", str(step["expected"]))
 
     # {definitionWords} — extracted from definition step
     if "{definitionWords}" in text:
-        text = text.replace("{definitionWords}", step.get("definitionWords", ""))
+        if "definitionWords" not in step:
+            raise ValueError(f"Template uses {{definitionWords}} but step is missing 'definitionWords'")
+        text = text.replace("{definitionWords}", step["definitionWords"])
 
     # {indicatorHint} — extracted from indicator step
     if "{indicatorHint}" in text:
-        text = text.replace("{indicatorHint}", step.get("indicatorHint", ""))
+        if "indicatorHint" not in step:
+            raise ValueError(f"Template uses {{indicatorHint}} but step is missing 'indicatorHint'")
+        text = text.replace("{indicatorHint}", step["indicatorHint"])
 
     # {indicatorType} — from indicator step's indicator_type field (e.g. "container", "anagram")
     if "{indicatorType}" in text:
@@ -785,15 +905,21 @@ def _resolve_variables(text, step, clue):
 
     # {indicatorWords} — the indicator word(s) from the indicator step
     if "{indicatorWords}" in text:
-        text = text.replace("{indicatorWords}", step.get("indicatorWords", ""))
+        if "indicatorWords" not in step:
+            raise ValueError(f"Template uses {{indicatorWords}} but step is missing 'indicatorWords'")
+        text = text.replace("{indicatorWords}", step["indicatorWords"])
 
     # {innerWords} — from the inner_word step
     if "{innerWords}" in text:
-        text = text.replace("{innerWords}", step.get("innerWords", ""))
+        if "innerWords" not in step:
+            raise ValueError(f"Template uses {{innerWords}} but step is missing 'innerWords'")
+        text = text.replace("{innerWords}", step["innerWords"])
 
     # {outerWords} — from the outer_word step
     if "{outerWords}" in text:
-        text = text.replace("{outerWords}", step.get("outerWords", ""))
+        if "outerWords" not in step:
+            raise ValueError(f"Template uses {{outerWords}} but step is missing 'outerWords'")
+        text = text.replace("{outerWords}", step["outerWords"])
 
     # {assemblyBreakdown} — build from transforms: show the assembly journey
     if "{assemblyBreakdown}" in text and "transforms" in step:
@@ -802,7 +928,9 @@ def _resolve_variables(text, step, clue):
         # Collect independent results, then show dependent operations
         parts = []
         for t in transforms:
-            t_type = t.get("type", "")
+            if "type" not in t:
+                raise ValueError(f"Transform is missing 'type' field in assembly step")
+            t_type = t["type"]
             result = t["result"].upper()
             if t_type in DEPENDENT_TYPES:
                 # Show as arrow from accumulated parts to result

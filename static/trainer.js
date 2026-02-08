@@ -36,11 +36,7 @@ class TemplateTrainer {
             });
             const data = await resp.json();
 
-            if (data.correct) {
-                this.feedback = { type: 'success', message: 'Correct!' };
-            } else {
-                this.feedback = { type: 'error', message: 'Not quite — try again.' };
-            }
+            this.feedback = { type: data.correct ? 'success' : 'error', message: data.message };
 
             if (data.render) {
                 this.render = data.render;
@@ -62,11 +58,7 @@ class TemplateTrainer {
             });
             const data = await resp.json();
 
-            if (data.correct) {
-                this.feedback = { type: 'success', message: 'Correct!' };
-            } else {
-                this.feedback = { type: 'error', message: 'Not quite — try again.' };
-            }
+            this.feedback = { type: data.correct ? 'success' : 'error', message: data.message };
 
             if (data.render) {
                 this.render = data.render;
@@ -121,11 +113,7 @@ class TemplateTrainer {
             });
             const data = await resp.json();
 
-            if (data.correct) {
-                this.feedback = { type: 'success', message: 'Correct!' };
-            } else {
-                this.feedback = { type: 'error', message: 'Not the right answer.' };
-            }
+            this.feedback = { type: data.correct ? 'success' : 'error', message: data.message };
 
             if (data.render) {
                 this.render = data.render;
