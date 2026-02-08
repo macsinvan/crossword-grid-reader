@@ -1905,7 +1905,7 @@
         "some",
         "upheaval"
       ],
-      "clue_type": "and_lit",
+      "clue_type": "standard",
       "difficulty": {
         "definition": "hard",
         "wordplay": "hard",
@@ -1916,19 +1916,10 @@
           "type": "definition",
           "indices": [
             0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8
+            1
           ],
-          "position": "all",
-          "intro": "This is an &lit clue — a rare and elegant construction where the entire clue reads as both the definition AND the wordplay simultaneously. There’s no split between definition and wordplay; the whole thing works both ways.",
-          "prompt": "Tap all the words",
-          "hint": "Read it as a description: someone who was one missing initially, admitted to Electra with some upheaval. Who would that be?",
+          "position": "start",
+          "hint": "Someone who arrives after things have started — they were the one missing",
           "lookup": {
             "word": "latecomer",
             "url": "https://www.merriam-webster.com/dictionary/latecomer"
@@ -1943,7 +1934,7 @@
           "menuTitle": "Find the anagram indicator",
           "completedTitle": "Anagram indicator: '{words}'",
           "prompt": "Which words signal that letters need rearranging?",
-          "intro": "Even though the whole clue is the definition, it also contains wordplay. Look for a word or phrase suggesting disorder or rearrangement.",
+          "intro": "Look for a word or phrase suggesting disorder or rearrangement — that's the anagram indicator.",
           "hint": "'Some upheaval' suggests things being shaken up or rearranged — a classic anagram indicator"
         },
         {
@@ -1990,7 +1981,7 @@
               ],
               "type": "anagram",
               "result": "LATECOMER",
-              "hint": "'Some upheaval' tells you to rearrange OM + ELECTRA. What 9-letter word meaning 'one missing initially, admitted to something with some upheaval' can you make?"
+              "hint": "'Some upheaval' tells you to rearrange OM + ELECTRA. What 9-letter word meaning 'one missing' can you make?"
             }
           ],
           "result": "LATECOMER"
