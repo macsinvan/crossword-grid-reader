@@ -425,12 +425,12 @@ class TemplateTrainer {
             html += `</div>`;
 
         } else if (transform.status === 'active') {
-            // Active — prompt, hint, letter boxes
-            html += `<div style="padding: 0.75rem 0; margin-bottom: 0.25rem;">`;
+            // Active — prompt and hint only (letter entry is in combined display below)
+            html += `<div style="padding: 0.25rem 0; margin-bottom: 0.15rem;">`;
 
             // Prompt with hint
-            html += `<div style="display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">`;
-            html += `<span style="font-size: 0.8rem; color: #334155; flex: 1; line-height: 1.5;">${transform.prompt}</span>`;
+            html += `<div style="display: flex; align-items: flex-start; gap: 0.5rem;">`;
+            html += `<span style="font-size: 0.8rem; font-weight: 600; color: #334155; flex: 1; line-height: 1.5;">${transform.prompt}</span>`;
             if (transform.hint) {
                 html += `<span class="assembly-hint-toggle" data-transform-index="${tIdx}" style="cursor: pointer; width: 20px; height: 20px; border-radius: 50%; background: ${transform.hintVisible ? '#3b82f6' : '#e2e8f0'}; color: ${transform.hintVisible ? 'white' : '#94a3b8'}; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Hint">?</span>`;
             }
@@ -438,7 +438,7 @@ class TemplateTrainer {
 
             // Hint
             if (transform.hintVisible && transform.hint) {
-                html += `<div style="font-size: 0.8rem; color: #1e40af; margin-bottom: 0.5rem; padding-left: 0.75rem; border-left: 2px solid #93c5fd; line-height: 1.5;">${transform.hint}</div>`;
+                html += `<div style="font-size: 0.8rem; color: #1e40af; margin-top: 0.25rem; padding-left: 0.75rem; border-left: 2px solid #93c5fd; line-height: 1.5;">${transform.hint}</div>`;
             }
 
             html += `</div>`;
@@ -464,19 +464,42 @@ class TemplateTrainer {
         const posMap = data.positionMap || {};
         const groups = this.buildPositionGroups(letters, posMap);
 
+        // Build reverse map: position → transform index (for editable inputs)
+        const posToTransform = {};
+        for (const [tIdx, positions] of Object.entries(posMap)) {
+            for (const pos of positions) {
+                posToTransform[pos] = parseInt(tIdx);
+            }
+        }
+
+        // Find which transforms are completed vs active
+        const completedTransforms = new Set();
+        for (const t of data.transforms) {
+            if (t.status === 'completed') completedTransforms.add(t.index);
+        }
+
         html += '<div style="display: flex; gap: 3px; flex-wrap: wrap; align-items: center;">';
         for (let g = 0; g < groups.length; g++) {
             if (g > 0) html += '<div style="font-size: 1rem; font-weight: 700; color: #94a3b8; padding: 0 0.2rem;">+</div>';
             for (const pos of groups[g]) {
                 const letter = letters[pos];
                 const crossLetter = this.getCrossLetter(pos);
+                const tIdx = posToTransform[pos];
+                const isCompleted = completedTransforms.has(tIdx);
                 const filled = letter !== null;
                 const hasCross = !filled && crossLetter;
-                const borderColor = filled ? '#22c55e' : hasCross ? '#cbd5e1' : '#e2e8f0';
-                const bg = filled ? '#f0fdf4' : '#fafafa';
-                const textColor = filled ? '#15803d' : hasCross ? '#94a3b8' : '#94a3b8';
                 const displayLetter = letter || crossLetter || '';
-                html += `<div style="width: 2rem; height: 2.2rem; display: flex; align-items: center; justify-content: center; border-bottom: 3px solid ${borderColor}; background: ${bg}; font-size: 1rem; font-weight: 700; font-family: monospace; color: ${textColor}; letter-spacing: 0.05em;">${displayLetter}</div>`;
+
+                if (filled || isCompleted) {
+                    // Completed — green static display
+                    html += `<div style="width: 2.2rem; height: 2.4rem; display: flex; align-items: center; justify-content: center; border-bottom: 3px solid #22c55e; background: #f0fdf4; font-size: 1.1rem; font-weight: 700; font-family: monospace; color: #15803d; letter-spacing: 0.05em;">${displayLetter}</div>`;
+                } else {
+                    // Active — editable input
+                    const borderColor = hasCross ? '#93c5fd' : '#93c5fd';
+                    html += `<input type="text" class="assembly-combined-letter" data-transform-index="${tIdx}" data-pos="${pos}" `
+                        + `value="${displayLetter}" maxlength="1" `
+                        + `style="width: 2.2rem; height: 2.4rem; text-align: center; border: none; border-bottom: 3px solid ${borderColor}; border-radius: 0; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; background: white; color: ${hasCross ? '#94a3b8' : '#1e293b'}; outline: none; font-family: monospace;" />`;
+                }
             }
         }
         html += '</div></div>';
@@ -564,40 +587,63 @@ class TemplateTrainer {
             });
         });
 
-        // Assembly transform letter inputs
-        this.container.querySelectorAll('.assembly-transform-letter').forEach(el => {
+        // Assembly combined letter inputs (in the grouped result display)
+        this.container.querySelectorAll('.assembly-combined-letter').forEach(el => {
             el.addEventListener('input', (e) => {
                 const letter = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
                 e.target.value = letter;
 
                 if (letter) {
-                    const next = el.nextElementSibling;
-                    if (next?.classList?.contains('assembly-transform-letter')) {
+                    // Auto-advance to next input (skip + separators)
+                    let next = el.nextElementSibling;
+                    while (next && !next.classList?.contains('assembly-combined-letter')) {
+                        next = next.nextElementSibling;
+                    }
+                    if (next) {
                         next.focus();
+                    } else {
+                        // Filled the last box in this group — auto-submit the transform
+                        const transformIdx = parseInt(el.dataset.transformIndex, 10);
+                        const letters = [];
+                        this.container.querySelectorAll(`.assembly-combined-letter[data-transform-index="${transformIdx}"]`).forEach(box => {
+                            letters.push(box.value || '');
+                        });
+                        if (letters.every(l => l)) {
+                            this.submitAssemblyTransform(transformIdx, letters.join(''));
+                        }
                     }
                 }
             });
 
             el.addEventListener('keydown', (e) => {
                 if (e.key === 'Backspace' && !el.value) {
-                    const prev = el.previousElementSibling;
-                    if (prev?.classList?.contains('assembly-transform-letter')) {
+                    let prev = el.previousElementSibling;
+                    while (prev && !prev.classList?.contains('assembly-combined-letter')) {
+                        prev = prev.previousElementSibling;
+                    }
+                    if (prev) {
                         prev.focus();
                         prev.select();
                     }
                 }
+                if (e.key === 'Enter') {
+                    const transformIdx = parseInt(el.dataset.transformIndex, 10);
+                    const letters = [];
+                    this.container.querySelectorAll(`.assembly-combined-letter[data-transform-index="${transformIdx}"]`).forEach(box => {
+                        letters.push(box.value || '');
+                    });
+                    if (letters.every(l => l)) {
+                        this.submitAssemblyTransform(transformIdx, letters.join(''));
+                    }
+                }
             });
-        });
 
-        // Assembly transform submit — sends transform_index to server
-        this.container.querySelectorAll('.assembly-transform-submit').forEach(el => {
-            el.addEventListener('click', () => {
-                const transformIdx = parseInt(el.dataset.transformIndex, 10);
-                const letters = [];
-                this.container.querySelectorAll(`.assembly-transform-letter[data-transform-index="${transformIdx}"]`).forEach(box => {
-                    letters.push(box.value || '');
-                });
-                this.submitAssemblyTransform(transformIdx, letters.join(''));
+            // Focus style
+            el.addEventListener('focus', () => {
+                el.style.borderBottomColor = '#3b82f6';
+            });
+            el.addEventListener('blur', () => {
+                el.style.borderBottomColor = '#93c5fd';
             });
         });
 
