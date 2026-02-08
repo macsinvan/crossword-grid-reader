@@ -141,16 +141,18 @@ ALL intelligence lives on the server. The client is a pure view layer.
 │  ├── /, /status, /upload, /puzzles, /validate              │
 │  └── puzzle_store_supabase.py → Supabase PostgreSQL        │
 ├─────────────────────────────────────────────────────────────┤
-│  trainer_routes.py (Blueprint: /trainer/*)                  │
-│  ├── /trainer/start       → training_handler.start_session()│
-│  ├── /trainer/input       → training_handler.handle_input() │
-│  ├── /trainer/reveal      → training_handler.reveal_answer()│
-│  ├── /trainer/check-answer→ training_handler.check_answer() │
-│  └── /trainer/ui-state    → training_handler.update_ui_state│
+│  trainer_routes.py (~150 lines, thin HTTP layer)             │
+│  ├── /trainer/start       → training_handler                │
+│  ├── /trainer/input       → training_handler                │
+│  ├── /trainer/reveal      → training_handler                │
+│  ├── /trainer/check-answer→ training_handler                │
+│  └── /trainer/ui-state    → training_handler                │
 ├─────────────────────────────────────────────────────────────┤
-│  training_handler.py (~550 lines, simple sequencer)         │
-│  ├── _sessions dict    (all UI state)                       │
+│  training_handler.py (~950 lines, ALL trainer logic)        │
+│  ├── _CLUES_DB         (loaded from clues_db.json)          │
 │  ├── RENDER_TEMPLATES  (loaded from render_templates.json)  │
+│  ├── _sessions dict    (all UI state)                       │
+│  ├── lookup_clue()     (find clue by text/puzzle/direction) │
 │  ├── get_render()      (build render object from state)     │
 │  ├── handle_input()    (validate & advance step)            │
 │  └── _handle_assembly_input() (multi-phase assembly)        │
@@ -454,12 +456,12 @@ _sessions[clue_id] = {
     "user_answer": [],          # Letters typed in answer boxes
     "answer_locked": False,     # True when answer confirmed
     "highlights": [],           # Word highlights [{indices, color, role}]
-    "assembly_phase": 0,        # Assembly phase: 0=transforms, 1=check
     "assembly_transforms_done": {},  # Completed transforms: {index: result}
+    "assembly_hint_index": None,     # Which transform hint is showing (or None)
 }
 ```
 
-**State resets on step advance:** `selected_indices`, `hint_visible`, `step_expanded`, `assembly_phase`, `assembly_transforms_done` are all reset when `step_index` increments. `user_answer` and `highlights` persist across steps.
+**State resets on step advance:** `selected_indices`, `hint_visible`, `step_expanded`, `assembly_transforms_done`, `assembly_hint_index` are all reset when `step_index` increments. `user_answer` and `highlights` persist across steps.
 
 ---
 
@@ -753,7 +755,7 @@ The `assembly` step has a multi-phase inline UI (used for containers, charades, 
 ## 7. API Endpoints
 
 ### 7.1 POST /trainer/start
-Start a new training session. Looks up clue by text/puzzle/direction.
+Start a new training session. Triggers auto-reload of both `clues_db.json` and `render_templates.json`, then looks up clue by text/puzzle/direction via `training_handler.lookup_clue()`.
 
 **Request:**
 ```json
@@ -778,7 +780,9 @@ Submit user input for validation (word taps or text).
 }
 ```
 
-**Response:** `{"correct": true/false, "render": {...}}`
+**Response:** `{"correct": true/false, "message": "Correct!", "render": {...}}`
+
+The `message` field contains template-driven feedback text from `render_templates.json` (`feedback` section). The client displays this directly — no hardcoded feedback strings in JS.
 
 ### 7.3 POST /trainer/ui-state
 Update UI state without validating (hint toggle, word selection, typing, expand step).
@@ -818,7 +822,7 @@ Check if typed answer is correct.
 }
 ```
 
-**Response:** `{"correct": true/false, "render": {...}}`
+**Response:** `{"correct": true/false, "message": "Correct!", "render": {...}}`
 
 ---
 
@@ -827,15 +831,16 @@ Check if typed answer is correct.
 ```
 Grid Reader/
 ├── crossword_server.py      # Flask server — infrastructure routes only
-├── trainer_routes.py        # Flask Blueprint — all /trainer/* routes
-├── training_handler.py      # Simple sequencer engine (~550 lines)
+├── trainer_routes.py        # Flask Blueprint — thin HTTP layer (~150 lines)
+├── training_handler.py      # ALL trainer logic: clue DB, sessions, sequencer (~950 lines)
 ├── puzzle_store_supabase.py # Supabase database client (required)
 ├── pdf_processor.py         # PDF parsing, OCR correction
 ├── clues_db.json            # Pre-annotated clue steps (flat format)
 ├── render_templates.json    # Render templates (auto-reloaded)
+├── test_regression.py       # Regression tests: 72 tests, stdlib only (server must be running)
 ├── static/
 │   ├── crossword.js         # Grid UI, keyboard navigation
-│   ├── trainer.js           # Stateless trainer UI (~550 lines)
+│   ├── trainer.js           # Stateless trainer UI (~800 lines)
 │   └── crossword.css        # Styles
 ├── templates/
 │   └── index.html           # Main page template
@@ -1185,6 +1190,7 @@ Currently, clues must be manually annotated in `clues_db.json`. The solver will 
 - [ ] Completed steps show green ✓ with completion text
 - [ ] Assembly step transforms validate sequentially
 - [ ] Assembly check validates final result
+- [ ] `python3 test_regression.py` passes all 72 tests (12 clues × 6 tests)
 
 ### 13.3 Answer Entry
 - [ ] Answer boxes always visible at top
@@ -1205,9 +1211,10 @@ Currently, clues must be manually annotated in `clues_db.json`. The solver will 
 3. **Annotation Fixes**: Align clues_db.json with puzzle text
 4. **Multi-word Answers**: Handle spaces in answers (e.g. "ASWAN DAM")
 5. **Mobile Responsive Grid**: CSS Grid with `1fr` units, `aspect-ratio: 1` cells, viewport-based sizing
-6. **Engine Redesign (v2)**: Replaced ~4,400-line engine with ~550-line simple sequencer, flat steps, external render templates
+6. **Engine Redesign (v2)**: Replaced ~4,400-line engine with simple sequencer, flat steps, external render templates (now ~950 lines after adding clue DB management and strict validation)
 7. **Container Assembly**: Multi-phase assembly step with transforms
 8. **Template Expansion**: Renamed `container_indicator` → `indicator` (generic for any indicator type), unified `container_assembly`/`charade_assembly` → `assembly`, added `wordplay_type` (multiple_choice), `fodder` (tap_words)
 9. **Indicator Type System**: Indicator steps use `indicator_type` field to drive type-specific template text (menuTitle, prompt, intro, completedTitle) via dict-keyed lookup and `{indicatorType}` variable. Assembly steps can override `failMessage`.
 10. **Auto-skip Assembly Check**: When last transform result equals the final answer, assembly auto-completes without redundant retyping
+11. **Architecture Compliance**: Fixed all V-list violations — moved all feedback strings and display text to `render_templates.json`, eliminated silent `.get()` fallbacks (replaced with explicit `ValueError` raises), moved clue DB management and lookup logic from `trainer_routes.py` to `training_handler.py` (routes are now a thin HTTP layer). Added 72-test regression suite (`test_regression.py`): 12 clues × 6 tests covering all 7 step flow patterns, all indicator types, and all transform types.
 

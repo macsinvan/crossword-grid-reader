@@ -106,7 +106,7 @@ The trainer UI (`trainer.js`) has ZERO state. ALL state lives on the server. If 
 Answer/step input boxes sync to server on each keystroke BUT don't trigger re-render (to preserve focus). Only re-render when server sets `answerLocked=true`.
 
 **Step state resets on advance**
-When `step_index` increments, engine clears: `hint_visible`, `selected_indices`, `step_expanded`, `assembly_phase`, `assembly_transforms_done`. Answer boxes persist across steps.
+When `step_index` increments, engine clears: `hint_visible`, `selected_indices`, `step_expanded`, `assembly_transforms_done`, `assembly_hint_index`. Answer boxes persist across steps.
 
 **NO AI/LLM in this app.** Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
 
@@ -141,11 +141,12 @@ Open http://localhost:8080
 ### Trainer (trainer_routes.py)
 | File | Purpose |
 |------|---------|
-| `trainer_routes.py` | Flask Blueprint — all `/trainer/*` routes, clues DB loading |
-| `training_handler.py` | Simple sequencer engine: loads templates, get_render(), handle_input() |
+| `trainer_routes.py` | Flask Blueprint — thin HTTP layer, all `/trainer/*` routes |
+| `training_handler.py` | All trainer business logic: sequencer engine, clue DB, lookup, sessions |
 | `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
 | `clues_db.json` | Pre-annotated clue database (30 clues with flat step metadata) |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
+| `test_regression.py` | Regression test suite: 72 tests (12 clues × 6 tests), stdlib only |
 
 ## Architecture
 
@@ -157,9 +158,12 @@ Grid Reader (8080)
      │
      ├── crossword_server.py (Flask app + infrastructure routes)
      │        │
-     │        ├── trainer_routes.py (Blueprint: all /trainer/* routes)
-     │        │        ├── training_handler.py (teaching logic)
-     │        │        └── clues_db.json (30 annotated clues)
+     │        ├── trainer_routes.py (Blueprint: thin HTTP layer, /trainer/* routes)
+     │        │        └── delegates to training_handler.py
+     │        │
+     │        ├── training_handler.py (ALL trainer logic)
+     │        │        ├── clues_db.json (30 annotated clues)
+     │        │        └── render_templates.json (presentation templates)
      │        │
      │        └── puzzle_store_supabase.py → Supabase PostgreSQL
 ```
@@ -171,7 +175,7 @@ For full architecture diagrams, data models, template system details, API endpoi
 ## Teaching Mode — Key Concepts
 
 **Simple Sequencer Engine:**
-The trainer engine (`training_handler.py`) is a ~550-line simple sequencer. It reads flat steps from clue metadata, looks up a render template by step type, presents each step, validates input, and advances. No nesting, no phases within steps (except `assembly` which has sub-phases for transforms).
+The trainer engine (`training_handler.py`, ~950 lines) owns ALL trainer business logic: clue database loading/lookup, session management, the sequencer engine, and template variable resolution. It reads flat steps from clue metadata, looks up a render template by step type, presents each step, validates input, and advances. No nesting, no phases within steps (except `assembly` which has sub-phases for transforms). The routes layer (`trainer_routes.py`, ~150 lines) is a thin HTTP wrapper that only extracts request parameters and delegates to `training_handler`.
 
 **Two-Layer Template System:**
 - Layer 1: Clue step metadata in `clues_db.json` — clue-specific data (which words, indices, expected answers, hints)
@@ -217,6 +221,7 @@ SUPABASE_ANON_KEY=your-anon-key
 ## Common Commands
 ```bash
 python3 crossword_server.py                                          # Start server
+python3 test_regression.py                                           # Run 72 regression tests (server must be running)
 python3 -c "import json; json.load(open('clues_db.json')); print('Valid')"  # Validate clues_db
 ```
 
@@ -235,22 +240,14 @@ Convert all 30 clues in `clues_db.json` from the old format to the new flat form
 
 ### Progress
 
-**Converted and verified (20 clues):**
-5D, 17D, 1A, 4A, 25A, 1D, 12A, 20D, 2D, 7D, 11A, 26D, 6D, 8D, 21D, 24A, 28A, 18D, 27A, 13A, 15A
+**Converted and verified (29 clues):**
+1A, 1D, 2D, 3D, 4A, 5D, 6D, 7D, 8D, 9D, 10A, 11A, 12A, 13A, 14D, 15A, 16D, 17D, 18D, 19A, 20D, 21D, 22A, 23D, 24A, 26A, 26D, 27A, 28A
 
-**Remaining — need discussion (9 clues with complex transforms):**
+**Remaining (1 clue):**
 
-| Clue | Answer | Issue |
-|------|--------|-------|
-| **22A** | ATEMPORAL | Letter-move: Friend→MATE, "taking minute to finish" moves M to end→ATEM. No transform type for letter rearrangement within a word. |
-| **9D** | MADAGASCAR | 4-part charade with non-obvious ordering — parts don't follow clue reading order. "who's"→S (possessive contraction as literal). |
-| **14D** | DISCIPLINE | Compound: "Photos I had"→PICS+ID reversed→DISCIP. Synonym+concatenation+reversal in one part. |
-| **16D** | DISHDASHA | Mixed charade+anagram: "ad has"→DASHA (anagram of "ad has"). |
-| **26A** | WINDSWEPT | Nested: "bench back in street"→PEW reversed inside ST→SWEPT. Container-within-charade. |
-| **10A** | SWEET TALK | Container with charade inner (multiple words form the inner part). |
-| **19A** | SOLAR ECLIPSE | Container with charade inner. |
-| **23D** | PSEUD | Hidden reversed word — no hidden word template exists yet. |
-| **3D** | LATECOMER | &lit clue (whole clue is both definition and wordplay simultaneously). |
+| Clue | Answer | Status |
+|------|--------|--------|
+| **25A** | ? | Still in old format — needs conversion |
 
 ### Conversion Method
 
