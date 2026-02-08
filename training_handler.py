@@ -351,7 +351,8 @@ def _build_assembly_data(session, step, clue):
         if i in transforms_done:
             status = "completed"
             result = transforms_done[i]
-        elif t_type in INDEPENDENT_TYPES or i == 0:
+        elif is_explicit or t_type in INDEPENDENT_TYPES or i == 0:
+            # Explicit wordplay: all transforms active (student sees the full plan)
             # Independent types and the first transform are always available
             status = "active"
             result = None
