@@ -88,6 +88,9 @@ class TemplateTrainer {
             });
             const result = await resp.json();
             this.render = result;
+            // Silent sync for typing — don't re-render (preserves focus/cursor)
+            // Only re-render if server locked the answer
+            if (action === 'type_answer' && !result.answerLocked) return;
             this.renderUI();
         } catch (err) {
             console.error('updateUIState error:', err);
