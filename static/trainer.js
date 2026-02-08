@@ -384,28 +384,12 @@ class TemplateTrainer {
 
         let html = '<div style="padding: 0.5rem 0 0.75rem 1.75rem;">';
 
-        // Coaching context: what are we looking for?
-        if (data.definitionWords && data.enumeration) {
-            html += `<div style="font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.5;">You're looking for a ${data.enumeration}-letter word meaning '${data.definitionWords}'</div>`;
+        // Coaching context — server provides ready-to-render strings
+        if (data.definitionLine) {
+            html += `<div style="font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.5;">${data.definitionLine}</div>`;
         }
-
-        // Coaching context: what does the indicator tell us?
-        const hasOuter = data.transforms.some(t => t.role === 'outer');
-        const hasInner = data.transforms.some(t => t.role === 'inner');
-        const isContainer = hasOuter && hasInner;
-
-        if (data.indicatorWords && data.indicatorHint) {
-            const innerWord = data.transforms.find(t => t.role === 'inner');
-            const outerWord = data.transforms.find(t => t.role === 'outer');
-            if (isContainer && innerWord && outerWord) {
-                html += `<div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem; line-height: 1.5;">'${data.indicatorWords}' tells us '${innerWord.clueWord}' goes inside '${outerWord.clueWord}'</div>`;
-            } else {
-                html += `<div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem; line-height: 1.5;">${data.indicatorHint}</div>`;
-            }
-        } else if (!data.indicatorWords) {
-            // No indicator — charade or similar
-            const pieces = data.transforms.map(t => `'${t.clueWord}'`).join(' + ');
-            html += `<div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem; line-height: 1.5;">The parts join end-to-end: ${pieces}</div>`;
+        if (data.indicatorLine) {
+            html += `<div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem; line-height: 1.5;">${data.indicatorLine}</div>`;
         }
 
         // Fail message — why the raw words don't work

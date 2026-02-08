@@ -379,16 +379,28 @@ def _build_assembly_data(session, step, clue):
     position_map = _compute_position_map(step)
     completed_letters = _compute_completed_letters(transforms_done, position_map, step)
 
-    # Extract context from earlier steps for coaching display
+    # Build coaching context strings — all logic stays on server
     definition_words = ""
-    indicator_words = ""
     indicator_hint = ""
     for s in clue["steps"]:
         if s["type"] == "definition" and "indices" in s:
             definition_words = " ".join(words[i] for i in s["indices"])
         elif s["type"] == "indicator" and "indices" in s:
-            indicator_words = " ".join(words[i] for i in s["indices"])
             indicator_hint = s.get("hint", "")
+
+    enumeration = clue.get("enumeration", "")
+    definition_line = ""
+    if definition_words and enumeration:
+        definition_line = f"You're looking for a {enumeration}-letter word meaning '{definition_words}'"
+
+    # Indicator context line: use hint from the indicator step
+    # For clues without indicators (charades), describe the pieces
+    indicator_line = ""
+    if indicator_hint:
+        indicator_line = indicator_hint
+    else:
+        piece_names = " + ".join(f"'{t['clueWord']}'" for t in transform_list)
+        indicator_line = f"The parts join end-to-end: {piece_names}"
 
     return {
         "phase": phase,
@@ -397,11 +409,8 @@ def _build_assembly_data(session, step, clue):
         "resultParts": result_parts,
         "positionMap": {str(k): v for k, v in position_map.items()},
         "completedLetters": completed_letters,
-        "definitionWords": definition_words,
-        "indicatorWords": indicator_words,
-        "indicatorHint": indicator_hint,
-        "clueType": clue.get("clue_type", ""),
-        "enumeration": clue.get("enumeration", ""),
+        "definitionLine": definition_line,
+        "indicatorLine": indicator_line,
     }
 
 
