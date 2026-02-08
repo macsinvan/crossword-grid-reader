@@ -116,6 +116,10 @@ def get_render(clue_id, clue):
 
         current_step["hintVisible"] = session["hint_visible"]
 
+        # Dictionary lookup (optional, from step metadata)
+        if "lookup" in step:
+            current_step["lookup"] = step["lookup"]
+
         # Multiple choice options (from step metadata)
         if template["inputMode"] == "multiple_choice":
             if "options" not in step:
@@ -348,7 +352,7 @@ def _build_assembly_data(session, step, clue):
             status = "active" if all_prior_done else "locked"
             result = None
 
-        transform_list.append({
+        transform_entry = {
             "role": t["role"],
             "clueWord": clue_word,
             "prompt": prompt,
@@ -358,7 +362,11 @@ def _build_assembly_data(session, step, clue):
             "hint": t.get("hint", ""),
             "hintVisible": (assembly_hint_index == i),
             "index": i,
-        })
+        }
+        # Dictionary lookup (optional, from transform metadata)
+        if "lookup" in t:
+            transform_entry["lookup"] = t["lookup"]
+        transform_list.append(transform_entry)
 
     # Determine phase: check only when all transforms are done
     all_done = len(transforms_done) == len(transforms)

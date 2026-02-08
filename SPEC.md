@@ -611,7 +611,8 @@ The `assembly` step has its own sub-state tracked by `assembly_phase` and `assem
     "prompt": "Tap the indicator word",
     "intro": "Look for a word that signals what to do with the other words — the indicator.",
     "hint": "The indicator often disguises itself...",
-    "hintVisible": false
+    "hintVisible": false,
+    "lookup": {"word": "lengthened", "url": "https://www.merriam-webster.com/dictionary/lengthened"}
   }
 }
 ```
@@ -950,6 +951,83 @@ Assembly letter inputs (`.assembly-transform-letter`, `.assembly-result-letter`)
 
 ### 10.9 Step Hints from Clue Metadata
 Interactive step hints are sourced from the `hint` field in each step of `clues_db.json`. No hardcoded hint strings in code. For assembly transforms, each transform has its own `hint` field.
+
+### 10.10 Dictionary Lookup
+
+**Purpose:** Show a dictionary icon that links to Merriam-Webster when a word lookup would help the student understand a non-obvious meaning. For example, most students know "twit" as a silly person — the MW entry reveals it's also a verb meaning "to reproach."
+
+**Where it appears:**
+1. **Definition step** — lookup the definition word(s) to show meanings the student may not know
+2. **Assembly transforms** — lookup the clue word for synonym/abbreviation transforms where the connection is non-obvious
+
+**Data model — `clues_db.json`:**
+
+Add an optional `lookup` field to definition steps and assembly transforms:
+
+```json
+// Definition step
+{
+  "type": "definition",
+  "indices": [0],
+  "position": "start",
+  "hint": "To criticize or scold someone",
+  "lookup": {
+    "word": "twit",
+    "url": "https://www.merriam-webster.com/dictionary/twit"
+  }
+}
+
+// Assembly transform
+{
+  "role": "outer",
+  "indices": [1],
+  "type": "synonym",
+  "result": "STALK",
+  "hint": "To 'track' someone is to follow or stalk them",
+  "lookup": {
+    "word": "track",
+    "url": "https://www.merriam-webster.com/dictionary/track"
+  }
+}
+```
+
+The `lookup` field is optional — only add it when Merriam-Webster has an entry for the word. Not every step or transform needs one.
+
+**Server → Client:**
+
+The `lookup` object passes through to the render object unchanged:
+- In `currentStep.lookup` for definition/indicator/fodder steps
+- In `currentStep.assemblyData.transforms[n].lookup` for assembly transforms
+
+No server-side logic needed beyond passing the field through (it's static metadata like `hint`).
+
+**UI — dictionary icon:**
+
+A small book icon (📖) rendered as a clickable link, positioned next to the existing hint `?` icon:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Tap the definition words                        [?] [📖] │
+└─────────────────────────────────────────────────────────┘
+```
+
+- Icon: `📖` (or an SVG book icon) in a 20×20px circle, matching the hint `?` icon style
+- Background: `#e2e8f0` (same as inactive hint)
+- Clicking opens the MW URL in a new tab (`target="_blank"`)
+- Visible whenever `lookup` is present on the current step or transform — no toggle state needed
+- The icon is always visible (not gated behind hint reveal) because it's a reference link, not a spoiler
+
+**Rendering rules (trainer.js):**
+- After rendering the hint `?` icon, check for `step.lookup` or `transform.lookup`
+- If present, render the dictionary icon as an `<a>` tag with `href` and `target="_blank"`
+- Style matches the hint icon: 20×20px circle, same colours, same alignment
+- No state management — it's a plain link
+
+**When to add `lookup` to clues_db.json:**
+- Add it wherever Merriam-Webster has an entry for the word
+- Particularly valuable where the definition word has a lesser-known meaning (e.g. "twit" as verb, "see" as noun, "raven" as verb, "fugitive" as adjective)
+- Also useful on synonym transforms where the connection isn't obvious
+- No downside to including it whenever MW has a result — if it doesn't help, the student simply doesn't click it
 
 ---
 

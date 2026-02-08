@@ -349,6 +349,9 @@ class TemplateTrainer {
         if (step.hint) {
             html += `<span class="hint-toggle" style="cursor: pointer; width: 20px; height: 20px; border-radius: 50%; background: ${step.hintVisible ? '#3b82f6' : '#e2e8f0'}; color: ${step.hintVisible ? 'white' : '#94a3b8'}; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Hint">?</span>`;
         }
+        if (step.lookup) {
+            html += `<a href="${step.lookup.url}" target="_blank" rel="noopener" style="width: 20px; height: 20px; border-radius: 50%; background: #e2e8f0; color: #64748b; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; text-decoration: none;" title="Look up '${step.lookup.word}' in Merriam-Webster">📖</a>`;
+        }
         html += `</div>`;
 
         // Intro (when hint not shown)
@@ -433,6 +436,9 @@ class TemplateTrainer {
             html += `<span style="font-size: 0.8rem; font-weight: 600; color: #334155; flex: 1; line-height: 1.5;">${transform.prompt}</span>`;
             if (transform.hint) {
                 html += `<span class="assembly-hint-toggle" data-transform-index="${tIdx}" style="cursor: pointer; width: 20px; height: 20px; border-radius: 50%; background: ${transform.hintVisible ? '#3b82f6' : '#e2e8f0'}; color: ${transform.hintVisible ? 'white' : '#94a3b8'}; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Hint">?</span>`;
+            }
+            if (transform.lookup) {
+                html += `<a href="${transform.lookup.url}" target="_blank" rel="noopener" style="width: 20px; height: 20px; border-radius: 50%; background: #e2e8f0; color: #64748b; font-size: 0.7rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; text-decoration: none;" title="Look up '${transform.lookup.word}' in Merriam-Webster">📖</a>`;
             }
             html += `</div>`;
 

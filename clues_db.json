@@ -29,7 +29,11 @@
             1
           ],
           "position": "start",
-          "hint": "'Come by' means to drop in on someone — a common 5-letter word"
+          "hint": "'Come by' means to drop in on someone — a common 5-letter word",
+          "lookup": {
+            "word": "visit",
+            "url": "https://www.merriam-webster.com/dictionary/visit"
+          }
         },
         {
           "type": "wordplay_type",
@@ -97,7 +101,11 @@
             1
           ],
           "position": "start",
-          "hint": "A 'see' is a diocese — who runs one?"
+          "hint": "A 'see' is a diocese — who runs one?",
+          "lookup": {
+            "word": "see",
+            "url": "https://www.merriam-webster.com/dictionary/see"
+          }
         },
         {
           "type": "wordplay_type",
@@ -121,7 +129,11 @@
               ],
               "type": "synonym",
               "result": "BISH",
-              "hint": "British slang for making a mistake or bungling something"
+              "hint": "British slang for making a mistake or bungling something",
+              "lookup": {
+                "word": "bungle",
+                "url": "https://www.merriam-webster.com/dictionary/bungle"
+              }
             },
             {
               "role": "part2",
@@ -166,7 +178,11 @@
             6
           ],
           "position": "end",
-          "hint": "An archaic verb meaning to be extremely hungry — think 'ravenous'"
+          "hint": "An archaic verb meaning to be extremely hungry — think 'ravenous'",
+          "lookup": {
+            "word": "raven",
+            "url": "https://www.merriam-webster.com/dictionary/raven"
+          }
         },
         {
           "type": "indicator",
@@ -192,7 +208,11 @@
               ],
               "type": "synonym",
               "result": "RAVE",
-              "hint": "A 'rave' is a dance party — an all-night electronic music event"
+              "hint": "A 'rave' is a dance party — an all-night electronic music event",
+              "lookup": {
+                "word": "rave",
+                "url": "https://www.merriam-webster.com/dictionary/rave"
+              }
             },
             {
               "role": "part2",
@@ -238,7 +258,11 @@
             6
           ],
           "position": "end",
-          "hint": "An exclamation of fright, often seen in comics"
+          "hint": "An exclamation of fright, often seen in comics",
+          "lookup": {
+            "word": "eek",
+            "url": "https://www.merriam-webster.com/dictionary/eek"
+          }
         },
         {
           "type": "indicator",
@@ -287,7 +311,11 @@
               ],
               "type": "synonym",
               "result": "KEEN",
-              "hint": "Keen means sharp, as in a keen edge or a keen blade"
+              "hint": "Keen means sharp, as in a keen edge or a keen blade",
+              "lookup": {
+                "word": "keen",
+                "url": "https://www.merriam-webster.com/dictionary/keen"
+              }
             },
             {
               "role": "part2",
@@ -346,7 +374,11 @@
             1
           ],
           "position": "start",
-          "hint": "Related to vision or the eye — think of an optician"
+          "hint": "Related to vision or the eye — think of an optician",
+          "lookup": {
+            "word": "optic",
+            "url": "https://www.merriam-webster.com/dictionary/optic"
+          }
         },
         {
           "type": "indicator",
@@ -453,7 +485,11 @@
             0
           ],
           "position": "start",
-          "hint": "An island nation off the coast of Africa"
+          "hint": "An island nation off the coast of Africa",
+          "lookup": {
+            "word": "madagascar",
+            "url": "https://www.merriam-webster.com/dictionary/Madagascar"
+          }
         },
         {
           "type": "wordplay_type",
@@ -545,7 +581,11 @@
             1
           ],
           "position": "start",
-          "hint": "A musical tempo marking — moderately slow, between adagio and allegro"
+          "hint": "A musical tempo marking — moderately slow, between adagio and allegro",
+          "lookup": {
+            "word": "andantino",
+            "url": "https://www.merriam-webster.com/dictionary/andantino"
+          }
         },
         {
           "type": "wordplay_type",
@@ -633,7 +673,11 @@
             9
           ],
           "position": "end",
-          "hint": "The mafia code of silence — if you follow it, you keep quiet about crimes"
+          "hint": "The mafia code of silence — if you follow it, you keep quiet about crimes",
+          "lookup": {
+            "word": "omerta",
+            "url": "https://www.merriam-webster.com/dictionary/omerta"
+          }
         },
         {
           "type": "indicator",
@@ -728,7 +772,11 @@
             3
           ],
           "position": "start",
-          "hint": "Something you use to stay dry when it rains"
+          "hint": "Something you use to stay dry when it rains",
+          "lookup": {
+            "word": "brolly",
+            "url": "https://www.merriam-webster.com/dictionary/brolly"
+          }
         },
         {
           "type": "indicator",
@@ -809,7 +857,11 @@
             0
           ],
           "position": "start",
-          "hint": "To cajole or charm someone with persuasive words"
+          "hint": "To cajole or charm someone with persuasive words",
+          "lookup": {
+            "word": "flatter",
+            "url": "https://www.merriam-webster.com/dictionary/flatter"
+          }
         },
         {
           "type": "indicator",
@@ -845,7 +897,11 @@
               ],
               "type": "synonym",
               "result": "STALK",
-              "hint": "To 'track' someone is to follow or stalk them"
+              "hint": "To 'track' someone is to follow or stalk them",
+              "lookup": {
+                "word": "track",
+                "url": "https://www.merriam-webster.com/dictionary/track"
+              }
             },
             {
               "role": "inner",
@@ -902,7 +958,11 @@
             2
           ],
           "position": "start",
-          "hint": "A warm glass building for growing plants — a greenhouse"
+          "hint": "A warm glass building for growing plants — a greenhouse",
+          "lookup": {
+            "word": "hothouse",
+            "url": "https://www.merriam-webster.com/dictionary/hothouse"
+          }
         },
         {
           "type": "indicator",
@@ -935,7 +995,11 @@
               ],
               "type": "synonym",
               "result": "HOSE",
-              "hint": "'Socks' are 'hose' — an old word for stockings that's still common in cryptics"
+              "hint": "'Socks' are 'hose' — an old word for stockings that's still common in cryptics",
+              "lookup": {
+                "word": "sock",
+                "url": "https://www.merriam-webster.com/dictionary/sock"
+              }
             },
             {
               "role": "inner",
@@ -984,7 +1048,11 @@
             8
           ],
           "position": "end",
-          "hint": "A female diplomat who represents her nation abroad"
+          "hint": "A female diplomat who represents her nation abroad",
+          "lookup": {
+            "word": "ambassadress",
+            "url": "https://www.merriam-webster.com/dictionary/ambassadress"
+          }
         },
         {
           "type": "wordplay_type",
@@ -1072,7 +1140,11 @@
             6
           ],
           "position": "end",
-          "hint": "A famous cathedral — one of the great sights of an Italian city"
+          "hint": "A famous cathedral — one of the great sights of an Italian city",
+          "lookup": {
+            "word": "duomo",
+            "url": "https://www.merriam-webster.com/dictionary/duomo"
+          }
         },
         {
           "type": "wordplay_type",
@@ -1096,7 +1168,11 @@
               ],
               "type": "synonym",
               "result": "DUO",
-              "hint": "A 'couple' is a 'duo' — a pair of two"
+              "hint": "A 'couple' is a 'duo' — a pair of two",
+              "lookup": {
+                "word": "couple",
+                "url": "https://www.merriam-webster.com/dictionary/couple"
+              }
             },
             {
               "role": "part2",
@@ -1105,7 +1181,11 @@
               ],
               "type": "synonym",
               "result": "MO",
-              "hint": "A 'second' of time is a 'mo' — short for moment"
+              "hint": "A 'second' of time is a 'mo' — short for moment",
+              "lookup": {
+                "word": "second",
+                "url": "https://www.merriam-webster.com/dictionary/second"
+              }
             }
           ],
           "result": "DUOMO"
@@ -1228,7 +1308,11 @@
             4
           ],
           "position": "end",
-          "hint": "A simple past tense word — something that occurred"
+          "hint": "A simple past tense word — something that occurred",
+          "lookup": {
+            "word": "was",
+            "url": "https://www.merriam-webster.com/dictionary/was"
+          }
         },
         {
           "type": "indicator",
@@ -1348,7 +1432,11 @@
               ],
               "type": "synonym",
               "result": "TAR",
-              "hint": "'Tar' is old slang for a sailor — 'Jack Tar' was the classic term for a naval man"
+              "hint": "'Tar' is old slang for a sailor — 'Jack Tar' was the classic term for a naval man",
+              "lookup": {
+                "word": "tar",
+                "url": "https://www.merriam-webster.com/dictionary/tar"
+              }
             }
           ],
           "result": "LOW TAR"
@@ -1380,7 +1468,11 @@
             3
           ],
           "position": "end",
-          "hint": "Support or protection from someone powerful — think of acting 'under the auspices of' an organisation"
+          "hint": "Support or protection from someone powerful — think of acting 'under the auspices of' an organisation",
+          "lookup": {
+            "word": "auspices",
+            "url": "https://www.merriam-webster.com/dictionary/auspices"
+          }
         },
         {
           "type": "indicator",
@@ -1427,7 +1519,11 @@
               ],
               "type": "synonym",
               "result": "APICES",
-              "hint": "Summits = peaks. The plural of 'apex' is a less common word — think Latin plurals"
+              "hint": "Summits = peaks. The plural of 'apex' is a less common word — think Latin plurals",
+              "lookup": {
+                "word": "summit",
+                "url": "https://www.merriam-webster.com/dictionary/summit"
+              }
             },
             {
               "role": "inner",
@@ -1470,7 +1566,11 @@
             0
           ],
           "position": "start",
-          "hint": "To criticize or scold someone"
+          "hint": "To criticize or scold someone",
+          "lookup": {
+            "word": "twit",
+            "url": "https://www.merriam-webster.com/dictionary/twit"
+          }
         },
         {
           "type": "wordplay_type",
@@ -1504,7 +1604,11 @@
               ],
               "type": "synonym",
               "result": "ACHE",
-              "hint": "To pine is to ache — to long painfully for something"
+              "hint": "To pine is to ache — to long painfully for something",
+              "lookup": {
+                "word": "pine",
+                "url": "https://www.merriam-webster.com/dictionary/pine"
+              }
             },
             {
               "role": "part3",
@@ -1548,7 +1652,11 @@
             0
           ],
           "position": "start",
-          "hint": "Passing quickly, transient — like something that doesn't last"
+          "hint": "Passing quickly, transient — like something that doesn't last",
+          "lookup": {
+            "word": "fugitive",
+            "url": "https://www.merriam-webster.com/dictionary/fugitive"
+          }
         },
         {
           "type": "indicator",
@@ -1593,7 +1701,11 @@
               ],
               "type": "synonym",
               "result": "NIT",
-              "hint": "An 'egg' of a louse is a 'nit' — a tiny egg that sticks to hair"
+              "hint": "An 'egg' of a louse is a 'nit' — a tiny egg that sticks to hair",
+              "lookup": {
+                "word": "egg",
+                "url": "https://www.merriam-webster.com/dictionary/egg"
+              }
             },
             {
               "role": "part4",
@@ -1637,7 +1749,11 @@
             1
           ],
           "position": "start",
-          "hint": "A pretentious person who claims expertise or knowledge they don’t have"
+          "hint": "A pretentious person who claims expertise or knowledge they don’t have",
+          "lookup": {
+            "word": "pseud",
+            "url": "https://www.merriam-webster.com/dictionary/pseud"
+          }
         },
         {
           "type": "indicator",
@@ -1714,7 +1830,11 @@
             1
           ],
           "position": "start",
-          "hint": "A Roman emperor — the word 'Tsar' itself derives from this title"
+          "hint": "A Roman emperor — the word 'Tsar' itself derives from this title",
+          "lookup": {
+            "word": "tsar",
+            "url": "https://www.merriam-webster.com/dictionary/tsar"
+          }
         },
         {
           "type": "indicator",
@@ -1748,7 +1868,11 @@
               ],
               "type": "synonym",
               "result": "RASE",
-              "hint": "To 'level' ground is to 'rase' it — an archaic spelling of 'raze'"
+              "hint": "To 'level' ground is to 'rase' it — an archaic spelling of 'raze'",
+              "lookup": {
+                "word": "level",
+                "url": "https://www.merriam-webster.com/dictionary/level"
+              }
             },
             {
               "role": "part3",
@@ -1804,7 +1928,11 @@
           "position": "all",
           "intro": "This is an &lit clue — a rare and elegant construction where the entire clue reads as both the definition AND the wordplay simultaneously. There’s no split between definition and wordplay; the whole thing works both ways.",
           "prompt": "This is an &lit clue. Tap all the words — the entire clue is the definition.",
-          "hint": "Read it as a description: someone who was one missing initially, admitted to Electra with some upheaval. Who would that be?"
+          "hint": "Read it as a description: someone who was one missing initially, admitted to Electra with some upheaval. Who would that be?",
+          "lookup": {
+            "word": "latecomer",
+            "url": "https://www.merriam-webster.com/dictionary/latecomer"
+          }
         },
         {
           "type": "indicator",
@@ -1899,7 +2027,11 @@
             8
           ],
           "position": "end",
-          "hint": "To train or teach someone — 'to school' someone means to discipline them"
+          "hint": "To train or teach someone — 'to school' someone means to discipline them",
+          "lookup": {
+            "word": "school",
+            "url": "https://www.merriam-webster.com/dictionary/school"
+          }
         },
         {
           "type": "indicator",
@@ -2007,7 +2139,11 @@
             8
           ],
           "position": "end",
-          "hint": "An astronomical event that temporarily blocks sunlight"
+          "hint": "An astronomical event that temporarily blocks sunlight",
+          "lookup": {
+            "word": "eclipse",
+            "url": "https://www.merriam-webster.com/dictionary/eclipse"
+          }
         },
         {
           "type": "indicator",
@@ -2071,7 +2207,11 @@
               ],
               "type": "synonym",
               "result": "LIPS",
-              "hint": "'Kissers' is informal slang for lips"
+              "hint": "'Kissers' is informal slang for lips",
+              "lookup": {
+                "word": "kisser",
+                "url": "https://www.merriam-webster.com/dictionary/kisser"
+              }
             }
           ],
           "result": "SOLAR ECLIPSE"
@@ -2108,7 +2248,11 @@
             1
           ],
           "position": "start",
-          "hint": "A traditional long garment worn in Middle Eastern countries"
+          "hint": "A traditional long garment worn in Middle Eastern countries",
+          "lookup": {
+            "word": "dishdasha",
+            "url": "https://www.merriam-webster.com/dictionary/dishdasha"
+          }
         },
         {
           "type": "indicator",
@@ -2197,7 +2341,11 @@
             0
           ],
           "position": "start",
-          "hint": "A famous structure on the Nile river"
+          "hint": "A famous structure on the Nile river",
+          "lookup": {
+            "word": "embankment",
+            "url": "https://www.merriam-webster.com/dictionary/embankment"
+          }
         },
         {
           "type": "wordplay_type",
@@ -2251,7 +2399,11 @@
               ],
               "type": "synonym",
               "result": "SWAN",
-              "hint": "A male swan is called a cob"
+              "hint": "A male swan is called a cob",
+              "lookup": {
+                "word": "cob",
+                "url": "https://www.merriam-webster.com/dictionary/cob"
+              }
             }
           ],
           "result": "ASWAN DAM"
@@ -2291,7 +2443,11 @@
             9
           ],
           "position": "end",
-          "hint": "Existing outside of time — timeless"
+          "hint": "Existing outside of time — timeless",
+          "lookup": {
+            "word": "atemporal",
+            "url": "https://www.merriam-webster.com/dictionary/atemporal"
+          }
         },
         {
           "type": "wordplay_type",
@@ -2381,7 +2537,11 @@
             5
           ],
           "position": "end",
-          "hint": "A very large amount of something — especially medicine"
+          "hint": "A very large amount of something — especially medicine",
+          "lookup": {
+            "word": "megadose",
+            "url": "https://www.merriam-webster.com/dictionary/megadose"
+          }
         },
         {
           "type": "indicator",
@@ -2469,7 +2629,11 @@
             0
           ],
           "position": "start",
-          "hint": "A word meaning a large number of something"
+          "hint": "A word meaning a large number of something",
+          "lookup": {
+            "word": "dozens",
+            "url": "https://www.merriam-webster.com/dictionary/dozens"
+          }
         },
         {
           "type": "indicator",
@@ -2551,7 +2715,11 @@
             7
           ],
           "position": "end",
-          "hint": "Describing a place battered by strong winds"
+          "hint": "Describing a place battered by strong winds",
+          "lookup": {
+            "word": "windswept",
+            "url": "https://www.merriam-webster.com/dictionary/windswept"
+          }
         },
         {
           "type": "wordplay_type",
@@ -2585,7 +2753,11 @@
               ],
               "type": "synonym",
               "result": "PEW",
-              "hint": "A pew is a church bench — a classic crossword synonym"
+              "hint": "A pew is a church bench — a classic crossword synonym",
+              "lookup": {
+                "word": "pew",
+                "url": "https://www.merriam-webster.com/dictionary/pew"
+              }
             },
             {
               "role": "part2a reversed",
