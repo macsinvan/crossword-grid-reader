@@ -257,6 +257,21 @@ def status():
     })
 
 
+@app.route('/server-info')
+def server_info():
+    """Return server directory and git branch for debugging."""
+    import subprocess
+    server_dir = os.path.dirname(os.path.abspath(__file__))
+    try:
+        branch = subprocess.check_output(
+            ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+            cwd=server_dir, stderr=subprocess.DEVNULL
+        ).decode().strip()
+    except Exception:
+        branch = 'unknown'
+    return jsonify({'dir': server_dir, 'branch': branch})
+
+
 @app.route('/upload', methods=['POST'])
 def upload():
     """

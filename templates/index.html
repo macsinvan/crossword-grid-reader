@@ -15,6 +15,7 @@
                     <span class="status-led"></span>
                     <span class="status-text">...</span>
                 </div>
+                <span id="server-info" style="font-size:0.65rem;font-family:monospace;color:#94a3b8;margin-left:0.5rem;"></span>
             </div>
             <p class="subtitle" id="puzzle-info"></p>
         </header>
@@ -153,7 +154,8 @@
         </section>
     </div>
 
-    <script src="/static/trainer.js?v=100"></script>
+    <script src="/static/trainer.js?v=101"></script>
     <script src="/static/crossword.js?v=30"></script>
+    <script>fetch('/server-info').then(r=>r.json()).then(d=>{document.getElementById('server-info').textContent=d.dir+' ['+d.branch+']';});</script>
 </body>
 </html>

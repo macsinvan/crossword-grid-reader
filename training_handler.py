@@ -467,6 +467,20 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
             transforms_done[transform_index] = expected.upper()
             session["assembly_hint_index"] = None
 
+            # Auto-complete predecessors superseded by dependent transforms
+            DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
+            t_type = transforms[transform_index].get("type", "")
+            if t_type in DEPENDENT_TYPES and transform_index > 0:
+                if t_type == "anagram":
+                    # Anagram supersedes ALL prior transforms
+                    for j in range(transform_index):
+                        if j not in transforms_done:
+                            transforms_done[j] = transforms[j]["result"].upper()
+                else:
+                    # Deletion/reversal supersedes only the immediately prior
+                    if (transform_index - 1) not in transforms_done:
+                        transforms_done[transform_index - 1] = transforms[transform_index - 1]["result"].upper()
+
             # Check if all transforms now complete → auto-skip if answer is spelled out
             if len(transforms_done) == len(transforms):
                 position_map = _compute_position_map(step)
@@ -753,6 +767,22 @@ def _resolve_variables(text, step, clue):
     # {outerWords} — from the outer_word step
     if "{outerWords}" in text:
         text = text.replace("{outerWords}", step.get("outerWords", ""))
+
+    # {assemblyBreakdown} — build from transforms: show the assembly journey
+    if "{assemblyBreakdown}" in text and "transforms" in step:
+        transforms = step["transforms"]
+        DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
+        # Collect independent results, then show dependent operations
+        parts = []
+        for t in transforms:
+            t_type = t.get("type", "")
+            result = t["result"].upper()
+            if t_type in DEPENDENT_TYPES:
+                # Show as arrow from accumulated parts to result
+                parts = [" + ".join(parts) + " \u2192 " + result]
+            else:
+                parts.append(result)
+        text = text.replace("{assemblyBreakdown}", " + ".join(parts))
 
     return text
 
