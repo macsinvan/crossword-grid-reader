@@ -564,7 +564,7 @@ The `assembly` step has its own sub-state tracked by `assembly_phase` and `assem
 1. **Definition line**: Reminds student what they're looking for (template: `definitionLine` with `{enumeration}`, `{definitionWords}`)
 2. **Indicator line**: For containers, shows piece layout with roles (template: `indicatorLine` with `{indicatorWords}`, `{innerWords}`, `{outerWords}`). Empty for charades/chains.
 3. **Fail message**: Shows that raw clue words don't work (step metadata can override via `failMessage`)
-4. **Transform prompts**: Role-labelled coaching prompts from `transformPrompts` in `render_templates.json`. Independent types (synonym, abbreviation, literal, letter_selection) are all active simultaneously; dependent types (deletion, reversal, anagram) are locked until predecessors complete. Each has its own hint lightbulb.
+4. **Transform prompts**: Role-labelled coaching prompts from `transformPrompts` in `render_templates.json`. All transforms are always active — no locking. The student sees the full plan and works through them in any order. Each has its own hint lightbulb.
 5. **Combined result display**: Editable letter inputs grouped by transform with `+` separators based on `positionMap`. Cross letters shown as overwritable placeholders. Check button submits all filled groups.
 6. **Assembly check**: **Auto-skipped** when the last transform result equals the final answer (avoids redundant retyping).
 
@@ -1261,12 +1261,13 @@ The 12 clues were chosen to cover all 7 step flow patterns, all indicator types,
 |------|-----------------|
 | **Full walkthrough** | Happy path: correct input at every step → `complete=true`, `answerLocked=true`, `userAnswer` matches |
 | **Wrong input** | Wrong value at step 0 → `correct=false`, step index unchanged (no advancement) |
-| **Assembly transform status** | Independent transforms start `active`, dependent transforms start `locked` (or all `active` when `explicit=true`) |
+| **Assembly transform status** | All transforms start `active` (no locking) |
 | **Check answer** | Wrong answer → rejected, `answerLocked=false`. Correct answer → accepted, `answerLocked=true` |
 | **Reveal** | Reveal → all steps `completed`, `complete=true`, `answerLocked=true` |
 | **Template text** | Indicator step titles contain the correct `indicator_type` display text; no unexpected indicator steps |
+| **Assembly completion text** | Container clues show insertion notation; charade+anagram clues show parenthesised arrows |
 
-**Total: 12 clues × 6 tests = 72 tests**
+**Total: 14 clues × 7 tests = 98 tests**
 
 ---
 

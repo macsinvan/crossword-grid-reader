@@ -411,8 +411,8 @@ def check_answer(clue_id, clue, answer):
 def _build_assembly_data(session, step, clue):
     """Build the assemblyData payload for an assembly step.
 
-    Transforms can be solved in any order (parallel), except dependent types
-    (deletion, reversal, anagram) which are locked until all prior transforms complete.
+    All transforms are always active — no locking. The student sees the full
+    plan and works through them in any order.
     """
     transforms = step["transforms"]
     transforms_done = session["assembly_transforms_done"]  # dict: {index: result}
@@ -439,8 +439,6 @@ def _build_assembly_data(session, step, clue):
         raw_list = "'" + "' and '".join(raw_words) + "'"
         fail_message = template["defaultFailMessage"].format(rawWordsList=raw_list)
 
-    # Independent types can be solved in any order; dependent types wait for predecessors
-    INDEPENDENT_TYPES = {"synonym", "abbreviation", "literal", "letter_selection"}
     DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
 
     # Build transform display data

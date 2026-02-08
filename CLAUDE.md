@@ -203,7 +203,7 @@ Assembly is a multi-phase step with its own sub-state (`assembly_phase`, `assemb
 1. **Definition line** — reminds the student what they're looking for (e.g. "You're looking for a 6-letter word meaning 'Cover up in shower'")
 2. **Indicator line** — for containers, shows piece layout with roles (e.g. "'nurses' tells us 'turn round' (inner) goes inside 'Not after' (outer)")
 3. **Fail message** — shows raw words don't work, prompting transformation
-4. **Transform prompts** — role-labelled coaching prompts (e.g. "outer, 'Not after', has a 2-letter synonym"), each with its own hint lightbulb. Independent transforms (synonym, abbreviation, literal, letter_selection) are all active simultaneously; dependent transforms (deletion, reversal, anagram) are locked until predecessors complete.
+4. **Transform prompts** — role-labelled coaching prompts (e.g. "outer, 'Not after', has a 2-letter synonym"), each with its own hint lightbulb. All transforms are always active — no locking. The student sees the full plan and works through them in any order.
 5. **Combined result display** — editable letter inputs grouped by transform with `+` separators, showing cross letters as overwritable placeholders. Check button submits all filled groups.
 
 Transform prompts are template-driven from `transformPrompts` in `render_templates.json`. Definition/indicator lines use `{variable}` substitution via `_resolve_variables()`. When the last transform result equals the final answer, the check phase is auto-skipped.
