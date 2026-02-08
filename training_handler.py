@@ -492,9 +492,14 @@ def _build_assembly_data(session, step, clue):
             status = "active"
             result = None
         else:
-            # Dependent type — check if all prior transforms are done
-            all_prior_done = all(j in transforms_done for j in range(i))
-            status = "active" if all_prior_done else "locked"
+            # Dependent type — check if prerequisite transforms are done
+            if t_type == "anagram":
+                # Anagram rearranges ALL prior results — all must be done
+                prereqs_done = all(j in transforms_done for j in range(i))
+            else:
+                # Deletion/reversal only depends on the immediately preceding transform
+                prereqs_done = (i - 1) in transforms_done
+            status = "active" if prereqs_done else "locked"
             result = None
 
         transform_entry = {
