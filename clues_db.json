@@ -1934,7 +1934,7 @@
           "completedTitle": "Indicator found: '{words}' — {hint}",
           "prompt": "One indicator tells you to take specific letters. Which word?",
           "intro": "This clue has two indicators — two different instructions hiding in the surface. Start with the one that tells you which letters to pick.",
-          "hint": "'Initially' means take the first letter of each word — a classic letter-selection indicator"
+          "hint": "take the first letter of each word"
         },
         {
           "type": "indicator",
@@ -1946,7 +1946,7 @@
           "completedTitle": "Indicator found: '{words}' — {hint}",
           "prompt": "The second indicator signals rearrangement. Which words?",
           "intro": "There’s a second instruction in this clue — one that tells you to rearrange letters.",
-          "hint": "'Some upheaval' suggests things being shaken up — a classic anagram indicator"
+          "hint": "things being shaken up — an anagram indicator"
         },
         {
           "type": "assembly",
