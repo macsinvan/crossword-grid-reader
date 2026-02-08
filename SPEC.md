@@ -1202,6 +1202,72 @@ Currently, clues must be manually annotated in `clues_db.json`. The solver will 
 - [ ] All steps complete → completion view
 - [ ] "Update Grid" applies answer and closes
 
+### 13.5 Regression Test Suite (`test_regression.py`)
+
+**Strategy:** Black-box API integration tests against a running server. Zero external dependencies (stdlib `urllib` only). Each test starts a fresh session, so tests are independent and idempotent.
+
+**Running:** `python3 test_regression.py` (server must be running on port 8080, or use `--server URL`)
+
+#### 12 Test Clues — Selection Rationale
+
+The 12 clues were chosen to cover all 7 step flow patterns, all indicator types, all transform types, and key edge cases:
+
+| # | Clue | Answer | Flow Pattern | Why Selected |
+|---|------|--------|-------------|--------------|
+| 1 | 11A | VISIT | def→wordplay→assembly | Simplest charade: 2 independent transforms |
+| 2 | 6D | RAVEN | def→indicator→assembly | Ordering indicator (charade with "after") |
+| 3 | 1A | BROLLY | def→indicator→outer→inner→assembly | Full container flow with outer/inner steps |
+| 4 | 2D | OMERTA | def→indicator→fodder→assembly | Anagram with fodder pieces, dependent transform |
+| 5 | 3D | LATECOMER | def→indicator→indicator→assembly | Two indicators (letter_selection + anagram), explicit=true |
+| 6 | 17D | ASWAN DAM | def→wordplay→indicator→outer→inner→assembly | Hybrid: wordplay_type + indicator, multi-word answer |
+| 7 | 5D | EEK | def→indicator→fodder→indicator→assembly | Deletion→reversal chain, two indicators in sequence |
+| 8 | 13A | ANDANTINO | def→wordplay→assembly | 3 independent transforms (synonym + abbreviation + synonym) |
+| 9 | 4A | REPROACH | def→wordplay→assembly | Deletion dependent transform in charade |
+| 10 | 28A | CAESAR | def→indicator→assembly | Reversal chain (synonym→reversal as dependent) |
+| 11 | 26A | WINDSWEPT | def→wordplay→assembly | 5 transforms, mixed chain (reversal + anagram), check phase |
+| 12 | 23D | PSEUD | def→indicator→fodder→assembly | Hidden word indicator, reversal dependent |
+
+**Coverage matrix:**
+
+| Feature | Covered By |
+|---------|-----------|
+| Step flow: charade (no indicator) | 1, 8, 9, 11 |
+| Step flow: indicator-led | 2, 3, 4, 5, 6, 7, 10, 12 |
+| Step flow: container (outer/inner) | 3, 6 |
+| Step flow: fodder step | 4, 7, 12 |
+| Step flow: wordplay_type (multiple_choice) | 1, 6, 8, 9, 11 |
+| Step flow: two indicators | 5, 7 |
+| Indicator type: container | 3, 6 |
+| Indicator type: anagram | 4, 5 |
+| Indicator type: deletion | 7 |
+| Indicator type: reversal | 7, 10 |
+| Indicator type: ordering | 2 |
+| Indicator type: letter_selection | 5 |
+| Indicator type: hidden_word | 12 |
+| Transform: synonym | 1, 2, 3, 6, 8, 9, 10 |
+| Transform: abbreviation | 1, 8 |
+| Transform: literal | 2, 4, 8 |
+| Transform: deletion (dependent) | 7, 9 |
+| Transform: reversal (dependent) | 7, 10, 12 |
+| Transform: anagram (dependent) | 4, 5, 11 |
+| Assembly: explicit=true | 5 |
+| Assembly: auto-skip check | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12 |
+| Assembly: check phase (no auto-skip) | 11 |
+| Multi-word answer | 6 |
+
+#### 6 Test Types Per Clue
+
+| Test | What It Verifies |
+|------|-----------------|
+| **Full walkthrough** | Happy path: correct input at every step → `complete=true`, `answerLocked=true`, `userAnswer` matches |
+| **Wrong input** | Wrong value at step 0 → `correct=false`, step index unchanged (no advancement) |
+| **Assembly transform status** | Independent transforms start `active`, dependent transforms start `locked` (or all `active` when `explicit=true`) |
+| **Check answer** | Wrong answer → rejected, `answerLocked=false`. Correct answer → accepted, `answerLocked=true` |
+| **Reveal** | Reveal → all steps `completed`, `complete=true`, `answerLocked=true` |
+| **Template text** | Indicator step titles contain the correct `indicator_type` display text; no unexpected indicator steps |
+
+**Total: 12 clues × 6 tests = 72 tests**
+
 ---
 
 ## Appendix A: Implementation History
