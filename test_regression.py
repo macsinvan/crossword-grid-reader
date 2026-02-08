@@ -350,6 +350,36 @@ TEST_CLUES = [
         "dependent_transform_indices": [1],  # reversal at index 1
         "wrong_value_step0": [3, 4],
     },
+
+    # 13. 19A SOLAR ECLIPSE — def→indicator(container)→outer→inner→assembly (container with charade inner)
+    {
+        "id": "times-29453-19a",
+        "clue_text": "Are cold kissers coming inside only when it\u2019s dark?",
+        "puzzle_number": "29453",
+        "clue_number": "19",
+        "direction": "across",
+        "answer": "SOLAR ECLIPSE",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [6, 7, 8]},
+            {"type": "indicator", "inputMode": "tap_words", "value": [3, 4]},
+            {"type": "outer_word", "inputMode": "tap_words", "value": [5]},
+            {"type": "inner_word", "inputMode": "tap_words", "value": [0, 1, 2]},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [
+                 {"index": 0, "value": "SOLE"},
+                 {"index": 1, "value": "ARE"},
+                 {"index": 2, "value": "C"},
+                 {"index": 3, "value": "LIPS"},
+             ]},
+        ],
+        "has_indicator_steps": True,
+        "indicator_types": ["container"],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 4,
+        "dependent_transform_indices": [],
+        "wrong_value_step0": [0, 1],
+        "is_container": True,  # flag for container-specific completion text test
+    },
 ]
 
 # ---------------------------------------------------------------------------
@@ -669,6 +699,54 @@ def test_template_text(server, clue):
     return True, ""
 
 
+def test_assembly_completion_text(server, clue):
+    """For container clues: completed assembly title must show insertion, not plain concatenation."""
+    if not clue.get("is_container"):
+        return True, ""  # skip for non-container clues
+
+    # Walk through entire clue to completion
+    render = start_session(server, clue)
+    clue_id = render["clue_id"]
+
+    for step in clue["steps"]:
+        if step["inputMode"] == "assembly":
+            render = submit_assembly_transforms(
+                server, clue_id, step["transforms"], render, answer=clue["answer"]
+            )
+        else:
+            correct, render = submit_input(server, clue_id, step["value"])
+            if not correct:
+                return False, f"Step {step['type']} was rejected"
+
+    if not render.get("complete"):
+        return False, "Clue did not complete"
+
+    # Find the assembly step in the completed step list
+    assembly_step = None
+    for s in render.get("steps", []):
+        if s["type"] == "assembly":
+            assembly_step = s
+            break
+
+    if not assembly_step:
+        return False, "No assembly step found in completed steps"
+
+    title = assembly_step.get("title", "")
+
+    # The title should NOT be a plain "A + B + C + D" charade-style concatenation.
+    # For a container clue, it must show the insertion relationship.
+    # Check that it doesn't just join all transform results with " + "
+    transform_results = [t["value"] for t in clue["steps"][-1]["transforms"]]
+    plain_concat = " + ".join(transform_results)
+    if title == plain_concat:
+        return False, (
+            f"Assembly completion title is plain concatenation '{title}' — "
+            f"should show container insertion, not charade-style joining"
+        )
+
+    return True, ""
+
+
 # ---------------------------------------------------------------------------
 # Test runner
 # ---------------------------------------------------------------------------
@@ -680,6 +758,7 @@ ALL_TESTS = [
     ("Check answer", test_check_answer),
     ("Reveal", test_reveal),
     ("Template text", test_template_text),
+    ("Assembly completion text", test_assembly_completion_text),
 ]
 
 

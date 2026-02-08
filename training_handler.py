@@ -925,19 +925,75 @@ def _resolve_variables(text, step, clue):
     if "{assemblyBreakdown}" in text and "transforms" in step:
         transforms = step["transforms"]
         DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
-        # Collect independent results, then show dependent operations
-        parts = []
-        for t in transforms:
-            if "type" not in t:
-                raise ValueError(f"Transform is missing 'type' field in assembly step")
-            t_type = t["type"]
-            result = t["result"].upper()
-            if t_type in DEPENDENT_TYPES:
-                # Show as arrow from accumulated parts to result
-                parts = [" + ".join(parts) + " \u2192 " + result]
+
+        # Detect container clues (outer/inner roles)
+        roles = {t["role"] for t in transforms}
+        is_container = "outer" in roles and "inner" in roles
+
+        if is_container:
+            # Container: show insertion notation like SOL(ARE + C + LIPS)E
+            # Find terminal transforms (same logic as _compute_position_map)
+            terminal = set(range(len(transforms)))
+            for i, t in enumerate(transforms):
+                if "type" not in t:
+                    raise ValueError(f"Transform is missing 'type' field in assembly step")
+                if i > 0 and t["type"] in DEPENDENT_TYPES:
+                    if t["type"] == "anagram":
+                        for j in range(i):
+                            terminal.discard(j)
+                    else:
+                        terminal.discard(i - 1)
+
+            # Find terminal outer and collect terminal inner parts
+            outer_idx = None
+            inner_parts = []
+            for i, t in enumerate(transforms):
+                if t["role"] == "outer" and i in terminal:
+                    outer_idx = i
+                elif t["role"] == "inner" and i in terminal:
+                    inner_parts.append((i, t["result"].upper()))
+
+            if outer_idx is not None and inner_parts:
+                outer_result = re.sub(r'[^A-Z]', '', transforms[outer_idx]["result"].upper())
+                # Combine all inner terminal results
+                combined_inner = "".join(re.sub(r'[^A-Z]', '', p[1]) for p in inner_parts)
+                final_result = re.sub(r'[^A-Z]', '', step["result"].upper())
+
+                # Find where inner sits inside outer by matching the final result
+                inserted = False
+                for insert_pos in range(len(final_result) - len(combined_inner) + 1):
+                    if final_result[insert_pos:insert_pos + len(combined_inner)] == combined_inner:
+                        remaining = final_result[:insert_pos] + final_result[insert_pos + len(combined_inner):]
+                        if remaining == outer_result:
+                            prefix = outer_result[:insert_pos]
+                            suffix = outer_result[insert_pos:]
+                            inner_display = " + ".join(p[1] for p in inner_parts)
+                            breakdown = prefix + "(" + inner_display + ")" + suffix
+                            text = text.replace("{assemblyBreakdown}", breakdown)
+                            inserted = True
+                            break
+
+                if not inserted:
+                    # Fallback: show outer(inner) without split
+                    inner_display = " + ".join(p[1] for p in inner_parts)
+                    breakdown = outer_result + "(" + inner_display + ")"
+                    text = text.replace("{assemblyBreakdown}", breakdown)
             else:
-                parts.append(result)
-        text = text.replace("{assemblyBreakdown}", " + ".join(parts))
+                raise ValueError("Container clue has outer/inner roles but no terminal outer or inner transforms found")
+        else:
+            # Charade/chain: collect independent results, show dependent operations
+            parts = []
+            for t in transforms:
+                if "type" not in t:
+                    raise ValueError(f"Transform is missing 'type' field in assembly step")
+                t_type = t["type"]
+                result = t["result"].upper()
+                if t_type in DEPENDENT_TYPES:
+                    # Show as arrow from accumulated parts to result
+                    parts = [" + ".join(parts) + " \u2192 " + result]
+                else:
+                    parts.append(result)
+            text = text.replace("{assemblyBreakdown}", " + ".join(parts))
 
     return text
 
