@@ -2400,19 +2400,16 @@
           }
         },
         {
-          "type": "wordplay_type",
-          "expected": "Charade",
-          "options": [
-            "Charade",
-            "Container",
-            "Anagram",
-            "Hidden word"
+          "type": "indicator",
+          "indices": [
+            1
           ],
-          "hint": "The parts join end to end — that's a charade. But watch out: one part has its letters rearranged before joining."
+          "hint": "'Taking' signals a rearrangement — it tells you to take letters and move them around",
+          "indicator_type": "anagram"
         },
         {
           "type": "assembly",
-          "intro": "Three parts join together: 'Friend', 'piano', and 'exam'. But none of these words appear directly in the answer — each is pointing to something else. And one of them gets its letters shuffled by 'taking minute to finish'.",
+          "intro": "Three parts join together: 'Friend', 'piano', and 'exam'. But none of these words appear directly in the answer — each is pointing to something else. And 'taking minute to finish' tells you to rearrange one of them.",
           "failMessage": "The raw clue words don't fit — what does each one really mean?",
           "transforms": [
             {
@@ -2670,19 +2667,24 @@
           }
         },
         {
-          "type": "wordplay_type",
-          "expected": "Charade",
-          "options": [
-            "Charade",
-            "Container",
-            "Anagram",
-            "Hidden word"
+          "type": "indicator",
+          "indices": [
+            2
           ],
-          "hint": "Two chunks join end to end — but the second chunk hides a container and a reversal inside it. This is a tough one."
+          "hint": "'Back' is a reversal indicator — it tells you to read letters backwards",
+          "indicator_type": "reversal"
+        },
+        {
+          "type": "indicator",
+          "indices": [
+            3
+          ],
+          "hint": "'In' is a container indicator — it tells you one piece goes inside another",
+          "indicator_type": "container"
         },
         {
           "type": "assembly",
-          "intro": "This is a devious clue — the wordplay packs a synonym, a reversal, and a container insertion into just a few words. Your best bet is to solve from the definition first: what 9-letter word means 'exposed to blasts'? Once you have the answer, the transforms below show how the setter built it.",
+          "intro": "This is a devious clue — the wordplay packs a synonym, a reversal, and a container insertion into just a few words. Two chunks join end to end, but the second chunk is built from reversed and inserted pieces. Work out what each clue word really means.",
           "failMessage": "The raw words don't work — each one is pointing to something else.",
           "transforms": [
             {

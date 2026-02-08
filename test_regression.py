@@ -307,7 +307,7 @@ TEST_CLUES = [
         "expected_clue_words_in_breakdown": ["roughly"],
     },
 
-    # 11. 26A WINDSWEPT — def→wordplay→assembly (5 transforms, mixed chain)
+    # 11. 26A WINDSWEPT — def→indicator(reversal)→indicator(container)→assembly (5 transforms, mixed chain)
     {
         "id": "times-29453-26a",
         "clue_text": "Turn bench back in street exposed to blasts",
@@ -317,7 +317,8 @@ TEST_CLUES = [
         "answer": "WINDSWEPT",
         "steps": [
             {"type": "definition", "inputMode": "tap_words", "value": [5, 6, 7]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
+            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
+            {"type": "indicator", "inputMode": "tap_words", "value": [3]},
             {"type": "assembly", "inputMode": "assembly",
              "transforms": [
                  {"index": 0, "value": "WIND"},
@@ -327,8 +328,8 @@ TEST_CLUES = [
                  {"index": 4, "value": "SWEPT"},
              ]},
         ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
+        "has_indicator_steps": True,
+        "indicator_types": ["reversal", "container"],
         "assembly_explicit": False,
         "num_assembly_transforms": 5,
         "dependent_transform_indices": [2, 4],  # reversal at 2, anagram at 4
@@ -723,7 +724,7 @@ TEST_CLUES = [
         "expected_clue_words_in_breakdown": ["doldrums", "Sailor"],  # each transform's source word
     },
 
-    # 26. 22A ATEMPORAL — charade with anagram: def→wordplay→assembly (4 transforms)
+    # 26. 22A ATEMPORAL — charade with anagram: def→indicator(anagram)→assembly (4 transforms)
     {
         "id": "times-29453-22a",
         "clue_text": "Friend taking minute to finish piano exam out of time",
@@ -733,7 +734,7 @@ TEST_CLUES = [
         "answer": "ATEMPORAL",
         "steps": [
             {"type": "definition", "inputMode": "tap_words", "value": [7, 8, 9]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
+            {"type": "indicator", "inputMode": "tap_words", "value": [1]},
             {"type": "assembly", "inputMode": "assembly",
              "transforms": [
                  {"index": 0, "value": "MATE"},
@@ -742,8 +743,8 @@ TEST_CLUES = [
                  {"index": 3, "value": "ORAL"},
              ]},
         ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
+        "has_indicator_steps": True,
+        "indicator_types": ["anagram"],
         "assembly_explicit": False,
         "num_assembly_transforms": 4,
         "dependent_transform_indices": [1],
@@ -1233,6 +1234,69 @@ def test_assembly_completion_text(server, clue):
     return True, ""
 
 
+def test_indicator_coverage(server, clue):
+    """Verify that dependent transforms (reversal/deletion/anagram) have matching indicator steps.
+
+    If a clue has a reversal, deletion, or anagram transform in the assembly,
+    the word indices used by that transform should also appear in a prior
+    indicator step — so the student gets to identify the indicator word before
+    the assembly.
+    """
+    import os
+    clues_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "clues_db.json")
+    with open(clues_db_path) as f:
+        clues_db = json.load(f)
+
+    training_items = clues_db.get("training_items", clues_db)
+    clue_entry = training_items.get(clue["id"])
+    if not clue_entry:
+        return True, ""  # can't check without metadata
+
+    steps = clue_entry.get("steps", [])
+    INDICATOR_TYPES = {"deletion", "reversal", "anagram"}
+
+    # Collect indicator types covered by indicator steps
+    # hidden_word indicators also cover reversal (reversed hidden words)
+    # container indicators also cover anagram (container insertions are modeled as anagram transforms)
+    indicator_types_covered = set()
+    for s in steps:
+        if s["type"] == "indicator":
+            ind_type = s.get("indicator_type", "")
+            indicator_types_covered.add(ind_type)
+            if ind_type == "hidden_word":
+                indicator_types_covered.add("reversal")
+            if ind_type == "container":
+                indicator_types_covered.add("anagram")
+
+    # Check assembly transforms: if a dependent type appears, a matching indicator step should exist
+    # Map transform types to their indicator types
+    TYPE_TO_INDICATOR = {
+        "reversal": "reversal",
+        "deletion": "deletion",
+        "anagram": "anagram",
+    }
+
+    for s in steps:
+        if s["type"] != "assembly":
+            continue
+        for t in s.get("transforms", []):
+            t_type = t.get("type", "")
+            if t_type not in INDICATOR_TYPES:
+                continue
+            expected_indicator = TYPE_TO_INDICATOR[t_type]
+            if expected_indicator not in indicator_types_covered:
+                words = clue_entry.get("words", [])
+                t_indices = t.get("indices", [])
+                t_words = [words[i] for i in t_indices if i < len(words)]
+                return False, (
+                    f"Assembly has a '{t_type}' transform ('{' '.join(t_words)}') "
+                    f"but no indicator step of type '{expected_indicator}' exists — "
+                    f"student never gets to identify the indicator word"
+                )
+
+    return True, ""
+
+
 # ---------------------------------------------------------------------------
 # Test runner
 # ---------------------------------------------------------------------------
@@ -1245,6 +1309,7 @@ ALL_TESTS = [
     ("Reveal", test_reveal),
     ("Template text", test_template_text),
     ("Assembly completion text", test_assembly_completion_text),
+    ("Indicator coverage", test_indicator_coverage),
 ]
 
 
