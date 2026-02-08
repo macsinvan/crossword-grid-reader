@@ -1553,19 +1553,14 @@
           }
         },
         {
-          "type": "wordplay_type",
-          "expected": "Charade",
-          "options": [
-            "Charade",
-            "Container",
-            "Anagram",
-            "Hidden word"
-          ],
-          "hint": "No indicator words here — the parts just join end to end. That's a charade."
+          "type": "indicator",
+          "indices": [5],
+          "hint": "'Mostly' is a deletion indicator — it tells you to take most of a word, dropping the last letter",
+          "indicator_type": "deletion"
         },
         {
           "type": "assembly",
-          "intro": "In a charade, the parts join end-to-end. Each clue word points to a shorter word — a synonym, abbreviation, or clever association. Work out what each one really means.",
+          "intro": "The parts join end-to-end, but the clue words don't fit directly — each is pointing to a shorter word. And one of them gets shortened further by 'mostly'.",
           "transforms": [
             {
               "role": "part1",

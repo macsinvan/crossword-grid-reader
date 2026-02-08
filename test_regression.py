@@ -245,7 +245,7 @@ TEST_CLUES = [
         "wrong_value_step0": [2, 3],
     },
 
-    # 9. 4A REPROACH — def→wordplay→assembly (deletion dependent)
+    # 9. 4A REPROACH — def→indicator(deletion)→assembly (charade with deletion)
     {
         "id": "times-29453-4a",
         "clue_text": "Twit copying antique with pine, mostly",
@@ -255,7 +255,7 @@ TEST_CLUES = [
         "answer": "REPROACH",
         "steps": [
             {"type": "definition", "inputMode": "tap_words", "value": [0]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
+            {"type": "indicator", "inputMode": "tap_words", "value": [5]},
             {"type": "assembly", "inputMode": "assembly",
              "transforms": [
                  {"index": 0, "value": "REPRO"},
@@ -263,8 +263,8 @@ TEST_CLUES = [
                  {"index": 2, "value": "ACH"},
              ]},
         ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
+        "has_indicator_steps": True,
+        "indicator_types": ["deletion"],
         "assembly_explicit": False,
         "num_assembly_transforms": 3,
         "dependent_transform_indices": [2],  # deletion at index 2
