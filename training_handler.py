@@ -694,28 +694,43 @@ def _compute_position_map(step):
 
 
 def _compute_container_positions(transforms, terminal, result):
-    """For container clues: find where inner word sits inside outer word."""
+    """For container clues: find where inner word(s) sit inside outer word.
+
+    Supports multiple inner transforms (charade within container):
+    e.g. SOLE wrapping ARE+C+LIPS → SOL(ARECLIPS)E
+    Each inner transform gets its own slice of the inner region.
+    """
     outer_idx = None
-    inner_idx = None
+    inner_indices = []
     for i, t in enumerate(transforms):
         if t["role"] == "outer" and i in terminal:
             outer_idx = i
         if t["role"] == "inner" and i in terminal:
-            inner_idx = i
+            inner_indices.append(i)
 
-    if outer_idx is None or inner_idx is None:
+    if outer_idx is None or not inner_indices:
         return {}
 
     outer_result = re.sub(r'[^A-Z]', '', transforms[outer_idx]["result"].upper())
-    inner_result = re.sub(r'[^A-Z]', '', transforms[inner_idx]["result"].upper())
+    # Combine all inner results in order
+    combined_inner = "".join(
+        re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper())
+        for idx in inner_indices
+    )
 
-    for insert_pos in range(len(result) - len(inner_result) + 1):
-        if result[insert_pos:insert_pos + len(inner_result)] == inner_result:
-            remaining = result[:insert_pos] + result[insert_pos + len(inner_result):]
+    for insert_pos in range(len(result) - len(combined_inner) + 1):
+        if result[insert_pos:insert_pos + len(combined_inner)] == combined_inner:
+            remaining = result[:insert_pos] + result[insert_pos + len(combined_inner):]
             if remaining == outer_result:
-                outer_positions = list(range(0, insert_pos)) + list(range(insert_pos + len(inner_result), len(result)))
-                inner_positions = list(range(insert_pos, insert_pos + len(inner_result)))
-                return {outer_idx: outer_positions, inner_idx: inner_positions}
+                outer_positions = list(range(0, insert_pos)) + list(range(insert_pos + len(combined_inner), len(result)))
+                position_map = {outer_idx: outer_positions}
+                # Assign each inner transform its slice of the inner region
+                inner_pos = insert_pos
+                for idx in inner_indices:
+                    inner_len = len(re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper()))
+                    position_map[idx] = list(range(inner_pos, inner_pos + inner_len))
+                    inner_pos += inner_len
+                return position_map
 
     return {}
 
