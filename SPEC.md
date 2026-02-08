@@ -226,15 +226,9 @@ ALL intelligence lives on the server. The client is a pure view layer.
           "hint": "A famous structure on the Nile river"
         },
         {
-          "type": "wordplay_type",
-          "expected": "Container",
-          "options": ["Charade", "Container", "Anagram", "Hidden word"],
-          "hint": "'Lengthened' is a container indicator — it tells you one word gets stretched by putting letters inside it."
-        },
-        {
           "type": "indicator",
           "indices": [2],
-          "hint": "'Lengthened' suggests stretching a word by putting letters inside it"
+          "hint": "'Lengthened' is a container indicator — it tells you one word gets stretched by putting letters inside it."
         },
         {
           "type": "outer_word",
@@ -330,8 +324,6 @@ OUTPUT (generated flat steps):
 {
   "steps": [
     {"type": "definition", "indices": [0], "position": "start", "hint": "..."},
-    {"type": "wordplay_type", "expected": "Container",
-     "options": ["Charade", "Container", "Anagram", "Hidden word"], "hint": "..."},
     {"type": "indicator", "indices": [2], "hint": "..."},
     {"type": "outer_word", "indices": [1], "hint": "..."},
     {"type": "inner_word", "indices": [4], "hint": "..."},
@@ -439,7 +431,7 @@ Templates use `{variable}` placeholders resolved from step + clue data:
 | `outer_word` | `outer_word` | `tap_words` | Identify outer word (container clues) |
 | `inner_word` | `inner_word` | `tap_words` | Identify inner word (container clues) |
 | `fodder` | `fodder` | `tap_words` | Identify word being operated on |
-| `assembly` | `assembly` | `assembly` | Transforms + assembly check |
+| `assembly` | `assembly` | `assembly` | Coaching context, parallel transforms, combined letter entry |
 
 More templates will be added as new clue types are implemented (anagrams, hidden words, etc.).
 
@@ -463,8 +455,8 @@ _sessions[clue_id] = {
     "user_answer": [],          # Letters typed in answer boxes
     "answer_locked": False,     # True when answer confirmed
     "highlights": [],           # Word highlights [{indices, color, role}]
-    "assembly_phase": 0,        # Current transform index in assembly step
-    "assembly_transforms_done": [],  # Completed transform results
+    "assembly_phase": 0,        # Assembly phase: 0=transforms, 1=check
+    "assembly_transforms_done": {},  # Completed transforms: {index: result}
 }
 ```
 
@@ -564,13 +556,16 @@ The engine uses a simple sequencer with flat steps. Each step type has one inter
 | `outer_word` | `tap_words` | Identify the outer (wrapping) word |
 | `inner_word` | `tap_words` | Identify the inner (inserted) word |
 | `fodder` | `tap_words` | Identify the word being operated on by an indicator |
-| `assembly` | `assembly` | Multi-phase: transforms → assembly check |
+| `assembly` | `assembly` | Coaching context, parallel transforms, combined letter entry |
 
-**Assembly Sub-phases:**
-The `assembly` step has its own multi-phase flow tracked by `assembly_phase` and `assembly_transforms_done` in session state:
-1. **Fail message**: Shows that raw clue words don't work (step metadata can override via `failMessage`)
-2. **Transform inputs** (sequential): Student discovers what each word really points to. Prompts are type-specific based on each transform's `type` field (synonym, abbreviation, literal, reversal, deletion, letter_selection).
-3. **Assembly check**: Student combines the transformed words into the final answer. **Auto-skipped** when the last transform result equals the final answer (avoids redundant retyping).
+**Assembly Layout:**
+The `assembly` step has its own sub-state tracked by `assembly_phase` and `assembly_transforms_done` in session state. The layout shows:
+1. **Definition line**: Reminds student what they're looking for (template: `definitionLine` with `{enumeration}`, `{definitionWords}`)
+2. **Indicator line**: For containers, shows piece layout with roles (template: `indicatorLine` with `{indicatorWords}`, `{innerWords}`, `{outerWords}`). Empty for charades/chains.
+3. **Fail message**: Shows that raw clue words don't work (step metadata can override via `failMessage`)
+4. **Transform prompts**: Role-labelled coaching prompts from `transformPrompts` in `render_templates.json`. Independent types (synonym, abbreviation, literal, letter_selection) are all active simultaneously; dependent types (deletion, reversal, anagram) are locked until predecessors complete. Each has its own hint lightbulb.
+5. **Combined result display**: Editable letter inputs grouped by transform with `+` separators based on `positionMap`. Cross letters shown as overwritable placeholders. Check button submits all filled groups.
+6. **Assembly check**: **Auto-skipped** when the last transform result equals the final answer (avoids redundant retyping).
 
 ### 5.2 Input Modes
 
@@ -598,21 +593,19 @@ The `assembly` step has its own multi-phase flow tracked by `assembly_phase` and
   "userAnswer": [],
   "answerLocked": false,
   "steps": [
-    {"index": 0, "type": "definition", "title": "Definition found: 'Embankment'",
+    {"index": 0, "type": "definition", "title": "Definition found: 'Embankment' — can you find a 5,3-letter word for this?",
      "status": "completed", "completionText": "Can you find a word (5,3) meaning 'Embankment'..."},
-    {"index": 1, "type": "wordplay_type", "title": "Wordplay: Container",
-     "status": "completed", "completionText": "..."},
-    {"index": 2, "type": "indicator", "title": "Spot the indicator",
+    {"index": 1, "type": "indicator", "title": "Indicator found: 'lengthened' — ...",
      "status": "active", "completionText": null},
-    {"index": 3, "type": "outer_word", "title": "Find the outer part",
+    {"index": 2, "type": "outer_word", "title": "Find the outer part",
      "status": "pending", "completionText": null},
-    {"index": 4, "type": "inner_word", "title": "Find the inner part",
+    {"index": 3, "type": "inner_word", "title": "Find the inner part",
      "status": "pending", "completionText": null},
-    {"index": 5, "type": "assembly", "title": "Build the answer",
+    {"index": 4, "type": "assembly", "title": "Build the answer",
      "status": "pending", "completionText": null}
   ],
   "currentStep": {
-    "index": 2,
+    "index": 1,
     "type": "indicator",
     "inputMode": "tap_words",
     "prompt": "Tap the indicator word",
@@ -628,15 +621,18 @@ The `assembly` step has its own multi-phase flow tracked by `assembly_phase` and
 {
   "assemblyData": {
     "phase": "transform",
+    "definitionLine": "You're looking for a 5,3-letter word meaning 'Embankment'",
+    "indicatorLine": "'lengthened' tells us 'cob' (inner) goes inside 'architect' (outer)",
     "failMessage": "Try putting 'architect' and 'cob' together — it doesn't spell anything useful...",
-    "transformIndex": 0,
     "transforms": [
-      {"role": "outer", "clueWord": "architect", "prompt": "'architect' is a clue to a 4-letter word...",
+      {"index": 0, "role": "outer", "clueWord": "architect", "prompt": "outer, 'architect', has a 4-letter synonym",
        "letterCount": 4, "status": "active", "result": null, "hint": "Robert Adam was...", "hintVisible": false},
-      {"role": "inner", "clueWord": "cob", "prompt": "'cob' is a clue to a 4-letter word...",
-       "letterCount": 4, "status": "pending", "result": null, "hint": "A male swan...", "hintVisible": false}
+      {"index": 1, "role": "inner", "clueWord": "cob", "prompt": "inner, 'cob', has a 4-letter synonym",
+       "letterCount": 4, "status": "active", "result": null, "hint": "A male swan...", "hintVisible": false}
     ],
-    "resultParts": [5, 3]
+    "resultParts": [5, 3],
+    "positionMap": {"0": [0, 4, 5, 6, 7], "1": [1, 2, 3]},
+    "completedLetters": [null, null, null, null, null, null, null, null]
   }
 }
 ```

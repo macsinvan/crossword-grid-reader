@@ -30,14 +30,14 @@ Every transform prompt in the assembly step must teach a cryptic convention, not
 - **letter_selection**: teach the pattern (e.g. "'head of office' = take the first letter — 'head of' always means first letter in cryptics")
 - **reversal/deletion/anagram**: connect the indicator word to the operation it signals
 
-The generic `TRANSFORM_PROMPTS` in `training_handler.py` provide a baseline, but the real teaching happens through per-clue `prompt` overrides and `hint` text in `clues_db.json`. When writing clue metadata, always ask: "will the student understand the cryptic trick after reading this?"
+The generic `transformPrompts` in `render_templates.json` (under the `assembly` template) provide a baseline, but the real teaching happens through per-clue `prompt` overrides and `hint` text in `clues_db.json`. When writing clue metadata, always ask: "will the student understand the cryptic trick after reading this?"
 
 ### Template Rules — MANDATORY
 
 When writing or modifying step metadata for clues:
 
 1. **Check existing templates first.** Read `render_templates.json` — can an existing template handle this step? If so, use it. If it needs a small extension, extend it. Don't invent new templates without explicit approval.
-2. **If using an existing template, follow its patterns exactly.** Templates define `completedTitle`, `onCorrect`, `menuTitle`, etc. with specific variable substitution patterns. Match them. For example, the `indicator` template's `completedTitle` is `"Indicator: '{words}'"` and its `onCorrect` is `"'{words}' — {hint}"`. Use per-clue overrides (`menuTitle`, `completedTitle`, `prompt`, `intro`) to customise the teaching, but keep the same structural pattern.
+2. **If using an existing template, follow its patterns exactly.** Templates define `completedTitle`, `onCorrect`, `menuTitle`, etc. with specific variable substitution patterns. Match them. For example, the `indicator` template's `completedTitle` is `"Indicator found: '{words}' — {hint}"` and its `onCorrect` is `"'{words}' — {hint}"`. Use per-clue overrides (`menuTitle`, `completedTitle`, `prompt`, `intro`) to customise the teaching, but keep the same structural pattern.
 3. **If a new template is genuinely needed, model it on the closest existing one.** Copy the structure (inputMode, prompt, menuTitle, completedTitle, onCorrect, expected_source) and adapt the content.
 4. **Every step must deliver a teaching moment, not a robotic instruction.** We are building a teaching app. Each step should help the student understand a cryptic crossword convention — why something works, not just what to type. Prompts like "Enter the 3-letter result" are mechanical. Prompts like "What does 'work' mean in cryptic crosswords?" teach.
 
@@ -188,13 +188,20 @@ The trainer engine (`training_handler.py`) is a ~550-line simple sequencer. It r
 | `outer_word` | `tap_words` | Identify which word wraps around |
 | `inner_word` | `tap_words` | Identify which word goes inside |
 | `fodder` | `tap_words` | Identify the word being operated on by an indicator |
-| `assembly` | `assembly` | Multi-phase: transforms then assembly check |
+| `assembly` | `assembly` | Coaching context, parallel transforms, combined letter entry |
 
 **Step Menu with Inline Expansion:**
 Steps are listed as a roadmap. The active step is collapsed by default (click chevron to expand). Completed steps show green ✓ and completion text. The `stepExpanded` flag in session state controls visibility.
 
 **Assembly Steps (assembly):**
-Assembly is a multi-phase step with its own sub-state (`assembly_phase`, `assembly_transforms_done`). The student first sees that the raw clue words don't work, then must find what each word really points to (synonym, abbreviation, etc.) via sequential transform inputs, then finally assemble the result. Each transform has its own hint lightbulb. Transform prompts are type-specific (synonym, abbreviation, literal, reversal, deletion, letter_selection). When the last transform result equals the final answer, the check phase is auto-skipped.
+Assembly is a multi-phase step with its own sub-state (`assembly_phase`, `assembly_transforms_done`). The layout shows:
+1. **Definition line** — reminds the student what they're looking for (e.g. "You're looking for a 6-letter word meaning 'Cover up in shower'")
+2. **Indicator line** — for containers, shows piece layout with roles (e.g. "'nurses' tells us 'turn round' (inner) goes inside 'Not after' (outer)")
+3. **Fail message** — shows raw words don't work, prompting transformation
+4. **Transform prompts** — role-labelled coaching prompts (e.g. "outer, 'Not after', has a 2-letter synonym"), each with its own hint lightbulb. Independent transforms (synonym, abbreviation, literal, letter_selection) are all active simultaneously; dependent transforms (deletion, reversal, anagram) are locked until predecessors complete.
+5. **Combined result display** — editable letter inputs grouped by transform with `+` separators, showing cross letters as overwritable placeholders. Check button submits all filled groups.
+
+Transform prompts are template-driven from `transformPrompts` in `render_templates.json`. Definition/indicator lines use `{variable}` substitution via `_resolve_variables()`. When the last transform result equals the final answer, the check phase is auto-skipped.
 
 **Flat Clue Metadata Format (17D example):**
 Steps are a flat array — no nesting. Each step has `type`, `indices` (word positions), and `hint`. The `assembly` step additionally has `transforms` (array of `{role, indices, type, result, hint}`) and `result`. Steps like `wordplay_type` have `expected` and `options`. Any step can override template `prompt`, `intro`, `menuTitle`, `completedTitle` for clue-specific teaching.
@@ -225,12 +232,12 @@ Grid uses CSS Grid with `1fr` units, NOT fixed pixel sizes. See `SPEC.md` Sectio
 
 Convert all 30 clues in `clues_db.json` from the old format to the new flat format with teaching steps. Verify each converted clue works end-to-end in browser.
 
-**Converted clues (verified):** 5D, 17D, 1A, 4A, 25A
+**Converted clues (verified):** 5D, 17D, 1A, 4A, 25A, 1D, 12A
 **Converted (not yet verified in browser):** 2D
 
 **Reference clues — study these BEFORE converting any new clue:**
 - **5D** — deletion + reversal chain (indicator clues, tap_words flow)
-- **1A** — container (indicator clue with wordplay_type step, then indicator, outer_word, inner_word)
+- **1A** — container (definition → indicator → outer_word → inner_word → assembly)
 - **17D** — container (same pattern as 1A)
 - **4A** — charade (no indicators, multiple_choice wordplay_type step)
 - **25A** — charade (same pattern as 4A)
