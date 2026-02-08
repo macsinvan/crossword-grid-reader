@@ -453,10 +453,10 @@ class TemplateTrainer {
             html += `</div>`;
 
         } else if (transform.status === 'locked') {
-            // Locked — waiting for predecessor transforms
+            // Locked — show the prompt greyed out with lock icon
             html += `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; margin-bottom: 0.25rem; opacity: 0.4;">`;
             html += `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="4" y="7" width="8" height="6" rx="1" stroke="#94a3b8" stroke-width="1.2" fill="none"/><path d="M6 7V5a2 2 0 0 1 4 0v2" stroke="#94a3b8" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>`;
-            html += `<span style="font-size: 0.8rem; color: #94a3b8;">'${transform.clueWord}' (${transform.letterCount} letters) \u2014 solve earlier steps first</span>`;
+            html += `<span style="font-size: 0.8rem; color: #94a3b8;">${transform.prompt} \u2014 solve earlier steps first</span>`;
             html += `</div>`;
         }
 
