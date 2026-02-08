@@ -767,9 +767,12 @@ class TemplateTrainer {
                 }
             });
 
-            // Focus style
+            // Focus style + select existing letter so next keystroke replaces it
             el.addEventListener('focus', () => {
-                if (!el.disabled) el.style.borderBottomColor = '#3b82f6';
+                if (!el.disabled) {
+                    el.style.borderBottomColor = '#3b82f6';
+                    el.select();
+                }
             });
             el.addEventListener('blur', () => {
                 if (!el.disabled) el.style.borderBottomColor = el.value ? '#475569' : '#cbd5e1';
