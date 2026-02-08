@@ -425,118 +425,95 @@
     },
     "times-29453-9d": {
       "id": "times-29453-9d",
-      "clue": {
-        "number": "9D",
-        "text": "State coach for Turkish leader who's out to lunch?",
-        "enumeration": "10",
-        "answer": "MADAGASCAR",
-        "definition": [
-          {
-            "text": "State",
-            "position": "start"
-          }
-        ]
-      },
+      "clue": "State coach for Turkish leader who's out to lunch?",
+      "number": "9D",
+      "enumeration": "10",
+      "answer": "MADAGASCAR",
       "words": [
         "State",
         "coach",
         "for",
         "Turkish",
         "leader",
-        "who's",
+        "who’s",
         "out",
         "to",
         "lunch"
       ],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "easy",
+        "wordplay": "hard",
+        "overall": "hard"
+      },
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0
-            ],
-            "text": "State"
-          },
-          "position": "start",
-          "explicit": true,
-          "hint": "An island nation off the coast of Africa",
-          "difficulty": "Easy"
-        },
-        {
-          "type": "charade",
-          "template": "charade_with_parts",
-          "parts": [
-            {
-              "fodder": {
-                "indices": [
-                  6,
-                  7,
-                  8
-                ],
-                "text": "out to lunch"
-              },
-              "result": "MAD",
-              "type": "synonym",
-              "reasoning": "'Out to lunch' is slang for crazy or mad"
-            },
-            {
-              "fodder": {
-                "indices": [
-                  3,
-                  4
-                ],
-                "text": "Turkish leader"
-              },
-              "result": "AGA",
-              "type": "abbreviation",
-              "reasoning": "An aga is a Turkish military commander"
-            },
-            {
-              "fodder": {
-                "indices": [
-                  5
-                ],
-                "text": "who's"
-              },
-              "result": "S",
-              "type": "literal",
-              "reasoning": "The possessive 's from 'who's'"
-            },
-            {
-              "fodder": {
-                "indices": [
-                  1
-                ],
-                "text": "coach"
-              },
-              "result": "CAR",
-              "type": "synonym",
-              "reasoning": "A coach is a type of vehicle/car"
-            }
+          "type": "definition",
+          "indices": [
+            0
           ],
-          "result": "MADAGASCAR",
-          "assembly": "MAD + AGA + S + CAR = MADAGASCAR",
-          "wordplay_hint": "The clue builds the answer from four parts in sequence"
-        }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "easy",
+          "position": "start",
           "hint": "An island nation off the coast of Africa"
         },
-        "wordplay": {
-          "rating": "hard",
-          "hint": "The whole phrase sounds like a description of a crazy vehicle belonging to a Turkish commander"
+        {
+          "type": "wordplay_type",
+          "expected": "Charade",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "hint": "No indicator words — the parts just join end to end."
         },
-        "overall": "hard",
-        "recommendedApproach": "definition"
-      },
-      "verified": true
+        {
+          "type": "assembly",
+          "intro": "Four parts join to spell the answer. But watch out — sometimes setters jumble the order of parts in the clue to create a better surface story. Here, the parts don't appear in reading order. Work out what each clue word means, then see how they fit together.",
+          "failMessage": "The raw clue words don't fit — what does each one really mean?",
+          "transforms": [
+            {
+              "role": "part1",
+              "indices": [
+                6,
+                7,
+                8
+              ],
+              "type": "synonym",
+              "result": "MAD",
+              "hint": "'Out to lunch' is slang for crazy — and in cryptics, crazy almost always means MAD"
+            },
+            {
+              "role": "part2",
+              "indices": [
+                3,
+                4
+              ],
+              "type": "synonym",
+              "result": "AGA",
+              "hint": "An aga is a Turkish military commander — a classic crossword word"
+            },
+            {
+              "role": "part3",
+              "indices": [
+                5
+              ],
+              "type": "literal",
+              "result": "S",
+              "hint": "The apostrophe-s in 'who’s' gives you a literal S — possessives can smuggle in letters"
+            },
+            {
+              "role": "part4",
+              "indices": [
+                1
+              ],
+              "type": "synonym",
+              "result": "CAR",
+              "hint": "A coach is a type of vehicle — and CAR is the short synonym setters love"
+            }
+          ],
+          "result": "MADAGASCAR"
+        }
+      ]
     },
     "times-29453-13a": {
       "id": "times-29453-13a",
@@ -807,18 +784,10 @@
     },
     "times-29453-10a": {
       "id": "times-29453-10a",
-      "clue": {
-        "number": "10A",
-        "text": "Flatter track takes very little time",
-        "enumeration": "5,4",
-        "answer": "SWEET TALK",
-        "definition": [
-          {
-            "text": "Flatter",
-            "position": "start"
-          }
-        ]
-      },
+      "clue": "Flatter track takes very little time",
+      "number": "10A",
+      "enumeration": "5,4",
+      "answer": "SWEET TALK",
       "words": [
         "Flatter",
         "track",
@@ -827,99 +796,80 @@
         "little",
         "time"
       ],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "easy",
+        "wordplay": "medium",
+        "overall": "medium"
+      },
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0
-            ],
-            "text": "Flatter"
-          },
+          "type": "definition",
+          "indices": [
+            0
+          ],
           "position": "start",
-          "explicit": true,
-          "hint": "To cajole or flatter someone with charming words",
-          "difficulty": "Easy"
+          "hint": "To cajole or charm someone with persuasive words"
         },
         {
-          "type": "container",
-          "template": "insertion_with_charade_inner",
-          "indicator": {
-            "indices": [
-              2
-            ],
-            "text": "takes",
-            "reasoning": "'takes' suggests one part absorbing/containing another"
-          },
-          "outer": {
-            "fodder": {
+          "type": "indicator",
+          "indices": [
+            2
+          ],
+          "hint": "'Takes' is a container indicator — to take something in is to absorb or contain it."
+        },
+        {
+          "type": "outer_word",
+          "indices": [
+            1
+          ],
+          "hint": "Which word provides the letters that wrap around the inner part?"
+        },
+        {
+          "type": "inner_word",
+          "indices": [
+            3,
+            4,
+            5
+          ],
+          "hint": "The remaining words build the inner part — two small clues that join together before being inserted."
+        },
+        {
+          "type": "assembly",
+          "intro": "The inner part here is a mini-charade — two separate clue words each point to a short piece, and those pieces join together before being inserted into the outer word.",
+          "transforms": [
+            {
+              "role": "outer",
               "indices": [
                 1
               ],
-              "text": "track"
+              "type": "synonym",
+              "result": "STALK",
+              "hint": "To 'track' someone is to follow or stalk them"
             },
-            "result": "STALK",
-            "reasoning": "To stalk is to track or follow prey"
-          },
-          "inner": {
-            "fodder": {
+            {
+              "role": "inner",
               "indices": [
                 3,
-                4,
+                4
+              ],
+              "type": "synonym",
+              "result": "WEE",
+              "hint": "'Very little' — a Scottish word for tiny"
+            },
+            {
+              "role": "inner",
+              "indices": [
                 5
               ],
-              "text": "very little time"
-            },
-            "pieces": [
-              {
-                "fodder": {
-                  "indices": [
-                    3,
-                    4
-                  ],
-                  "text": "very little"
-                },
-                "result": "WEE",
-                "type": "synonym",
-                "reasoning": "Wee means very little or tiny"
-              },
-              {
-                "fodder": {
-                  "indices": [
-                    5
-                  ],
-                  "text": "time"
-                },
-                "result": "T",
-                "type": "abbreviation",
-                "reasoning": "T is standard abbreviation for time"
-              }
-            ],
-            "result": "WEET",
-            "assembly": "WEE + T = WEET"
-          },
-          "result": "SWEET TALK",
-          "assembly": "S(WEET)TALK = SWEET TALK"
+              "type": "abbreviation",
+              "result": "T",
+              "hint": "T is the standard crossword abbreviation for 'time'"
+            }
+          ],
+          "result": "SWEET TALK"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "easy",
-          "hint": "To cajole or flatter someone with charming words"
-        },
-        "wordplay": {
-          "rating": "medium",
-          "hint": "A word for tracking prey contains two small words"
-        },
-        "overall": "medium",
-        "recommendedApproach": "definition"
-      },
-      "verified": true
+      ]
     },
     "times-29453-8d": {
       "id": "times-29453-8d",
@@ -1661,18 +1611,10 @@
     },
     "times-29453-23d": {
       "id": "times-29453-23d",
-      "clue": {
-        "number": "23D",
-        "text": "Pretend authority raised undue spending limits",
-        "enumeration": "5",
-        "answer": "PSEUD",
-        "definition": [
-          {
-            "text": "Pretend authority",
-            "position": "start"
-          }
-        ]
-      },
+      "clue": "Pretend authority raised undue spending limits",
+      "number": "23D",
+      "enumeration": "5",
+      "answer": "PSEUD",
       "words": [
         "Pretend",
         "authority",
@@ -1681,61 +1623,68 @@
         "spending",
         "limits"
       ],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "medium",
+        "wordplay": "hard",
+        "overall": "hard"
+      },
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0,
-              1
-            ],
-            "text": "Pretend authority"
-          },
+          "type": "definition",
+          "indices": [
+            0,
+            1
+          ],
           "position": "start",
-          "explicit": true,
-          "hint": "A pretentious person who claims expertise they don't have",
-          "difficulty": "Medium"
+          "hint": "A pretentious person who claims expertise or knowledge they don’t have"
         },
         {
-          "type": "hidden",
-          "template": "hidden_reversed",
-          "indicator": {
-            "indices": [
-              2,
-              5
-            ],
-            "text": "raised ... limits"
-          },
-          "fodder": {
-            "indices": [
-              3,
-              4
-            ],
-            "text": "undue spending"
-          },
-          "hidden_letters": "DUESP",
-          "result": "PSEUD",
-          "reasoning": "Hidden reversed in 'unDUE SPending' → DUESP reversed = PSEUD"
+          "type": "indicator",
+          "indices": [
+            2,
+            5
+          ],
+          "hint": "Two separate words work together as the indicator. 'Raised' in a down clue means reversed (going upward), and 'limits' tells you the letters are bounded within other words — a hidden reversed word.",
+          "menuTitle": "Spot the indicators",
+          "completedTitle": "Indicators found: '{words}' — hidden and reversed",
+          "prompt": "Tap both indicator words"
+        },
+        {
+          "type": "fodder",
+          "indices": [
+            3,
+            4
+          ],
+          "hint": "The answer is hiding inside these words, spelled backwards. Look for a 5-letter sequence running across the word boundary."
+        },
+        {
+          "type": "assembly",
+          "intro": "This is a hidden reversed word. The answer is literally sitting inside the fodder words, but spelled backwards. First find the consecutive letters hiding across 'undue spending', then reverse them.",
+          "transforms": [
+            {
+              "role": "fodder",
+              "indices": [
+                3,
+                4
+              ],
+              "type": "letter_selection",
+              "result": "DUESP",
+              "hint": "Look at where 'undue' ends and 'spending' begins — run the letters together: un-D-U-E-S-P-ending. The 5-letter sequence DUESP spans the boundary."
+            },
+            {
+              "role": "indicator",
+              "indices": [
+                2
+              ],
+              "type": "reversal",
+              "result": "PSEUD",
+              "hint": "'Raised' in a down clue means read upwards — reverse DUESP to get PSEUD."
+            }
+          ],
+          "result": "PSEUD"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "medium",
-          "hint": "A pretentious person who claims expertise they don't have"
-        },
-        "wordplay": {
-          "rating": "hard",
-          "hint": "A hidden word, reversed in the clue"
-        },
-        "overall": "hard",
-        "recommendedApproach": "definition"
-      },
-      "verified": true
+      ]
     },
     "times-29453-28a": {
       "id": "times-29453-28a",
@@ -1817,18 +1766,10 @@
     },
     "times-29453-3d": {
       "id": "times-29453-3d",
-      "clue": {
-        "number": "3D",
-        "text": "One missing initially, admitted to Electra with some upheaval?",
-        "enumeration": "9",
-        "answer": "LATECOMER",
-        "definition": [
-          {
-            "text": "One missing initially admitted to Electra with some upheaval?",
-            "position": "all"
-          }
-        ]
-      },
+      "clue": "One missing initially, admitted to Electra with some upheaval?",
+      "number": "3D",
+      "enumeration": "9",
+      "answer": "LATECOMER",
       "words": [
         "One",
         "missing",
@@ -1840,100 +1781,100 @@
         "some",
         "upheaval"
       ],
+      "clue_type": "and_lit",
+      "difficulty": {
+        "definition": "hard",
+        "wordplay": "hard",
+        "overall": "hard"
+      },
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0,
-              1,
-              2,
-              3,
-              4,
-              5,
-              6,
-              7,
-              8
-            ],
-            "text": "One missing initially admitted to Electra with some upheaval?"
-          },
+          "type": "definition",
+          "indices": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
           "position": "all",
-          "explicit": true,
-          "hint": "An &lit clue - someone who arrives after the show has started",
-          "difficulty": "Hard"
+          "intro": "This is an &lit clue — a rare and elegant construction where the entire clue reads as both the definition AND the wordplay simultaneously. There’s no split between definition and wordplay; the whole thing works both ways.",
+          "prompt": "This is an &lit clue. Tap all the words — the entire clue is the definition.",
+          "hint": "Read it as a description: someone who was one missing initially, admitted to Electra with some upheaval. Who would that be?"
         },
         {
-          "type": "anagram",
-          "template": "anagram_with_fodder_pieces",
-          "indicator": {
-            "indices": [
-              7,
-              8
-            ],
-            "text": "some upheaval"
-          },
-          "pieces": [
+          "type": "indicator",
+          "indices": [
+            7,
+            8
+          ],
+          "menuTitle": "Find the anagram indicator",
+          "completedTitle": "Anagram indicator: '{words}'",
+          "prompt": "Which words signal that letters need rearranging?",
+          "intro": "Even though the whole clue is the definition, it also contains wordplay. Look for a word or phrase suggesting disorder or rearrangement.",
+          "hint": "'Some upheaval' suggests things being shaken up or rearranged — a classic anagram indicator"
+        },
+        {
+          "type": "fodder",
+          "indices": [
+            0,
+            1,
+            5
+          ],
+          "menuTitle": "Find the anagram fodder",
+          "completedTitle": "Anagram fodder: '{words}'",
+          "prompt": "Which words provide the letters to rearrange?",
+          "intro": "The anagram indicator tells you to rearrange some letters. But which words in the clue supply those letters? Remember: some words are instructions, not ingredients.",
+          "hint": "'initially' and 'admitted to' and 'with' are instructions, not letters — the raw material comes from the remaining content words"
+        },
+        {
+          "type": "assembly",
+          "intro": "You've found that 'some upheaval' tells you to rearrange letters from 'One', 'missing', and 'Electra'. But these 17 letters are far too many for a 9-letter answer. The word 'initially' is the key — it tells you to take only the first letters of some words.",
+          "transforms": [
             {
-              "fodder": {
-                "indices": [
-                  0,
-                  1
-                ],
-                "text": "One missing"
-              },
-              "result": "OM",
+              "role": "part1",
+              "indices": [
+                0,
+                1
+              ],
               "type": "letter_selection",
-              "reasoning": "'initially' takes first letters: O + M"
+              "result": "OM",
+              "hint": "'Initially' in cryptics means take the first letter of each word. The first letters of 'One missing' give you O + M = OM."
             },
             {
-              "fodder": {
-                "indices": [
-                  5
-                ],
-                "text": "Electra"
-              },
-              "result": "ELECTRA",
+              "role": "part2",
+              "indices": [
+                5
+              ],
               "type": "literal",
-              "reasoning": "Used as-is (proper noun)"
+              "result": "ELECTRA",
+              "hint": "'Electra' is a proper noun used as-is — it provides all 7 of its letters"
+            },
+            {
+              "role": "part3",
+              "indices": [
+                7,
+                8
+              ],
+              "type": "anagram",
+              "result": "LATECOMER",
+              "hint": "'Some upheaval' tells you to rearrange OM + ELECTRA. What 9-letter word meaning 'one missing initially, admitted to something with some upheaval' can you make?"
             }
           ],
-          "fodder_combined": "OM + ELECTRA",
           "result": "LATECOMER"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "hard",
-          "hint": "An &lit clue - someone who arrives after the show has started"
-        },
-        "wordplay": {
-          "rating": "hard",
-          "hint": "Initial letters inserted into an anagram"
-        },
-        "overall": "hard",
-        "recommendedApproach": "definition"
-      },
-      "verified": true
+      ]
     },
     "times-29453-14d": {
       "id": "times-29453-14d",
-      "clue": {
-        "number": "14D",
-        "text": "Photos I had mounted cover the inside of school",
-        "enumeration": "10",
-        "answer": "DISCIPLINE",
-        "definition": [
-          {
-            "text": "school",
-            "position": "end"
-          }
-        ]
-      },
+      "clue": "Photos I had mounted cover the inside of school",
+      "number": "14D",
+      "enumeration": "10",
+      "answer": "DISCIPLINE",
       "words": [
         "Photos",
         "I",
@@ -1945,91 +1886,101 @@
         "of",
         "school"
       ],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "medium",
+        "wordplay": "hard",
+        "overall": "hard"
+      },
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              8
-            ],
-            "text": "school"
-          },
+          "type": "definition",
+          "indices": [
+            8
+          ],
           "position": "end",
-          "explicit": true,
-          "hint": "To train or teach someone, often with strict methods",
-          "difficulty": "Medium"
+          "hint": "To train or teach someone — 'to school' someone means to discipline them"
         },
         {
-          "type": "charade",
-          "template": "charade_with_parts",
-          "parts": [
+          "type": "indicator",
+          "indices": [
+            3
+          ],
+          "prompt": "Which word tells you that letters need to be reversed?",
+          "menuTitle": "Find the reversal indicator",
+          "completedTitle": "Reversal indicator: '{words}' — in a down clue, going up means reversed",
+          "intro": "In a down clue, 'mounted' means going upward — the opposite of down. That signals a reversal.",
+          "hint": "'Mounted' means going up — in a down clue, that's a reversal indicator"
+        },
+        {
+          "type": "fodder",
+          "indices": [
+            0,
+            1,
+            2
+          ],
+          "prompt": "Which words does 'mounted' act on?",
+          "menuTitle": "Find what gets reversed",
+          "completedTitle": "Fodder found: '{words}' — these get reversed after transformation",
+          "intro": "The reversal indicator tells you to reverse some letters. Which words in the clue provide the raw material?",
+          "hint": "Look at the words between the definition and the indicator — 'Photos I had' is the material that gets reversed"
+        },
+        {
+          "type": "assembly",
+          "intro": "Two chunks join together: reversed 'Photos I had' + 'cover the inside of'. But the clue words don't appear directly — each points to something shorter. Work out each piece, then reverse the first chunk.",
+          "failMessage": "The raw words don't fit — what does each one really mean?",
+          "transforms": [
             {
-              "fodder": {
-                "indices": [
-                  0,
-                  1,
-                  2
-                ],
-                "text": "Photos I had"
-              },
-              "intermediate": "PICS + ID",
-              "result": "DISCIP",
-              "type": "synonyms_then_reversal",
-              "reasoning": "Photos=PICS, I had=ID, 'mounted' reverses PICSID→DISCIP"
+              "role": "part1a",
+              "indices": [
+                0
+              ],
+              "type": "synonym",
+              "result": "PICS",
+              "hint": "Photos are pics — a very common informal synonym"
             },
             {
-              "fodder": {
-                "indices": [
-                  4,
-                  5,
-                  6,
-                  7
-                ],
-                "text": "cover the inside of"
-              },
-              "result": "LINE",
+              "role": "part1b",
+              "indices": [
+                1,
+                2
+              ],
+              "type": "abbreviation",
+              "result": "ID",
+              "hint": "'I had' contracts to 'I'd' — and in cryptics, contractions like I'd give you the letters ID"
+            },
+            {
+              "role": "part1 reversed",
+              "indices": [
+                3
+              ],
+              "type": "reversal",
+              "result": "DISCIP",
+              "hint": "'Mounted' tells you to reverse PICSID — reading it backwards gives DISCIP"
+            },
+            {
+              "role": "part2",
+              "indices": [
+                4,
+                5,
+                6,
+                7
+              ],
               "type": "synonym",
-              "reasoning": "To line a coat is to cover its inside"
+              "result": "LINE",
+              "hint": "To line a coat is to cover its inside — LINE is the synonym here"
             }
           ],
-          "result": "DISCIPLINE",
-          "assembly": "DISCIP + LINE = DISCIPLINE",
-          "wordplay_hint": "The clue builds the answer from two parts in sequence"
+          "result": "DISCIPLINE"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "medium",
-          "hint": "To train or teach someone, often with strict methods"
-        },
-        "wordplay": {
-          "rating": "hard",
-          "hint": "Reversed elements plus a word for cover"
-        },
-        "overall": "hard",
-        "recommendedApproach": "definition"
-      },
-      "verified": true
+      ]
     },
     "times-29453-19a": {
       "id": "times-29453-19a",
-      "clue": {
-        "number": "19A",
-        "text": "Are cold kissers coming inside only when it's dark?",
-        "enumeration": "5,7",
-        "answer": "SOLAR ECLIPSE",
-        "definition": [
-          {
-            "text": "when it's dark?",
-            "position": "end"
-          }
-        ]
-      },
+      "clue": "Are cold kissers coming inside only when it’s dark?",
+      "number": "19A",
+      "enumeration": "5,7",
+      "answer": "SOLAR ECLIPSE",
       "words": [
         "Are",
         "cold",
@@ -2038,130 +1989,101 @@
         "inside",
         "only",
         "when",
-        "it's",
+        "it’s",
         "dark"
       ],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "medium",
+        "wordplay": "hard",
+        "overall": "hard"
+      },
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              6,
-              7,
-              8
-            ],
-            "text": "when it's dark?"
-          },
+          "type": "definition",
+          "indices": [
+            6,
+            7,
+            8
+          ],
           "position": "end",
-          "explicit": true,
-          "hint": "An astronomical event that temporarily blocks sunlight",
-          "difficulty": "Medium"
+          "hint": "An astronomical event that temporarily blocks sunlight"
         },
         {
-          "type": "container",
-          "template": "insertion_with_charade_inner",
-          "indicator": {
-            "indices": [
-              3,
-              4
-            ],
-            "text": "coming inside",
-            "reasoning": "'coming inside' directly signals insertion"
-          },
-          "outer": {
-            "fodder": {
+          "type": "indicator",
+          "indices": [
+            3,
+            4
+          ],
+          "hint": "'Coming inside' is a container indicator — something is being placed inside something else."
+        },
+        {
+          "type": "outer_word",
+          "indices": [
+            5
+          ],
+          "hint": "Which word provides the letters that wrap around the inner part?"
+        },
+        {
+          "type": "inner_word",
+          "indices": [
+            0,
+            1,
+            2
+          ],
+          "hint": "The remaining words build the inner part — three separate clues that join together before being inserted."
+        },
+        {
+          "type": "assembly",
+          "intro": "The inner part is a three-piece charade — each clue word points to something short, and the pieces join before being slotted into the outer word. One word is used as-is, one is a standard abbreviation, and one is slang.",
+          "transforms": [
+            {
+              "role": "outer",
               "indices": [
                 5
               ],
-              "text": "only"
+              "type": "synonym",
+              "result": "SOLE",
+              "hint": "'Only' as in 'the sole survivor' — a straightforward synonym"
             },
-            "result": "SOLE",
-            "type": "synonym",
-            "reasoning": "Sole means only, as in 'the sole survivor'"
-          },
-          "inner": {
-            "pieces": [
-              {
-                "fodder": {
-                  "indices": [
-                    0
-                  ],
-                  "text": "Are"
-                },
-                "result": "ARE",
-                "type": "literal",
-                "reasoning": "Used as-is"
-              },
-              {
-                "fodder": {
-                  "indices": [
-                    1
-                  ],
-                  "text": "cold"
-                },
-                "result": "C",
-                "type": "abbreviation",
-                "reasoning": "C = cold (weather notation)"
-              },
-              {
-                "fodder": {
-                  "indices": [
-                    2
-                  ],
-                  "text": "kissers"
-                },
-                "result": "LIPS",
-                "type": "synonym",
-                "reasoning": "Kissers is slang for lips"
-              }
-            ],
-            "assembly": "ARE + C + LIPS = ARECLIPS",
-            "fodder": {
+            {
+              "role": "inner",
               "indices": [
-                0,
-                1,
+                0
+              ],
+              "type": "literal",
+              "result": "ARE",
+              "hint": "Sometimes a word in the clue is used at face value — 'Are' appears as-is in the answer"
+            },
+            {
+              "role": "inner",
+              "indices": [
+                1
+              ],
+              "type": "abbreviation",
+              "result": "C",
+              "hint": "C is the standard abbreviation for 'cold' — you'll see it on taps and in weather notation"
+            },
+            {
+              "role": "inner",
+              "indices": [
                 2
               ],
-              "text": "Are cold kissers"
+              "type": "synonym",
+              "result": "LIPS",
+              "hint": "'Kissers' is informal slang for lips"
             }
-          },
-          "result": "SOLAR ECLIPSE",
-          "assembly": "SOL + (ARECLIPS) + E = SOLAR ECLIPSE"
+          ],
+          "result": "SOLAR ECLIPSE"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "medium",
-          "hint": "An astronomical event that temporarily blocks sunlight"
-        },
-        "wordplay": {
-          "rating": "hard",
-          "hint": "Multiple elements contained inside a word"
-        },
-        "overall": "hard",
-        "recommendedApproach": "definition"
-      },
-      "verified": true
+      ]
     },
     "times-29453-16d": {
       "id": "times-29453-16d",
-      "clue": {
-        "number": "16D",
-        "text": "Arab robe ad has misrepresented with superior beauty",
-        "enumeration": "9",
-        "answer": "DISHDASHA",
-        "definition": [
-          {
-            "text": "Arab robe",
-            "position": "start"
-          }
-        ]
-      },
+      "clue": "Arab robe ad has misrepresented with superior beauty",
+      "number": "16D",
+      "enumeration": "9",
+      "answer": "DISHDASHA",
       "words": [
         "Arab",
         "robe",
@@ -2172,73 +2094,82 @@
         "superior",
         "beauty"
       ],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "hard",
+        "wordplay": "medium",
+        "overall": "hard"
+      },
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0,
-              1
-            ],
-            "text": "Arab robe"
-          },
-          "position": "start",
-          "explicit": true,
-          "hint": "A traditional long garment worn in Middle Eastern countries",
-          "difficulty": "Hard"
-        },
-        {
-          "type": "charade",
-          "template": "charade_with_parts",
-          "parts": [
-            {
-              "fodder": {
-                "indices": [
-                  7
-                ],
-                "text": "beauty"
-              },
-              "result": "DISH",
-              "type": "synonym",
-              "reasoning": "A dish is slang for an attractive person (a beauty)"
-            },
-            {
-              "fodder": {
-                "indices": [
-                  2,
-                  3
-                ],
-                "text": "ad has"
-              },
-              "intermediate": "ADHAS",
-              "result": "DASHA",
-              "type": "literal_then_anagram",
-              "reasoning": "'misrepresented' rearranges ADHAS → DASHA"
-            }
+          "type": "definition",
+          "indices": [
+            0,
+            1
           ],
-          "result": "DISHDASHA",
-          "assembly": "DISH + DASHA = DISHDASHA",
-          "wordplay_hint": "The clue builds the answer from two parts — one is an anagram"
-        }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "hard",
+          "position": "start",
           "hint": "A traditional long garment worn in Middle Eastern countries"
         },
-        "wordplay": {
-          "rating": "medium",
-          "hint": "A word meaning attractive plus an anagram"
+        {
+          "type": "indicator",
+          "indices": [
+            4
+          ],
+          "prompt": "Which word signals that letters need rearranging?",
+          "menuTitle": "Find the anagram indicator",
+          "completedTitle": "Anagram indicator: '{words}' — letters get rearranged",
+          "intro": "An anagram indicator tells you that some letters need to be shuffled into a new order. Look for words suggesting disorder, change, or confusion.",
+          "hint": "'Misrepresented' means shown wrongly — a classic anagram indicator"
         },
-        "overall": "hard",
-        "recommendedApproach": "wordplay"
-      },
-      "verified": true
+        {
+          "type": "fodder",
+          "indices": [
+            2,
+            3
+          ],
+          "prompt": "Which words provide the letters to rearrange?",
+          "menuTitle": "Find the anagram fodder",
+          "completedTitle": "Fodder found: '{words}' — these letters get rearranged",
+          "intro": "The anagram indicator tells you to rearrange some letters. Which words in the clue provide the raw material?",
+          "hint": "'ad has' gives you the letters A-D-H-A-S to rearrange"
+        },
+        {
+          "type": "assembly",
+          "intro": "Two parts join together: 'beauty' and the rearranged letters of 'ad has'. The parts don't appear in reading order — setters often jumble the order to create a convincing surface story.",
+          "failMessage": "The raw words don't fit — what does each one really mean?",
+          "transforms": [
+            {
+              "role": "part1",
+              "indices": [
+                7
+              ],
+              "type": "synonym",
+              "result": "DISH",
+              "hint": "In slang, a 'dish' is a beautiful or attractive person — a common crossword synonym for beauty"
+            },
+            {
+              "role": "part2",
+              "indices": [
+                2,
+                3
+              ],
+              "type": "literal",
+              "result": "ADHAS",
+              "hint": "'ad has' provides the raw letters A-D-H-A-S — taken at face value before rearranging"
+            },
+            {
+              "role": "part2 rearranged",
+              "indices": [
+                4
+              ],
+              "type": "anagram",
+              "result": "DASHA",
+              "hint": "'Misrepresented' tells you to rearrange ADHAS — the letters shuffle into DASHA"
+            }
+          ],
+          "result": "DISHDASHA"
+        }
+      ]
     },
     "times-29453-17d": {
       "id": "times-29453-17d",
@@ -2591,97 +2522,102 @@
     },
     "times-29453-26a": {
       "id": "times-29453-26a",
-      "clue": {
-        "number": "26A",
-        "text": "Turn bench back in street exposed to blasts",
-        "enumeration": "9",
-        "answer": "WINDSWEPT",
-        "definition": [
-          {
-            "text": "exposed to blasts",
-            "position": "end"
-          }
-        ]
-      },
+      "clue": "Turn bench back in street exposed to blasts",
+      "number": "26A",
+      "enumeration": "9",
+      "answer": "WINDSWEPT",
       "words": [
         "Turn",
         "bench",
         "back",
-        "to",
+        "in",
         "street",
         "exposed",
         "to",
         "blasts"
       ],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "easy",
+        "wordplay": "hard",
+        "overall": "hard"
+      },
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              5,
-              6,
-              7
-            ],
-            "text": "exposed to blasts"
-          },
-          "position": "end",
-          "explicit": true,
-          "hint": "Describing a place battered by strong winds",
-          "difficulty": "Easy"
-        },
-        {
-          "type": "charade",
-          "template": "charade_with_parts",
-          "parts": [
-            {
-              "fodder": {
-                "indices": [
-                  0
-                ],
-                "text": "Turn"
-              },
-              "result": "WIND",
-              "type": "synonym",
-              "reasoning": "To wind a handle is to turn it"
-            },
-            {
-              "fodder": {
-                "indices": [
-                  1,
-                  2,
-                  3,
-                  4
-                ],
-                "text": "bench back in street"
-              },
-              "intermediate": "PEW reversed in ST",
-              "result": "SWEPT",
-              "type": "container_with_reversal",
-              "reasoning": "bench=PEW, 'back' reverses→WEP, 'in' puts inside ST: S+WEP+T=SWEPT"
-            }
+          "type": "definition",
+          "indices": [
+            5,
+            6,
+            7
           ],
-          "result": "WINDSWEPT",
-          "assembly": "WIND + SWEPT = WINDSWEPT",
-          "wordplay_hint": "The clue builds the answer from two parts in sequence"
-        }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "easy",
+          "position": "end",
           "hint": "Describing a place battered by strong winds"
         },
-        "wordplay": {
-          "rating": "medium",
-          "hint": "A word for rotate plus reversed seating plus an abbreviation"
+        {
+          "type": "wordplay_type",
+          "expected": "Charade",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "hint": "Two chunks join end to end — but the second chunk hides a container and a reversal inside it. This is a tough one."
         },
-        "overall": "medium",
-        "recommendedApproach": "definition"
-      }
+        {
+          "type": "assembly",
+          "intro": "This is a devious clue — the wordplay packs a synonym, a reversal, and a container insertion into just a few words. Your best bet is to solve from the definition first: what 9-letter word means 'exposed to blasts'? Once you have the answer, the transforms below show how the setter built it.",
+          "failMessage": "The raw words don't work — each one is pointing to something else.",
+          "transforms": [
+            {
+              "role": "part1",
+              "indices": [
+                0
+              ],
+              "type": "synonym",
+              "result": "WIND",
+              "hint": "To wind a handle is to turn it — WIND (rhymes with 'find') means to turn"
+            },
+            {
+              "role": "part2a",
+              "indices": [
+                1
+              ],
+              "type": "synonym",
+              "result": "PEW",
+              "hint": "A pew is a church bench — a classic crossword synonym"
+            },
+            {
+              "role": "part2a reversed",
+              "indices": [
+                2
+              ],
+              "type": "reversal",
+              "result": "WEP",
+              "hint": "'Back' tells you to reverse PEW — reading it backwards gives WEP"
+            },
+            {
+              "role": "part2b",
+              "indices": [
+                4
+              ],
+              "type": "abbreviation",
+              "result": "ST",
+              "hint": "ST is the standard abbreviation for street — one of the most common in cryptics"
+            },
+            {
+              "role": "part2 combined",
+              "indices": [
+                3
+              ],
+              "type": "anagram",
+              "result": "SWEPT",
+              "hint": "'In' tells you WEP goes inside ST — S + WEP + T = SWEPT"
+            }
+          ],
+          "result": "WINDSWEPT"
+        }
+      ]
     }
   },
   "import_logs": {
