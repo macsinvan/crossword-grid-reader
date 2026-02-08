@@ -468,21 +468,12 @@ def _build_assembly_data(session, step, clue):
             # Build completed text from templates
             completed_templates = template["completedTextTemplates"]
             if t_type in DEPENDENT_TYPES and i > 0:
-                if t_type == "anagram":
-                    # Anagram rearranges ALL prior results
-                    input_parts = []
-                    for j in range(i):
-                        if j in transforms_done:
-                            input_parts.append(transforms_done[j])
-                    completed_text = completed_templates["anagram"].format(
-                        inputParts=" + ".join(input_parts), result=result)
-                else:
-                    # Deletion/reversal operates on the immediately prior result
-                    if (i - 1) not in transforms_done:
-                        raise ValueError(f"Transform {i} is dependent but predecessor {i-1} has no result in transforms_done")
-                    prev_result = transforms_done[i - 1]
-                    completed_text = completed_templates["dependent"].format(
-                        prevResult=prev_result, result=result)
+                # All dependent types operate on the immediately prior result
+                if (i - 1) not in transforms_done:
+                    raise ValueError(f"Transform {i} is dependent but predecessor {i-1} has no result in transforms_done")
+                prev_result = transforms_done[i - 1]
+                completed_text = completed_templates["dependent"].format(
+                    prevResult=prev_result, result=result)
             else:
                 completed_text = completed_templates["independent"].format(
                     clueWord=clue_word, result=result)
@@ -492,13 +483,8 @@ def _build_assembly_data(session, step, clue):
             status = "active"
             result = None
         else:
-            # Dependent type — check if prerequisite transforms are done
-            if t_type == "anagram":
-                # Anagram rearranges ALL prior results — all must be done
-                prereqs_done = all(j in transforms_done for j in range(i))
-            else:
-                # Deletion/reversal only depends on the immediately preceding transform
-                prereqs_done = (i - 1) in transforms_done
+            # Dependent type — only needs the immediately preceding transform done
+            prereqs_done = (i - 1) in transforms_done
             status = "active" if prereqs_done else "locked"
             result = None
 
@@ -592,21 +578,14 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
             transforms_done[transform_index] = expected.upper()
             session["assembly_hint_index"] = None
 
-            # Auto-complete predecessors superseded by dependent transforms
+            # Auto-complete the immediate predecessor superseded by dependent transforms
             DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
             if "type" not in transforms[transform_index]:
                 raise ValueError(f"Transform {transform_index} is missing 'type' field")
             t_type = transforms[transform_index]["type"]
             if t_type in DEPENDENT_TYPES and transform_index > 0:
-                if t_type == "anagram":
-                    # Anagram supersedes ALL prior transforms
-                    for j in range(transform_index):
-                        if j not in transforms_done:
-                            transforms_done[j] = transforms[j]["result"].upper()
-                else:
-                    # Deletion/reversal supersedes only the immediately prior
-                    if (transform_index - 1) not in transforms_done:
-                        transforms_done[transform_index - 1] = transforms[transform_index - 1]["result"].upper()
+                if (transform_index - 1) not in transforms_done:
+                    transforms_done[transform_index - 1] = transforms[transform_index - 1]["result"].upper()
 
             # Check if all transforms now complete → auto-skip if answer is spelled out
             if len(transforms_done) == len(transforms):
@@ -681,13 +660,9 @@ def _compute_position_map(step):
         if "type" not in t:
             raise ValueError(f"Transform {i} is missing 'type' field in position map computation")
         if i > 0 and t["type"] in DEPENDENT_TYPES:
-            if t["type"] == "anagram":
-                # Anagram rearranges ALL prior results — discard all predecessors
-                for j in range(i):
-                    terminal.discard(j)
-            else:
-                # Deletion/reversal only modifies the immediately preceding result
-                terminal.discard(i - 1)
+            # All dependent types (deletion, reversal, anagram) supersede
+            # only the immediately preceding transform
+            terminal.discard(i - 1)
 
     # Check if this is a container clue (has outer/inner roles)
     roles = {t["role"] for t in transforms}
@@ -958,11 +933,7 @@ def _resolve_variables(text, step, clue):
                 if "type" not in t:
                     raise ValueError(f"Transform is missing 'type' field in assembly step")
                 if i > 0 and t["type"] in DEPENDENT_TYPES:
-                    if t["type"] == "anagram":
-                        for j in range(i):
-                            terminal.discard(j)
-                    else:
-                        terminal.discard(i - 1)
+                    terminal.discard(i - 1)
 
             # Find terminal outer and collect terminal inner parts
             outer_idx = None
@@ -1002,15 +973,17 @@ def _resolve_variables(text, step, clue):
                 raise ValueError("Container clue has outer/inner roles but no terminal outer or inner transforms found")
         else:
             # Charade/chain: collect independent results, show dependent operations
+            # All dependent types (deletion, reversal, anagram) only transform
+            # the immediate predecessor — show as (predecessor → result)
             parts = []
-            for t in transforms:
+            for i, t in enumerate(transforms):
                 if "type" not in t:
                     raise ValueError(f"Transform is missing 'type' field in assembly step")
                 t_type = t["type"]
                 result = t["result"].upper()
-                if t_type in DEPENDENT_TYPES:
-                    # Show as arrow from accumulated parts to result
-                    parts = [" + ".join(parts) + " \u2192 " + result]
+                if t_type in DEPENDENT_TYPES and parts:
+                    prev = parts.pop()
+                    parts.append("(" + prev + " \u2192 " + result + ")")
                 else:
                     parts.append(result)
             text = text.replace("{assemblyBreakdown}", " + ".join(parts))

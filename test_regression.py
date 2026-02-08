@@ -380,6 +380,35 @@ TEST_CLUES = [
         "wrong_value_step0": [0, 1],
         "is_container": True,  # flag for container-specific completion text test
     },
+
+    # 14. 16D DISHDASHA — def→indicator(anagram)→fodder→assembly (charade with anagram chain)
+    {
+        "id": "times-29453-16d",
+        "clue_text": "Arab robe ad has misrepresented with superior beauty",
+        "puzzle_number": "29453",
+        "clue_number": "16",
+        "direction": "down",
+        "answer": "DISHDASHA",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [0, 1]},
+            {"type": "indicator", "inputMode": "tap_words", "value": [4]},
+            {"type": "fodder", "inputMode": "tap_words", "value": [2, 3]},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [
+                 {"index": 0, "value": "DISH"},
+                 {"index": 1, "value": "ADHAS"},
+                 {"index": 2, "value": "DASHA"},
+             ]},
+        ],
+        "has_indicator_steps": True,
+        "indicator_types": ["anagram"],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 3,
+        "dependent_transform_indices": [2],  # anagram at index 2
+        "wrong_value_step0": [2, 3],
+        "has_anagram_chain": True,  # flag for anagram breakdown test
+        "expected_breakdown_contains": "(ADHAS \u2192 DASHA)",  # arrow must be parenthesised to show only ADHAS transforms
+    },
 ]
 
 # ---------------------------------------------------------------------------
@@ -700,9 +729,9 @@ def test_template_text(server, clue):
 
 
 def test_assembly_completion_text(server, clue):
-    """For container clues: completed assembly title must show insertion, not plain concatenation."""
-    if not clue.get("is_container"):
-        return True, ""  # skip for non-container clues
+    """Verify assembly completion title shows correct notation for the clue type."""
+    if not clue.get("is_container") and not clue.get("has_anagram_chain"):
+        return True, ""  # skip for clues without specific completion text requirements
 
     # Walk through entire clue to completion
     render = start_session(server, clue)
@@ -733,16 +762,25 @@ def test_assembly_completion_text(server, clue):
 
     title = assembly_step.get("title", "")
 
-    # The title should NOT be a plain "A + B + C + D" charade-style concatenation.
-    # For a container clue, it must show the insertion relationship.
-    # Check that it doesn't just join all transform results with " + "
-    transform_results = [t["value"] for t in clue["steps"][-1]["transforms"]]
-    plain_concat = " + ".join(transform_results)
-    if title == plain_concat:
-        return False, (
-            f"Assembly completion title is plain concatenation '{title}' — "
-            f"should show container insertion, not charade-style joining"
-        )
+    if clue.get("is_container"):
+        # Container clue: title must NOT be plain "A + B + C + D" concatenation
+        transform_results = [t["value"] for t in clue["steps"][-1]["transforms"]]
+        plain_concat = " + ".join(transform_results)
+        if title == plain_concat:
+            return False, (
+                f"Assembly completion title is plain concatenation '{title}' — "
+                f"should show container insertion, not charade-style joining"
+            )
+
+    if clue.get("has_anagram_chain"):
+        # Charade with anagram: the final answer must appear after the arrow
+        expected = clue["expected_breakdown_contains"]
+        if expected not in title:
+            return False, (
+                f"Assembly completion title '{title}' doesn't contain "
+                f"the final answer '{expected}' — anagram arrow should "
+                f"show the full assembled result, not just the anagram output"
+            )
 
     return True, ""
 
