@@ -384,12 +384,31 @@ class TemplateTrainer {
 
         let html = '<div style="padding: 0.5rem 0 0.75rem 1.75rem;">';
 
-        // Intro
-        if (step.intro) {
-            html += `<div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.75rem; line-height: 1.5;">${step.intro}</div>`;
+        // Coaching context: what are we looking for?
+        if (data.definitionWords && data.enumeration) {
+            html += `<div style="font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.5;">You're looking for a ${data.enumeration}-letter word meaning '${data.definitionWords}'</div>`;
         }
 
-        // Fail message — simple italic text, not a box
+        // Coaching context: what does the indicator tell us?
+        const hasOuter = data.transforms.some(t => t.role === 'outer');
+        const hasInner = data.transforms.some(t => t.role === 'inner');
+        const isContainer = hasOuter && hasInner;
+
+        if (data.indicatorWords && data.indicatorHint) {
+            const innerWord = data.transforms.find(t => t.role === 'inner');
+            const outerWord = data.transforms.find(t => t.role === 'outer');
+            if (isContainer && innerWord && outerWord) {
+                html += `<div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem; line-height: 1.5;">'${data.indicatorWords}' tells us '${innerWord.clueWord}' goes inside '${outerWord.clueWord}'</div>`;
+            } else {
+                html += `<div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem; line-height: 1.5;">${data.indicatorHint}</div>`;
+            }
+        } else if (!data.indicatorWords) {
+            // No indicator — charade or similar
+            const pieces = data.transforms.map(t => `'${t.clueWord}'`).join(' + ');
+            html += `<div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem; line-height: 1.5;">The parts join end-to-end: ${pieces}</div>`;
+        }
+
+        // Fail message — why the raw words don't work
         html += `<div style="font-size: 0.8rem; color: #b45309; margin-bottom: 1rem; font-style: italic; line-height: 1.5;">${data.failMessage}</div>`;
 
         // Transforms — all visible at once (active, completed, or locked)
@@ -465,31 +484,54 @@ class TemplateTrainer {
         const letters = data.completedLetters;
         if (!letters || !data.resultParts) return '';
 
-        // Only show if at least one letter is filled in
-        const anyFilled = letters.some(l => l !== null);
-        if (!anyFilled) return '';
-
         let html = '<div style="margin: 0.75rem 0; padding: 0.6rem 0; border-top: 1px solid #e2e8f0;">';
-        html += '<div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.4rem;">Building the answer:</div>';
-        html += '<div style="display: flex; gap: 3px; flex-wrap: wrap;">';
 
-        let letterIdx = 0;
-        for (let p = 0; p < data.resultParts.length; p++) {
-            if (p > 0) html += '<div style="width: 8px;"></div>';
-            for (let c = 0; c < data.resultParts[p]; c++) {
-                const letter = letters[letterIdx];
+        // Build groups from positionMap: find contiguous runs belonging to each transform
+        const posMap = data.positionMap || {};
+        const groups = this.buildPositionGroups(letters, posMap);
+
+        html += '<div style="display: flex; gap: 3px; flex-wrap: wrap; align-items: center;">';
+        for (let g = 0; g < groups.length; g++) {
+            if (g > 0) html += '<div style="font-size: 1rem; font-weight: 700; color: #94a3b8; padding: 0 0.2rem;">+</div>';
+            for (const pos of groups[g]) {
+                const letter = letters[pos];
                 const filled = letter !== null;
                 const borderColor = filled ? '#22c55e' : '#e2e8f0';
                 const bg = filled ? '#f0fdf4' : '#fafafa';
                 const textColor = filled ? '#15803d' : '#94a3b8';
-
                 html += `<div style="width: 2rem; height: 2.2rem; display: flex; align-items: center; justify-content: center; border-bottom: 3px solid ${borderColor}; background: ${bg}; font-size: 1rem; font-weight: 700; font-family: monospace; color: ${textColor}; letter-spacing: 0.05em;">${letter || ''}</div>`;
-                letterIdx++;
+            }
+        }
+        html += '</div></div>';
+        return html;
+    }
+
+    buildPositionGroups(letters, posMap) {
+        // Build a map: position → transform index
+        const posToTransform = {};
+        for (const [tIdx, positions] of Object.entries(posMap)) {
+            for (const pos of positions) {
+                posToTransform[pos] = parseInt(tIdx);
             }
         }
 
-        html += '</div></div>';
-        return html;
+        // Walk positions in order, grouping contiguous runs with the same transform
+        const groups = [];
+        let currentGroup = [];
+        let currentTransform = null;
+
+        for (let pos = 0; pos < letters.length; pos++) {
+            const t = posToTransform[pos];
+            if (t !== currentTransform && currentGroup.length > 0) {
+                groups.push(currentGroup);
+                currentGroup = [];
+            }
+            currentGroup.push(pos);
+            currentTransform = t;
+        }
+        if (currentGroup.length > 0) groups.push(currentGroup);
+
+        return groups;
     }
 
     renderAssemblyCheck(data) {

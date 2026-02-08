@@ -379,6 +379,17 @@ def _build_assembly_data(session, step, clue):
     position_map = _compute_position_map(step)
     completed_letters = _compute_completed_letters(transforms_done, position_map, step)
 
+    # Extract context from earlier steps for coaching display
+    definition_words = ""
+    indicator_words = ""
+    indicator_hint = ""
+    for s in clue["steps"]:
+        if s["type"] == "definition" and "indices" in s:
+            definition_words = " ".join(words[i] for i in s["indices"])
+        elif s["type"] == "indicator" and "indices" in s:
+            indicator_words = " ".join(words[i] for i in s["indices"])
+            indicator_hint = s.get("hint", "")
+
     return {
         "phase": phase,
         "failMessage": fail_message,
@@ -386,6 +397,11 @@ def _build_assembly_data(session, step, clue):
         "resultParts": result_parts,
         "positionMap": {str(k): v for k, v in position_map.items()},
         "completedLetters": completed_letters,
+        "definitionWords": definition_words,
+        "indicatorWords": indicator_words,
+        "indicatorHint": indicator_hint,
+        "clueType": clue.get("clue_type", ""),
+        "enumeration": clue.get("enumeration", ""),
     }
 
 
