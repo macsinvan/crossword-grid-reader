@@ -1928,31 +1928,29 @@
         {
           "type": "indicator",
           "indices": [
+            2
+          ],
+          "menuTitle": "Find the first indicator",
+          "completedTitle": "Indicator found: '{words}' — {hint}",
+          "prompt": "One indicator tells you to take specific letters. Which word?",
+          "intro": "This clue has two indicators — two different instructions hiding in the surface. Start with the one that tells you which letters to pick.",
+          "hint": "'Initially' means take the first letter of each word — a classic letter-selection indicator"
+        },
+        {
+          "type": "indicator",
+          "indices": [
             7,
             8
           ],
-          "menuTitle": "Find the anagram indicator",
-          "completedTitle": "Anagram indicator: '{words}'",
-          "prompt": "Which words signal that letters need rearranging?",
-          "intro": "Look for a word or phrase suggesting disorder or rearrangement — that's the anagram indicator.",
-          "hint": "'Some upheaval' suggests things being shaken up or rearranged — a classic anagram indicator"
-        },
-        {
-          "type": "fodder",
-          "indices": [
-            0,
-            1,
-            5
-          ],
-          "menuTitle": "Find the anagram fodder",
-          "completedTitle": "Anagram fodder: '{words}'",
-          "prompt": "Which words provide the letters to rearrange?",
-          "intro": "The anagram indicator tells you to rearrange some letters. But which words in the clue supply those letters? Remember: some words are instructions, not ingredients.",
-          "hint": "'initially' and 'admitted to' and 'with' are instructions, not letters — the raw material comes from the remaining content words"
+          "menuTitle": "Find the second indicator",
+          "completedTitle": "Indicator found: '{words}' — {hint}",
+          "prompt": "The second indicator signals rearrangement. Which words?",
+          "intro": "There’s a second instruction in this clue — one that tells you to rearrange letters.",
+          "hint": "'Some upheaval' suggests things being shaken up — a classic anagram indicator"
         },
         {
           "type": "assembly",
-          "intro": "You've found that 'some upheaval' tells you to rearrange letters from 'One', 'missing', and 'Electra'. But these 17 letters are far too many for a 9-letter answer. The word 'initially' is the key — it tells you to take only the first letters of some words.",
+          "intro": "Two indicators, two operations. 'Initially' tells you to take first letters from some words, then 'some upheaval' tells you to rearrange everything. But which words does 'initially' apply to? The punctuation helps — the comma after 'initially' separates it from what follows.",
           "transforms": [
             {
               "role": "part1",
@@ -1962,7 +1960,7 @@
               ],
               "type": "letter_selection",
               "result": "OM",
-              "hint": "'Initially' in cryptics means take the first letter of each word. The first letters of 'One missing' give you O + M = OM."
+              "hint": "'Initially' takes the first letter of each word before the comma. 'One missing' → O + M = OM."
             },
             {
               "role": "part2",
@@ -1971,7 +1969,7 @@
               ],
               "type": "literal",
               "result": "ELECTRA",
-              "hint": "'Electra' is a proper noun used as-is — it provides all 7 of its letters"
+              "hint": "'Electra' is a proper noun used as-is — 'admitted to Electra' means the letters are admitted to (added to) ELECTRA"
             },
             {
               "role": "part3",
