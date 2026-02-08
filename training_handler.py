@@ -477,15 +477,9 @@ def _build_assembly_data(session, step, clue):
             else:
                 completed_text = completed_templates["independent"].format(
                     clueWord=clue_word, result=result)
-        elif is_explicit or t_type in INDEPENDENT_TYPES or i == 0:
-            # Explicit wordplay: all transforms active (student sees the full plan)
-            # Independent types and the first transform are always available
-            status = "active"
-            result = None
         else:
-            # Dependent type — only needs the immediately preceding transform done
-            prereqs_done = (i - 1) in transforms_done
-            status = "active" if prereqs_done else "locked"
+            # All transforms are always active — no locking
+            status = "active"
             result = None
 
         transform_entry = {

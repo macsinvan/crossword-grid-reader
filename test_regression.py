@@ -607,7 +607,7 @@ def test_wrong_input(server, clue):
 
 
 def test_assembly_transform_status(server, clue):
-    """Walk to assembly -> verify independent=active, dependent=locked (or all active if explicit)."""
+    """Walk to assembly -> verify all transforms are active (no locking)."""
     clue_id, render = walk_to_assembly(server, clue)
 
     current = render.get("currentStep")
@@ -623,23 +623,8 @@ def test_assembly_transform_status(server, clue):
     for t in transform_list:
         idx = t["index"]
         status = t["status"]
-
-        if clue["assembly_explicit"]:
-            # All transforms should be active when explicit=True
-            if status != "active":
-                return False, f"Transform {idx} should be 'active' (explicit=True), got '{status}'"
-        else:
-            if idx in clue["dependent_transform_indices"]:
-                # Dependent transforms should be locked (unless idx 0, which is always active)
-                if idx == 0:
-                    if status != "active":
-                        return False, f"Transform 0 should be 'active', got '{status}'"
-                else:
-                    if status != "locked":
-                        return False, f"Transform {idx} should be 'locked' (dependent), got '{status}'"
-            else:
-                if status != "active":
-                    return False, f"Transform {idx} should be 'active' (independent), got '{status}'"
+        if status != "active":
+            return False, f"Transform {idx} should be 'active', got '{status}'"
 
     return True, ""
 
