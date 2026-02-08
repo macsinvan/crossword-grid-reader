@@ -309,8 +309,13 @@ def _build_assembly_data(session, step, clue):
     assembly_hint_index = session.get("assembly_hint_index")
     words = clue["words"]
 
-    # Fail message: step metadata overrides the default
-    if "failMessage" in step:
+    # Explicit wordplay: indicators already told the student what to do — no fail message
+    is_explicit = step.get("explicit", False)
+
+    # Fail message: explicit skips it; step metadata overrides the default
+    if is_explicit:
+        fail_message = ""
+    elif "failMessage" in step:
         fail_message = step["failMessage"]
     else:
         raw_words = []
@@ -336,7 +341,11 @@ def _build_assembly_data(session, step, clue):
         if t_type not in TRANSFORM_PROMPTS:
             raise ValueError(f"Unknown transform type '{t_type}' in clue metadata. Add it to transformPrompts in render_templates.json.")
 
-        prompt = TRANSFORM_PROMPTS[t_type].format(role=t["role"], word=clue_word, n=letter_count)
+        # Per-transform prompt override (for explicit wordplay), otherwise template
+        if "prompt" in t:
+            prompt = t["prompt"]
+        else:
+            prompt = TRANSFORM_PROMPTS[t_type].format(role=t["role"], word=clue_word, n=letter_count)
 
         # Determine status: completed, active, or locked
         if i in transforms_done:

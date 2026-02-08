@@ -1950,7 +1950,7 @@
         },
         {
           "type": "assembly",
-          "intro": "Two indicators, two operations. 'Initially' tells you to take first letters from some words, then 'some upheaval' tells you to rearrange everything. But which words does 'initially' apply to? The punctuation helps — the comma after 'initially' separates it from what follows.",
+          "intro": "You're looking for a 9-letter word meaning 'One missing'",
           "transforms": [
             {
               "role": "part1",
@@ -1960,7 +1960,8 @@
               ],
               "type": "letter_selection",
               "result": "OM",
-              "hint": "'Initially' takes the first letter of each word before the comma. 'One missing' → O + M = OM."
+              "hint": "'Initially' takes the first letter of each word before the comma. 'One missing' → O + M = OM.",
+              "prompt": "'initially' signals: take the first letter from 'One missing' (2 letters)"
             },
             {
               "role": "part2",
@@ -1969,7 +1970,8 @@
               ],
               "type": "literal",
               "result": "ELECTRA",
-              "hint": "'Electra' is a proper noun used as-is — 'admitted to Electra' means the letters are admitted to (added to) ELECTRA"
+              "hint": "'Electra' is a proper noun used as-is — 'admitted to Electra' means the letters are admitted to (added to) ELECTRA",
+              "prompt": "'Electra' is used as-is (7 letters)"
             },
             {
               "role": "part3",
@@ -1979,10 +1981,12 @@
               ],
               "type": "anagram",
               "result": "LATECOMER",
-              "hint": "'Some upheaval' tells you to rearrange OM + ELECTRA. What 9-letter word meaning 'one missing' can you make?"
+              "hint": "'Some upheaval' tells you to rearrange OM + ELECTRA. What 9-letter word meaning 'one missing' can you make?",
+              "prompt": "'some upheaval' signals: rearrange 'Electra' + the result above (9 letters)"
             }
           ],
-          "result": "LATECOMER"
+          "result": "LATECOMER",
+          "explicit": true
         }
       ]
     },
