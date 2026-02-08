@@ -60,8 +60,17 @@
     "menuTitle": "Build the answer",
     "completedTitle": "Assembled: {result}",
     "definitionLine": "You're looking for a {enumeration}-letter word meaning '{definitionWords}'",
-    "indicatorLine": "{indicatorHint}",
+    "indicatorLine": "'{indicatorWords}' tells us '{innerWords}' (inner) goes inside '{outerWords}' (outer)",
     "intro": "The words in the clue almost never appear directly in the answer. Each one is really a clue to a shorter word \u2014 a synonym, abbreviation, or clever association. Your job is to figure out what each word is really pointing to.",
+    "transformPrompts": {
+      "synonym": "{role}, '{word}', has a {n}-letter synonym",
+      "abbreviation": "{role}, '{word}', has a {n}-letter abbreviation",
+      "literal": "{role}, '{word}', is used as-is ({n} letters)",
+      "reversal": "{role}, '{word}', reversed gives {n} letters",
+      "deletion": "{role}, '{word}', shortened gives {n} letters",
+      "letter_selection": "{role}, pick the right letters from '{word}' ({n} letters)",
+      "anagram": "now rearrange those letters — what {n}-letter word do you get?"
+    },
     "expected_source": "result",
     "onCorrect": "The letters combine to give {result}."
   },

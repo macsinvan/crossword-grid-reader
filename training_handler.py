@@ -315,16 +315,9 @@ def _build_assembly_data(session, step, clue):
             raw_words.append(" ".join(t_words))
         fail_message = "Try putting '" + "' and '".join(raw_words) + "' together \u2014 it doesn\u2019t spell anything useful, does it? So what is each word really telling you?"
 
-    # Transform prompt templates keyed by transform type from clue metadata
-    TRANSFORM_PROMPTS = {
-        "synonym": "Find a {n}-letter synonym for '{word}'",
-        "abbreviation": "What's the common abbreviation for '{word}'? ({n} letters)",
-        "literal": "'{word}' is used as-is \u2014 type it in ({n} letters)",
-        "reversal": "'{word}' tells you to reverse. What do you get? ({n} letters)",
-        "deletion": "'{word}' tells you to shorten the previous answer. What's left? ({n} letters)",
-        "letter_selection": "Pick the right letters from '{word}' ({n} letters)",
-        "anagram": "Now rearrange those letters \u2014 what {n}-letter word do you get?",
-    }
+    # Transform prompt templates from render template (template-driven, not hardcoded)
+    template = RENDER_TEMPLATES.get("assembly", {})
+    TRANSFORM_PROMPTS = template.get("transformPrompts", {})
 
     # Independent types can be solved in any order; dependent types wait for predecessors
     INDEPENDENT_TYPES = {"synonym", "abbreviation", "literal", "letter_selection"}
@@ -337,9 +330,9 @@ def _build_assembly_data(session, step, clue):
         t_type = t.get("type", "")
 
         if t_type not in TRANSFORM_PROMPTS:
-            raise ValueError(f"Unknown transform type '{t_type}' in clue metadata. Add it to TRANSFORM_PROMPTS in training_handler.py.")
+            raise ValueError(f"Unknown transform type '{t_type}' in clue metadata. Add it to transformPrompts in render_templates.json.")
 
-        prompt = TRANSFORM_PROMPTS[t_type].format(word=clue_word, n=letter_count)
+        prompt = TRANSFORM_PROMPTS[t_type].format(role=t["role"], word=clue_word, n=letter_count)
 
         # Determine status: completed, active, or locked
         if i in transforms_done:
@@ -382,21 +375,34 @@ def _build_assembly_data(session, step, clue):
     # Extract raw data from earlier steps for template variable resolution
     definition_words = ""
     indicator_hint = ""
+    indicator_words = ""
+    inner_words = ""
+    outer_words = ""
     for s in clue["steps"]:
         if s["type"] == "definition" and "indices" in s:
             definition_words = " ".join(words[i] for i in s["indices"])
         elif s["type"] == "indicator" and "indices" in s:
             indicator_hint = s.get("hint", "")
+            indicator_words = " ".join(words[i] for i in s["indices"])
+        elif s["type"] == "outer_word" and "indices" in s:
+            outer_words = " ".join(words[i] for i in s["indices"])
+        elif s["type"] == "inner_word" and "indices" in s:
+            inner_words = " ".join(words[i] for i in s["indices"])
 
     # Resolve coaching lines from assembly render template
-    template = RENDER_TEMPLATES.get("assembly", {})
     # Build a virtual step with the extra variables for resolution
     virtual_step = dict(step)
     virtual_step["definitionWords"] = definition_words
     virtual_step["indicatorHint"] = indicator_hint
+    virtual_step["indicatorWords"] = indicator_words
+    virtual_step["innerWords"] = inner_words
+    virtual_step["outerWords"] = outer_words
 
     definition_line = _resolve_variables(template.get("definitionLine", ""), virtual_step, clue)
-    indicator_line = _resolve_variables(template.get("indicatorLine", ""), virtual_step, clue)
+    # Only resolve indicatorLine when the required data exists (e.g. container clues)
+    indicator_line = ""
+    if indicator_words and inner_words and outer_words:
+        indicator_line = _resolve_variables(template.get("indicatorLine", ""), virtual_step, clue)
 
     return {
         "phase": phase,
@@ -691,6 +697,18 @@ def _resolve_variables(text, step, clue):
     # {indicatorHint} — extracted from indicator step
     if "{indicatorHint}" in text:
         text = text.replace("{indicatorHint}", step.get("indicatorHint", ""))
+
+    # {indicatorWords} — the indicator word(s) from the indicator step
+    if "{indicatorWords}" in text:
+        text = text.replace("{indicatorWords}", step.get("indicatorWords", ""))
+
+    # {innerWords} — from the inner_word step
+    if "{innerWords}" in text:
+        text = text.replace("{innerWords}", step.get("innerWords", ""))
+
+    # {outerWords} — from the outer_word step
+    if "{outerWords}" in text:
+        text = text.replace("{outerWords}", step.get("outerWords", ""))
 
     return text
 
