@@ -494,15 +494,21 @@ class TemplateTrainer {
                     // Completed — green static display
                     html += `<div style="width: 2.2rem; height: 2.4rem; display: flex; align-items: center; justify-content: center; border-bottom: 3px solid #22c55e; background: #f0fdf4; font-size: 1.1rem; font-weight: 700; font-family: monospace; color: #15803d; letter-spacing: 0.05em;">${displayLetter}</div>`;
                 } else {
-                    // Active — editable input
-                    const borderColor = hasCross ? '#93c5fd' : '#93c5fd';
+                    // Active — editable input (cross letters shown as placeholder, overwritable)
                     html += `<input type="text" class="assembly-combined-letter" data-transform-index="${tIdx}" data-pos="${pos}" `
-                        + `value="${displayLetter}" maxlength="1" `
-                        + `style="width: 2.2rem; height: 2.4rem; text-align: center; border: none; border-bottom: 3px solid ${borderColor}; border-radius: 0; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; background: white; color: ${hasCross ? '#94a3b8' : '#1e293b'}; outline: none; font-family: monospace;" />`;
+                        + `value="" placeholder="${crossLetter || ''}" maxlength="1" `
+                        + `style="width: 2.2rem; height: 2.4rem; text-align: center; border: none; border-bottom: 3px solid #93c5fd; border-radius: 0; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; background: white; color: #1e293b; outline: none; font-family: monospace;" />`;
                 }
             }
         }
-        html += '</div></div>';
+        html += '</div>';
+
+        // Check button
+        html += '<div style="margin-top: 0.5rem;">';
+        html += '<button class="assembly-combined-check" style="padding: 0.35rem 1.25rem; background: #3b82f6; color: white; border: none; border-radius: 1rem; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Check</button>';
+        html += '</div>';
+
+        html += '</div>';
         return html;
     }
 
@@ -594,28 +600,19 @@ class TemplateTrainer {
                 e.target.value = letter;
 
                 if (letter) {
-                    // Auto-advance to next input (skip + separators)
+                    // Auto-advance to next input (skip + separators and non-inputs)
                     let next = el.nextElementSibling;
                     while (next && !next.classList?.contains('assembly-combined-letter')) {
                         next = next.nextElementSibling;
                     }
                     if (next) {
                         next.focus();
-                    } else {
-                        // Filled the last box in this group — auto-submit the transform
-                        const transformIdx = parseInt(el.dataset.transformIndex, 10);
-                        const letters = [];
-                        this.container.querySelectorAll(`.assembly-combined-letter[data-transform-index="${transformIdx}"]`).forEach(box => {
-                            letters.push(box.value || '');
-                        });
-                        if (letters.every(l => l)) {
-                            this.submitAssemblyTransform(transformIdx, letters.join(''));
-                        }
                     }
                 }
             });
 
             el.addEventListener('keydown', (e) => {
+                e.stopPropagation();
                 if (e.key === 'Backspace' && !el.value) {
                     let prev = el.previousElementSibling;
                     while (prev && !prev.classList?.contains('assembly-combined-letter')) {
@@ -626,24 +623,33 @@ class TemplateTrainer {
                         prev.select();
                     }
                 }
-                if (e.key === 'Enter') {
-                    const transformIdx = parseInt(el.dataset.transformIndex, 10);
-                    const letters = [];
-                    this.container.querySelectorAll(`.assembly-combined-letter[data-transform-index="${transformIdx}"]`).forEach(box => {
-                        letters.push(box.value || '');
-                    });
-                    if (letters.every(l => l)) {
-                        this.submitAssemblyTransform(transformIdx, letters.join(''));
-                    }
-                }
             });
 
-            // Focus style
+            // Focus: select text and highlight
             el.addEventListener('focus', () => {
+                el.select();
                 el.style.borderBottomColor = '#3b82f6';
             });
             el.addEventListener('blur', () => {
                 el.style.borderBottomColor = '#93c5fd';
+            });
+        });
+
+        // Assembly combined check button — submit each active transform that has all letters filled
+        this.container.querySelectorAll('.assembly-combined-check').forEach(el => {
+            el.addEventListener('click', () => {
+                const allInputs = this.container.querySelectorAll('.assembly-combined-letter');
+                const byTransform = {};
+                allInputs.forEach(box => {
+                    const tIdx = parseInt(box.dataset.transformIndex, 10);
+                    if (!byTransform[tIdx]) byTransform[tIdx] = [];
+                    byTransform[tIdx].push(box.value || box.placeholder || '');
+                });
+                for (const [tIdx, letters] of Object.entries(byTransform)) {
+                    if (letters.every(l => l)) {
+                        this.submitAssemblyTransform(parseInt(tIdx), letters.join(''));
+                    }
+                }
             });
         });
 
