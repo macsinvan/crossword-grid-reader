@@ -4,7 +4,7 @@ Trainer Regression Tests
 ========================
 
 Tests all trainer API endpoints against a running server.
-Walks through 12 representative clues covering all 7 step flow patterns,
+Walks through all 29 converted clues covering all step flow patterns,
 all indicator types, all transform types, and key edge cases.
 
 Usage:
@@ -27,7 +27,7 @@ import urllib.error
 DEFAULT_SERVER = "http://127.0.0.1:8080"
 
 # ---------------------------------------------------------------------------
-# 12 Test Clues — covering all 7 step flow patterns
+# 29 Test Clues — 100% coverage of all converted clues
 # ---------------------------------------------------------------------------
 #
 # Each clue dict contains:
@@ -408,6 +408,390 @@ TEST_CLUES = [
         "wrong_value_step0": [2, 3],
         "has_anagram_chain": True,  # flag for anagram breakdown test
         "expected_breakdown_contains": "(ADHAS \u2192 DASHA)",  # arrow must be parenthesised to show only ADHAS transforms
+    },
+
+    # 15. 1D BISHOP — charade: def→wordplay→assembly (2 independent synonyms)
+    {
+        "id": "times-29453-1d",
+        "clue_text": "See boss bungle work",
+        "puzzle_number": "29453",
+        "clue_number": "1",
+        "direction": "down",
+        "answer": "BISHOP",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [0, 1]},
+            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [{"index": 0, "value": "BISH"}, {"index": 1, "value": "OP"}]},
+        ],
+        "has_indicator_steps": False,
+        "indicator_types": [],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 2,
+        "dependent_transform_indices": [],
+        "wrong_value_step0": [2, 3],
+    },
+
+    # 16. 7D AUSPICES — container: def→indicator(container)→outer→inner→assembly
+    {
+        "id": "times-29453-7d",
+        "clue_text": "Summits welcoming American patronage",
+        "puzzle_number": "29453",
+        "clue_number": "7",
+        "direction": "down",
+        "answer": "AUSPICES",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [3]},
+            {"type": "indicator", "inputMode": "tap_words", "value": [1]},
+            {"type": "outer_word", "inputMode": "tap_words", "value": [0]},
+            {"type": "inner_word", "inputMode": "tap_words", "value": [2]},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [{"index": 0, "value": "APICES"}, {"index": 1, "value": "US"}]},
+        ],
+        "has_indicator_steps": True,
+        "indicator_types": ["container"],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 2,
+        "dependent_transform_indices": [],
+        "wrong_value_step0": [0, 1],
+        "is_container": True,
+    },
+
+    # 17. 8D HOTHOUSE — container: def→indicator(container)→outer→inner→assembly
+    {
+        "id": "times-29453-8d",
+        "clue_text": "Steamy in here, but you must wear socks",
+        "puzzle_number": "29453",
+        "clue_number": "8",
+        "direction": "down",
+        "answer": "HOTHOUSE",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [0, 1, 2]},
+            {"type": "indicator", "inputMode": "tap_words", "value": [6]},
+            {"type": "outer_word", "inputMode": "tap_words", "value": [7]},
+            {"type": "inner_word", "inputMode": "tap_words", "value": [4]},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [{"index": 0, "value": "HOSE"}, {"index": 1, "value": "THOU"}]},
+        ],
+        "has_indicator_steps": True,
+        "indicator_types": ["container"],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 2,
+        "dependent_transform_indices": [],
+        "wrong_value_step0": [4, 5],
+        "is_container": True,
+    },
+
+    # 18. 9D MADAGASCAR — charade: def→wordplay→assembly (4 independent)
+    {
+        "id": "times-29453-9d",
+        "clue_text": "State coach for Turkish leader who\u2019s out to lunch?",
+        "puzzle_number": "29453",
+        "clue_number": "9",
+        "direction": "down",
+        "answer": "MADAGASCAR",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [0]},
+            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [
+                 {"index": 0, "value": "MAD"},
+                 {"index": 1, "value": "AGA"},
+                 {"index": 2, "value": "S"},
+                 {"index": 3, "value": "CAR"},
+             ]},
+        ],
+        "has_indicator_steps": False,
+        "indicator_types": [],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 4,
+        "dependent_transform_indices": [],
+        "wrong_value_step0": [1, 2],
+    },
+
+    # 19. 10A SWEET TALK — container with charade inner: def→indicator→outer→inner→assembly
+    {
+        "id": "times-29453-10a",
+        "clue_text": "Flatter track takes very little time",
+        "puzzle_number": "29453",
+        "clue_number": "10",
+        "direction": "across",
+        "answer": "SWEET TALK",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [0]},
+            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
+            {"type": "outer_word", "inputMode": "tap_words", "value": [1]},
+            {"type": "inner_word", "inputMode": "tap_words", "value": [3, 4, 5]},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [
+                 {"index": 0, "value": "STALK"},
+                 {"index": 1, "value": "WEE"},
+                 {"index": 2, "value": "T"},
+             ]},
+        ],
+        "has_indicator_steps": True,
+        "indicator_types": ["container"],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 3,
+        "dependent_transform_indices": [],
+        "wrong_value_step0": [1, 2],
+        "is_container": True,
+    },
+
+    # 20. 12A OPTIC — dual indicators + explicit assembly: def→indicator(letter_sel)→indicator(anagram)→assembly
+    {
+        "id": "times-29453-12a",
+        "clue_text": "Concerning sight as head of office IT struggles with PC",
+        "puzzle_number": "29453",
+        "clue_number": "12",
+        "direction": "across",
+        "answer": "OPTIC",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [0, 1]},
+            {"type": "indicator", "inputMode": "tap_words", "value": [3, 4]},
+            {"type": "indicator", "inputMode": "tap_words", "value": [7]},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [
+                 {"index": 0, "value": "O"},
+                 {"index": 1, "value": "IT"},
+                 {"index": 2, "value": "PC"},
+                 {"index": 3, "value": "OPTIC"},
+             ]},
+        ],
+        "has_indicator_steps": True,
+        "indicator_types": ["letter_selection", "anagram"],
+        "assembly_explicit": True,
+        "num_assembly_transforms": 4,
+        "dependent_transform_indices": [3],
+        "wrong_value_step0": [3, 4],
+    },
+
+    # 21. 14D DISCIPLINE — reversal chain: def→indicator(reversal)→fodder→assembly
+    {
+        "id": "times-29453-14d",
+        "clue_text": "Photos I had mounted cover the inside of school",
+        "puzzle_number": "29453",
+        "clue_number": "14",
+        "direction": "down",
+        "answer": "DISCIPLINE",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [8]},
+            {"type": "indicator", "inputMode": "tap_words", "value": [3]},
+            {"type": "fodder", "inputMode": "tap_words", "value": [0, 1, 2]},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [
+                 {"index": 0, "value": "PICS"},
+                 {"index": 1, "value": "ID"},
+                 {"index": 2, "value": "DISCIP"},
+                 {"index": 3, "value": "LINE"},
+             ]},
+        ],
+        "has_indicator_steps": True,
+        "indicator_types": ["reversal"],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 4,
+        "dependent_transform_indices": [2],
+        "wrong_value_step0": [0, 1],
+    },
+
+    # 22. 15A AMBASSADRESS — charade: def→wordplay→assembly (4 independent)
+    {
+        "id": "times-29453-15a",
+        "clue_text": "Live singer with a costume representative of her country",
+        "puzzle_number": "29453",
+        "clue_number": "15",
+        "direction": "across",
+        "answer": "AMBASSADRESS",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [5, 6, 7, 8]},
+            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [
+                 {"index": 0, "value": "AM"},
+                 {"index": 1, "value": "BASS"},
+                 {"index": 2, "value": "A"},
+                 {"index": 3, "value": "DRESS"},
+             ]},
+        ],
+        "has_indicator_steps": False,
+        "indicator_types": [],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 4,
+        "dependent_transform_indices": [],
+        "wrong_value_step0": [0, 1],
+    },
+
+    # 23. 18D FLEETING — charade with reversal: def→indicator(reversal)→assembly
+    {
+        "id": "times-29453-18d",
+        "clue_text": "Fugitive\u2019s attempt to escape upset good egg",
+        "puzzle_number": "29453",
+        "clue_number": "18",
+        "direction": "down",
+        "answer": "FLEETING",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [0]},
+            {"type": "indicator", "inputMode": "tap_words", "value": [4]},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [
+                 {"index": 0, "value": "FLEE"},
+                 {"index": 1, "value": "G"},
+                 {"index": 2, "value": "NIT"},
+                 {"index": 3, "value": "TING"},
+             ]},
+        ],
+        "has_indicator_steps": True,
+        "indicator_types": ["reversal"],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 4,
+        "dependent_transform_indices": [3],
+        "wrong_value_step0": [1, 2],
+    },
+
+    # 24. 20D DOZENS — container: def→indicator(container)→outer→inner→assembly
+    {
+        "id": "times-29453-20d",
+        "clue_text": "Many academics divided by gender-neutral pronoun",
+        "puzzle_number": "29453",
+        "clue_number": "20",
+        "direction": "down",
+        "answer": "DOZENS",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [0]},
+            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
+            {"type": "outer_word", "inputMode": "tap_words", "value": [1]},
+            {"type": "inner_word", "inputMode": "tap_words", "value": [4, 5]},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [{"index": 0, "value": "DONS"}, {"index": 1, "value": "ZE"}]},
+        ],
+        "has_indicator_steps": True,
+        "indicator_types": ["container"],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 2,
+        "dependent_transform_indices": [],
+        "wrong_value_step0": [1, 2],
+        "is_container": True,
+    },
+
+    # 25. 21D LOW TAR — charade: def→wordplay→assembly (2 independent)
+    {
+        "id": "times-29453-21d",
+        "clue_text": "Sailor in the doldrums relatively OK for tobacco?",
+        "puzzle_number": "29453",
+        "clue_number": "21",
+        "direction": "down",
+        "answer": "LOW TAR",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [4, 5, 6, 7]},
+            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [{"index": 0, "value": "LOW"}, {"index": 1, "value": "TAR"}]},
+        ],
+        "has_indicator_steps": False,
+        "indicator_types": [],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 2,
+        "dependent_transform_indices": [],
+        "wrong_value_step0": [0, 1],
+    },
+
+    # 26. 22A ATEMPORAL — charade with anagram: def→wordplay→assembly (4 transforms)
+    {
+        "id": "times-29453-22a",
+        "clue_text": "Friend taking minute to finish piano exam out of time",
+        "puzzle_number": "29453",
+        "clue_number": "22",
+        "direction": "across",
+        "answer": "ATEMPORAL",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [7, 8, 9]},
+            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [
+                 {"index": 0, "value": "MATE"},
+                 {"index": 1, "value": "ATEM"},
+                 {"index": 2, "value": "P"},
+                 {"index": 3, "value": "ORAL"},
+             ]},
+        ],
+        "has_indicator_steps": False,
+        "indicator_types": [],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 4,
+        "dependent_transform_indices": [1],
+        "wrong_value_step0": [0, 1],
+    },
+
+    # 27. 24A DUOMO — charade: def→wordplay→assembly (2 independent)
+    {
+        "id": "times-29453-24a",
+        "clue_text": "Couple taken with second sight of Florence?",
+        "puzzle_number": "29453",
+        "clue_number": "24",
+        "direction": "across",
+        "answer": "DUOMO",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [4, 5, 6]},
+            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [{"index": 0, "value": "DUO"}, {"index": 1, "value": "MO"}]},
+        ],
+        "has_indicator_steps": False,
+        "indicator_types": [],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 2,
+        "dependent_transform_indices": [],
+        "wrong_value_step0": [0, 1],
+    },
+
+    # 28. 26D WAS — deletion chain: def→indicator(deletion)→fodder→assembly
+    {
+        "id": "times-29453-26d",
+        "clue_text": "In Republican\u2019s absence, conflicts happened",
+        "puzzle_number": "29453",
+        "clue_number": "26",
+        "direction": "down",
+        "answer": "WAS",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [4]},
+            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
+            {"type": "fodder", "inputMode": "tap_words", "value": [3]},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [{"index": 0, "value": "WARS"}, {"index": 1, "value": "WAS"}]},
+        ],
+        "has_indicator_steps": True,
+        "indicator_types": ["deletion"],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 2,
+        "dependent_transform_indices": [1],
+        "wrong_value_step0": [0, 1],
+    },
+
+    # 29. 27A MEGADOSE — anagram: def→indicator(anagram)→fodder→assembly
+    {
+        "id": "times-29453-27a",
+        "clue_text": "See Dogma remade as massive hit",
+        "puzzle_number": "29453",
+        "clue_number": "27",
+        "direction": "across",
+        "answer": "MEGADOSE",
+        "steps": [
+            {"type": "definition", "inputMode": "tap_words", "value": [4, 5]},
+            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
+            {"type": "fodder", "inputMode": "tap_words", "value": [0, 1]},
+            {"type": "assembly", "inputMode": "assembly",
+             "transforms": [
+                 {"index": 0, "value": "SEE"},
+                 {"index": 1, "value": "DOGMA"},
+                 {"index": 2, "value": "MEGADOSE"},
+             ]},
+        ],
+        "has_indicator_steps": True,
+        "indicator_types": ["anagram"],
+        "assembly_explicit": False,
+        "num_assembly_transforms": 3,
+        "dependent_transform_indices": [2],
+        "wrong_value_step0": [2, 3],
     },
 ]
 
