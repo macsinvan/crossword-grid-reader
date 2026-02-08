@@ -230,17 +230,51 @@ Grid uses CSS Grid with `1fr` units, NOT fixed pixel sizes. See `SPEC.md` Sectio
 
 ## Pickup Instructions — Clue Conversion
 
-Convert all 30 clues in `clues_db.json` from the old format to the new flat format with teaching steps. Verify each converted clue works end-to-end in browser.
+Convert all 30 clues in `clues_db.json` from the old format to the new flat format with teaching steps. Verify each converted clue works end-to-end (API test or browser).
 
-**Converted clues (verified):** 5D, 17D, 1A, 4A, 25A, 1D, 12A, 20D
-**Converted (not yet verified in browser):** 2D
+### Progress
 
-**Reference clues — study these BEFORE converting any new clue:**
+**Converted and verified (20 clues):**
+5D, 17D, 1A, 4A, 25A, 1D, 12A, 20D, 2D, 7D, 11A, 26D, 6D, 8D, 21D, 24A, 28A, 18D, 27A, 13A, 15A
+
+**Remaining — need discussion (9 clues with complex transforms):**
+
+| Clue | Answer | Issue |
+|------|--------|-------|
+| **22A** | ATEMPORAL | Letter-move: Friend→MATE, "taking minute to finish" moves M to end→ATEM. No transform type for letter rearrangement within a word. |
+| **9D** | MADAGASCAR | 4-part charade with non-obvious ordering — parts don't follow clue reading order. "who's"→S (possessive contraction as literal). |
+| **14D** | DISCIPLINE | Compound: "Photos I had"→PICS+ID reversed→DISCIP. Synonym+concatenation+reversal in one part. |
+| **16D** | DISHDASHA | Mixed charade+anagram: "ad has"→DASHA (anagram of "ad has"). |
+| **26A** | WINDSWEPT | Nested: "bench back in street"→PEW reversed inside ST→SWEPT. Container-within-charade. |
+| **10A** | SWEET TALK | Container with charade inner (multiple words form the inner part). |
+| **19A** | SOLAR ECLIPSE | Container with charade inner. |
+| **23D** | PSEUD | Hidden reversed word — no hidden word template exists yet. |
+| **3D** | LATECOMER | &lit clue (whole clue is both definition and wordplay simultaneously). |
+
+### Conversion Method
+
+1. Read the old format entry for the clue
+2. Analyze the cryptic wordplay — verify the breakdown is correct
+3. Map to step flow: definition → indicator/wordplay_type → type-specific → assembly
+4. Choose indicator words carefully — only the actual indicator, not connectors ("divided" not "divided by")
+5. Break compound transforms into chains where possible (see 18D, 28A for examples)
+6. Write teaching hints that explain cryptic conventions, not just state facts
+7. Convert the JSON entry in clues_db.json
+8. Validate JSON
+9. Test all steps via API (start session → input each step → verify correct + complete)
+
+### Reference clues — study these BEFORE converting any new clue:
 - **5D** — deletion + reversal chain (indicator clues, tap_words flow)
 - **1A** — container (definition → indicator → outer_word → inner_word → assembly)
 - **17D** — container (same pattern as 1A)
 - **4A** — charade (no indicators, multiple_choice wordplay_type step)
 - **25A** — charade (same pattern as 4A)
+- **6D** — charade with ordering indicator ("after")
+- **28A** — charade with reversal chain (CA + RASE→reversed→ESAR)
+- **18D** — charade with reversal of compound (FLEE + G+NIT→reversed→TING)
+- **12A** — anagram with fodder pieces (literal parts + final anagram)
+
+### Format Reference
 
 **Old format** has nested `clue` object with `text`/`enumeration`/`answer`/`definition`, separate `metadata`, `publicationId`, `difficulty` with nested ratings, `verified` flag, and steps using `standard_definition`/`anagram`/etc types with `indicator`/`pieces`/`fodder` sub-objects.
 
@@ -261,11 +295,13 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 
 **Key rules:**
 - Follow the Step 2 Rule (see above)
+- Indicator indices must be ONLY the indicator word itself, not connectors like "by", "with", "in"
 - Hints must teach cryptic conventions (e.g. "'work' nearly always means OP"), not just define words
 - Transform `type` must be accurate: use "abbreviation" not "synonym" for standard cryptic mappings
 - `words` array must exactly match the clue text (case, spelling, punctuation including —)
 - Assembly intro should teach through consequence: show what happens with raw words first, then ask why it doesn't work
 - Only change the clue you are asked to change
+- When a compound transform is needed, break it into a chain of simple transforms (see 18D, 28A)
 
 ## Worktrees
 This repo uses git worktrees:

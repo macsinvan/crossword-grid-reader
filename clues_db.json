@@ -101,101 +101,56 @@
     },
     "times-29453-6d": {
       "id": "times-29453-6d",
-      "clue": {
-        "number": "6D",
-        "text": "Any number after dance party are starving",
-        "enumeration": "5",
-        "answer": "RAVEN",
-        "definition": [
-          {
-            "text": "are starving",
-            "position": "end"
-          }
-        ]
+      "clue": "Any number after dance party are starving",
+      "number": "6D",
+      "enumeration": "5",
+      "answer": "RAVEN",
+      "words": ["Any", "number", "after", "dance", "party", "are", "starving"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "hard",
+        "wordplay": "easy",
+        "overall": "medium"
       },
-      "words": [
-        "Any",
-        "number",
-        "after",
-        "dance",
-        "party",
-        "are",
-        "starving"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              5,
-              6
-            ],
-            "text": "are starving"
-          },
+          "type": "definition",
+          "indices": [5, 6],
           "position": "end",
-          "explicit": true,
-          "hint": "Think of an archaic verb meaning to be extremely hungry",
-          "difficulty": "Hard"
+          "hint": "An archaic verb meaning to be extremely hungry — think 'ravenous'"
         },
         {
-          "type": "charade",
-          "template": "charade_with_parts",
-          "indicator": {
-            "indices": [
-              2
-            ],
-            "text": "after"
-          },
-          "parts": [
+          "type": "indicator",
+          "indices": [2],
+          "prompt": "Which word tells you about the ordering of the parts?",
+          "menuTitle": "Find the ordering indicator",
+          "completedTitle": "Ordering indicator: '{words}' — the parts join in a specific order",
+          "intro": "In a charade, the parts join end to end. Sometimes a word like 'after', 'before', or 'following' tells you the order.",
+          "hint": "'After' tells you the first part ('any number') comes after the second part ('dance party')"
+        },
+        {
+          "type": "assembly",
+          "intro": "The parts join end to end: 'dance party' first, then 'any number' after it. But these clue words don't fit directly into a 5-letter answer — each is pointing to something shorter.",
+          "failMessage": "'Dance party' is 10 letters and 'any number' is 9 — what does each really mean?",
+          "transforms": [
             {
-              "fodder": {
-                "indices": [
-                  3,
-                  4
-                ],
-                "text": "dance party"
-              },
-              "result": "RAVE",
+              "role": "part1",
+              "indices": [3, 4],
               "type": "synonym",
-              "reasoning": "A rave is an all-night dance party"
+              "result": "RAVE",
+              "hint": "A 'rave' is a dance party — an all-night electronic music event"
             },
             {
-              "fodder": {
-                "indices": [
-                  0,
-                  1
-                ],
-                "text": "any number"
-              },
-              "result": "N",
+              "role": "part2",
+              "indices": [0, 1],
               "type": "abbreviation",
-              "reasoning": "N represents any number in mathematics"
+              "result": "N",
+              "hint": "In maths, N stands for 'any number' — one of the most common cryptic abbreviations"
             }
           ],
-          "result": "RAVEN",
-          "assembly": "RAVE + N = RAVEN",
-          "note": "N comes after RAVE",
-          "wordplay_hint": "The clue builds the answer from two parts in sequence"
+          "result": "RAVEN"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "hard",
-          "hint": "Think of an archaic verb meaning to be extremely hungry"
-        },
-        "wordplay": {
-          "rating": "easy",
-          "hint": "A type of party plus a mathematical variable"
-        },
-        "overall": "medium",
-        "recommendedApproach": "wordplay"
-      },
-      "verified": true
+      ]
     },
     "times-29453-5d": {
       "id": "times-29453-5d",
@@ -293,12 +248,12 @@
         },
         {
           "type": "indicator",
-          "indices": [7, 8],
+          "indices": [7],
           "menuTitle": "Find the anagram indicator",
-          "completedTitle": "'struggles with' — letters need rearranging",
-          "prompt": "Which words signal that letters need to be rearranged?",
-          "intro": "An anagram indicator is a word or phrase suggesting disorder, difficulty, or change — things like 'broken', 'mixed', 'confused', or 'struggling'.",
-          "hint": "'Struggles with' suggests difficulty or disorder — a classic signal to rearrange letters"
+          "completedTitle": "'struggles' — letters need rearranging",
+          "prompt": "Which word signals that letters need to be rearranged?",
+          "intro": "An anagram indicator is a word suggesting disorder, difficulty, or change — things like 'broken', 'mixed', 'confused', or 'struggling'.",
+          "hint": "'Struggles' suggests difficulty or disorder — a classic signal to rearrange letters"
         },
         {
           "type": "fodder",
@@ -311,7 +266,7 @@
         },
         {
           "type": "assembly",
-          "intro": "You've found that 'struggles with' tells you to rearrange letters from 'head of office IT PC'. But that's far too many letters for a 5-letter answer. Each part is pointing to something shorter.",
+          "intro": "You've found that 'struggles' tells you to rearrange letters from 'head of office IT PC'. But that's far too many letters for a 5-letter answer. Each part is pointing to something shorter.",
           "failMessage": "Work out what each part really contributes — 'head of' is a clue about which letters to take.",
           "transforms": [
             { "role": "part1", "indices": [3, 4, 5], "type": "letter_selection", "result": "O", "hint": "'Head of office' means take the first letter — the 'head' — of the word 'office'" },
@@ -440,107 +395,59 @@
     },
     "times-29453-13a": {
       "id": "times-29453-13a",
-      "clue": {
-        "number": "13A",
-        "text": "Moderate movement also opposed to one referendum option",
-        "enumeration": "9",
-        "answer": "ANDANTINO",
-        "definition": [
-          {
-            "text": "Moderate movement",
-            "position": "start"
-          }
-        ]
+      "clue": "Moderate movement also opposed to one referendum option",
+      "number": "13A",
+      "enumeration": "9",
+      "answer": "ANDANTINO",
+      "words": ["Moderate", "movement", "also", "opposed", "to", "one", "referendum", "option"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "hard",
+        "wordplay": "easy",
+        "overall": "medium"
       },
-      "words": [
-        "Moderate",
-        "movement",
-        "also",
-        "opposed",
-        "to",
-        "one",
-        "referendum",
-        "option"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0,
-              1
-            ],
-            "text": "Moderate movement"
-          },
+          "type": "definition",
+          "indices": [0, 1],
           "position": "start",
-          "explicit": true,
-          "hint": "A musical tempo marking - slower than allegro but not as slow as adagio",
-          "difficulty": "Hard"
+          "hint": "A musical tempo marking — moderately slow, between adagio and allegro"
         },
         {
-          "type": "charade",
-          "template": "charade_with_parts",
-          "parts": [
+          "type": "wordplay_type",
+          "expected": "Charade",
+          "options": ["Charade", "Container", "Anagram", "Hidden word"],
+          "hint": "No indicator words here — the parts just join end to end. That's a charade."
+        },
+        {
+          "type": "assembly",
+          "intro": "In a charade, the parts join end-to-end. Each clue phrase points to a shorter word. Work out what each one really means.",
+          "transforms": [
             {
-              "fodder": {
-                "indices": [
-                  2
-                ],
-                "text": "also"
-              },
+              "role": "part1",
+              "indices": [2],
+              "type": "synonym",
               "result": "AND",
-              "type": "synonym",
-              "reasoning": "'Also' links things together, like 'and'"
+              "hint": "'Also' is another way of saying 'and' — they both link things together"
             },
             {
-              "fodder": {
-                "indices": [
-                  3,
-                  4
-                ],
-                "text": "opposed to"
-              },
+              "role": "part2",
+              "indices": [3, 4],
+              "type": "synonym",
               "result": "ANTI",
-              "type": "synonym",
-              "reasoning": "Anti- means opposed to or against"
+              "hint": "'Opposed to' means 'anti' — the prefix meaning against"
             },
             {
-              "fodder": {
-                "indices": [
-                  5,
-                  6,
-                  7
-                ],
-                "text": "one referendum option"
-              },
-              "result": "NO",
+              "role": "part3",
+              "indices": [5, 6, 7],
               "type": "synonym",
-              "reasoning": "In a referendum, one option is to vote 'No'"
+              "result": "NO",
+              "hint": "In a referendum, the two options are Yes and No — 'one referendum option' is NO"
             }
           ],
-          "result": "ANDANTINO",
-          "assembly": "AND + ANTI + NO = ANDANTINO",
-          "wordplay_hint": "The clue builds the answer from three parts in sequence"
+          "result": "ANDANTINO"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "hard",
-          "hint": "A musical tempo marking - slower than allegro but not as slow as adagio"
-        },
-        "wordplay": {
-          "rating": "easy",
-          "hint": "Three common words/abbreviations joined together"
-        },
-        "overall": "medium",
-        "recommendedApproach": "wordplay"
-      },
-      "verified": true
+      ]
     },
     "times-29453-2d": {
       "id": "times-29453-2d",
@@ -787,304 +694,172 @@
     },
     "times-29453-8d": {
       "id": "times-29453-8d",
-      "clue": {
-        "number": "8D",
-        "text": "Steamy in here, but you must wear socks",
-        "enumeration": "8",
-        "answer": "HOTHOUSE",
-        "definition": [
-          {
-            "text": "Steamy in here",
-            "position": "start"
-          }
-        ]
+      "clue": "Steamy in here, but you must wear socks",
+      "number": "8D",
+      "enumeration": "8",
+      "answer": "HOTHOUSE",
+      "words": ["Steamy", "in", "here", "but", "you", "must", "wear", "socks"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "easy",
+        "wordplay": "medium",
+        "overall": "medium"
       },
-      "words": [
-        "Steamy",
-        "in",
-        "here",
-        "but",
-        "you",
-        "must",
-        "wear",
-        "socks"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0,
-              1,
-              2
-            ],
-            "text": "Steamy in here"
-          },
+          "type": "definition",
+          "indices": [0, 1, 2],
           "position": "start",
-          "explicit": true,
-          "hint": "A warm glass building for growing plants",
-          "difficulty": "Easy"
+          "hint": "A warm glass building for growing plants — a greenhouse"
         },
         {
-          "type": "container",
-          "template": "insertion_with_two_synonyms",
-          "indicator": {
-            "indices": [
-              5,
-              6
-            ],
-            "text": "must wear",
-            "reasoning": "'must wear' suggests putting something on the outside"
-          },
-          "outer": {
-            "fodder": {
-              "indices": [
-                7
-              ],
-              "text": "socks"
+          "type": "indicator",
+          "indices": [6],
+          "hint": "'Wear' is a container indicator — to wear something is to put it around you, wrapping the outside around the inside"
+        },
+        {
+          "type": "outer_word",
+          "indices": [7],
+          "hint": "What gets wrapped around the outside? Think of another word for socks."
+        },
+        {
+          "type": "inner_word",
+          "indices": [4],
+          "hint": "What goes inside? An archaic form of 'you'."
+        },
+        {
+          "type": "assembly",
+          "transforms": [
+            {
+              "role": "outer",
+              "indices": [7],
+              "type": "synonym",
+              "result": "HOSE",
+              "hint": "'Socks' are 'hose' — an old word for stockings that's still common in cryptics"
             },
-            "result": "HOSE",
-            "reasoning": "Hose is another word for stockings/socks"
-          },
-          "inner": {
-            "fodder": {
-              "indices": [
-                4
-              ],
-              "text": "you"
-            },
-            "result": "THOU",
-            "reasoning": "Thou is archaic/biblical form of 'you'"
-          },
-          "result": "HOTHOUSE",
-          "assembly": "HO + THOU + SE = HOTHOUSE"
+            {
+              "role": "inner",
+              "indices": [4],
+              "type": "synonym",
+              "result": "THOU",
+              "hint": "'You' in archaic English is 'thou' — Shakespeare's favourite pronoun"
+            }
+          ],
+          "result": "HOTHOUSE"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "easy",
-          "hint": "A warm glass building for growing plants"
-        },
-        "wordplay": {
-          "rating": "medium",
-          "hint": "A container with an archaic pronoun inside footwear"
-        },
-        "overall": "medium",
-        "recommendedApproach": "definition"
-      },
-      "reported_issue": "Meta data issue. EVery synonym must have a verifiable hint\nSYNONYM: socks → HOSE\n'socks' = HOSE **Remember:** Synonyms are the bread and butter of cryptic wordplay.",
-      "verified": true
+      ]
     },
     "times-29453-15a": {
       "id": "times-29453-15a",
-      "clue": {
-        "number": "15A",
-        "text": "Live singer with a costume representative of her country",
-        "enumeration": "12",
-        "answer": "AMBASSADRESS",
-        "definition": [
-          {
-            "text": "representative of her country",
-            "position": "end"
-          }
-        ]
+      "clue": "Live singer with a costume representative of her country",
+      "number": "15A",
+      "enumeration": "12",
+      "answer": "AMBASSADRESS",
+      "words": ["Live", "singer", "with", "a", "costume", "representative", "of", "her", "country"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "medium",
+        "wordplay": "easy",
+        "overall": "medium"
       },
-      "words": [
-        "Live",
-        "singer",
-        "with",
-        "a",
-        "costume",
-        "representative",
-        "of",
-        "her",
-        "country"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              5,
-              6,
-              7,
-              8
-            ],
-            "text": "representative of her country"
-          },
+          "type": "definition",
+          "indices": [5, 6, 7, 8],
           "position": "end",
-          "explicit": true,
-          "hint": "A female diplomat who represents her nation abroad",
-          "difficulty": "Medium"
-        },
-        {
-          "type": "charade",
-          "template": "charade_with_parts",
-          "parts": [
-            {
-              "fodder": {
-                "indices": [
-                  0
-                ],
-                "text": "Live"
-              },
-              "result": "AM",
-              "type": "synonym",
-              "reasoning": "'I am' means 'I live/exist'"
-            },
-            {
-              "fodder": {
-                "indices": [
-                  1
-                ],
-                "text": "singer"
-              },
-              "result": "BASS",
-              "type": "synonym",
-              "reasoning": "A bass is a type of singer (low male voice)"
-            },
-            {
-              "fodder": {
-                "indices": [
-                  2,
-                  3
-                ],
-                "text": "with a"
-              },
-              "result": "A",
-              "type": "literal",
-              "reasoning": "The letter A"
-            },
-            {
-              "fodder": {
-                "indices": [
-                  4
-                ],
-                "text": "costume"
-              },
-              "result": "DRESS",
-              "type": "synonym",
-              "reasoning": "A dress is a costume or outfit"
-            }
-          ],
-          "result": "AMBASSADRESS",
-          "assembly": "AM + BASS + A + DRESS = AMBASSADRESS",
-          "wordplay_hint": "The clue builds the answer from four parts in sequence"
-        }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "medium",
           "hint": "A female diplomat who represents her nation abroad"
         },
-        "wordplay": {
-          "rating": "easy",
-          "hint": "Four common words/abbreviations joined together"
+        {
+          "type": "wordplay_type",
+          "expected": "Charade",
+          "options": ["Charade", "Container", "Anagram", "Hidden word"],
+          "hint": "No indicator words here — the parts just join end to end. That's a charade."
         },
-        "overall": "medium",
-        "recommendedApproach": "wordplay"
-      },
-      "verified": true
+        {
+          "type": "assembly",
+          "intro": "In a charade, the parts join end-to-end. Each clue word points to a shorter word. Work out what each one really means.",
+          "transforms": [
+            {
+              "role": "part1",
+              "indices": [0],
+              "type": "synonym",
+              "result": "AM",
+              "hint": "To 'live' is to exist — 'I am' means 'I live'. AM is the verb form."
+            },
+            {
+              "role": "part2",
+              "indices": [1],
+              "type": "synonym",
+              "result": "BASS",
+              "hint": "A 'bass' is a type of singer — the lowest male vocal range"
+            },
+            {
+              "role": "part3",
+              "indices": [3],
+              "type": "literal",
+              "result": "A",
+              "hint": "The letter 'a' is used as-is — 'with' is just a connector"
+            },
+            {
+              "role": "part4",
+              "indices": [4],
+              "type": "synonym",
+              "result": "DRESS",
+              "hint": "A 'costume' is a 'dress' — something you wear"
+            }
+          ],
+          "result": "AMBASSADRESS"
+        }
+      ]
     },
     "times-29453-24a": {
       "id": "times-29453-24a",
-      "clue": {
-        "number": "24A",
-        "text": "Couple taken with second sight of Florence?",
-        "enumeration": "5",
-        "answer": "DUOMO",
-        "definition": [
-          {
-            "text": "sight of Florence",
-            "position": "end"
-          }
-        ]
+      "clue": "Couple taken with second sight of Florence?",
+      "number": "24A",
+      "enumeration": "5",
+      "answer": "DUOMO",
+      "words": ["Couple", "taken", "with", "second", "sight", "of", "Florence?"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "hard",
+        "wordplay": "easy",
+        "overall": "medium"
       },
-      "words": [
-        "Couple",
-        "taken",
-        "with",
-        "second",
-        "sight",
-        "of",
-        "Florence"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              4,
-              5,
-              6
-            ],
-            "text": "sight of Florence"
-          },
+          "type": "definition",
+          "indices": [4, 5, 6],
           "position": "end",
-          "explicit": true,
-          "hint": "A famous cathedral in an Italian city",
-          "difficulty": "Hard"
+          "hint": "A famous cathedral — one of the great sights of an Italian city"
         },
         {
-          "type": "charade",
-          "template": "charade_with_parts",
-          "parts": [
+          "type": "wordplay_type",
+          "expected": "Charade",
+          "options": ["Charade", "Container", "Anagram", "Hidden word"],
+          "hint": "No indicator words here — the parts just join end to end. That's a charade."
+        },
+        {
+          "type": "assembly",
+          "intro": "In a charade, the parts join end-to-end. Each clue word points to a shorter word. Work out what each one really means.",
+          "transforms": [
             {
-              "fodder": {
-                "indices": [
-                  0
-                ],
-                "text": "Couple"
-              },
-              "result": "DUO",
+              "role": "part1",
+              "indices": [0],
               "type": "synonym",
-              "reasoning": "A duo is a couple or pair"
+              "result": "DUO",
+              "hint": "A 'couple' is a 'duo' — a pair of two"
             },
             {
-              "fodder": {
-                "indices": [
-                  3
-                ],
-                "text": "second"
-              },
-              "result": "MO",
+              "role": "part2",
+              "indices": [3],
               "type": "synonym",
-              "reasoning": "A mo (moment) is a brief second of time"
+              "result": "MO",
+              "hint": "A 'second' of time is a 'mo' — short for moment"
             }
           ],
-          "result": "DUOMO",
-          "assembly": "DUO + MO = DUOMO",
-          "wordplay_hint": "The clue builds the answer from two parts in sequence"
+          "result": "DUOMO"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "hard",
-          "hint": "A famous cathedral in an Italian city"
-        },
-        "wordplay": {
-          "rating": "easy",
-          "hint": "Two simple words joined together"
-        },
-        "overall": "medium",
-        "recommendedApproach": "wordplay"
-      },
-      "verified": true
+      ]
     },
     "times-29453-25a": {
       "id": "times-29453-25a",
@@ -1178,184 +953,114 @@
     },
     "times-29453-26d": {
       "id": "times-29453-26d",
-      "clue": {
-        "number": "26D",
-        "text": "In Republican's absence, conflicts happened",
-        "enumeration": "3",
-        "answer": "WAS",
-        "definition": [
-          {
-            "text": "happened",
-            "position": "end"
-          }
-        ]
+      "clue": "In Republican's absence, conflicts happened",
+      "number": "26D",
+      "enumeration": "3",
+      "answer": "WAS",
+      "words": ["In", "Republican's", "absence", "conflicts", "happened"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "easy",
+        "wordplay": "easy",
+        "overall": "easy"
       },
-      "words": [
-        "In",
-        "Republican's",
-        "absence",
-        "conflicts",
-        "happened"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              4
-            ],
-            "text": "happened"
-          },
+          "type": "definition",
+          "indices": [4],
           "position": "end",
-          "explicit": true,
-          "hint": "Past tense of 'is' - indicating something occurred",
-          "difficulty": "Easy"
+          "hint": "A simple past tense word — something that occurred"
         },
         {
-          "type": "transformation_chain",
-          "template": "transformation_chain",
-          "steps": [
+          "type": "indicator",
+          "indices": [2],
+          "prompt": "Which word signals that a letter needs to be removed?",
+          "menuTitle": "Find the deletion indicator",
+          "completedTitle": "Deletion indicator: '{words}' — something is being taken away",
+          "intro": "A deletion indicator tells you to remove something — look for words suggesting loss, departure, or taking away.",
+          "hint": "'Absence' tells you something is missing — a letter needs to be removed"
+        },
+        {
+          "type": "fodder",
+          "indices": [3],
+          "prompt": "Which word supplies the starting letters?",
+          "menuTitle": "Find the word being shortened",
+          "completedTitle": "Fodder: '{words}'",
+          "intro": "The deletion indicator is acting on a nearby word. Which one provides the raw material?",
+          "hint": "'Conflicts' is the word that will lose a letter"
+        },
+        {
+          "type": "assembly",
+          "intro": "You've found that 'absence' tells you to remove something from 'conflicts'. But 'conflicts' is 9 letters — far too many for a 3-letter answer. What does 'conflicts' really mean?",
+          "failMessage": "'Conflicts' doesn't work directly — what shorter word does it point to?",
+          "transforms": [
             {
-              "fodder": {
-                "indices": [
-                  3
-                ],
-                "text": "conflicts"
-              },
-              "result": "WARS",
+              "role": "part1",
+              "indices": [3],
               "type": "synonym",
-              "reasoning": "Wars are armed conflicts"
+              "result": "WARS",
+              "hint": "'Conflicts' means 'wars' — armed conflicts are wars"
             },
             {
-              "indicator": {
-                "indices": [
-                  0,
-                  1,
-                  2
-                ],
-                "text": "In Republican's absence"
-              },
-              "fodder": "WARS",
-              "result": "WAS",
+              "role": "part2",
+              "indices": [1, 2],
               "type": "deletion",
-              "reasoning": "Remove R (Republican) from WARS"
+              "result": "WAS",
+              "hint": "'Republican's absence' means remove R (the standard abbreviation for Republican) from WARS"
             }
           ],
           "result": "WAS"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "easy",
-          "hint": "Past tense of 'is' - indicating something occurred"
-        },
-        "wordplay": {
-          "rating": "easy",
-          "hint": "Remove a letter from a word meaning conflicts"
-        },
-        "overall": "easy",
-        "recommendedApproach": "wordplay"
-      },
-      "verified": true
+      ]
     },
     "times-29453-21d": {
       "id": "times-29453-21d",
-      "clue": {
-        "number": "21D",
-        "text": "Sailor in the doldrums relatively OK for tobacco?",
-        "enumeration": "3,3",
-        "answer": "LOW TAR",
-        "definition": [
-          {
-            "text": "relatively OK for tobacco?",
-            "position": "end"
-          }
-        ]
+      "clue": "Sailor in the doldrums relatively OK for tobacco?",
+      "number": "21D",
+      "enumeration": "3,3",
+      "answer": "LOW TAR",
+      "words": ["Sailor", "in", "the", "doldrums", "relatively", "OK", "for", "tobacco?"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "medium",
+        "wordplay": "easy",
+        "overall": "easy"
       },
-      "words": [
-        "Sailor",
-        "in",
-        "the",
-        "doldrums",
-        "relatively",
-        "OK",
-        "for",
-        "tobacco?"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              4,
-              5,
-              6,
-              7
-            ],
-            "text": "relatively OK for tobacco?"
-          },
+          "type": "definition",
+          "indices": [4, 5, 6, 7],
           "position": "end",
-          "explicit": true,
-          "hint": "A cigarette descriptor suggesting reduced harmful content",
-          "difficulty": "Medium"
+          "hint": "A description of cigarettes with reduced harmful content"
         },
         {
-          "type": "charade",
-          "template": "charade_with_parts",
-          "parts": [
+          "type": "wordplay_type",
+          "expected": "Charade",
+          "options": ["Charade", "Container", "Anagram", "Hidden word"],
+          "hint": "No indicator words here — the parts just join end to end. That's a charade."
+        },
+        {
+          "type": "assembly",
+          "intro": "In a charade, the parts join end-to-end. Each clue word points to a shorter word. Work out what each one really means.",
+          "transforms": [
             {
-              "fodder": {
-                "indices": [
-                  1,
-                  2,
-                  3
-                ],
-                "text": "in the doldrums"
-              },
-              "result": "LOW",
+              "role": "part1",
+              "indices": [1, 2, 3],
               "type": "synonym",
-              "reasoning": "Being in the doldrums means feeling low"
+              "result": "LOW",
+              "hint": "To be 'in the doldrums' is to feel low — depressed or down"
             },
             {
-              "fodder": {
-                "indices": [
-                  0
-                ],
-                "text": "Sailor"
-              },
-              "result": "TAR",
+              "role": "part2",
+              "indices": [0],
               "type": "synonym",
-              "reasoning": "Tar is old slang for a sailor (Jack Tar)"
+              "result": "TAR",
+              "hint": "'Tar' is old slang for a sailor — 'Jack Tar' was the classic term for a naval man"
             }
           ],
-          "result": "LOW TAR",
-          "assembly": "LOW + TAR = LOW TAR",
-          "wordplay_hint": "The clue builds the answer from two parts in sequence"
+          "result": "LOW TAR"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "medium",
-          "hint": "A cigarette descriptor suggesting reduced harmful content"
-        },
-        "wordplay": {
-          "rating": "easy",
-          "hint": "Two simple words meaning depressed and sailor"
-        },
-        "overall": "easy",
-        "recommendedApproach": "wordplay"
-      },
-      "verified": true
+      ]
     },
     "times-29453-7d": {
       "id": "times-29453-7d",
@@ -1486,95 +1191,70 @@
     },
     "times-29453-18d": {
       "id": "times-29453-18d",
-      "clue": {
-        "number": "18D",
-        "text": "Fugitive’s attempt to escape upset good egg",
-        "enumeration": "8",
-        "answer": "FLEETING",
-        "definition": [
-          {
-            "text": "Fugitives",
-            "position": "start"
-          }
-        ]
+      "clue": "Fugitive's attempt to escape upset good egg",
+      "number": "18D",
+      "enumeration": "8",
+      "answer": "FLEETING",
+      "words": ["Fugitive's", "attempt", "to", "escape", "upset", "good", "egg"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "medium",
+        "wordplay": "medium",
+        "overall": "medium"
       },
-      "words": [
-        "Fugitives",
-        "attempt",
-        "to",
-        "escape",
-        "upset",
-        "good",
-        "egg"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0
-            ],
-            "text": "Fugitives"
-          },
+          "type": "definition",
+          "indices": [0],
           "position": "start",
-          "explicit": true,
-          "hint": "Passing quickly, transient - like someone on the run",
-          "difficulty": "Medium"
+          "hint": "Passing quickly, transient — like something that doesn't last"
         },
         {
-          "type": "charade",
-          "template": "charade_with_parts",
-          "parts": [
+          "type": "indicator",
+          "indices": [4],
+          "prompt": "Which word signals that letters need to be reversed?",
+          "menuTitle": "Find the reversal indicator",
+          "completedTitle": "Reversal indicator: '{words}' — letters get turned around",
+          "intro": "A reversal indicator tells you to read letters backwards — look for words suggesting disorder or turning upside down.",
+          "hint": "'Upset' means turned upside down — letters get reversed"
+        },
+        {
+          "type": "assembly",
+          "intro": "The answer is built from two halves: 'attempt to escape' and 'good egg' (upset). But these clue words don't fit directly — each is pointing to something shorter.",
+          "failMessage": "'Attempt to escape' and 'good egg' are too long — what does each really mean?",
+          "transforms": [
             {
-              "fodder": {
-                "indices": [
-                  1,
-                  2,
-                  3
-                ],
-                "text": "attempt to escape"
-              },
-              "result": "FLEE",
+              "role": "part1",
+              "indices": [1, 2, 3],
               "type": "synonym",
-              "reasoning": "To flee is to attempt to escape"
+              "result": "FLEE",
+              "hint": "To 'attempt to escape' is to 'flee' — to run away"
             },
             {
-              "fodder": {
-                "indices": [
-                  5,
-                  6
-                ],
-                "text": "good egg"
-              },
-              "intermediate": "G + NIT",
+              "role": "part2",
+              "indices": [5],
+              "type": "abbreviation",
+              "result": "G",
+              "hint": "In cryptics, 'good' is almost always G — a standard abbreviation"
+            },
+            {
+              "role": "part3",
+              "indices": [6],
+              "type": "synonym",
+              "result": "NIT",
+              "hint": "An 'egg' of a louse is a 'nit' — a tiny egg that sticks to hair"
+            },
+            {
+              "role": "part4",
+              "indices": [4],
+              "type": "reversal",
               "result": "TING",
-              "type": "abbreviation_synonym_reversed",
-              "reasoning": "good=G, egg=NIT (louse egg), then 'upset' reverses GNIT→TING"
+              "hint": "'Upset' reverses G + NIT → GNIT → TING"
             }
           ],
-          "result": "FLEETING",
-          "assembly": "FLEE + TING = FLEETING",
-          "wordplay_hint": "The clue builds the answer from two parts in sequence"
+          "result": "FLEETING"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "medium",
-          "hint": "Passing quickly, transient - like someone on the run"
-        },
-        "wordplay": {
-          "rating": "medium",
-          "hint": "A word for escape plus reversed letters"
-        },
-        "overall": "medium",
-        "recommendedApproach": "definition"
-      },
-      "verified": true
+      ]
     },
     "times-29453-23d": {
       "id": "times-29453-23d",
@@ -1656,92 +1336,63 @@
     },
     "times-29453-28a": {
       "id": "times-29453-28a",
-      "clue": {
-        "number": "28A",
-        "text": "Tsar’s like, roughly level after revolution",
-        "enumeration": "6",
-        "answer": "CAESAR",
-        "definition": [
-          {
-            "text": "Tsars like",
-            "position": "start"
-          }
-        ]
+      "clue": "Tsar's like, roughly level after revolution",
+      "number": "28A",
+      "enumeration": "6",
+      "answer": "CAESAR",
+      "words": ["Tsar's", "like", "roughly", "level", "after", "revolution"],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "easy",
+        "wordplay": "hard",
+        "overall": "medium"
       },
-      "words": [
-        "Tsars",
-        "like",
-        "roughly",
-        "level",
-        "after",
-        "revolution"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              0,
-              1
-            ],
-            "text": "Tsars like"
-          },
+          "type": "definition",
+          "indices": [0, 1],
           "position": "start",
-          "explicit": true,
-          "hint": "A Roman emperor - Tsars took their title from this word",
-          "difficulty": "Easy"
+          "hint": "A Roman emperor — the word 'Tsar' itself derives from this title"
         },
         {
-          "type": "charade",
-          "template": "charade_with_parts",
-          "parts": [
+          "type": "indicator",
+          "indices": [5],
+          "prompt": "Which word signals that letters need to be reversed?",
+          "menuTitle": "Find the reversal indicator",
+          "completedTitle": "Reversal indicator: '{words}' — letters get turned around",
+          "intro": "A reversal indicator tells you to read letters backwards — look for words suggesting turning, spinning, or going back.",
+          "hint": "'Revolution' means a full turn — letters get reversed"
+        },
+        {
+          "type": "assembly",
+          "intro": "The answer is built from two parts: 'roughly' and 'level after revolution'. But these clue words don't appear directly — each is pointing to something shorter.",
+          "failMessage": "'Roughly' and 'level' don't work as-is — what does each really mean?",
+          "transforms": [
             {
-              "fodder": {
-                "indices": [
-                  2
-                ],
-                "text": "roughly"
-              },
-              "result": "CA",
+              "role": "part1",
+              "indices": [2],
               "type": "abbreviation",
-              "reasoning": "CA is abbreviation for circa (Latin for 'around/roughly')"
+              "result": "CA",
+              "hint": "'Roughly' points to CA — short for 'circa', the Latin word meaning approximately"
             },
             {
-              "fodder": {
-                "indices": [
-                  3
-                ],
-                "text": "level"
-              },
-              "intermediate": "RASE",
+              "role": "part2",
+              "indices": [3],
+              "type": "synonym",
+              "result": "RASE",
+              "hint": "To 'level' ground is to 'rase' it — an archaic spelling of 'raze'"
+            },
+            {
+              "role": "part3",
+              "indices": [5],
+              "type": "reversal",
               "result": "ESAR",
-              "type": "synonym_then_reversal",
-              "reasoning": "level=RASE (archaic for raze), 'revolution' reverses it→ESAR"
+              "hint": "'Revolution' tells you to reverse RASE → ESAR"
             }
           ],
-          "result": "CAESAR",
-          "assembly": "CA + ESAR = CAESAR",
-          "wordplay_hint": "The clue builds the answer from two parts — one is an anagram"
+          "result": "CAESAR"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "easy",
-          "hint": "A Roman emperor - Tsars took their title from this word"
-        },
-        "wordplay": {
-          "rating": "hard",
-          "hint": "An abbreviation plus a reversed word meaning to demolish"
-        },
-        "overall": "medium",
-        "recommendedApproach": "definition"
-      },
-      "verified": true
+      ]
     },
     "times-29453-3d": {
       "id": "times-29453-3d",
@@ -2338,96 +1989,71 @@
     },
     "times-29453-27a": {
       "id": "times-29453-27a",
-      "clue": {
-        "number": "27A",
-        "text": "See Dogma remade as massive hit",
-        "enumeration": "8",
-        "answer": "MEGADOSE",
-        "definition": [
-          {
-            "text": "massive hit",
-            "position": "end"
-          }
-        ]
+      "clue": "See Dogma remade as massive hit",
+      "number": "27A",
+      "enumeration": "8",
+      "answer": "MEGADOSE",
+      "words": ["See", "Dogma", "remade", "as", "massive", "hit"],
+      "clue_type": "anagram",
+      "difficulty": {
+        "definition": "medium",
+        "wordplay": "easy",
+        "overall": "medium"
       },
-      "words": [
-        "See",
-        "dogma",
-        "remade",
-        "as",
-        "massive",
-        "hit"
-      ],
       "steps": [
         {
-          "type": "standard_definition",
-          "expected": {
-            "indices": [
-              4,
-              5
-            ],
-            "text": "massive hit"
-          },
+          "type": "definition",
+          "indices": [4, 5],
           "position": "end",
-          "explicit": true,
-          "hint": "A very large amount of something, especially medicine",
-          "difficulty": "Medium"
+          "hint": "A very large amount of something — especially medicine"
         },
         {
-          "type": "anagram",
-          "template": "anagram_with_fodder_pieces",
-          "indicator": {
-            "indices": [
-              2
-            ],
-            "text": "remade"
-          },
-          "pieces": [
+          "type": "indicator",
+          "indices": [2],
+          "menuTitle": "Find the anagram indicator",
+          "completedTitle": "'remade' — letters need rearranging",
+          "prompt": "Which word signals that letters need to be rearranged?",
+          "intro": "An anagram indicator is a word suggesting change, disorder, or reconstruction — things like 'broken', 'mixed', 'rebuilt'.",
+          "hint": "'Remade' means reconstructed — the letters need to be rearranged into something new"
+        },
+        {
+          "type": "fodder",
+          "indices": [0, 1],
+          "menuTitle": "Find the anagram fodder",
+          "completedTitle": "Fodder: '{words}'",
+          "prompt": "Which words supply the letters to rearrange?",
+          "intro": "The anagram indicator tells you to jumble some letters. Which words in the clue supply those letters?",
+          "hint": "'See Dogma' — these 8 letters will rearrange into the answer"
+        },
+        {
+          "type": "assembly",
+          "intro": "You need to rearrange the letters of 'See Dogma' (S-E-E-D-O-G-M-A) into an 8-letter word meaning 'massive hit'. Both words are used as-is — their letters go straight into the anagram.",
+          "transforms": [
             {
-              "fodder": {
-                "indices": [
-                  0
-                ],
-                "text": "See"
-              },
-              "result": "SEE",
+              "role": "part1",
+              "indices": [0],
               "type": "literal",
-              "reasoning": "Used as-is"
+              "result": "SEE",
+              "hint": "'See' is used as-is — its 3 letters go directly into the anagram"
             },
             {
-              "fodder": {
-                "indices": [
-                  1
-                ],
-                "text": "Dogma"
-              },
-              "result": "DOGMA",
+              "role": "part2",
+              "indices": [1],
               "type": "literal",
-              "reasoning": "Used as-is"
+              "result": "DOGMA",
+              "hint": "'Dogma' is used as-is — its 5 letters go directly into the anagram"
+            },
+            {
+              "role": "part3",
+              "indices": [2],
+              "type": "anagram",
+              "result": "MEGADOSE",
+              "hint": "Rearrange S + E + E + D + O + G + M + A — what 8-letter word meaning 'massive hit' can you make?"
             }
           ],
-          "fodder_combined": "SEE + DOGMA = SEEDOGMA",
           "result": "MEGADOSE"
         }
-      ],
-      "metadata": {
-        "publisher": "Times",
-        "puzzle_number": "29453"
-      },
-      "publicationId": "times",
-      "difficulty": {
-        "definition": {
-          "rating": "medium",
-          "hint": "A very large amount of something, especially medicine"
-        },
-        "wordplay": {
-          "rating": "easy",
-          "hint": "An anagram of visible letters"
-        },
-        "overall": "medium",
-        "recommendedApproach": "wordplay"
-      },
-      "verified": true
+      ]
     },
     "times-29453-20d": {
       "id": "times-29453-20d",
@@ -2451,8 +2077,8 @@
         },
         {
           "type": "indicator",
-          "indices": [2, 3],
-          "hint": "'Divided by' is a container indicator — to divide something is to split it apart and put something in between."
+          "indices": [2],
+          "hint": "'Divided' is a container indicator — to divide something is to split it apart and put something in between."
         },
         {
           "type": "outer_word",

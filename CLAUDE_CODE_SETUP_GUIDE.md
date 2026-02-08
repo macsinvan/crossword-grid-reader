@@ -142,19 +142,64 @@ exit 0
 
 ## Step 4: Permissions — Tool Access Control
 
-Control what Claude can do without asking. In `.claude/settings.json`:
+Control what Claude can do without asking. Two files:
 
+- **`.claude/settings.json`** — shared (committed to repo), for deny/ask rules
+- **`.claude/settings.local.json`** — personal (gitignored), for allow rules
+
+### Use Broad Wildcards, Not Exact Commands
+
+**The most common mistake:** using exact command strings like `"Bash(git status)"` or `"Bash(python3 crossword_server.py)"`. This causes "Allow this session" to not stick — every slight variation (different flags, arguments, paths) is a new command that doesn't match your rule.
+
+**Pattern format:** `Bash(command:*)` — the `:*` wildcard matches ALL arguments to that command.
+
+**Bad — exact commands (you'll get prompted constantly):**
+```json
+"Bash(git status)",
+"Bash(git add -A)",
+"Bash(git commit -m \"fix\")",
+"Bash(python3 crossword_server.py)"
+```
+
+**Good — broad wildcards (one rule covers all variations):**
+```json
+"Bash(git:*)",
+"Bash(python3:*)"
+```
+
+### Recommended Setup
+
+**`.claude/settings.local.json`** (personal, gitignored — your "allow" rules):
 ```json
 {
   "permissions": {
     "allow": [
-      "Bash(python3 crossword_server.py)",
-      "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(git log *)",
-      "Bash(git diff *)",
-      "Bash(git status)"
-    ],
+      "Bash(python3:*)",
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(curl:*)",
+      "Bash(ls:*)",
+      "Bash(pip:*)",
+      "Bash(pip3:*)",
+      "Bash(kill:*)",
+      "Bash(pkill:*)",
+      "Bash(ps:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(xargs:*)",
+      "Bash(cd:*)",
+      "Bash(lsof:*)",
+      "Bash(sleep:*)",
+      "Bash(source:*)"
+    ]
+  }
+}
+```
+
+**`.claude/settings.json`** (shared, committed — your "deny" and "ask" rules):
+```json
+{
+  "permissions": {
     "deny": [
       "Read(./.env)",
       "Bash(rm -rf *)"
@@ -165,6 +210,18 @@ Control what Claude can do without asking. In `.claude/settings.json`:
   }
 }
 ```
+
+### Cleaning Up Accumulated Permissions
+
+When you click "Allow" during a session, Claude saves the **exact command** to `settings.local.json`. Over time this accumulates dozens of one-off entries like:
+```json
+"Bash(git log --oneline -5)",
+"Bash(git log --oneline -10)",
+"Bash(git status)",
+"Bash(git diff HEAD~1)"
+```
+
+**Fix:** Periodically replace these with broad wildcards. One `"Bash(git:*)"` replaces all git-related entries. Check your `settings.local.json` and consolidate.
 
 ---
 
@@ -186,14 +243,15 @@ For any new project:
 - [ ] Trim CLAUDE.md to critical rules only (<100 lines)
 - [ ] Create `.claude/rules/` with path-targeted rules
 - [ ] Create `.claude/hooks/` with validation scripts
-- [ ] Configure `.claude/settings.json` with permissions
+- [ ] Configure `.claude/settings.json` with deny/ask permissions
+- [ ] Create `.claude/settings.local.json` with broad wildcard allow rules (`Bash(git:*)` not `Bash(git status)`)
 - [ ] Add SessionStart compact hook to preserve rules
 - [ ] Test with `/hooks`, `/permissions`, `/memory`
 - [ ] Commit `.claude/` directory (except settings.local.json)
 
 ---
 
-## Key Insight
+## Key Insights
 
 Written instructions alone are insufficient. The reliability stack is:
 
@@ -203,3 +261,5 @@ Written instructions alone are insufficient. The reliability stack is:
 4. **Permissions** — restrict access (deterministic)
 
 Move your most-violated rules from Layer 1 to Layer 2/3.
+
+**Permissions tip:** Always use `Bash(command:*)` wildcard patterns for allow rules. Exact command strings like `Bash(git status)` don't match `git status -s` — you'll get prompted for every variation. One `Bash(git:*)` covers all git commands.
