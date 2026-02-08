@@ -330,6 +330,7 @@ def _build_assembly_data(session, step, clue):
 
     # Independent types can be solved in any order; dependent types wait for predecessors
     INDEPENDENT_TYPES = {"synonym", "abbreviation", "literal", "letter_selection"}
+    DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
 
     # Build transform display data
     transform_list = []
@@ -351,6 +352,21 @@ def _build_assembly_data(session, step, clue):
         if i in transforms_done:
             status = "completed"
             result = transforms_done[i]
+            # Build completed text: dependent transforms show inputs → result
+            if t_type in DEPENDENT_TYPES and i > 0:
+                if t_type == "anagram":
+                    # Anagram rearranges ALL prior results
+                    input_parts = []
+                    for j in range(i):
+                        if j in transforms_done:
+                            input_parts.append(transforms_done[j])
+                    completed_text = " + ".join(input_parts) + " \u2192 " + result
+                else:
+                    # Deletion/reversal operates on the immediately prior result
+                    prev_result = transforms_done.get(i - 1, "?")
+                    completed_text = prev_result + " \u2192 " + result
+            else:
+                completed_text = "'" + clue_word + "' \u2192 " + result
         elif is_explicit or t_type in INDEPENDENT_TYPES or i == 0:
             # Explicit wordplay: all transforms active (student sees the full plan)
             # Independent types and the first transform are always available
@@ -373,6 +389,8 @@ def _build_assembly_data(session, step, clue):
             "hintVisible": (assembly_hint_index == i),
             "index": i,
         }
+        if status == "completed":
+            transform_entry["completedText"] = completed_text
         # Dictionary lookup (optional, from transform metadata)
         if "lookup" in t:
             transform_entry["lookup"] = t["lookup"]
@@ -457,7 +475,7 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
                 assembled = "".join(l for l in completed_letters if l)
 
                 if assembled == final_result:
-                    # Auto-skip check phase
+                    # Auto-skip check phase — assembly is complete
                     step_index = session["step_index"]
                     session["completed_steps"].append(step_index)
                     session["step_index"] = step_index + 1
@@ -465,6 +483,10 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
                     session["step_expanded"] = False
                     session["assembly_transforms_done"] = {}
                     session["assembly_hint_index"] = None
+                    # Lock the answer and populate answer boxes
+                    session["answer_locked"] = True
+                    answer_letters = list(re.sub(r'[^A-Z]', '', clue["answer"].upper()))
+                    session["user_answer"] = answer_letters
 
             return {"correct": True, "render": get_render(clue_id, clue)}
         else:
@@ -489,6 +511,10 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
             session["step_expanded"] = False
             session["assembly_transforms_done"] = {}
             session["assembly_hint_index"] = None
+            # Lock the answer and populate answer boxes
+            session["answer_locked"] = True
+            answer_letters = list(re.sub(r'[^A-Z]', '', clue["answer"].upper()))
+            session["user_answer"] = answer_letters
             return {"correct": True, "render": get_render(clue_id, clue)}
         else:
             return {"correct": False, "render": get_render(clue_id, clue)}
