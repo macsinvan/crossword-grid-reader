@@ -462,11 +462,9 @@ def _build_assembly_data(session, step, clue):
         if t_type not in TRANSFORM_PROMPTS:
             raise ValueError(f"Unknown transform type '{t_type}' in clue metadata. Add it to transformPrompts in render_templates.json.")
 
-        # Per-transform prompt override (for explicit wordplay), otherwise template
+        # Template-driven prompt — no per-clue overrides
         DEPENDENT_TYPES = {"deletion", "reversal", "anagram", "container"}
-        if "prompt" in t:
-            prompt = t["prompt"]
-        elif t_type in DEPENDENT_TYPES and i > 0:
+        if t_type in DEPENDENT_TYPES and i > 0:
             # Dependent transform: {word} is the indicator, not the input
             consumed = _find_consumed_predecessors(transforms, i)
             all_solved = all(c in transforms_done for c in consumed)
@@ -932,12 +930,6 @@ def _resolve_variables(text, step, clue):
         if "hint" not in step:
             raise ValueError(f"Template uses {{hint}} but step metadata is missing 'hint' for step type '{step.get('type', '?')}'")
         text = text.replace("{hint}", step["hint"])
-
-    # {position}
-    if "{position}" in text:
-        if "position" not in step:
-            raise ValueError(f"Template uses {{position}} but step metadata is missing 'position' for step type '{step.get('type', '?')}'")
-        text = text.replace("{position}", step["position"])
 
     # {result}
     if "{result}" in text:

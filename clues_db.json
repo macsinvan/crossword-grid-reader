@@ -28,7 +28,6 @@
             0,
             1
           ],
-          "position": "start",
           "hint": "'Come by' means to drop in on someone — a common 5-letter word",
           "lookup": {
             "word": "visit",
@@ -48,7 +47,6 @@
         },
         {
           "type": "assembly",
-          "intro": "In a charade, the parts join end-to-end. Each clue word points to a shorter word — a synonym, abbreviation, or clever association. Work out what each one really means.",
           "transforms": [
             {
               "role": "part1",
@@ -100,7 +98,6 @@
             0,
             1
           ],
-          "position": "start",
           "hint": "A 'see' is a diocese — who runs one?",
           "lookup": {
             "word": "see",
@@ -120,7 +117,6 @@
         },
         {
           "type": "assembly",
-          "intro": "In a charade, the parts join end-to-end. Each clue word points to a shorter word — a synonym, abbreviation, or clever association. Work out what each one really means.",
           "transforms": [
             {
               "role": "part1",
@@ -177,7 +173,6 @@
             5,
             6
           ],
-          "position": "end",
           "hint": "An archaic verb meaning to be extremely hungry — think 'ravenous'",
           "lookup": {
             "word": "raven",
@@ -194,7 +189,6 @@
         },
         {
           "type": "assembly",
-          "intro": "The parts join end to end: 'dance party' first, then 'any number' after it. But these clue words don't fit directly into a 5-letter answer — each is pointing to something shorter.",
           "failMessage": "'Dance party' is 10 letters and 'any number' is 9 — what does each really mean?",
           "transforms": [
             {
@@ -254,7 +248,6 @@
             5,
             6
           ],
-          "position": "end",
           "hint": "An exclamation of fright, often seen in comics",
           "lookup": {
             "word": "eek",
@@ -289,7 +282,6 @@
         },
         {
           "type": "assembly",
-          "intro": "You need to perform a deletion on 'sharp' and then reverse the result to get a 3-letter answer. But in cryptics, the fodder word often needs a transformation first. Try it with 'sharp' — take most of it and reverse... RAHS? That doesn't look right!",
           "failMessage": "So 'sharp' doesn't work as-is. What does 'sharp' really mean?",
           "transforms": [
             {
@@ -361,7 +353,6 @@
             0,
             1
           ],
-          "position": "start",
           "hint": "Related to vision or the eye — think of an optician",
           "lookup": {
             "word": "optic",
@@ -387,7 +378,6 @@
         },
         {
           "type": "assembly",
-          "intro": "You're looking for a 5-letter word meaning 'Concerning sight'",
           "transforms": [
             {
               "role": "part1",
@@ -463,7 +453,6 @@
           "indices": [
             0
           ],
-          "position": "start",
           "hint": "An island nation off the coast of Africa",
           "lookup": {
             "word": "madagascar",
@@ -483,7 +472,6 @@
         },
         {
           "type": "assembly",
-          "intro": "Four parts join to spell the answer. But watch out — sometimes setters jumble the order of parts in the clue to create a better surface story. Here, the parts don't appear in reading order. Work out what each clue word means, then see how they fit together.",
           "failMessage": "The raw clue words don't fit — what does each one really mean?",
           "transforms": [
             {
@@ -559,7 +547,6 @@
             0,
             1
           ],
-          "position": "start",
           "hint": "A musical tempo marking — moderately slow, between adagio and allegro",
           "lookup": {
             "word": "andantino",
@@ -579,7 +566,6 @@
         },
         {
           "type": "assembly",
-          "intro": "In a charade, the parts join end-to-end. Each clue phrase points to a shorter word. Work out what each one really means.",
           "transforms": [
             {
               "role": "part1",
@@ -651,7 +637,6 @@
             8,
             9
           ],
-          "position": "end",
           "hint": "The mafia code of silence — if you follow it, you keep quiet about crimes",
           "lookup": {
             "word": "omerta",
@@ -677,7 +662,6 @@
         },
         {
           "type": "assembly",
-          "intro": "You've found that 'Crooked' tells you to rearrange 'old mater'. But 'old mater' has 8 letters and you need 6. So the clue words need transforming first — what does each one really contribute?",
           "failMessage": "'old mater' gives you 8 letters, but the answer is only 6. So what does each word really mean?",
           "transforms": [
             {
@@ -744,7 +728,6 @@
             2,
             3
           ],
-          "position": "start",
           "hint": "Something you use to stay dry when it rains",
           "lookup": {
             "word": "brolly",
@@ -777,7 +760,6 @@
         },
         {
           "type": "assembly",
-          "intro": "You've found the container parts. Now work out what each clue word really means — the raw words almost never appear directly in the answer.",
           "transforms": [
             {
               "role": "outer",
@@ -830,7 +812,6 @@
           "indices": [
             0
           ],
-          "position": "start",
           "hint": "To cajole or charm someone with persuasive words",
           "lookup": {
             "word": "flatter",
@@ -863,7 +844,6 @@
         },
         {
           "type": "assembly",
-          "intro": "The inner part here is a mini-charade — two separate clue words each point to a short piece, and those pieces join together before being inserted into the outer word.",
           "transforms": [
             {
               "role": "outer",
@@ -932,7 +912,6 @@
             1,
             2
           ],
-          "position": "start",
           "hint": "A warm glass building for growing plants — a greenhouse",
           "lookup": {
             "word": "hothouse",
@@ -1023,7 +1002,6 @@
             7,
             8
           ],
-          "position": "end",
           "hint": "A female diplomat who represents her nation abroad",
           "lookup": {
             "word": "ambassadress",
@@ -1043,7 +1021,6 @@
         },
         {
           "type": "assembly",
-          "intro": "In a charade, the parts join end-to-end. Each clue word points to a shorter word. Work out what each one really means.",
           "transforms": [
             {
               "role": "part1",
@@ -1115,7 +1092,6 @@
             5,
             6
           ],
-          "position": "end",
           "hint": "A famous cathedral — one of the great sights of an Italian city",
           "lookup": {
             "word": "duomo",
@@ -1135,7 +1111,6 @@
         },
         {
           "type": "assembly",
-          "intro": "In a charade, the parts join end-to-end. Each clue word points to a shorter word. Work out what each one really means.",
           "transforms": [
             {
               "role": "part1",
@@ -1195,7 +1170,6 @@
           "indices": [
             0
           ],
-          "position": "start",
           "hint": "To push or propel forward — 'drive' can mean to urge someone on",
           "lookup": {
             "word": "urge",
@@ -1221,7 +1195,6 @@
         },
         {
           "type": "assembly",
-          "intro": "You've found that 'removal' tells you to delete something from 'silly speech'. But 'silly speech' is two words — far too many letters for a 5-letter answer. What does 'silly speech' really mean? And 'line' tells you which letter to remove.",
           "failMessage": "'Silly speech' doesn't work directly — what shorter word does it point to?",
           "transforms": [
             {
@@ -1280,7 +1253,6 @@
           "indices": [
             4
           ],
-          "position": "end",
           "hint": "A simple past tense word — something that occurred",
           "lookup": {
             "word": "was",
@@ -1305,7 +1277,6 @@
         },
         {
           "type": "assembly",
-          "intro": "You've found that 'absence' tells you to remove something from 'conflicts'. But 'conflicts' is 9 letters — far too many for a 3-letter answer. What does 'conflicts' really mean?",
           "failMessage": "'Conflicts' doesn't work directly — what shorter word does it point to?",
           "transforms": [
             {
@@ -1363,7 +1334,6 @@
             6,
             7
           ],
-          "position": "end",
           "hint": "A description of cigarettes with reduced harmful content"
         },
         {
@@ -1379,7 +1349,6 @@
         },
         {
           "type": "assembly",
-          "intro": "In a charade, the parts join end-to-end. Each clue word points to a shorter word. Work out what each one really means.",
           "transforms": [
             {
               "role": "part1",
@@ -1434,7 +1403,6 @@
           "indices": [
             3
           ],
-          "position": "end",
           "hint": "Support or protection from someone powerful — think of acting 'under the auspices of' an organisation",
           "lookup": {
             "word": "auspices",
@@ -1465,7 +1433,6 @@
         },
         {
           "type": "assembly",
-          "intro": "You've identified all the pieces. But 'Summits' is 7 letters and 'American' is 8 — far too many for an 8-letter answer. Each clue word is pointing to a shorter word. Work out what each one really means.",
           "failMessage": "Put the short word for 'American' inside the short word for 'Summits'. The letters should spell the answer.",
           "transforms": [
             {
@@ -1521,7 +1488,6 @@
           "indices": [
             0
           ],
-          "position": "start",
           "hint": "To criticize or scold someone",
           "lookup": {
             "word": "twit",
@@ -1530,13 +1496,14 @@
         },
         {
           "type": "indicator",
-          "indices": [5],
+          "indices": [
+            5
+          ],
           "hint": "'Mostly' is a deletion indicator — it tells you to take most of a word, dropping the last letter",
           "indicator_type": "deletion"
         },
         {
           "type": "assembly",
-          "intro": "The parts join end-to-end, but the clue words don't fit directly — each is pointing to a shorter word. And one of them gets shortened further by 'mostly'.",
           "transforms": [
             {
               "role": "part1",
@@ -1602,7 +1569,6 @@
           "indices": [
             0
           ],
-          "position": "start",
           "hint": "Passing quickly, transient — like something that doesn't last",
           "lookup": {
             "word": "fugitive",
@@ -1619,7 +1585,6 @@
         },
         {
           "type": "assembly",
-          "intro": "The answer is built from two halves: 'attempt to escape' and 'good egg' (upset). But these clue words don't fit directly — each is pointing to something shorter.",
           "failMessage": "'Attempt to escape' and 'good egg' are too long — what does each really mean?",
           "transforms": [
             {
@@ -1696,7 +1661,6 @@
             0,
             1
           ],
-          "position": "start",
           "hint": "A pretentious person who claims expertise or knowledge they don’t have",
           "lookup": {
             "word": "pseud",
@@ -1723,7 +1687,6 @@
         },
         {
           "type": "assembly",
-          "intro": "This is a hidden reversed word. The answer is literally sitting inside the fodder words, but spelled backwards. First find the consecutive letters hiding across 'undue spending', then reverse them.",
           "transforms": [
             {
               "role": "fodder",
@@ -1780,7 +1743,6 @@
             0,
             1
           ],
-          "position": "start",
           "hint": "A Roman emperor — the word 'Tsar' itself derives from this title",
           "lookup": {
             "word": "tsar",
@@ -1797,7 +1759,6 @@
         },
         {
           "type": "assembly",
-          "intro": "The answer is built from two parts: 'roughly' and 'level after revolution'. But these clue words don't appear directly — each is pointing to something shorter.",
           "failMessage": "'Roughly' and 'level' don't work as-is — what does each really mean?",
           "transforms": [
             {
@@ -1866,7 +1827,6 @@
             0,
             1
           ],
-          "position": "start",
           "hint": "Someone who arrives after things have started — they were the one missing",
           "lookup": {
             "word": "latecomer",
@@ -1892,7 +1852,6 @@
         },
         {
           "type": "assembly",
-          "intro": "You're looking for a 9-letter word meaning 'One missing'",
           "transforms": [
             {
               "role": "part1",
@@ -1958,7 +1917,6 @@
           "indices": [
             8
           ],
-          "position": "end",
           "hint": "To train or teach someone — 'to school' someone means to discipline them",
           "lookup": {
             "word": "school",
@@ -1985,7 +1943,6 @@
         },
         {
           "type": "assembly",
-          "intro": "Two chunks join together: reversed 'Photos I had' + 'cover the inside of'. But the clue words don't appear directly — each points to something shorter. Work out each piece, then reverse the first chunk.",
           "failMessage": "The raw words don't fit — what does each one really mean?",
           "transforms": [
             {
@@ -2064,7 +2021,6 @@
             7,
             8
           ],
-          "position": "end",
           "hint": "An astronomical event that temporarily blocks sunlight",
           "lookup": {
             "word": "eclipse",
@@ -2098,7 +2054,6 @@
         },
         {
           "type": "assembly",
-          "intro": "The inner part is a three-piece charade — each clue word points to something short, and the pieces join before being slotted into the outer word. One word is used as-is, one is a standard abbreviation, and one is slang.",
           "transforms": [
             {
               "role": "outer",
@@ -2174,7 +2129,6 @@
             0,
             1
           ],
-          "position": "start",
           "hint": "A traditional long garment worn in Middle Eastern countries",
           "lookup": {
             "word": "dishdasha",
@@ -2200,7 +2154,6 @@
         },
         {
           "type": "assembly",
-          "intro": "Two parts join together: 'beauty' and the rearranged letters of 'ad has'. The parts don't appear in reading order — setters often jumble the order to create a convincing surface story.",
           "failMessage": "The raw words don't fit — what does each one really mean?",
           "transforms": [
             {
@@ -2261,7 +2214,6 @@
           "indices": [
             0
           ],
-          "position": "start",
           "hint": "A famous structure on the Nile river",
           "lookup": {
             "word": "embankment",
@@ -2303,7 +2255,6 @@
         },
         {
           "type": "assembly",
-          "intro": "You've found the container parts. Now work out what each clue word really means — the raw words almost never appear directly in the answer.",
           "transforms": [
             {
               "role": "outer",
@@ -2364,7 +2315,6 @@
             8,
             9
           ],
-          "position": "end",
           "hint": "Existing outside of time — timeless",
           "lookup": {
             "word": "atemporal",
@@ -2381,7 +2331,6 @@
         },
         {
           "type": "assembly",
-          "intro": "Three parts join together: 'Friend', 'piano', and 'exam'. But none of these words appear directly in the answer — each is pointing to something else. And 'taking minute to finish' tells you to rearrange one of them.",
           "failMessage": "The raw clue words don't fit — what does each one really mean?",
           "transforms": [
             {
@@ -2455,7 +2404,6 @@
             4,
             5
           ],
-          "position": "end",
           "hint": "A very large amount of something — especially medicine",
           "lookup": {
             "word": "megadose",
@@ -2481,7 +2429,6 @@
         },
         {
           "type": "assembly",
-          "intro": "You need to rearrange the letters of 'See Dogma' (S-E-E-D-O-G-M-A) into an 8-letter word meaning 'massive hit'. Both words are used as-is — their letters go straight into the anagram.",
           "transforms": [
             {
               "role": "part1",
@@ -2541,7 +2488,6 @@
           "indices": [
             0
           ],
-          "position": "start",
           "hint": "A word meaning a large number of something",
           "lookup": {
             "word": "dozens",
@@ -2628,7 +2574,6 @@
             6,
             7
           ],
-          "position": "end",
           "hint": "Describing a place battered by strong winds",
           "lookup": {
             "word": "windswept",
@@ -2653,7 +2598,6 @@
         },
         {
           "type": "assembly",
-          "intro": "This is a devious clue — the wordplay packs a synonym, a reversal, and a container insertion into just a few words. Two chunks join end to end, but the second chunk is built from reversed and inserted pieces. Work out what each clue word really means.",
           "failMessage": "The raw words don't work — each one is pointing to something else.",
           "transforms": [
             {
