@@ -548,10 +548,21 @@ class CrosswordPuzzle {
                 throw new Error(data.error || 'Upload failed');
             }
 
+            // Handle reconciliation conflicts — stop before grid processing
+            if (data.status === 'conflicts') {
+                this.showReconciliationLog(data.reconciliation_log);
+                return;
+            }
+
             this.puzzle = data.puzzle;
             this.currentPuzzleInfo = data.storage;
             this.initUserGrid();
             this.renderPuzzle();
+
+            // Show reconciliation log if there are resolved items or warnings
+            if (data.reconciliation_log && data.reconciliation_log.length > 0) {
+                this.showReconciliationLog(data.reconciliation_log);
+            }
 
             if (data.warnings && data.warnings.length > 0) {
                 this.showWarnings(data.warnings);
@@ -601,6 +612,46 @@ class CrosswordPuzzle {
         const el = document.getElementById('validation-warnings');
         el.innerHTML = `<strong>Warnings (${warnings.length}):</strong><ul>${warnings.map(w => `<li>${w}</li>`).join('')}</ul>`;
         el.classList.add('visible');
+    }
+
+    showReconciliationLog(log) {
+        const existing = document.getElementById('reconciliation-log');
+        if (existing) existing.remove();
+
+        const container = document.getElementById('upload-section');
+        const div = document.createElement('div');
+        div.id = 'reconciliation-log';
+        div.className = 'reconciliation-log';
+
+        const errors = log.filter(e => e.level === 'error');
+        const resolved = log.filter(e => e.level === 'resolved');
+        const warnings = log.filter(e => e.level === 'warning');
+
+        let html = '';
+
+        if (errors.length > 0) {
+            html += `<div class="recon-section recon-errors">`;
+            html += `<strong>Unresolved conflicts (${errors.length}) — fix these before import can continue:</strong>`;
+            html += `<ul>${errors.map(e => `<li><strong>${e.clue}:</strong> ${e.message}<br><span class="recon-pdf">PDF: ${e.pdf_text || '-'}</span><br><span class="recon-yaml">YAML: ${e.yaml_text || '-'}</span></li>`).join('')}</ul>`;
+            html += `</div>`;
+        }
+
+        if (resolved.length > 0) {
+            html += `<div class="recon-section recon-resolved">`;
+            html += `<strong>Auto-resolved (${resolved.length}) — please verify:</strong>`;
+            html += `<ul>${resolved.map(e => `<li><strong>${e.clue}:</strong> ${e.message} (chose ${e.chosen})<br><span class="recon-pdf">PDF: ${e.pdf_text || '-'}</span><br><span class="recon-yaml">YAML: ${e.yaml_text || '-'}</span></li>`).join('')}</ul>`;
+            html += `</div>`;
+        }
+
+        if (warnings.length > 0) {
+            html += `<div class="recon-section recon-warnings">`;
+            html += `<strong>Warnings (${warnings.length}):</strong>`;
+            html += `<ul>${warnings.map(e => `<li><strong>${e.clue}:</strong> ${e.message}</li>`).join('')}</ul>`;
+            html += `</div>`;
+        }
+
+        div.innerHTML = html;
+        container.appendChild(div);
     }
 
     initUserGrid() {

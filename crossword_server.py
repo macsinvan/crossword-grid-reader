@@ -12,8 +12,8 @@ Usage:
 Then open http://localhost:8080 in your browser.
 """
 
-import os
 import json
+import os
 import re
 import tempfile
 
@@ -21,7 +21,7 @@ from flask import Flask, render_template, request, jsonify
 import yaml
 
 from crossword_processor import CrosswordGridProcessor
-from pdf_processor import process_times_pdf
+from pdf_processor import process_times_pdf, fix_ocr_errors, validate_words
 
 # Supabase is required — no silent fallback to local storage
 from puzzle_store_supabase import get_puzzle_store
@@ -36,91 +36,193 @@ from trainer_routes import trainer_bp
 app.register_blueprint(trainer_bp, url_prefix='/trainer')
 
 
-def convert_times_json_to_yaml_format(times_data, puzzle_number=None):
-    """
-    Convert Times puzzle JSON format to the YAML format expected by CrosswordGridProcessor.
-    """
-    across_clues = []
-    down_clues = []
-
-    if puzzle_number is None:
-        for key in times_data.keys():
-            match = re.search(r'times-(\d+)', key)
-            if match:
-                puzzle_number = int(match.group(1))
-                break
-
-    for key, value in times_data.items():
-        clue_info = value.get('clue', {})
-        clue_number_str = clue_info.get('number', '')
-
-        match = re.match(r'(\d+)([AD])', clue_number_str.upper())
-        if not match:
-            continue
-
-        number = int(match.group(1))
-        direction = match.group(2)
-
-        clue_text = clue_info.get('text', '')
-        enumeration = clue_info.get('enumeration', '')
-        if enumeration:
-            clue_text = f"{clue_text} ({enumeration})"
-
-        clue_entry = {
-            'number': number,
-            'clue': clue_text,
-            'answer': clue_info.get('answer', '').upper()
-        }
-
-        if direction == 'A':
-            across_clues.append(clue_entry)
-        else:
-            down_clues.append(clue_entry)
-
-    across_clues.sort(key=lambda x: x['number'])
-    down_clues.sort(key=lambda x: x['number'])
-
-    return {
-        'publication': 'The Times',
-        'series': 'Times Cryptic',
-        'number': puzzle_number or 'unknown',
-        'grid_size': {
-            'rows': 15,
-            'cols': 15
-        },
-        'across': across_clues,
-        'down': down_clues
-    }
-
-
 def load_clues_file(filepath):
     """
-    Load clues from either YAML or JSON file.
+    Load clues from a YAML file.
     Returns data in the standard YAML format.
     """
-    with open(filepath, 'r') as f:
-        content = f.read()
-
     filename = os.path.basename(filepath).lower()
 
-    if filename.endswith('.json') or content.strip().startswith('{'):
-        data = json.loads(content)  # raises JSONDecodeError with details
-        first_key = next(iter(data.keys()), '')
-        if re.match(r'times-\d+-\d+[ad]', first_key.lower()):
-            return convert_times_json_to_yaml_format(data)
+    if not filename.endswith(('.yaml', '.yml')):
+        raise ValueError(f"Unsupported clues file format: {filename}. Expected .yaml or .yml")
+
+    with open(filepath, 'r') as f:
+        data = yaml.safe_load(f)  # raises YAMLError with details
         return data
 
-    if filename.endswith(('.yaml', '.yml')):
-        data = yaml.safe_load(content)  # raises YAMLError with details
-        return data
 
-    raise ValueError(f"Unsupported clues file format: {filename}. Expected .json, .yaml, or .yml")
+def _normalise_clue_text(text):
+    """Normalise clue text for comparison: lowercase, collapse whitespace."""
+    return re.sub(r'\s+', ' ', text.strip().lower())
+
+
+def reconcile_clues(pdf_clues, yaml_data):
+    """
+    Cross-reference PDF-extracted clues with YAML-provided clues and answers.
+    Auto-resolves text differences where possible, flags all differences for review.
+
+    Args:
+        pdf_clues: dict with 'across'/'down' lists from process_times_pdf()
+        yaml_data: dict with 'across'/'down' lists from load_clues_file()
+
+    Returns:
+        (reconciled_clues, reconciliation_log)
+        - reconciled_clues: pdf_clues dict with best-guess text and YAML answers merged in
+        - reconciliation_log: list of log entry dicts
+    """
+    log = []
+
+    # Build YAML lookup by (direction, number)
+    yaml_lookup = {}
+    for direction in ['across', 'down']:
+        for clue in yaml_data.get(direction, []):
+            yaml_lookup[(direction, clue['number'])] = clue
+
+    # Track which YAML entries were matched
+    matched_yaml_keys = set()
+
+    for direction in ['across', 'down']:
+        dir_label = 'A' if direction == 'across' else 'D'
+
+        for pdf_clue in pdf_clues.get(direction, []):
+            key = (direction, pdf_clue['number'])
+            clue_label = f"{pdf_clue['number']}{dir_label}"
+
+            if key not in yaml_lookup:
+                log.append({
+                    'clue': clue_label,
+                    'level': 'warning',
+                    'message': f"No YAML entry for {direction} {pdf_clue['number']}",
+                })
+                continue
+
+            matched_yaml_keys.add(key)
+            yaml_clue = yaml_lookup[key]
+
+            # Copy answer from YAML
+            pdf_clue['answer'] = yaml_clue.get('answer', '')
+
+            # Compare clue text if YAML provides it
+            yaml_text = yaml_clue.get('clue', '')
+            if not yaml_text:
+                continue
+
+            pdf_text = pdf_clue.get('clue', '')
+            pdf_norm = _normalise_clue_text(pdf_text)
+            yaml_norm = _normalise_clue_text(yaml_text)
+
+            if pdf_norm == yaml_norm:
+                continue  # Texts match — nothing to log
+
+            # Texts differ — try to auto-resolve
+            pdf_fixed = fix_ocr_errors(pdf_text)
+            yaml_fixed = fix_ocr_errors(yaml_text)
+
+            # If OCR fix makes them match, use the fixed version
+            if _normalise_clue_text(pdf_fixed) == _normalise_clue_text(yaml_fixed):
+                pdf_clue['clue'] = yaml_fixed
+                log.append({
+                    'clue': clue_label,
+                    'level': 'resolved',
+                    'message': f"OCR fix resolved difference — using corrected text",
+                    'pdf_text': pdf_text,
+                    'yaml_text': yaml_text,
+                    'chosen': 'yaml',
+                })
+                continue
+
+            # Spell-check both — fewer warnings wins
+            pdf_warnings = validate_words(pdf_fixed)
+            yaml_warnings = validate_words(yaml_fixed)
+
+            if len(pdf_warnings) < len(yaml_warnings):
+                pdf_clue['clue'] = pdf_fixed
+                log.append({
+                    'clue': clue_label,
+                    'level': 'resolved',
+                    'message': f"PDF text has fewer spelling issues ({len(pdf_warnings)} vs {len(yaml_warnings)})",
+                    'pdf_text': pdf_text,
+                    'yaml_text': yaml_text,
+                    'chosen': 'pdf',
+                })
+            elif len(yaml_warnings) < len(pdf_warnings):
+                pdf_clue['clue'] = yaml_fixed
+                log.append({
+                    'clue': clue_label,
+                    'level': 'resolved',
+                    'message': f"YAML text has fewer spelling issues ({len(yaml_warnings)} vs {len(pdf_warnings)})",
+                    'pdf_text': pdf_text,
+                    'yaml_text': yaml_text,
+                    'chosen': 'yaml',
+                })
+            elif len(pdf_warnings) == 0 and len(yaml_warnings) == 0:
+                # Both clean but different — cannot auto-resolve
+                log.append({
+                    'clue': clue_label,
+                    'level': 'error',
+                    'message': f"Clue text differs between PDF and YAML — cannot auto-resolve",
+                    'pdf_text': pdf_text,
+                    'yaml_text': yaml_text,
+                })
+            else:
+                # Both have warnings, tied — prefer YAML (human-typed)
+                pdf_clue['clue'] = yaml_fixed
+                log.append({
+                    'clue': clue_label,
+                    'level': 'resolved',
+                    'message': f"Both have spelling issues (tied at {len(yaml_warnings)}) — preferring YAML (human-typed)",
+                    'pdf_text': pdf_text,
+                    'yaml_text': yaml_text,
+                    'chosen': 'yaml',
+                })
+
+    # Check for YAML entries not in PDF
+    for direction in ['across', 'down']:
+        dir_label = 'A' if direction == 'across' else 'D'
+        for clue in yaml_data.get(direction, []):
+            key = (direction, clue['number'])
+            if key not in matched_yaml_keys:
+                log.append({
+                    'clue': f"{clue['number']}{dir_label}",
+                    'level': 'warning',
+                    'message': f"YAML has {direction} {clue['number']} but PDF does not",
+                })
+
+    # Count summary
+    for direction in ['across', 'down']:
+        pdf_count = len(pdf_clues.get(direction, []))
+        yaml_count = len(yaml_data.get(direction, []))
+        if pdf_count != yaml_count:
+            log.append({
+                'clue': '-',
+                'level': 'warning',
+                'message': f"{direction.title()} clue count mismatch: PDF has {pdf_count}, YAML has {yaml_count}",
+            })
+
+    return pdf_clues, log
+
+
+def persist_reconciliation_log(log, series, puzzle_number):
+    """Write reconciliation log to imports/ directory as JSON."""
+    imports_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'imports')
+    os.makedirs(imports_dir, exist_ok=True)
+
+    safe_series = re.sub(r'[^a-zA-Z0-9_-]', '_', str(series))
+    safe_number = re.sub(r'[^a-zA-Z0-9_-]', '_', str(puzzle_number))
+    filename = f"{safe_series}_{safe_number}_reconciliation.json"
+    filepath = os.path.join(imports_dir, filename)
+
+    with open(filepath, 'w') as f:
+        json.dump(log, f, indent=2)
+
+    return filepath
 
 
 def process_pdf_and_store(pdf_file, answers_file=None):
     """
     Process a PDF file and store the puzzle.
-    Returns puzzle data and storage info.
+    Returns (puzzle_data, warnings, storage_info, reconciliation_log).
+    If reconciliation has unresolved errors, returns early before grid processing.
     """
     with tempfile.TemporaryDirectory() as tmpdir:
         pdf_path = os.path.join(tmpdir, 'crossword.pdf')
@@ -136,20 +238,21 @@ def process_pdf_and_store(pdf_file, answers_file=None):
         # Extract grid image and clues from PDF
         grid_path, clue_data = process_times_pdf(pdf_path, tmpdir)
 
-        # If answers provided, merge them into clue_data
+        # Reconcile PDF clues with YAML if provided
+        reconciliation_log = []
         if answers_data:
-            answers_by_num = {}
-            for clue in answers_data.get('across', []):
-                answers_by_num[('across', clue['number'])] = clue.get('answer', '')
-            for clue in answers_data.get('down', []):
-                answers_by_num[('down', clue['number'])] = clue.get('answer', '')
+            clue_data, reconciliation_log = reconcile_clues(clue_data, answers_data)
 
-            for clue in clue_data.get('across', []):
-                if ('across', clue['number']) in answers_by_num:
-                    clue['answer'] = answers_by_num[('across', clue['number'])]
-            for clue in clue_data.get('down', []):
-                if ('down', clue['number']) in answers_by_num:
-                    clue['answer'] = answers_by_num[('down', clue['number'])]
+            # Persist reconciliation log
+            series = clue_data.get('series', 'unknown')
+            number = clue_data.get('number', 'unknown')
+            log_path = persist_reconciliation_log(reconciliation_log, series, number)
+            print(f"Reconciliation log written to: {log_path}")
+
+            # If there are unresolved errors, stop before grid processing
+            has_errors = any(entry['level'] == 'error' for entry in reconciliation_log)
+            if has_errors:
+                return None, [], None, reconciliation_log
 
         # Write clues as YAML for the processor
         yaml_path = os.path.join(tmpdir, 'clues.yaml')
@@ -235,7 +338,7 @@ def process_pdf_and_store(pdf_file, answers_file=None):
             answers_data=answers_data
         )
 
-        return puzzle_data, validation_warnings, storage_info
+        return puzzle_data, validation_warnings, storage_info, reconciliation_log
 
 
 @app.route('/')
@@ -277,6 +380,10 @@ def upload():
     """
     Process uploaded PDF file with optional answers file.
     Stores puzzle and returns puzzle data as JSON.
+
+    Response includes 'status':
+    - 'reconciled': clean import, grid processed and stored
+    - 'conflicts': unresolved reconciliation errors, grid NOT processed
     """
     if 'pdf_file' not in request.files or not request.files['pdf_file'].filename:
         return jsonify({'error': 'No PDF file uploaded'}), 400
@@ -285,11 +392,22 @@ def upload():
     answers_file = request.files.get('answers_file')
 
     try:
-        puzzle_data, warnings, storage_info = process_pdf_and_store(pdf_file, answers_file)
+        puzzle_data, warnings, storage_info, reconciliation_log = process_pdf_and_store(
+            pdf_file, answers_file)
+
+        # If reconciliation stopped due to errors, return conflicts
+        if puzzle_data is None:
+            return jsonify({
+                'success': False,
+                'status': 'conflicts',
+                'reconciliation_log': reconciliation_log,
+            })
 
         return jsonify({
             'success': True,
+            'status': 'reconciled',
             'warnings': warnings,
+            'reconciliation_log': reconciliation_log,
             'puzzle': puzzle_data,
             'storage': storage_info
         })

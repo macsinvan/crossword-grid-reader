@@ -70,24 +70,19 @@ Your progress auto-saves to browser localStorage and survives page refresh.
 
 ### Answers File (Optional)
 
-YAML format:
+YAML format with clue text and answers:
 ```yaml
 across:
   - number: 1
-    answer: "SCREEN"
+    clue: "Embankment architect lengthened with cob? (5,3)"
+    answer: "ASWANDAM"
 down:
   - number: 1
-    answer: "STOOGE"
+    clue: "Singer in steamy atmosphere (6)"
+    answer: "SCREEN"
 ```
 
-Or JSON (Times Puzzle Import format):
-```json
-{
-  "times-29453-1a": {
-    "clue": { "number": "1A", "answer": "SCREEN" }
-  }
-}
-```
+The clue text is cross-referenced against the PDF's OCR-extracted text during import. Differences are auto-resolved where possible and flagged for review in `imports/<series>_<number>_reconciliation.json`.
 
 ## API Endpoints
 

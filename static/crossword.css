@@ -241,6 +241,63 @@ header h1 {
     margin-bottom: 5px;
 }
 
+/* Reconciliation Log */
+.reconciliation-log {
+    margin-top: 15px;
+    font-size: 0.9rem;
+}
+
+.recon-section {
+    border-radius: 4px;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+}
+
+.recon-section strong {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.recon-section ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.recon-section li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.recon-errors {
+    color: #721c24;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+}
+
+.recon-resolved {
+    color: #0c5460;
+    background: #d1ecf1;
+    border: 1px solid #bee5eb;
+}
+
+.recon-warnings {
+    color: #856404;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+}
+
+.recon-pdf {
+    color: #6c757d;
+    font-family: monospace;
+    font-size: 0.85em;
+}
+
+.recon-yaml {
+    color: #6c757d;
+    font-family: monospace;
+    font-size: 0.85em;
+}
+
 /* Puzzle Section */
 .puzzle-section {
     background: white;

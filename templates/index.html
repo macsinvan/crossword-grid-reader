@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crossword Puzzle</title>
-    <link rel="stylesheet" href="/static/crossword.css?v=114">
+    <link rel="stylesheet" href="/static/crossword.css?v=115">
 </head>
 <body>
     <div class="container">
@@ -53,9 +53,9 @@
                     </div>
                     <div class="upload-field">
                         <label for="answers-file">Answers File (optional)</label>
-                        <input type="file" id="answers-file" accept=".yaml,.yml,.json">
+                        <input type="file" id="answers-file" accept=".yaml,.yml">
                         <span class="file-name" id="answers-file-name">No file selected</span>
-                        <span class="upload-hint">JSON or YAML with answers for validation</span>
+                        <span class="upload-hint">YAML file with answers for validation</span>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary">
@@ -129,7 +129,7 @@
                     <input type="hidden" id="modal-puzzle-number" name="puzzle_number">
                     <div class="upload-field">
                         <label for="modal-answers-file">Answers File</label>
-                        <input type="file" id="modal-answers-file" accept=".yaml,.yml,.json" required>
+                        <input type="file" id="modal-answers-file" accept=".yaml,.yml" required>
                     </div>
                     <div class="modal-buttons">
                         <button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
@@ -155,7 +155,7 @@
     </div>
 
     <script src="/static/trainer.js?v=102"></script>
-    <script src="/static/crossword.js?v=30"></script>
+    <script src="/static/crossword.js?v=31"></script>
     <script>fetch('/server-info').then(r=>r.json()).then(d=>{document.getElementById('server-info').textContent=d.dir+' ['+d.branch+']';});</script>
 </body>
 </html>
