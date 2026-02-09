@@ -261,7 +261,7 @@
             1,
             2
           ],
-          "hint": "'A lot of' is a deletion indicator — it tells you to take most of something, dropping a letter",
+          "hint": "'A lot of' means you take most of something — drop a letter from the end",
           "indicator_type": "deletion"
         },
         {
@@ -277,7 +277,7 @@
           "indices": [
             4
           ],
-          "hint": "'Turns' is a reversal indicator — it tells you to read the letters backwards",
+          "hint": "'Turns' means to spin around — read the letters backwards",
           "indicator_type": "reversal"
         },
         {
@@ -739,7 +739,7 @@
           "indices": [
             6
           ],
-          "hint": "'Nurses' is a container indicator — to nurse something is to hold or wrap around it.",
+          "hint": "To nurse something is to hold or cradle it — one word wraps around another",
           "indicator_type": "container"
         },
         {
@@ -823,7 +823,7 @@
           "indices": [
             2
           ],
-          "hint": "'Takes' is a container indicator — to take something in is to absorb or contain it.",
+          "hint": "To 'take' something is to absorb or contain it — one word goes inside another",
           "indicator_type": "container"
         },
         {
@@ -923,7 +923,7 @@
           "indices": [
             6
           ],
-          "hint": "'Wear' is a container indicator — to wear something is to put it around you, wrapping the outside around the inside",
+          "hint": "To wear something is to put it around you — the outside wraps around the inside",
           "indicator_type": "container"
         },
         {
@@ -1181,7 +1181,7 @@
           "indices": [
             1
           ],
-          "hint": "'Removal' is a deletion indicator — it tells you a letter needs to be taken away",
+          "hint": "'Removal' means something is being taken away — a letter needs to go",
           "indicator_type": "deletion"
         },
         {
@@ -1414,7 +1414,7 @@
           "indices": [
             1
           ],
-          "hint": "'Welcoming' suggests receiving something into yourself — a container indicator",
+          "hint": "'Welcoming' suggests receiving something into yourself — one word opens up to let another in",
           "indicator_type": "container"
         },
         {
@@ -1499,7 +1499,7 @@
           "indices": [
             5
           ],
-          "hint": "'Mostly' is a deletion indicator — it tells you to take most of a word, dropping the last letter",
+          "hint": "'Mostly' means not all of it — take most of a word and drop the last letter",
           "indicator_type": "deletion"
         },
         {
@@ -1847,7 +1847,7 @@
             7,
             8
           ],
-          "hint": "things being shaken up — an anagram indicator",
+          "hint": "'Some upheaval' suggests things being shaken up — letters need rearranging",
           "indicator_type": "anagram"
         },
         {
@@ -1928,7 +1928,7 @@
           "indices": [
             3
           ],
-          "hint": "'Mounted' means going up — in a down clue, that's a reversal indicator",
+          "hint": "'Mounted' means going up — in a down clue, that means reading letters upwards (backwards)",
           "indicator_type": "reversal"
         },
         {
@@ -2033,7 +2033,7 @@
             3,
             4
           ],
-          "hint": "'Coming inside' is a container indicator — something is being placed inside something else.",
+          "hint": "'Coming inside' tells you something is being placed inside something else",
           "indicator_type": "container"
         },
         {
@@ -2140,7 +2140,7 @@
           "indices": [
             4
           ],
-          "hint": "'Misrepresented' means shown wrongly — a classic anagram indicator",
+          "hint": "'Misrepresented' means shown wrongly — the letters have been jumbled up",
           "indicator_type": "anagram"
         },
         {
@@ -2499,7 +2499,7 @@
           "indices": [
             2
           ],
-          "hint": "'Divided' is a container indicator — to divide something is to split it apart and put something in between.",
+          "hint": "To divide something is to split it apart — one word gets broken open so another can go in between",
           "indicator_type": "container"
         },
         {
@@ -2585,7 +2585,7 @@
           "indices": [
             2
           ],
-          "hint": "'Back' is a reversal indicator — it tells you to read letters backwards",
+          "hint": "'Back' means going in reverse — read the letters backwards",
           "indicator_type": "reversal"
         },
         {
@@ -2593,7 +2593,7 @@
           "indices": [
             3
           ],
-          "hint": "'In' is a container indicator — it tells you one piece goes inside another",
+          "hint": "'In' tells you one piece goes inside another",
           "indicator_type": "container"
         },
         {

@@ -1149,6 +1149,28 @@ def test_template_text(server, clue):
                     f"prompt text 'can you find' — should show the hint instead"
                 )
 
+    # Check completed indicator titles don't redundantly repeat "[type] indicator"
+    INDICATOR_TYPE_LABELS = [
+        "deletion indicator", "reversal indicator", "container indicator",
+        "anagram indicator", "ordering indicator", "letter selection indicator",
+        "hidden word indicator"
+    ]
+    for s in full_render.get("steps", []):
+        if s["type"] == "indicator" and s["status"] == "completed":
+            title = s.get("title", "")
+            # The title format is "{type} indicator: '{words}' — {hint}"
+            # Split on " — " to get the hint portion
+            parts = title.split(" \u2014 ", 1)
+            if len(parts) == 2:
+                hint_part = parts[1].lower()
+                for label in INDICATOR_TYPE_LABELS:
+                    if label in hint_part:
+                        return False, (
+                            f"Indicator completed title '{title}' redundantly "
+                            f"mentions '{label}' in the hint — the template "
+                            f"already prefixes with the indicator type"
+                        )
+
     # Check indicator steps in the step list (uses initial render)
     steps = render.get("steps", [])
     indicator_step_idx = 0
