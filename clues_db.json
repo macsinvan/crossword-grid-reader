@@ -2738,6 +2738,7 @@
               ],
               "type": "anagram",
               "result": "SWEPT",
+              "prompt": "'in' tells you one piece goes inside another — what 5-letter word do you get?",
               "hint": "'In' tells you WEP goes inside ST — S + WEP + T = SWEPT"
             }
           ],
