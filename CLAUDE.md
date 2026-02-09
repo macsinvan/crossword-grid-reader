@@ -161,7 +161,7 @@ Open http://localhost:8080
 | `trainer_routes.py` | Flask Blueprint — thin HTTP layer, all `/trainer/*` routes |
 | `training_handler.py` | All trainer business logic: sequencer engine, clue DB, lookup, sessions |
 | `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
-| `clues_db.json` | Pre-annotated clue database (31 clues) — development source, also used by upload script |
+| `clues_db.json` | Pre-annotated clue database (55 clues: 30 from puzzle 29453 + 25 from puzzle 29147) — development source, also used by upload script |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
 | `validate_training.py` | Training metadata validator — structural, semantic, convention, and publication checks |
 | `test_regression.py` | Regression test suite: 330 tests (30 clues × 11 tests), stdlib only |
@@ -265,9 +265,42 @@ When changing JS/CSS files, bump version in `templates/index.html`:
 ## Mobile Design
 Grid uses CSS Grid with `1fr` units, NOT fixed pixel sizes. See `SPEC.md` Section 11 for full details.
 
+## Parsing Clues — Systematic Approach
+
+When creating training metadata for a new clue, use a two-phase approach: **solve first, then encode.**
+
+### Phase 1: Solve the clue
+
+You have the clue text, the definition, and the answer. As an expert in Times cryptic crosswords, **solve the wordplay cold** — work out the full parse before touching the metadata format.
+
+1. **Start from the answer letters** — the answer is the Rosetta Stone. Write them out (e.g. H-E-L-E-N-O-F-T-R-O-Y).
+2. **Scan for known patterns** — abbreviations (E=English, F=female, CIA=agents), common short words, letter groups that map to clue words.
+3. **Identify the wordplay type** — anagram? container? charade? The indicator words and letter mechanics will tell you.
+4. **Work out the complete parse** — which words contribute which letters, via what mechanism (synonym, abbreviation, literal, anagram, reversal, container, etc.).
+5. **Verify mechanically** — do the letters actually work? Check anagram sorts, reversal directions, container structures letter-by-letter. Don't trust your first guess.
+
+If stuck, research: check the Times for the Times blog, crossword solver sites, or thesaurus lookups. Never guess.
+
+### Phase 2: Encode as training metadata
+
+Once you have the full parse verified, walk through it with the user **one step at a time** (like the trainer), showing:
+1. **Word table** — all words with their indices
+2. **Remaining words** — which words haven't been assigned a role yet
+3. **The answer** — always visible, always in uppercase with letter count
+
+Present each step for confirmation: definition → indicators → fodder/outer/inner → assembly transforms. Then write the metadata to `clues_db.json` and validate.
+
+### Common pitfalls
+- **Don't fumble through indicators before solving** — solve the wordplay first, then you know what the indicators are.
+- **Verify letter-by-letter** — 1D taught us that "revolution" reverses the WHOLE container result (CIMEANA→ANAEMIC), not just one part. Always check.
+- **Research before guessing** — if unsure about an abbreviation or synonym, look it up. Never hypothesise.
+- **Watch for multi-word definitions** — the definition can be more than one word (e.g. "Classic beauty"), always at the start or end.
+- **Connectors carry no letters** — words like "for", "and", "with", "in" (when not an indicator) are just grammatical glue.
+- **Abbreviations hide in anagram fodder** — E=English, F=female, N=north etc. can supply single letters to an anagram alongside literal words.
+
 ## Clue Metadata Reference
 
-All 30 clues in `clues_db.json` are converted to the flat format. When editing or adding clues, follow these patterns.
+All 31 clues in `clues_db.json` are converted to the flat format. When editing or adding clues, follow these patterns.
 
 ### Reference clues — study these BEFORE editing any clue:
 - **5D** — deletion + reversal chain (indicator steps, tap_words flow)
@@ -372,6 +405,56 @@ Publication is extracted from item ID (e.g. `times-29453-11a` → `times`). All 
   - British slang: chap=MAN, pub=INN/PH, loo=WC/LAV
 
 **Adding a new publication:** Add a new entry to `PUBLICATION_CONVENTIONS` dict in `validate_training.py` with `spelling_checks` and `extra_abbreviations` keys.
+
+## Current Work — Puzzle 29147 Training Metadata
+
+**Status:** 26 of 32 clues completed and validated. 6 remaining (see below).
+
+**Completed clues (26):**
+- **1A** — ASHAMED: charade (AS + HAM + ED)
+- **1D** — ANAEMIC: container + reversal (CIA contains MEAN → reversed)
+- **2D** — HELEN OF TROY: anagram (TO + E + F + ONLY + HER → anagram)
+- **3D** — MY WORD: double definition (exclamation + promise)
+- **4D** — DARTH VADER: charade + container (DART + HER containing V + AD)
+- **5A** — REMAINS: charade (RE + MAINS)
+- **5D** — ROSE: triple definition (grew/flower/spray attachment)
+- **6D** — MINISTRY: charade with ordering (MINIS + TRY, "priority" = ordering indicator)
+- **7D** — IDA: hidden word in holIDAys
+- **8D** — SALFORD: container (SAD containing L + FOR)
+- **9A** — AIL: letter selection (alternate letters from bAcIlLi)
+- **11A** — MONARCHY: charade + letter selection (MON + ARCH + Y)
+- **14D** — STRATEGIST: charade (ST + RATE + GIST)
+- **15A** — CUFF: charade (CU + FF)
+- **16A** — MASTERMIND: container + charade (MATER containing S = MASTER + MIND)
+- **17D** — SPOTLESS: charade (SPOT + LESS)
+- **18A** — PERIPHERAL: anagram (HELP + REPAIR)
+- **18D** — PICKLED: charade (PICK + LED)
+- **19A** — LIMB: deletion (LIMBO - O)
+- **20D** — BUGBEAR: charade (BUG + BEAR)
+- **22A** — COYOTE: charade (COY + OTE)
+- **23A** — DEPUTING: anagram (EG + PUNDIT)
+- **24D** — ZANY: charade (Z + ANY)
+- **26D** — ALB: hidden reversed word in shruBLAnd
+- **28A** — DEBUSSY: charade + letter selection (DEBUS + SY)
+- **29A** — TO ORDER: reversal (RED + ROOT → reversed)
+
+**Remaining clues (6):**
+- **10A** — WARTS AND ALL: complex container parse, needs more analysis
+- **12A** — PSEUDO: homophone — no homophone template exists yet
+- **13D** — UNINITIATED: container + reversal (UNITED contains NIT + IA) — validator needs fix for chained container predecessors
+- **21D** — GUNG HO: complex parse
+- **25A** — LEAVE-TAKING: complex container parse (LEAKING contains VET?)
+- **27A** — TIE: letter substitution — no substitution template exists yet
+
+**Known issue:**
+- **9D** (puzzle 29453) — has wrong apostrophe and wrong transform type. Not yet fixed.
+
+**Validator changes made this session:**
+- `_check_container`: now handles 3+ predecessors (multiple inner pieces concatenated)
+- `_check_reversal`: now strips non-alpha characters (handles multi-word answers like TO ORDER)
+- Added to CRYPTIC_ABBREVIATIONS: commercial→AD, light source→LED, touching→RE, regarding→RE, pounds→L, unknown quantity→X/Y/Z, very loud→FF, goodbye from texter→CU, earnings for salesperson→OTE
+
+**Process:** Two-phase approach: (1) Solve as AI expert with clue+definition+answer, (2) Encode as training metadata. Hints teach Times conventions (the macro-level checks become the hints).
 
 ## Worktrees
 This repo uses git worktrees:

@@ -34,6 +34,9 @@ CRYPTIC_ABBREVIATIONS = {
     "doctor": {"DR", "MO", "MB", "GP"},
     "physician": {"DR", "MO", "GP"},
     "nurse": {"EN", "RN", "SEN"},
+    "agents": {"CIA", "FBI", "MI5", "MI6"},
+    "spies": {"CIA", "MI5", "MI6"},
+    "spy": {"MOLE", "AGENT"},
     "soldier": {"GI", "RE", "RA", "RM", "OR", "PTE"},
     "private": {"GI", "PTE"},
     "general": {"GEN"},
@@ -58,6 +61,12 @@ CRYPTIC_ABBREVIATIONS = {
     "sister": {"SR", "SIS"},
     "wife": {"W"},
     "husband": {"H"},
+    "female": {"F"},
+    "male": {"M"},
+    "man": {"M"},
+    "woman": {"W", "F"},
+    "boy": {"B", "SON"},
+    "girl": {"G"},
     "worker": {"ANT", "BEE", "HAND"},
 
     # Directions / compass
@@ -102,6 +111,7 @@ CRYPTIC_ABBREVIATIONS = {
     "million": {"M"},
     "unknown": {"X", "Y", "Z"},
     "unknown quantity": {"X", "Y", "Z"},
+    "unknown quantity": {"X", "Y", "Z"},
 
     # Music
     "note": {"A", "B", "C", "D", "E", "F", "G", "DO", "RE", "MI", "FA", "SO", "LA", "TI", "TE"},
@@ -109,6 +119,9 @@ CRYPTIC_ABBREVIATIONS = {
     "sharp": {"S"},
     "flat": {"B"},
     "loud": {"F", "FF"},
+    "very loud": {"FF"},
+    "goodbye from texter": {"CU"},
+    "earnings for salesperson": {"OTE"},
     "very loud": {"FF"},
     "soft": {"P", "PP"},
     "very soft": {"PP"},
@@ -144,6 +157,9 @@ CRYPTIC_ABBREVIATIONS = {
     "piano": {"P"},
     "roughly": {"C", "CA"},
     "about": {"C", "CA", "RE"},
+    "touching": {"RE"},
+    "regarding": {"RE"},
+    "concerning": {"RE"},
     "against": {"V", "VS"},
     "year": {"Y", "YR"},
     "time": {"T"},
@@ -158,6 +174,12 @@ CRYPTIC_ABBREVIATIONS = {
     "article": {"A", "AN", "THE"},
     "work": {"OP", "OPUS"},
     "piece": {"OP", "BIT"},
+    "commercial": {"AD"},
+    "advertisement": {"AD"},
+    "light source": {"LED"},
+    "light": {"L"},
+    "advert": {"AD"},
+    "short commercial": {"AD"},
     "good": {"G"},
     "bad": {"B"},
     "old": {"O", "EX"},
@@ -208,6 +230,7 @@ CRYPTIC_ABBREVIATIONS = {
     "mark": {"M"},
     "penny": {"P", "D"},
     "pound": {"L", "LB"},
+    "pounds": {"L", "LB"},
     "bob": {"S"},
     "grand": {"G", "K"},
     "copper": {"CU", "P"},
@@ -540,7 +563,10 @@ def _check_reversal(transforms, current_idx, result):
     """Reversal: result must be the reverse of consumed predecessors' combined result."""
     consumed = _find_consumed_predecessors(transforms, current_idx)
     combined = "".join(transforms[c]["result"] for c in consumed)
-    if result == combined[::-1]:
+    # Strip non-alpha characters for comparison (handles multi-word answers like TO ORDER)
+    combined_alpha = re.sub(r'[^A-Z]', '', combined.upper())
+    result_alpha = re.sub(r'[^A-Z]', '', result.upper())
+    if result_alpha == combined_alpha[::-1]:
         return None
     return f"reversal check failed: '{result}' is not the reverse of consumed input '{combined}'"
 
@@ -570,13 +596,22 @@ def _check_anagram(transforms, current_idx, result):
     consumed = _find_consumed_predecessors(transforms, current_idx)
     combined = "".join(transforms[c]["result"] for c in consumed)
 
-    if sorted(combined) != sorted(result):
-        return f"anagram check failed: sorted('{combined}') != sorted('{result}')"
+    # Strip non-alpha characters (spaces, hyphens) for comparison
+    combined_alpha = re.sub(r'[^A-Z]', '', combined.upper())
+    result_alpha = re.sub(r'[^A-Z]', '', result.upper())
+
+    if sorted(combined_alpha) != sorted(result_alpha):
+        return f"anagram check failed: sorted('{combined_alpha}') != sorted('{result_alpha}')"
     return None
 
 
 def _check_container(transforms, current_idx, result):
-    """Container: result must be one consumed piece inserted inside another."""
+    """Container: result must be formed by inserting inner piece(s) inside an outer piece.
+
+    Supports:
+    - 2 predecessors: one inserted inside the other (standard case)
+    - 3+ predecessors: one is outer, the rest concatenate as inner (e.g. V+AD inside HER)
+    """
     consumed = _find_consumed_predecessors(transforms, current_idx)
     if len(consumed) < 2:
         return f"container check failed: need at least 2 consumed predecessors, got {len(consumed)}"
@@ -593,6 +628,19 @@ def _check_container(transforms, current_idx, result):
                 combined = outer[:pos] + inner + outer[pos:]
                 if combined == result:
                     return None
+
+    # If more than 2 predecessors, try concatenating all non-outer pieces as inner
+    if len(predecessor_results) > 2:
+        from itertools import permutations
+        for i, outer in enumerate(predecessor_results):
+            others = [p for j, p in enumerate(predecessor_results) if j != i]
+            # Try all orderings of the inner pieces
+            for perm in permutations(others):
+                inner = "".join(perm)
+                for pos in range(1, len(outer)):
+                    combined = outer[:pos] + inner + outer[pos:]
+                    if combined == result:
+                        return None
 
     return f"container check failed: '{result}' cannot be formed by inserting one predecessor inside another (predecessors: {predecessor_results})"
 
