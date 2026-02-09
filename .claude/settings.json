@@ -7,6 +7,11 @@
       "Bash(git push *)",
       "Bash(cd * && python3 crossword_server.py *)",
       "Bash(*python3 crossword_server.py*)",
+      "Bash(*crossword_server*)",
+      "Bash(git add *)",
+      "Bash(*git add*)",
+      "Bash(*git commit*)",
+      "Bash(cd * && git add * && git commit *)",
       "Edit(**)",
       "Write(**)"
     ]
