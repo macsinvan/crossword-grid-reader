@@ -863,10 +863,22 @@ def _build_step_list(session, clue):
 
 
 def _get_transform_results(steps, completed_steps):
-    """Extract transform role→result map from a completed assembly step."""
+    """Extract transform role→result map from a completed assembly step.
+
+    When multiple transforms share the same role (e.g. two 'inner' transforms),
+    their results are joined with ' + '.
+    """
     for i, step in enumerate(steps):
         if "transforms" in step and i in completed_steps:
-            return {t["role"]: t["result"].upper() for t in step["transforms"]}
+            results = {}
+            for t in step["transforms"]:
+                role = t["role"]
+                result = t["result"].upper()
+                if role in results:
+                    results[role] += " + " + result
+                else:
+                    results[role] = result
+            return results
     return {}
 
 

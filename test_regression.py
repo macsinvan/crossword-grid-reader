@@ -558,6 +558,10 @@ TEST_CLUES = [
         "dependent_transform_indices": [],
         "wrong_value_step0": [1, 2],
         "is_container": True,
+        "check_backfill_titles": True,
+        "expected_backfill": {
+            "inner_word": {"must_contain": ["WEE", "T"], "must_not_contain": "'very little time' \u2192 T"},
+        },
     },
 
     # 20. 12A OPTIC — dual indicators + explicit assembly: def→indicator(letter_sel)→indicator(anagram)→assembly
@@ -1247,6 +1251,55 @@ def test_assembly_completion_text(server, clue):
     return True, ""
 
 
+def test_backfill_titles(server, clue):
+    """Verify that outer_word/inner_word backfill titles show all transform results."""
+    if not clue.get("check_backfill_titles"):
+        return True, ""
+
+    # Walk through entire clue to completion
+    render = start_session(server, clue)
+    clue_id = render["clue_id"]
+
+    for step in clue["steps"]:
+        if step["inputMode"] == "assembly":
+            render = submit_assembly_transforms(
+                server, clue_id, step["transforms"], render, answer=clue["answer"]
+            )
+        else:
+            correct, render = submit_input(server, clue_id, step["value"])
+            if not correct:
+                return False, f"Step {step['type']} was rejected"
+
+    if not render.get("complete"):
+        return False, "Clue did not complete"
+
+    # Check backfill titles for specified step types
+    for step_type, checks in clue["expected_backfill"].items():
+        step_title = None
+        for s in render.get("steps", []):
+            if s["type"] == step_type:
+                step_title = s.get("title", "")
+                break
+        if step_title is None:
+            return False, f"No {step_type} step found in completed steps"
+
+        for word in checks.get("must_contain", []):
+            if word not in step_title:
+                return False, (
+                    f"{step_type} backfill title '{step_title}' doesn't contain "
+                    f"'{word}' — all transform results for this role should appear"
+                )
+
+        bad = checks.get("must_not_contain", "")
+        if bad and bad in step_title:
+            return False, (
+                f"{step_type} backfill title '{step_title}' contains "
+                f"redundant '{bad}' — should show all transform results, not just the last"
+            )
+
+    return True, ""
+
+
 def test_indicator_coverage(server, clue):
     """Verify that dependent transforms (reversal/deletion/anagram) have matching indicator steps.
 
@@ -1457,6 +1510,7 @@ ALL_TESTS = [
     ("Reveal", test_reveal),
     ("Template text", test_template_text),
     ("Assembly completion text", test_assembly_completion_text),
+    ("Backfill titles", test_backfill_titles),
     ("Indicator coverage", test_indicator_coverage),
     ("Assembly combined check", test_assembly_combined_check),
     ("Dependent prompt update", test_dependent_prompt_update),
