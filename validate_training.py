@@ -7,11 +7,12 @@ Hard checks to catch hallucinated or malformed training metadata before
 it reaches the server. Run standalone to validate clues_db.json, or
 import validate_training_item() for use in upload/load pipelines.
 
-Checks fall into three categories:
+Checks fall into four categories:
   1. Structural — required fields, valid types, indices in bounds
   2. Semantic — transforms concatenate to answer, letter counts match
   3. Convention — deterministic transform checks (reversal, anagram, etc.)
                   plus lookup-based checks (abbreviation dictionary)
+  4. Publication — publication-specific conventions (spelling, vocabulary)
 """
 
 import json
@@ -272,6 +273,213 @@ TRANSFORM_REQUIRED_FIELDS = ["role", "indices", "type", "result", "hint"]
 
 
 # ---------------------------------------------------------------------------
+# Publication-specific conventions
+# ---------------------------------------------------------------------------
+# Each publication has its own flavour. These checks produce WARNINGS
+# (not errors) since they're about likelihood, not correctness.
+
+# American spelling patterns → British equivalents
+# Each tuple: (american_regex_pattern, description)
+# These check the ANSWER field, not clue text.
+AMERICAN_SPELLING_PATTERNS = [
+    (r'(?<![A-Z])COLOR(?!A)', "American spelling: COLOR (British: COLOUR)"),
+    (r'(?<![A-Z])HONOR(?!A)', "American spelling: HONOR (British: HONOUR)"),
+    (r'(?<![A-Z])FAVOR(?!I)', "American spelling: FAVOR (British: FAVOUR)"),
+    (r'(?<![A-Z])LABOR(?!I)', "American spelling: LABOR (British: LABOUR)"),
+    (r'(?<![A-Z])HUMOR(?!E)', "American spelling: HUMOR (British: HUMOUR)"),
+    (r'(?<![A-Z])HARBOR', "American spelling: HARBOR (British: HARBOUR)"),
+    (r'(?<![A-Z])NEIGHBOR', "American spelling: NEIGHBOR (British: NEIGHBOUR)"),
+    (r'(?<![A-Z])RUMOR(?!E)', "American spelling: RUMOR (British: RUMOUR)"),
+    (r'(?<![A-Z])SPLENDOR', "American spelling: SPLENDOR (British: SPLENDOUR)"),
+    (r'(?<![A-Z])VAPOR', "American spelling: VAPOR (British: VAPOUR)"),
+    (r'(?<![A-Z])VIGOR(?!O)', "American spelling: VIGOR (British: VIGOUR)"),
+    (r'CENTER(?![A-Z])', "American spelling: CENTER (British: CENTRE)"),
+    (r'THEATER(?![A-Z])', "American spelling: THEATER (British: THEATRE)"),
+    (r'METER(?![A-Z])', "American spelling: METER (British: METRE)"),
+    (r'LITER(?![A-Z])', "American spelling: LITER (British: LITRE)"),
+    (r'FIBER(?![A-Z])', "American spelling: FIBER (British: FIBRE)"),
+    (r'SABER(?![A-Z])', "American spelling: SABER (British: SABRE)"),
+    (r'SOMBER(?![A-Z])', "American spelling: SOMBER (British: SOMBRE)"),
+    (r'SPECTER(?![A-Z])', "American spelling: SPECTER (British: SPECTRE)"),
+    (r'CALIBER(?![A-Z])', "American spelling: CALIBER (British: CALIBRE)"),
+    (r'DEFENSE(?![A-Z])', "American spelling: DEFENSE (British: DEFENCE)"),
+    (r'OFFENSE(?![A-Z])', "American spelling: OFFENSE (British: OFFENCE)"),
+    (r'LICENSE(?![A-Z])', "American spelling: LICENSE noun (British: LICENCE)"),
+    (r'PRETENSE(?![A-Z])', "American spelling: PRETENSE (British: PRETENCE)"),
+    (r'CATALOG(?![A-Z])', "American spelling: CATALOG (British: CATALOGUE)"),
+    (r'DIALOG(?![A-Z])', "American spelling: DIALOG (British: DIALOGUE)"),
+    (r'PROLOG(?![A-Z])', "American spelling: PROLOG (British: PROLOGUE)"),
+    (r'ANALOG(?![A-Z])', "American spelling: ANALOG (British: ANALOGUE)"),
+    (r'GRAY(?![A-Z])', "American spelling: GRAY (British: GREY)"),
+    (r'PLOW(?![A-Z])', "American spelling: PLOW (British: PLOUGH)"),
+    (r'PAJAMAS', "American spelling: PAJAMAS (British: PYJAMAS)"),
+    (r'ALUMINUM', "American spelling: ALUMINUM (British: ALUMINIUM)"),
+    (r'MUSTACHE', "American spelling: MUSTACHE (British: MOUSTACHE)"),
+    (r'SKEPTIC', "American spelling: SKEPTIC (British: SCEPTIC)"),
+    (r'ARCHEOLOGY', "American spelling: ARCHEOLOGY (British: ARCHAEOLOGY)"),
+    (r'PEDIATRIC', "American spelling: PEDIATRIC (British: PAEDIATRIC)"),
+    (r'ANESTHETIC', "American spelling: ANESTHETIC (British: ANAESTHETIC)"),
+    (r'HEMORRHAGE', "American spelling: HEMORRHAGE (British: HAEMORRHAGE)"),
+    (r'ENCYCLOPEDIA(?![A-Z])', "American spelling: ENCYCLOPEDIA (British: ENCYCLOPAEDIA)"),
+    (r'MANEUVER', "American spelling: MANEUVER (British: MANOEUVRE)"),
+    (r'TRAVELING(?![A-Z])', "American spelling: TRAVELING (British: TRAVELLING)"),
+    (r'TRAVELER(?![A-Z])', "American spelling: TRAVELER (British: TRAVELLER)"),
+    (r'MODELING(?![A-Z])', "American spelling: MODELING (British: MODELLING)"),
+    (r'JEWELRY(?![A-Z])', "American spelling: JEWELRY (British: JEWELLERY)"),
+]
+
+# Times-specific abbreviation extensions (beyond the general set above)
+# These are particularly common in Times puzzles due to UK focus.
+TIMES_ABBREVIATIONS = {
+    # British institutions
+    "academy": {"RA"},         # Royal Academy
+    "gallery": {"RA", "TATE"},
+    "trust": {"NT"},           # National Trust
+    "corporation": {"BBC"},
+    "health service": {"NHS"},
+    "museum": {"BM", "VA"},    # British Museum, V&A
+
+    # UK politics
+    "conservative": {"C", "CON", "TORY"},
+    "labour": {"LAB"},
+    "liberal": {"L", "LIB"},
+    "member": {"MP"},
+    "parliament": {"MP"},
+    "minister": {"PM"},
+    "prime minister": {"PM"},
+
+    # British royalty / honours
+    "monarch": {"ER", "R", "K", "Q"},
+    "queen": {"Q", "R", "ER", "QU", "HM"},
+    "king": {"K", "R", "REX", "HM"},
+    "majesty": {"HM"},
+    "honour": {"OBE", "MBE", "CBE"},
+    "decoration": {"OBE", "MBE", "CBE", "MC", "DSO", "VC", "MM"},
+    "medal": {"MC", "DSO", "VC", "MM", "GM"},
+
+    # British military
+    "gunners": {"RA"},        # Royal Artillery
+    "sappers": {"RE"},        # Royal Engineers
+    "marines": {"RM"},        # Royal Marines
+    "fleet": {"RN"},          # Royal Navy
+    "navy": {"RN"},
+    "reserves": {"TA"},       # Territorial Army
+    "volunteers": {"TA"},
+    "ranks": {"OR"},          # Other Ranks
+    "officer": {"CO", "LT", "COL"},
+
+    # British education
+    "don": {"FELLOW"},
+    "college": {"C", "ETON"},
+    "school": {"SCH", "ETON"},
+    "varsity": {"UNI", "U"},
+
+    # UK rivers (common building blocks)
+    "river": {"R", "CAM", "DEE", "DON", "EXE", "PO", "TAY", "URE", "USK", "WYE",
+              "AXE", "ESK", "OUSE", "AVON", "TEST", "TEES", "NENE", "SPEY",
+              "TAFF", "TYNE", "ISIS"},
+    "flower": {"R", "CAM", "DEE", "DON", "EXE", "TAY", "URE", "USK", "WYE",
+               "AVON", "NILE", "PO"},  # "flower" = thing that flows = river
+    "banker": {"R", "CAM", "DEE", "DON", "EXE"},  # thing with banks = river
+    "runner": {"R"},  # thing that runs = river
+
+    # Cricket (heavily used in Times)
+    "duck": {"O"},
+    "maiden": {"M", "OVER"},
+    "innings": {"BAT"},
+    "test": {"MATCH"},
+    "eleven": {"XI", "TEAM", "SIDE"},
+    "side": {"ON", "OFF", "XI"},
+
+    # British currency (old)
+    "bob": {"S"},            # shilling
+    "quid": {"L"},           # pound
+    "copper": {"CU", "P", "D"},
+    "guinea": {"G", "GN"},
+    "groat": {"D"},          # old fourpence
+    "crown": {"COIN"},
+
+    # British slang / colloquial
+    "chap": {"MAN"},
+    "fellow": {"F", "MAN"},
+    "bloke": {"MAN"},
+    "mate": {"PAL"},
+    "pub": {"INN", "LOCAL", "PH"},
+    "inn": {"PH", "PUB", "LOCAL"},
+    "public house": {"PH", "INN", "PUB"},
+    "loo": {"WC", "LAV"},
+    "telly": {"TV"},
+    "motor": {"CAR"},
+    "lorry": {"HGV"},
+    "nappy": {"DIAPER"},
+    "boot": {"TRUNK"},       # of a car
+    "bonnet": {"HOOD"},      # of a car
+    "flat": {"B", "APARTMENT"},
+    "lift": {"ELEVATOR"},
+    "queue": {"LINE"},
+    "holiday": {"BREAK", "VAC"},
+}
+
+# Publication convention registries — keyed by publication name
+PUBLICATION_CONVENTIONS = {
+    "times": {
+        "spelling_checks": AMERICAN_SPELLING_PATTERNS,
+        "extra_abbreviations": TIMES_ABBREVIATIONS,
+        "description": "The Times (London) — British English, UK institutions, cricket, military",
+    },
+    # Future publications can be added here:
+    # "guardian": { ... },
+    # "telegraph": { ... },
+}
+
+
+def _check_publication_conventions(publication, item):
+    """
+    Run publication-specific checks on a training item.
+
+    Returns list of warning strings. All publication checks are warnings,
+    not errors — they flag implausible data, not provably wrong data.
+    """
+    warnings = []
+
+    if publication not in PUBLICATION_CONVENTIONS:
+        return warnings
+
+    conventions = PUBLICATION_CONVENTIONS[publication]
+
+    # --- British spelling check on answer ---
+    answer = item.get("answer", "")
+    for pattern, description in conventions.get("spelling_checks", []):
+        if re.search(pattern, answer):
+            warnings.append(f"Publication '{publication}': {description} — answer is '{answer}'")
+
+    # --- Check abbreviation transforms against publication-specific dictionary ---
+    extra_abbrevs = conventions.get("extra_abbreviations", {})
+    for step in item.get("steps", []):
+        if step.get("type") != "assembly":
+            continue
+        words = item.get("words", [])
+        for ti, transform in enumerate(step.get("transforms", [])):
+            if transform.get("type") != "abbreviation":
+                continue
+            t_words = []
+            if "indices" in transform:
+                t_words = [words[idx] for idx in transform["indices"]
+                           if 0 <= idx < len(words)]
+            t_result = transform.get("result", "")
+            key = " ".join(t_words).lower()
+
+            # Check general dictionary first (already done in main validator)
+            # Here we just add the publication-specific entries as additional
+            # known-good mappings for informational purposes
+            if key in extra_abbrevs and t_result in extra_abbrevs[key]:
+                # Known Times abbreviation — no warning needed
+                pass
+
+    return warnings
+
+
+# ---------------------------------------------------------------------------
 # Chain-aware helpers (ported from training_handler.py)
 # ---------------------------------------------------------------------------
 
@@ -426,21 +634,35 @@ def _check_letter_selection(clue_words, result):
     return f"letter_selection check failed: '{result}' doesn't match first/last/alternating/hidden letters of '{source}'"
 
 
-def _check_abbreviation(clue_words, result):
+def _check_abbreviation(clue_words, result, publication=None):
     """Abbreviation: check against known cryptic abbreviation dictionary. Returns warning, not error."""
     key = " ".join(clue_words).lower()
+
+    # Check general dictionary
     if key in CRYPTIC_ABBREVIATIONS:
         if result in CRYPTIC_ABBREVIATIONS[key]:
             return None
-        return f"abbreviation warning: '{key}' → '{result}' not in known set {CRYPTIC_ABBREVIATIONS[key]}"
 
-    # Try individual words
+    # Try individual words in general dictionary
     for word in clue_words:
         wl = word.lower()
         if wl in CRYPTIC_ABBREVIATIONS:
             if result in CRYPTIC_ABBREVIATIONS[wl]:
                 return None
 
+    # Check publication-specific dictionary
+    if publication and publication in PUBLICATION_CONVENTIONS:
+        extra = PUBLICATION_CONVENTIONS[publication].get("extra_abbreviations", {})
+        if key in extra and result in extra[key]:
+            return None
+        for word in clue_words:
+            wl = word.lower()
+            if wl in extra and result in extra[wl]:
+                return None
+
+    # Not found in any dictionary
+    if key in CRYPTIC_ABBREVIATIONS:
+        return f"abbreviation warning: '{key}' → '{result}' not in known set {CRYPTIC_ABBREVIATIONS[key]}"
     return f"abbreviation warning: '{key}' → '{result}' not found in abbreviation dictionary"
 
 
@@ -464,6 +686,14 @@ def _parse_enumeration(enum_str):
 # Main validation function
 # ---------------------------------------------------------------------------
 
+def _extract_publication(item_id):
+    """Extract publication name from item ID like 'times-29453-11a' → 'times'."""
+    parts = item_id.split("-")
+    if len(parts) >= 2:
+        return parts[0].lower()
+    return None
+
+
 def validate_training_item(item_id, item):
     """
     Validate a single training item.
@@ -475,6 +705,9 @@ def validate_training_item(item_id, item):
     """
     errors = []
     warnings = []
+
+    # Extract publication for publication-specific checks
+    publication = _extract_publication(item_id)
 
     # --- 1. Required top-level fields ---
     required_fields = ["clue", "number", "enumeration", "answer", "words", "clue_type", "difficulty", "steps"]
@@ -631,7 +864,7 @@ def validate_training_item(item_id, item):
                         errors.append(f"Step {i}, transform {ti}: {err}")
 
                 elif t_type == "abbreviation":
-                    warn = _check_abbreviation(t_words, t_result)
+                    warn = _check_abbreviation(t_words, t_result, publication)
                     if warn:
                         warnings.append(f"Step {i}, transform {ti}: {warn}")
 
@@ -660,6 +893,11 @@ def validate_training_item(item_id, item):
             if t_type in DEPENDENT_TRANSFORM_TYPES:
                 if t_type not in indicator_types_present:
                     errors.append(f"Transform {ti} ({t_type}): no matching '{t_type}' indicator step found")
+
+    # --- Publication-specific checks ---
+    if publication:
+        pub_warnings = _check_publication_conventions(publication, item)
+        warnings.extend(pub_warnings)
 
     return errors, warnings
 

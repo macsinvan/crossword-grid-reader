@@ -161,8 +161,9 @@ Open http://localhost:8080
 | `trainer_routes.py` | Flask Blueprint — thin HTTP layer, all `/trainer/*` routes |
 | `training_handler.py` | All trainer business logic: sequencer engine, clue DB, lookup, sessions |
 | `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
-| `clues_db.json` | Pre-annotated clue database (30 clues) — development source, also used by upload script |
+| `clues_db.json` | Pre-annotated clue database (31 clues) — development source, also used by upload script |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
+| `validate_training.py` | Training metadata validator — structural, semantic, convention, and publication checks |
 | `test_regression.py` | Regression test suite: 330 tests (30 clues × 11 tests), stdlib only |
 
 ### Database & Migrations
@@ -251,7 +252,8 @@ TRAINING_SOURCE=file python3 crossword_server.py                     # Start ser
 python3 test_regression.py                                           # Run 330 regression tests (server must be running)
 python3 upload_training_metadata.py                                  # Upload clues_db.json training data to Supabase
 python3 upload_training_metadata.py --dry-run                        # Preview upload without writing
-python3 -c "import json; json.load(open('clues_db.json')); print('Valid')"  # Validate clues_db
+python3 validate_training.py                                         # Validate all training items (structural + semantic + convention + publication)
+python3 -c "import json; json.load(open('clues_db.json')); print('Valid')"  # Validate clues_db JSON syntax
 ```
 
 ## Cache Busting
@@ -313,6 +315,63 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 - Only change the clue you are asked to change
 - When a compound transform is needed, break it into a chain of simple transforms (see 18D, 28A)
 - Transform `role` fields are formatted for display automatically (`part2a` → `Part 2a`, `outer` → `Outer`)
+
+## Training Metadata Validation
+
+`validate_training.py` runs four layers of checks on every training item before it reaches the server. Errors block upload/load; warnings are logged but don't block.
+
+**Integration points:**
+- `upload_training_metadata.py` — validates before uploading (errors skip item)
+- `training_handler.py` `load_clues_db()` — validates on load (errors raise ValueError, crash loud)
+- Standalone: `python3 validate_training.py` — validates all items in `clues_db.json`
+
+### Layer 1: Structural checks
+- Required top-level fields exist (clue, number, enumeration, answer, words, clue_type, difficulty, steps)
+- `words` array matches clue text (punctuation-tolerant comparison)
+- Steps is non-empty, each has valid `type` (must be a key in `render_templates.json`)
+- Indices in bounds for steps and transforms
+- Step-specific required fields (e.g. `indicator` needs `indices`, `hint`, `indicator_type`)
+- Valid `indicator_type` values
+
+### Layer 2: Semantic checks
+- Assembly `result` == `answer`
+- Terminal transform letters match assembly result (chain-aware: dependent transforms consume predecessors)
+- Total letter count matches enumeration
+- Each transform has required fields (`role`, `indices`, `type`, `result`, `hint`)
+- Valid transform `type` (synonym/abbreviation/literal/reversal/deletion/anagram/container/letter_selection)
+- No `prompt` field on individual transforms (architecture rule)
+- Indicator coverage: every dependent transform (reversal/deletion/anagram/container) has a matching indicator step
+
+### Layer 3: Convention checks (per-transform)
+Deterministic checks — **hard errors**:
+- **literal**: result == uppercase of clue word(s)
+- **reversal**: result == reverse of consumed predecessor(s)
+- **deletion**: result is predecessor with letter(s) removed (subsequence check)
+- **anagram**: sorted letters of input == sorted letters of result
+- **container**: result is one piece inserted inside another
+- **letter_selection**: result extractable by first/last/alternating/hidden letters
+
+Lookup-based — **warnings**:
+- **abbreviation**: checked against `CRYPTIC_ABBREVIATIONS` (~200 entries) + publication-specific dictionary
+- **synonym**: no check yet (no external API)
+
+### Layer 4: Publication-specific checks
+Publication is extracted from item ID (e.g. `times-29453-11a` → `times`). All publication checks produce **warnings**, not errors.
+
+**Times (`times`) conventions:**
+- **British spelling** — answers checked against ~35 American spelling patterns (COLOR→COLOUR, CENTER→CENTRE, GRAY→GREY, etc.). Ambiguous words with valid shared meanings (tire, curb, draft) are excluded.
+- **Times abbreviation dictionary** (`TIMES_ABBREVIATIONS`, ~70 entries) — extends the general dictionary with UK-specific mappings:
+  - British institutions: RA (Royal Academy), NT (National Trust), BBC, NHS, BM, VA
+  - UK politics: CON, LAB, LIB, MP, PM, TORY
+  - British royalty/honours: ER, HM, OBE, MBE, CBE, MC, DSO, VC
+  - British military: RA (gunners), RE (sappers), RM (marines), RN (fleet/navy), TA (reserves), OR (ranks)
+  - UK education: ETON, SCH, UNI
+  - UK rivers: CAM, DEE, DON, EXE, TAY, URE, USK, WYE, AVON, etc. (including cryptic misdirections: "flower"/"banker"/"runner" = river)
+  - Cricket: duck=O, maiden=M, eleven=XI
+  - Old British currency: bob=S, quid=L, guinea=G/GN, copper=D
+  - British slang: chap=MAN, pub=INN/PH, loo=WC/LAV
+
+**Adding a new publication:** Add a new entry to `PUBLICATION_CONVENTIONS` dict in `validate_training.py` with `spelling_checks` and `extra_abbreviations` keys.
 
 ## Worktrees
 This repo uses git worktrees:
