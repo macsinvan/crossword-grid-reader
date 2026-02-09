@@ -502,9 +502,19 @@ class CrosswordPuzzle {
 
             const data = await response.json();
 
+            if (data.status === 'conflicts') {
+                this.hideModal();
+                this.showReconciliationLog(data.reconciliation_log);
+                return;
+            }
+
             if (data.success) {
                 this.hideModal();
                 this.loadPuzzleList();
+                // Show reconciliation log if there are resolved items or warnings
+                if (data.reconciliation_log && data.reconciliation_log.length > 0) {
+                    this.showReconciliationLog(data.reconciliation_log);
+                }
             } else {
                 alert(data.error || 'Failed to add answers');
             }
@@ -548,21 +558,10 @@ class CrosswordPuzzle {
                 throw new Error(data.error || 'Upload failed');
             }
 
-            // Handle reconciliation conflicts — stop before grid processing
-            if (data.status === 'conflicts') {
-                this.showReconciliationLog(data.reconciliation_log);
-                return;
-            }
-
             this.puzzle = data.puzzle;
             this.currentPuzzleInfo = data.storage;
             this.initUserGrid();
             this.renderPuzzle();
-
-            // Show reconciliation log if there are resolved items or warnings
-            if (data.reconciliation_log && data.reconciliation_log.length > 0) {
-                this.showReconciliationLog(data.reconciliation_log);
-            }
 
             if (data.warnings && data.warnings.length > 0) {
                 this.showWarnings(data.warnings);
