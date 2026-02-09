@@ -1055,8 +1055,12 @@ def _resolve_variables(text, step, clue):
                     parts.append((display, result))
                 else:
                     # Independent transform: show 'clueWord' → RESULT
+                    # Skip arrow for literals where result matches the clue word
                     clue_word = " ".join(words[idx] for idx in t["indices"]) if words else ""
-                    display = "'" + clue_word + "' \u2192 " + result
+                    if clue_word.upper().replace(" ", "") == result.replace(" ", ""):
+                        display = result
+                    else:
+                        display = "'" + clue_word + "' \u2192 " + result
                     parts.append((display, result))
             text = text.replace("{assemblyBreakdown}", " + ".join(d for d, _ in parts))
 

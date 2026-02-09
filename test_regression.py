@@ -141,6 +141,9 @@ TEST_CLUES = [
         "num_assembly_transforms": 3,
         "dependent_transform_indices": [2],  # anagram at index 2 depends on 0, 1
         "wrong_value_step0": [0, 1],
+        "check_clue_word_attribution": True,
+        "expected_clue_words_in_breakdown": ["old"],
+        "expected_not_in_breakdown": "'mater' \u2192 MATER",  # literal where result = word should not show redundant arrow
     },
 
     # 5. 3D LATECOMER — def→indicator(letter_selection)→indicator(anagram)→assembly (explicit=True)
@@ -420,7 +423,7 @@ TEST_CLUES = [
         "dependent_transform_indices": [2],  # anagram at index 2
         "wrong_value_step0": [2, 3],
         "has_anagram_chain": True,  # flag for anagram breakdown test
-        "expected_breakdown_contains": "('ad has' \u2192 ADHAS \u2192 DASHA)",  # arrow must show clue word attribution
+        "expected_breakdown_contains": "(ADHAS \u2192 DASHA)",  # literal words used as-is, no redundant arrow
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["beauty"],
     },
@@ -1230,6 +1233,16 @@ def test_assembly_completion_text(server, clue):
                     f"clue word '{word}' — breakdown should show where each "
                     f"result comes from, not just the results"
                 )
+
+    if clue.get("expected_not_in_breakdown"):
+        # Certain redundant patterns should NOT appear in the breakdown
+        bad = clue["expected_not_in_breakdown"]
+        if bad in title:
+            return False, (
+                f"Assembly completion title '{title}' contains "
+                f"redundant '{bad}' — literal transforms where the result "
+                f"matches the clue word should not show an arrow"
+            )
 
     return True, ""
 
