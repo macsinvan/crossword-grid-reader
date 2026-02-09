@@ -3,7 +3,7 @@
     "inputMode": "tap_words",
     "prompt": "Tap the definition words",
     "menuTitle": "Find the definition",
-    "completedTitle": "Definition found: '{words}' — can you find a {enumeration}-letter word for this?",
+    "completedTitle": "Definition found: '{words}' — {hint}",
     "intro": "Every cryptic clue contains a straight definition \u2014 a word or phrase that means the same as the answer, just as you\u2019d find in a dictionary.\n\nTo spot it, ignore the misleading surface story. Read the start and end of the clue separately \u2014 does either phrase describe something specific? Could it be a dictionary entry?",
     "hint": {
       "standard": "This is a standard cryptic clue. The definition is always at the very start or very end, never in the middle.",

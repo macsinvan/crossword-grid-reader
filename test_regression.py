@@ -1123,10 +1123,33 @@ def test_reveal(server, clue):
 
 
 def test_template_text(server, clue):
-    """Indicator menuTitles contain indicator_type text. Prompts are type-specific."""
+    """Indicator menuTitles contain indicator_type text. Definition completedTitle shows hint."""
     render = start_session(server, clue)
 
-    # Check indicator steps in the step list
+    # Walk to completion to check definition completedTitle
+    clue_id = render["clue_id"]
+    full_render = render
+    for step in clue["steps"]:
+        if step["inputMode"] == "assembly":
+            full_render = submit_assembly_transforms(
+                server, clue_id, step["transforms"], full_render, answer=clue["answer"]
+            )
+        else:
+            correct, full_render = submit_input(server, clue_id, step["value"])
+            if not correct:
+                return False, f"Step {step['type']} was rejected"
+
+    # Definition completed title must NOT contain prompt text
+    for s in full_render.get("steps", []):
+        if s["type"] == "definition" and s["status"] == "completed":
+            title = s.get("title", "")
+            if "can you find" in title.lower():
+                return False, (
+                    f"Definition completed title '{title}' still contains "
+                    f"prompt text 'can you find' — should show the hint instead"
+                )
+
+    # Check indicator steps in the step list (uses initial render)
     steps = render.get("steps", [])
     indicator_step_idx = 0
 
