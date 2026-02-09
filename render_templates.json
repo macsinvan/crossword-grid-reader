@@ -103,10 +103,20 @@
   },
   "fodder": {
     "inputMode": "tap_words",
-    "prompt": "Tap the word being operated on",
-    "menuTitle": "Find the fodder",
-    "completedTitle": "Fodder found: '{words}' — {hint}",
-    "intro": "Now find the word that the indicators are acting on \u2014 the raw material.",
+    "prompt": {
+      "deletion": "Which word is being shortened?",
+      "anagram": "Which words provide the letters to rearrange?",
+      "reversal": "Which words get reversed?",
+      "hidden_word": "Which words contain the hidden answer?"
+    },
+    "menuTitle": "Find the {indicatorType} fodder",
+    "completedTitle": "{indicatorType} fodder: '{words}' — {hint}",
+    "intro": {
+      "deletion": "The deletion indicator acts on a nearby word. Which one?",
+      "anagram": "The anagram indicator tells you to jumble some letters. Which words supply those letters?",
+      "reversal": "The reversal indicator tells you to reverse some letters. Which words provide the raw material?",
+      "hidden_word": "The answer is hiding across consecutive letters. Which words contain it?"
+    },
     "hint": "Look at what's left after the definition and indicators. That's your starting word.",
     "expected_source": "indices",
     "onCorrect": "'{words}' \u2014 {hint}"

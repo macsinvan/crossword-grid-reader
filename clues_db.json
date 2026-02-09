@@ -273,13 +273,10 @@
         },
         {
           "type": "fodder",
+          "indicator_type": "deletion",
           "indices": [
             3
           ],
-          "prompt": "What word is being shortened?",
-          "menuTitle": "Find the deletion fodder",
-          "completedTitle": "Deletion fodder: '{words}'",
-          "intro": "The deletion indicator is acting on a nearby word. Which one?",
           "hint": "This is the word the deletion indicator is acting on"
         },
         {
@@ -401,8 +398,7 @@
               ],
               "type": "letter_selection",
               "result": "O",
-              "hint": "'Head of office' means take the first letter — the 'head' — of the word 'office'",
-              "prompt": "'head of' signals: take the first letter of 'office' (1 letter)"
+              "hint": "'Head of office' means take the first letter — the 'head' — of the word 'office'"
             },
             {
               "role": "part2",
@@ -411,8 +407,7 @@
               ],
               "type": "literal",
               "result": "IT",
-              "hint": "'IT' is used as-is — it contributes both its letters",
-              "prompt": "'IT' — these letters go straight in (2 letters)"
+              "hint": "'IT' is used as-is — it contributes both its letters"
             },
             {
               "role": "part3",
@@ -421,8 +416,7 @@
               ],
               "type": "literal",
               "result": "PC",
-              "hint": "'PC' is used as-is — it contributes both its letters",
-              "prompt": "'PC' — these letters go straight in (2 letters)"
+              "hint": "'PC' is used as-is — it contributes both its letters"
             },
             {
               "role": "part4",
@@ -432,8 +426,7 @@
               ],
               "type": "anagram",
               "result": "OPTIC",
-              "hint": "Rearrange O + IT + PC (5 letters) — what word meaning 'concerning sight' can you make?",
-              "prompt": "'struggles' signals: rearrange the letters above (5 letters)"
+              "hint": "Rearrange O + IT + PC (5 letters) — what word meaning 'concerning sight' can you make?"
             }
           ],
           "result": "OPTIC",
@@ -675,14 +668,11 @@
         },
         {
           "type": "fodder",
+          "indicator_type": "anagram",
           "indices": [
             1,
             2
           ],
-          "menuTitle": "Find the anagram fodder",
-          "completedTitle": "Anagram fodder: '{words}'",
-          "prompt": "Which words provide the letters to rearrange?",
-          "intro": "The anagram indicator tells you to jumble some letters. Which words in the clue supply those letters?",
           "hint": "Look at what sits next to the indicator — those are the letters you need to rearrange"
         },
         {
@@ -1222,14 +1212,11 @@
         },
         {
           "type": "fodder",
+          "indicator_type": "deletion",
           "indices": [
             5,
             6
           ],
-          "prompt": "Which words provide the raw material?",
-          "menuTitle": "Find what gets shortened",
-          "completedTitle": "Fodder found: '{words}' — this supplies the letters before deletion",
-          "intro": "The deletion indicator tells you a letter is removed from something. Which words in the clue provide the starting material?",
           "hint": "'Silly speech' is the phrase that points to the word you'll delete a letter from"
         },
         {
@@ -1310,13 +1297,10 @@
         },
         {
           "type": "fodder",
+          "indicator_type": "deletion",
           "indices": [
             3
           ],
-          "prompt": "Which word supplies the starting letters?",
-          "menuTitle": "Find the word being shortened",
-          "completedTitle": "Fodder: '{words}'",
-          "intro": "The deletion indicator is acting on a nearby word. Which one provides the raw material?",
           "hint": "'Conflicts' is the word that will lose a letter"
         },
         {
@@ -1470,10 +1454,6 @@
           "indices": [
             0
           ],
-          "menuTitle": "What wraps around?",
-          "completedTitle": "'Summits' is the outer word",
-          "prompt": "Which word provides the letters that wrap around the outside?",
-          "intro": "In a container clue, one word goes inside another. Which word here is doing the 'welcoming' — providing the space for something to fit inside?",
           "hint": "'Summits' is the host — it 'welcomes' something into itself"
         },
         {
@@ -1481,10 +1461,6 @@
           "indices": [
             2
           ],
-          "menuTitle": "What goes inside?",
-          "completedTitle": "'American' goes inside",
-          "prompt": "Which word provides the letters that go inside?",
-          "intro": "You've found what wraps around. Now which word provides the letters that slot inside?",
           "hint": "'American' is the guest being welcomed in"
         },
         {
@@ -1738,6 +1714,7 @@
         },
         {
           "type": "fodder",
+          "indicator_type": "hidden_word",
           "indices": [
             3,
             4
@@ -1925,8 +1902,7 @@
               ],
               "type": "letter_selection",
               "result": "OM",
-              "hint": "'Initially' takes the first letter of each word before the comma. 'One missing' → O + M = OM.",
-              "prompt": "'initially' signals: take the first letter from 'One missing' (2 letters)"
+              "hint": "'Initially' takes the first letter of each word before the comma. 'One missing' → O + M = OM."
             },
             {
               "role": "part2",
@@ -1935,8 +1911,7 @@
               ],
               "type": "literal",
               "result": "ELECTRA",
-              "hint": "'Electra' is a proper noun used as-is — 'admitted to Electra' means the letters are admitted to (added to) ELECTRA",
-              "prompt": "'Electra' is used as-is (7 letters)"
+              "hint": "'Electra' is a proper noun used as-is — 'admitted to Electra' means the letters are admitted to (added to) ELECTRA"
             },
             {
               "role": "part3",
@@ -1946,8 +1921,7 @@
               ],
               "type": "anagram",
               "result": "LATECOMER",
-              "hint": "'Some upheaval' tells you to rearrange OM + ELECTRA. What 9-letter word meaning 'one missing' can you make?",
-              "prompt": "'some upheaval' signals: rearrange 'Electra' + the result above (9 letters)"
+              "hint": "'Some upheaval' tells you to rearrange OM + ELECTRA. What 9-letter word meaning 'one missing' can you make?"
             }
           ],
           "result": "LATECOMER",
@@ -2001,15 +1975,12 @@
         },
         {
           "type": "fodder",
+          "indicator_type": "reversal",
           "indices": [
             0,
             1,
             2
           ],
-          "prompt": "Which words does 'mounted' act on?",
-          "menuTitle": "Find what gets reversed",
-          "completedTitle": "Fodder found: '{words}' — these get reversed after transformation",
-          "intro": "The reversal indicator tells you to reverse some letters. Which words in the clue provide the raw material?",
           "hint": "Look at the words between the definition and the indicator — 'Photos I had' is the material that gets reversed"
         },
         {
@@ -2220,14 +2191,11 @@
         },
         {
           "type": "fodder",
+          "indicator_type": "anagram",
           "indices": [
             2,
             3
           ],
-          "prompt": "Which words provide the letters to rearrange?",
-          "menuTitle": "Find the anagram fodder",
-          "completedTitle": "Fodder found: '{words}' — these letters get rearranged",
-          "intro": "The anagram indicator tells you to rearrange some letters. Which words in the clue provide the raw material?",
           "hint": "'ad has' gives you the letters A-D-H-A-S to rearrange"
         },
         {
@@ -2504,14 +2472,11 @@
         },
         {
           "type": "fodder",
+          "indicator_type": "anagram",
           "indices": [
             0,
             1
           ],
-          "menuTitle": "Find the anagram fodder",
-          "completedTitle": "Fodder: '{words}'",
-          "prompt": "Which words supply the letters to rearrange?",
-          "intro": "The anagram indicator tells you to jumble some letters. Which words in the clue supply those letters?",
           "hint": "'See Dogma' — these 8 letters will rearrange into the answer"
         },
         {
