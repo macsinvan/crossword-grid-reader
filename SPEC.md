@@ -837,7 +837,7 @@ Grid Reader/
 ├── pdf_processor.py         # PDF parsing, OCR correction
 ├── clues_db.json            # Pre-annotated clue steps (flat format)
 ├── render_templates.json    # Render templates (auto-reloaded)
-├── test_regression.py       # Regression tests: 72 tests, stdlib only (server must be running)
+├── test_regression.py       # Regression tests: 270 tests, stdlib only (server must be running)
 ├── static/
 │   ├── crossword.js         # Grid UI, keyboard navigation
 │   ├── trainer.js           # Stateless trainer UI (~800 lines)
@@ -939,9 +939,18 @@ Answers with spaces (e.g., "ASWAN DAM"):
 - Assembly resultParts mirrors enumeration for letter tile spacing
 
 ### 10.6 Auto-reload
+Two mechanisms keep the server current during development:
+
+**Data file reload (no restart):**
 - `clues_db.json`: Server checks file mtime on each `/trainer/start` request
 - `render_templates.json`: Server checks file mtime on each `/trainer/start` request
-- Both auto-reload without server restart
+- Both auto-reload without server restart — just reopen the clue
+
+**Python code restart (automatic):**
+- `crossword_server.py` runs with `debug=True`, which enables Werkzeug's reloader
+- Any `.py` file change triggers an automatic server restart
+- `render_templates.json` is also listed in `extra_files` so changes trigger a restart (belt-and-suspenders with the mtime check above)
+- The reloader spawns a child process — this is normal (you'll see the startup message twice)
 
 ### 10.7 Check Answer Button
 - "Check" button next to answer boxes

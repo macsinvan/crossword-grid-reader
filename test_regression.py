@@ -1297,6 +1297,63 @@ def test_indicator_coverage(server, clue):
     return True, ""
 
 
+def test_assembly_combined_check(server, clue):
+    """Combined check: submit only terminal transforms (as the UI does) -> complete.
+
+    The combined letter display groups inputs by terminal transform index.
+    When a dependent transform (reversal/anagram) is submitted, its predecessors
+    must be recursively auto-completed so auto-skip can fire.
+    """
+    assembly_step = None
+    for step in clue["steps"]:
+        if step["inputMode"] == "assembly":
+            assembly_step = step
+            break
+    if not assembly_step:
+        return True, ""  # no assembly step
+
+    # Only test clues that have dependent transforms (chains with predecessors)
+    if not clue.get("dependent_transform_indices"):
+        return True, ""
+
+    clue_id, render = walk_to_assembly(server, clue)
+
+    # Get position map from server to find terminal transforms
+    assembly_data = render["currentStep"]["assemblyData"]
+    pos_map = assembly_data.get("positionMap", {})
+
+    # Terminal transform indices are the keys in positionMap
+    terminal_indices = {int(k) for k in pos_map.keys()}
+
+    # Submit only terminal transforms (what the combined Check button does)
+    for t in assembly_step["transforms"]:
+        if t["index"] in terminal_indices:
+            correct, render = submit_input(server, clue_id, t["value"],
+                                           transform_index=t["index"])
+            if not correct:
+                return False, (
+                    f"Terminal transform {t['index']} value '{t['value']}' "
+                    f"was rejected"
+                )
+
+    # After submitting only terminal transforms, clue should auto-complete
+    if not render.get("complete"):
+        # Check what's left
+        current = render.get("currentStep", {})
+        assembly_data = current.get("assemblyData", {})
+        transforms = assembly_data.get("transforms", [])
+        incomplete = [t for t in transforms if t["status"] != "completed"]
+        incomplete_desc = ", ".join(
+            f"{t['index']}({t['role']})" for t in incomplete
+        )
+        return False, (
+            f"Expected auto-complete after terminal transforms, "
+            f"but these transforms are still incomplete: {incomplete_desc}"
+        )
+
+    return True, ""
+
+
 # ---------------------------------------------------------------------------
 # Test runner
 # ---------------------------------------------------------------------------
@@ -1310,6 +1367,7 @@ ALL_TESTS = [
     ("Template text", test_template_text),
     ("Assembly completion text", test_assembly_completion_text),
     ("Indicator coverage", test_indicator_coverage),
+    ("Assembly combined check", test_assembly_combined_check),
 ]
 
 

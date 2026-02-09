@@ -119,8 +119,9 @@ When `step_index` increments, engine clears: `hint_visible`, `selected_indices`,
 
 **NO AI/LLM in this app.** Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
 
-**Auto-reload clues_db.json**
-The server checks file modification time on each `/trainer/start` request. If `clues_db.json` has changed, it reloads automatically - no server restart needed.
+**Auto-reload and auto-restart**
+- **JSON data files**: The server checks file mtime on each `/trainer/start` request. If `clues_db.json` or `render_templates.json` has changed, it reloads automatically — no server restart needed, just reopen the clue.
+- **Python code**: The server runs with `debug=True` (Werkzeug reloader). Any `.py` file change triggers an automatic server restart. `render_templates.json` is also in `extra_files` as a safety net.
 
 **Error out, don't fallback — MANDATORY**
 Do NOT add fallbacks in the code without explicit approval from the user. Never silently swallow errors, substitute defaults for missing data, or degrade functionality without raising an error. If something is wrong, crash with a clear message. Silent fallbacks hide bugs and cause confusion.
@@ -155,7 +156,7 @@ Open http://localhost:8080
 | `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
 | `clues_db.json` | Pre-annotated clue database (30 clues with flat step metadata) |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
-| `test_regression.py` | Regression test suite: 240 tests (30 clues × 8 tests), stdlib only |
+| `test_regression.py` | Regression test suite: 270 tests (30 clues × 9 tests), stdlib only |
 
 ## Architecture
 
@@ -230,7 +231,7 @@ SUPABASE_ANON_KEY=your-anon-key
 ## Common Commands
 ```bash
 python3 crossword_server.py                                          # Start server
-python3 test_regression.py                                           # Run 240 regression tests (server must be running)
+python3 test_regression.py                                           # Run 270 regression tests (server must be running)
 python3 -c "import json; json.load(open('clues_db.json')); print('Valid')"  # Validate clues_db
 ```
 

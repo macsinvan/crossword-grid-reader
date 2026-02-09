@@ -583,16 +583,24 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
             transforms_done[transform_index] = expected.upper()
             session["assembly_hint_index"] = None
 
-            # Auto-complete all predecessors consumed by this dependent transform
+            # Auto-complete all predecessors consumed by this dependent transform,
+            # recursively handling chained dependents (e.g. anagram consumes reversal
+            # which consumes synonym)
             DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
             if "type" not in transforms[transform_index]:
                 raise ValueError(f"Transform {transform_index} is missing 'type' field")
             t_type = transforms[transform_index]["type"]
             if t_type in DEPENDENT_TYPES and transform_index > 0:
-                consumed = _find_consumed_predecessors(transforms, transform_index)
-                for c in consumed:
-                    if c not in transforms_done:
-                        transforms_done[c] = transforms[c]["result"].upper()
+                queue = [transform_index]
+                while queue:
+                    dep = queue.pop(0)
+                    consumed = _find_consumed_predecessors(transforms, dep)
+                    for c in consumed:
+                        if c not in transforms_done:
+                            transforms_done[c] = transforms[c]["result"].upper()
+                            # If this predecessor is itself dependent, recurse
+                            if c > 0 and transforms[c]["type"] in DEPENDENT_TYPES:
+                                queue.append(c)
 
             # Check if all transforms now complete → auto-skip if answer is spelled out
             if len(transforms_done) == len(transforms):
