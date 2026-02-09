@@ -436,7 +436,7 @@
         "for",
         "Turkish",
         "leader",
-        "who’s",
+        "who's",
         "out",
         "to",
         "lunch"
@@ -500,9 +500,9 @@
               "indices": [
                 5
               ],
-              "type": "literal",
+              "type": "abbreviation",
               "result": "S",
-              "hint": "The apostrophe-s in 'who’s' gives you a literal S — possessives can smuggle in letters"
+              "hint": "In cryptics, the apostrophe-s in contractions like 'who's' smuggles in the letter S — a classic setter trick"
             },
             {
               "role": "part4",

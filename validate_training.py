@@ -197,6 +197,7 @@ CRYPTIC_ABBREVIATIONS = {
     "it": {"IT"},
     "in": {"IN"},
     "is": {"IS"},
+    "who's": {"S"},  # contraction: 's gives S
     "on": {"ON"},
     "way": {"ST", "RD", "AVE", "WAY"},
     "road": {"RD", "ST", "AVE"},
