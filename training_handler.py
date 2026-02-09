@@ -463,8 +463,23 @@ def _build_assembly_data(session, step, clue):
             raise ValueError(f"Unknown transform type '{t_type}' in clue metadata. Add it to transformPrompts in render_templates.json.")
 
         # Per-transform prompt override (for explicit wordplay), otherwise template
+        DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
         if "prompt" in t:
             prompt = t["prompt"]
+        elif t_type in DEPENDENT_TYPES and i > 0:
+            # Dependent transform: {word} is the indicator, not the input
+            consumed = _find_consumed_predecessors(transforms, i)
+            all_solved = all(c in transforms_done for c in consumed)
+            if all_solved:
+                pred_parts = [transforms_done[c] for c in consumed]
+                predecessor_letters = " + ".join(pred_parts)
+                prompt_key = t_type + "_with_input"
+                if prompt_key not in TRANSFORM_PROMPTS:
+                    raise ValueError(f"Missing '{prompt_key}' in transformPrompts in render_templates.json")
+                prompt = TRANSFORM_PROMPTS[prompt_key].format(
+                    word=clue_word, predecessorLetters=predecessor_letters, n=letter_count)
+            else:
+                prompt = TRANSFORM_PROMPTS[t_type].format(word=clue_word, n=letter_count)
         else:
             display_role = _format_role(t["role"])
             prompt = TRANSFORM_PROMPTS[t_type].format(role=display_role, word=clue_word, n=letter_count)

@@ -1354,6 +1354,85 @@ def test_assembly_combined_check(server, clue):
     return True, ""
 
 
+def test_dependent_prompt_update(server, clue):
+    """Dependent transform prompts update when predecessors are solved.
+
+    Before predecessor is solved: generic prompt (no letters shown).
+    After predecessor is solved: prompt includes predecessor letters.
+    Skips transforms that have per-clue prompt overrides (they bypass templates).
+    """
+    if not clue.get("dependent_transform_indices"):
+        return True, ""  # no dependent transforms
+
+    assembly_step = None
+    for step in clue["steps"]:
+        if step["inputMode"] == "assembly":
+            assembly_step = step
+            break
+    if not assembly_step:
+        return True, ""
+
+    clue_id, render = walk_to_assembly(server, clue)
+
+    assembly_data = render["currentStep"]["assemblyData"]
+    transforms = assembly_data["transforms"]
+
+    # Find first dependent transform
+    dep_idx = clue["dependent_transform_indices"][0]
+    dep_transform = None
+    for t in transforms:
+        if t["index"] == dep_idx:
+            dep_transform = t
+            break
+    if dep_transform is None:
+        return False, f"Dependent transform {dep_idx} not found in assembly data"
+
+    initial_prompt = dep_transform["prompt"]
+
+    # Get the predecessor transform's expected result (what should appear in prompt)
+    predecessor_value = None
+    for t in assembly_step["transforms"]:
+        if t["index"] == dep_idx - 1:
+            predecessor_value = t["value"]
+            break
+
+    # Solve the predecessor(s) for this dependent transform
+    for t in assembly_step["transforms"]:
+        if t["index"] < dep_idx:
+            correct, render = submit_input(server, clue_id, t["value"],
+                                           transform_index=t["index"])
+            if not correct:
+                return False, f"Predecessor transform {t['index']} rejected"
+
+    # Re-check the dependent transform's prompt
+    assembly_data = render["currentStep"]["assemblyData"]
+    transforms = assembly_data["transforms"]
+    for t in transforms:
+        if t["index"] == dep_idx:
+            dep_transform = t
+            break
+
+    updated_prompt = dep_transform["prompt"]
+
+    # If prompt didn't change, check if this is a per-clue override.
+    # Template-driven prompts use patterns like "tells you to reverse",
+    # "tells you to shorten", "rearrange those letters". If the initial
+    # prompt doesn't match these, it's a per-clue override — skip.
+    TEMPLATE_MARKERS = ["tells you to reverse", "tells you to shorten",
+                        "rearrange those letters"]
+    uses_template = any(m in initial_prompt for m in TEMPLATE_MARKERS)
+
+    if updated_prompt == initial_prompt:
+        if not uses_template:
+            return True, ""  # per-clue override, skip
+        return False, (
+            f"Dependent transform {dep_idx} template prompt did not update "
+            f"after predecessors solved. Still: '{updated_prompt}'"
+        )
+
+    return True, ""
+
+
 # ---------------------------------------------------------------------------
 # Test runner
 # ---------------------------------------------------------------------------
@@ -1368,6 +1447,7 @@ ALL_TESTS = [
     ("Assembly completion text", test_assembly_completion_text),
     ("Indicator coverage", test_indicator_coverage),
     ("Assembly combined check", test_assembly_combined_check),
+    ("Dependent prompt update", test_dependent_prompt_update),
 ]
 
 

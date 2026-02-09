@@ -156,7 +156,7 @@ Open http://localhost:8080
 | `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
 | `clues_db.json` | Pre-annotated clue database (30 clues with flat step metadata) |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
-| `test_regression.py` | Regression test suite: 270 tests (30 clues × 9 tests), stdlib only |
+| `test_regression.py` | Regression test suite: 300 tests (30 clues × 10 tests), stdlib only |
 
 ## Architecture
 
@@ -231,7 +231,7 @@ SUPABASE_ANON_KEY=your-anon-key
 ## Common Commands
 ```bash
 python3 crossword_server.py                                          # Start server
-python3 test_regression.py                                           # Run 270 regression tests (server must be running)
+python3 test_regression.py                                           # Run 300 regression tests (server must be running)
 python3 -c "import json; json.load(open('clues_db.json')); print('Valid')"  # Validate clues_db
 ```
 
