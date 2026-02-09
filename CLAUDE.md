@@ -161,7 +161,7 @@ Open http://localhost:8080
 | `trainer_routes.py` | Flask Blueprint — thin HTTP layer, all `/trainer/*` routes |
 | `training_handler.py` | All trainer business logic: sequencer engine, clue DB, lookup, sessions |
 | `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
-| `clues_db.json` | Pre-annotated clue database (55 clues: 30 from puzzle 29453 + 25 from puzzle 29147) — development source, also used by upload script |
+| `clues_db.json` | Pre-annotated clue database (56 clues: 30 from puzzle 29453 + 26 from puzzle 29147) — development source, also used by upload script |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
 | `validate_training.py` | Training metadata validator — structural, semantic, convention, and publication checks |
 | `test_regression.py` | Regression test suite: 330 tests (30 clues × 11 tests), stdlib only |
@@ -300,7 +300,7 @@ Present each step for confirmation: definition → indicators → fodder/outer/i
 
 ## Clue Metadata Reference
 
-All 31 clues in `clues_db.json` are converted to the flat format. When editing or adding clues, follow these patterns.
+All 56 clues in `clues_db.json` are in the flat format. When editing or adding clues, follow these patterns.
 
 ### Reference clues — study these BEFORE editing any clue:
 - **5D** — deletion + reversal chain (indicator steps, tap_words flow)
@@ -438,23 +438,39 @@ Publication is extracted from item ID (e.g. `times-29453-11a` → `times`). All 
 - **28A** — DEBUSSY: charade + letter selection (DEBUS + SY)
 - **29A** — TO ORDER: reversal (RED + ROOT → reversed)
 
-**Remaining clues (6):**
-- **10A** — WARTS AND ALL: complex container parse, needs more analysis
-- **12A** — PSEUDO: homophone — no homophone template exists yet
-- **13D** — UNINITIATED: container + reversal (UNITED contains NIT + IA) — validator needs fix for chained container predecessors
-- **21D** — GUNG HO: complex parse
-- **25A** — LEAVE-TAKING: complex container parse (LEAKING contains VET?)
-- **27A** — TIE: letter substitution — no substitution template exists yet
+**Remaining clues (6):** Each needs the wordplay fully solved before encoding. Blog parses are from Times for the Times.
 
-**Known issue:**
-- **9D** (puzzle 29453) — has wrong apostrophe and wrong transform type. Not yet fixed.
+- **10A** — "Frank has cut short walk clutching right shoe" (5,3,3) = WARTS AND ALL
+  - Blog parse: WALk (cut short) containing RT (right) + SANDAL (shoe)
+  - Problem: couldn't verify letter-by-letter how WAL+RT+SANDAL → WARTSANDALL (11 letters). Parse needs more analysis.
+- **12A** — "Pretended to beg money from speaker" (6) = PSEUDO
+  - Blog parse: homophone of SUE (beg) + DOUGH (money) → sounds like PSEUDO
+  - Blocker: **no homophone template exists yet** — needs new template in `render_templates.json`
+- **13D** — "Lay egg, fine on reflection, as one must eat" (11) = UNINITIATED
+  - Blog parse: UNITED (as one) contains NIT (egg) + IA (A1/fine reversed)
+  - Parse verified: UNI + NIT + IA + TED = UNINITIATED ✅
+  - Blocker: **validator `_check_container` fails** — the reversal (AI→IA) creates a 4th predecessor that confuses the container check. Need to teach the validator that reversed predecessors replace (not add to) their input.
+- **21D** — "Extremely enthusiastic piece first to highlight boring essay" (4,2) = GUNG HO
+  - Blog parse: GUN (piece) + G (first of highlight) + HO (boring essay — H in GO?)
+  - Problem: HO parse unclear. Possibly H (boring = drill bit?) inside GO (essay/attempt), but G is already used. Needs research.
+- **25A** — "Making disclosure about an old soldier's farewell" (5-6) = LEAVE-TAKING
+  - Blog parse: LEAKING (disclosure) containing VET (old soldier)
+  - Problem: LEAKING (7) + VET (3) = 10, but LEAVE-TAKING has 11 letters. Parse doesn't add up. Possibly "an old soldier" = A + VET (4 letters) but still unclear where insertion happens.
+- **27A** — "Husband turning to one during the match" (3) = TIE
+  - Blog parse: H (husband) replaced by I (one) in THE → TIE
+  - Blocker: **no letter substitution template exists yet** — needs new template in `render_templates.json`
 
-**Validator changes made this session:**
-- `_check_container`: now handles 3+ predecessors (multiple inner pieces concatenated)
+**Known issue (puzzle 29453 — DO NOT MODIFY 29453 DATA):**
+- **9D** — has wrong apostrophe and wrong transform type. Not yet fixed.
+
+**Validator changes made during 29147 work:**
+- `_check_container`: now handles 3+ predecessors (multiple inner pieces concatenated via permutations)
 - `_check_reversal`: now strips non-alpha characters (handles multi-word answers like TO ORDER)
-- Added to CRYPTIC_ABBREVIATIONS: commercial→AD, light source→LED, touching→RE, regarding→RE, pounds→L, unknown quantity→X/Y/Z, very loud→FF, goodbye from texter→CU, earnings for salesperson→OTE
+- Added to CRYPTIC_ABBREVIATIONS: agents→CIA, spies→CIA, female→F, male→M, commercial→AD, light source→LED, touching→RE, regarding→RE, concerning→RE, pounds→L, unknown quantity→X/Y/Z, very loud→FF, goodbye from texter→CU, earnings for salesperson→OTE, light→L, advertisement→AD
 
 **Process:** Two-phase approach: (1) Solve as AI expert with clue+definition+answer, (2) Encode as training metadata. Hints teach Times conventions (the macro-level checks become the hints).
+
+**IMPORTANT: Puzzle 29453 is the verified reference. It is 100% read-only. Never modify any `times-29453-*` entries in `clues_db.json`.**
 
 ## Worktrees
 This repo uses git worktrees:
