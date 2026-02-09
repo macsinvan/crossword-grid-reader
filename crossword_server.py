@@ -104,8 +104,10 @@ def load_clues_file(filepath):
 def _normalise_clue_text(text):
     """Normalise clue text for comparison: lowercase, collapse whitespace, strip trailing enumeration."""
     text = re.sub(r'\s+', ' ', text.strip().lower())
-    # Strip trailing enumeration like (7) or (5,3) or (5-6) or (2,4,2)
-    text = re.sub(r'\s*\([\d,\-]+\)\s*$', '', text)
+    # Strip trailing enumeration like (7) or (5,3) or (5-6) or (5- 6) or (2,4,2)
+    text = re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', text)
+    # Normalise spaces before punctuation: "slap !" → "slap!"
+    text = re.sub(r'\s+([!?])', r'\1', text)
     return text
 
 
