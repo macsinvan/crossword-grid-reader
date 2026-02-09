@@ -23,14 +23,14 @@ In charades and container insertions, the clue words are rarely used directly. E
 - Before writing ANY user-facing text, think as a cryptic crossword teacher — research the domain if needed, don't hypothesise from code structure
 
 **Assembly transform prompts — deliver the aha moment:**
-Every transform prompt in the assembly step must teach a cryptic convention, not just label an operation. The student should understand *why* this word points to those letters. Mechanical prompts like "Find a 2-letter synonym for 'in'" or "'IT' is used as-is — type it in (2 letters)" tell the student what to do but not what to learn. Instead, each clue's transform `hint` and the per-clue `prompt` override (in `clues_db.json`) should connect the clue word to the convention being used:
+Every transform prompt in the assembly step must teach a cryptic convention, not just label an operation. The student should understand *why* this word points to those letters. Mechanical prompts like "Find a 2-letter synonym for 'in'" or "'IT' is used as-is — type it in (2 letters)" tell the student what to do but not what to learn. The `transformPrompts` in `render_templates.json` and per-transform `hint` text in `clues_db.json` should connect the clue word to the convention being used:
 - **synonym**: guide the student to the specific crossword convention (e.g. "In cryptics, 'work' almost always means OP — it's one of the most common abbreviations")
 - **abbreviation**: explain the shorthand (e.g. "'number' in cryptics usually points to NO — a standard abbreviation")
 - **literal**: explain why this word is taken at face value, not as a clue to something else
 - **letter_selection**: teach the pattern (e.g. "'head of office' = take the first letter — 'head of' always means first letter in cryptics")
-- **reversal/deletion/anagram**: connect the indicator word to the operation it signals
+- **reversal/deletion/anagram/container**: connect the indicator word to the operation it signals
 
-The generic `transformPrompts` in `render_templates.json` (under the `assembly` template) provide a baseline, but the real teaching happens through per-clue `prompt` overrides and `hint` text in `clues_db.json`. When writing clue metadata, always ask: "will the student understand the cryptic trick after reading this?"
+**NO per-clue prompt overrides.** All prompts come from the generic `transformPrompts` templates in `render_templates.json`. If a template doesn't cover a case, extend the template — never add a `prompt` field to an individual transform in `clues_db.json`. The `hint` field is for clue-specific teaching (convention explanations, dictionary links); the `prompt` is always template-driven.
 
 ### Template Rules — MANDATORY
 
@@ -275,8 +275,9 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
   - WITHOUT indicators → `wordplay_type` (multiple_choice) with expected, options, hint
 - Then type-specific steps: `fodder`, `outer_word`, `inner_word` (all tap_words)
 - Final step: `assembly` with intro, failMessage, transforms array, result
-- Each transform: `{role, indices, type, result, hint}` — type is synonym/abbreviation/literal/reversal/deletion/anagram/letter_selection
-- Transforms can optionally have `lookup: {word, url}` for dictionary links and `prompt` for per-clue override of the template prompt
+- Each transform: `{role, indices, type, result, hint}` — type is synonym/abbreviation/literal/reversal/deletion/anagram/container/letter_selection
+- Transforms can optionally have `lookup: {word, url}` for dictionary links
+- **Never add a `prompt` field to individual transforms** — all prompts come from `transformPrompts` templates. Use `hint` for clue-specific teaching.
 
 ### Key rules:
 - Follow the Step 2 Rule (see above)

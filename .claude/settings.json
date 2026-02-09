@@ -1,4 +1,16 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(cd * && git merge * && git push)",
+      "Bash(git merge *)",
+      "Bash(git push)",
+      "Bash(git push *)",
+      "Bash(cd * && python3 crossword_server.py *)",
+      "Bash(*python3 crossword_server.py*)",
+      "Edit(**)",
+      "Write(**)"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {
