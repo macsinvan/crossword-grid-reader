@@ -1765,7 +1765,11 @@
               ],
               "type": "reversal",
               "result": "PSEUD",
-              "hint": "'Raised' in a down clue means read upwards — reverse DUESP to get PSEUD."
+              "hint": "'Raised' in a down clue means read upwards — reverse DUESP to get PSEUD.",
+              "lookup": {
+                "word": "pseud",
+                "url": "https://www.merriam-webster.com/dictionary/pseud"
+              }
             }
           ],
           "result": "PSEUD"

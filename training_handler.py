@@ -408,6 +408,15 @@ def check_answer(clue_id, clue, answer):
 
 # --- Internal helpers ---
 
+
+def _format_role(role):
+    """Format a transform role for display: 'part2a' → 'Part 2a', 'outer' → 'Outer'."""
+    # Insert space before first digit: 'part2a' → 'part 2a'
+    display = re.sub(r'([a-zA-Z])(\d)', r'\1 \2', role)
+    # Capitalise first letter
+    return display[0].upper() + display[1:] if display else display
+
+
 def _build_assembly_data(session, step, clue):
     """Build the assemblyData payload for an assembly step.
 
@@ -457,7 +466,8 @@ def _build_assembly_data(session, step, clue):
         if "prompt" in t:
             prompt = t["prompt"]
         else:
-            prompt = TRANSFORM_PROMPTS[t_type].format(role=t["role"], word=clue_word, n=letter_count)
+            display_role = _format_role(t["role"])
+            prompt = TRANSFORM_PROMPTS[t_type].format(role=display_role, word=clue_word, n=letter_count)
 
         # Determine status: completed, active, or locked
         if i in transforms_done:
