@@ -435,6 +435,81 @@ class PuzzleStoreSupabase:
 
         return bool(result.data)
 
+    # Training metadata methods
+
+    def get_training_clues(self) -> Dict[str, Dict]:
+        """
+        Load all clues with training_metadata from Supabase.
+
+        Returns:
+            Dict keyed by training item ID (e.g. 'times-29453-11a'),
+            with values matching the clues_db.json training_items format.
+        """
+        # Get all clues that have training metadata, joined with puzzle info
+        result = self.client.table('clues').select(
+            '*, puzzles!inner(publication_id, puzzle_number)'
+        ).not_.is_('training_metadata', 'null').execute()
+
+        items = {}
+        for row in result.data or []:
+            puzzle_info = row['puzzles']
+            pub_id = puzzle_info['publication_id']
+            puzzle_num = puzzle_info['puzzle_number']
+            clue_num = row['number']
+            direction = row['direction']
+            dir_suffix = 'a' if direction == 'across' else 'd'
+
+            item_id = f"{pub_id}-{puzzle_num}-{clue_num}{dir_suffix}"
+
+            # Reconstruct the training item format from DB columns + metadata
+            metadata = row['training_metadata']
+            item = {
+                'clue': row['text'],
+                'number': f"{clue_num}{'A' if direction == 'across' else 'D'}",
+                'enumeration': row['enumeration'],
+                'answer': row['answer'],
+            }
+            # Merge in the training metadata (words, clue_type, difficulty, steps, etc.)
+            item.update(metadata)
+
+            items[item_id] = item
+
+        return items
+
+    def save_training_metadata(self, series: str, puzzle_number: str,
+                                clue_number: int, direction: str,
+                                metadata: Dict) -> bool:
+        """
+        Save training metadata for a specific clue.
+
+        Args:
+            series: Publication series (e.g. 'times')
+            puzzle_number: Puzzle number (e.g. '29453')
+            clue_number: Clue number (e.g. 11)
+            direction: 'across' or 'down'
+            metadata: Training metadata dict (words, clue_type, difficulty, steps)
+        """
+        publication_id = self._map_series_to_publication(series)
+
+        # Get puzzle ID
+        puzzle_result = self.client.table('puzzles').select('id').eq(
+            'publication_id', publication_id
+        ).eq('puzzle_number', str(puzzle_number)).execute()
+
+        if not puzzle_result.data:
+            raise ValueError(f"Puzzle not found: {series} #{puzzle_number}")
+
+        puzzle_id = puzzle_result.data[0]['id']
+
+        # Update the clue's training_metadata
+        result = self.client.table('clues').update({
+            'training_metadata': metadata
+        }).eq('puzzle_id', puzzle_id).eq(
+            'number', clue_number
+        ).eq('direction', direction).execute()
+
+        return bool(result.data)
+
     # Progress tracking methods (new functionality)
 
     def save_progress(self, session_id: str, puzzle_id: str, grid_state: List[List[str]],

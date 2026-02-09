@@ -117,10 +117,17 @@ Answer/step input boxes sync to server on each keystroke BUT don't trigger re-re
 **Step state resets on advance**
 When `step_index` increments, engine clears: `hint_visible`, `selected_indices`, `step_expanded`, `assembly_transforms_done`, `assembly_hint_index`. Answer boxes persist across steps.
 
-**NO AI/LLM in this app.** Teaching mode uses pre-annotated step data from imported JSON files, NOT dynamically generated explanations.
+**NO AI/LLM in this app.** Teaching mode uses pre-annotated step data from the Supabase database (or JSON files in development), NOT dynamically generated explanations.
+
+**Training data source (`TRAINING_SOURCE` env var)**
+- `supabase` (default): Loads training metadata from the `training_metadata` JSONB column on the `clues` table. Requires `upload_training_metadata.py` to have been run first. No auto-reload — server restart picks up database changes.
+- `file`: Loads from `clues_db.json` file (development/testing only). Auto-reloads on file change (mtime check on each `/trainer/start` request).
+- No silent fallback between sources. If the configured source fails, the server errors out with a clear message.
 
 **Auto-reload and auto-restart**
-- **JSON data files**: The server checks file mtime on each `/trainer/start` request. If `clues_db.json` or `render_templates.json` has changed, it reloads automatically — no server restart needed, just reopen the clue.
+- **`render_templates.json`**: Server checks file mtime on each `/trainer/start` request, reloads automatically — no server restart needed.
+- **`clues_db.json`** (when `TRAINING_SOURCE=file`): Same mtime-based auto-reload as render templates.
+- **Supabase training data** (when `TRAINING_SOURCE=supabase`): No auto-reload. Restart the server to pick up database changes.
 - **Python code**: The server runs with `debug=True` (Werkzeug reloader). Any `.py` file change triggers an automatic server restart. `render_templates.json` is also in `extra_files` as a safety net.
 
 **Error out, don't fallback — MANDATORY**
@@ -142,7 +149,7 @@ Open http://localhost:8080
 | File | Purpose |
 |------|---------|
 | `crossword_server.py` | Flask server (port 8080) — infrastructure routes only |
-| `puzzle_store_supabase.py` | Supabase database storage (required) |
+| `puzzle_store_supabase.py` | Supabase database storage (required) — puzzles, clues, training metadata |
 | `pdf_processor.py` | PDF parsing, grid/clue extraction |
 | `crossword_processor.py` | Grid structure detection |
 | `templates/index.html` | Web UI (bump `?v=N` for cache busting) |
@@ -154,9 +161,16 @@ Open http://localhost:8080
 | `trainer_routes.py` | Flask Blueprint — thin HTTP layer, all `/trainer/*` routes |
 | `training_handler.py` | All trainer business logic: sequencer engine, clue DB, lookup, sessions |
 | `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
-| `clues_db.json` | Pre-annotated clue database (30 clues with flat step metadata) |
+| `clues_db.json` | Pre-annotated clue database (30 clues) — development source, also used by upload script |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
-| `test_regression.py` | Regression test suite: 300 tests (30 clues × 10 tests), stdlib only |
+| `test_regression.py` | Regression test suite: 330 tests (30 clues × 11 tests), stdlib only |
+
+### Database & Migrations
+| File | Purpose |
+|------|---------|
+| `migrations/001_initial_schema.sql` | Initial DB schema (publications, puzzles, clues, user_progress) |
+| `migrations/002_add_training_metadata.sql` | Adds `training_metadata` JSONB column to clues table |
+| `upload_training_metadata.py` | Uploads training metadata from `clues_db.json` to Supabase |
 
 ## Architecture
 
@@ -172,8 +186,9 @@ Grid Reader (8080)
      │        │        └── delegates to training_handler.py
      │        │
      │        ├── training_handler.py (ALL trainer logic)
-     │        │        ├── clues_db.json (30 annotated clues)
-     │        │        └── render_templates.json (presentation templates)
+     │        │        ├── Supabase clues.training_metadata (default, TRAINING_SOURCE=supabase)
+     │        │        ├── clues_db.json (dev fallback, TRAINING_SOURCE=file)
+     │        │        └── render_templates.json (presentation templates, always file-based)
      │        │
      │        └── puzzle_store_supabase.py → Supabase PostgreSQL
 ```
@@ -185,11 +200,11 @@ For full architecture diagrams, data models, template system details, API endpoi
 ## Teaching Mode — Key Concepts
 
 **Simple Sequencer Engine:**
-The trainer engine (`training_handler.py`, ~1050 lines) owns ALL trainer business logic: clue database loading/lookup, session management, the sequencer engine, and template variable resolution. It reads flat steps from clue metadata, looks up a render template by step type, presents each step, validates input, and advances. No nesting, no phases within steps (except `assembly` which has sub-phases for transforms). The routes layer (`trainer_routes.py`, ~150 lines) is a thin HTTP wrapper that only extracts request parameters and delegates to `training_handler`.
+The trainer engine (`training_handler.py`, ~1120 lines) owns ALL trainer business logic: clue database loading/lookup (from Supabase or file), session management, the sequencer engine, and template variable resolution. It reads flat steps from clue metadata, looks up a render template by step type, presents each step, validates input, and advances. No nesting, no phases within steps (except `assembly` which has sub-phases for transforms). The routes layer (`trainer_routes.py`, ~150 lines) is a thin HTTP wrapper that only extracts request parameters and delegates to `training_handler`.
 
 **Two-Layer Template System:**
-- Layer 1: Clue step metadata in `clues_db.json` — clue-specific data (which words, indices, expected answers, hints)
-- Layer 2: Render templates in `render_templates.json` — generic presentation logic (inputMode, prompt, intro, hint, onCorrect)
+- Layer 1: Clue step metadata — clue-specific data (which words, indices, expected answers, hints). Stored in Supabase `clues.training_metadata` (production) or `clues_db.json` (development).
+- Layer 2: Render templates in `render_templates.json` — generic presentation logic (inputMode, prompt, intro, hint, onCorrect). Always file-based.
 - Each step `type` maps 1:1 to a render template
 - For indicator steps: `indicator_type` field drives type-specific text via dict-keyed lookup and `{indicatorType}` variable
 - Assembly steps can override `failMessage`
@@ -226,12 +241,16 @@ Create `.env` file (see `.env.example`):
 ```
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
+TRAINING_SOURCE=supabase    # 'supabase' (default) or 'file' (uses clues_db.json)
 ```
 
 ## Common Commands
 ```bash
-python3 crossword_server.py                                          # Start server
-python3 test_regression.py                                           # Run 300 regression tests (server must be running)
+python3 crossword_server.py                                          # Start server (uses TRAINING_SOURCE=supabase by default)
+TRAINING_SOURCE=file python3 crossword_server.py                     # Start server with file-based training data
+python3 test_regression.py                                           # Run 330 regression tests (server must be running)
+python3 upload_training_metadata.py                                  # Upload clues_db.json training data to Supabase
+python3 upload_training_metadata.py --dry-run                        # Preview upload without writing
 python3 -c "import json; json.load(open('clues_db.json')); print('Valid')"  # Validate clues_db
 ```
 
@@ -287,6 +306,7 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 - Container insertions use transform type `container` (not `anagram`) — the template explains the insertion operation
 - Indicator indices must be ONLY the indicator word itself, not connectors like "by", "with", "in"
 - Hints must teach cryptic conventions (e.g. "'work' nearly always means OP"), not just define words
+- **Indicator hints must NOT repeat the indicator type label** — the `completedTitle` template already prefixes with `{indicatorType} indicator:`, so the hint text must not say "anagram indicator", "deletion indicator", etc. The `test_template_text` guard test enforces this.
 - Transform `type` must be accurate: use "abbreviation" not "synonym" for standard cryptic mappings
 - `words` array must exactly match the clue text (case, spelling, punctuation including —)
 - Assembly intro should teach through consequence: show what happens with raw words first, then ask why it doesn't work

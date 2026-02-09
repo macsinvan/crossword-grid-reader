@@ -36,11 +36,15 @@ def maybe_reload_render_templates():
 
 _load_render_templates()
 
-# --- Clues database (auto-reload) ---
+# --- Clues database (Supabase primary, clues_db.json for development/testing) ---
 
 _CLUES_DB = {}
+_CLUES_DB_SOURCE = None  # 'supabase' or 'file'
 _CLUES_DB_PATH = os.path.join(os.path.dirname(__file__), "clues_db.json")
 _CLUES_DB_MTIME = 0
+
+# Set TRAINING_SOURCE=file in environment to use clues_db.json (development only)
+_TRAINING_SOURCE = os.environ.get('TRAINING_SOURCE', 'supabase')
 
 
 def _normalize_quotes(text):
@@ -60,31 +64,66 @@ def _get_clue_text(clue_data):
     return clue_field
 
 
-def load_clues_db(force=False):
-    """Load the clues database from JSON file."""
-    global _CLUES_DB, _CLUES_DB_MTIME
+def _load_clues_from_supabase():
+    """Load training clues from Supabase. Raises on failure."""
+    from puzzle_store_supabase import PuzzleStoreSupabase
+    store = PuzzleStoreSupabase()
+    items = store.get_training_clues()
+    if not items:
+        raise ValueError(
+            "No training clues found in Supabase. "
+            "Run upload_training_metadata.py to populate the database, "
+            "or set TRAINING_SOURCE=file to use clues_db.json."
+        )
+    return items
+
+
+def _load_clues_from_file():
+    """Load clues from clues_db.json file (development/testing only)."""
+    global _CLUES_DB_MTIME
 
     current_mtime = os.path.getmtime(_CLUES_DB_PATH)
-    if not force and current_mtime == _CLUES_DB_MTIME:
-        return
-
     with open(_CLUES_DB_PATH, 'r') as f:
         data = json.load(f)
 
     if 'training_items' not in data:
         raise KeyError(f"clues_db.json missing 'training_items'. Keys: {list(data.keys())}")
 
-    _CLUES_DB = data['training_items']
     _CLUES_DB_MTIME = current_mtime
-    print(f"Loaded {len(_CLUES_DB)} clues from clues_db.json (mtime: {current_mtime})")
+    return data['training_items']
+
+
+def load_clues_db(force=False):
+    """Load clues from configured source (TRAINING_SOURCE env var)."""
+    global _CLUES_DB, _CLUES_DB_SOURCE, _CLUES_DB_MTIME
+
+    if not force and _CLUES_DB:
+        # For file source, check mtime for hot-reload
+        if _CLUES_DB_SOURCE == 'file':
+            current_mtime = os.path.getmtime(_CLUES_DB_PATH)
+            if current_mtime == _CLUES_DB_MTIME:
+                return
+        else:
+            return  # Supabase source — reload on server restart
+
+    if _TRAINING_SOURCE == 'file':
+        _CLUES_DB = _load_clues_from_file()
+        _CLUES_DB_SOURCE = 'file'
+        print(f"Loaded {len(_CLUES_DB)} clues from clues_db.json (TRAINING_SOURCE=file)")
+    else:
+        _CLUES_DB = _load_clues_from_supabase()
+        _CLUES_DB_SOURCE = 'supabase'
+        print(f"Loaded {len(_CLUES_DB)} clues from Supabase")
 
 
 def maybe_reload_clues_db():
-    """Reload clues_db.json if it has changed on disk."""
-    current_mtime = os.path.getmtime(_CLUES_DB_PATH)
-    if current_mtime != _CLUES_DB_MTIME:
-        print("[Auto-reload] clues_db.json changed, reloading...")
-        load_clues_db(force=True)
+    """Reload clues if source has changed."""
+    if _CLUES_DB_SOURCE == 'file':
+        current_mtime = os.path.getmtime(_CLUES_DB_PATH)
+        if current_mtime != _CLUES_DB_MTIME:
+            print("[Auto-reload] clues_db.json changed, reloading...")
+            load_clues_db(force=True)
+    # For Supabase source, no auto-reload — server restart picks up DB changes
 
 
 def lookup_clue(clue_text, puzzle_number, clue_number, direction):
