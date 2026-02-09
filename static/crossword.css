@@ -475,7 +475,7 @@ header h1 {
 .trainer-modal-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: baseline;
     padding: 16px 20px;
     background: #2c5aa0;
     color: white;
@@ -1064,7 +1064,7 @@ header h1 {
         flex-shrink: 0;
         padding: 10px 12px;
         gap: 6px;
-        align-items: center;
+        align-items: baseline;
     }
 
     #trainer-clue-number {
