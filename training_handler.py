@@ -10,6 +10,8 @@ import json
 import os
 import re
 
+from validate_training import validate_training_item
+
 # --- Render templates (auto-reload) ---
 
 RENDER_TEMPLATES = {}
@@ -114,6 +116,21 @@ def load_clues_db(force=False):
         _CLUES_DB = _load_clues_from_supabase()
         _CLUES_DB_SOURCE = 'supabase'
         print(f"Loaded {len(_CLUES_DB)} clues from Supabase")
+
+    # Validate all loaded clues
+    all_errors = []
+    for item_id, item in _CLUES_DB.items():
+        errors, warnings = validate_training_item(item_id, item)
+        for warn in warnings:
+            print(f"  ⚠ {item_id}: {warn}")
+        if errors:
+            for err in errors:
+                all_errors.append(f"{item_id}: {err}")
+    if all_errors:
+        raise ValueError(
+            f"Training metadata validation failed ({len(all_errors)} errors):\n" +
+            "\n".join(f"  - {e}" for e in all_errors)
+        )
 
 
 def maybe_reload_clues_db():

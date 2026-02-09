@@ -1,0 +1,712 @@
+#!/usr/bin/env python3
+"""
+Training Metadata Validator
+============================
+
+Hard checks to catch hallucinated or malformed training metadata before
+it reaches the server. Run standalone to validate clues_db.json, or
+import validate_training_item() for use in upload/load pipelines.
+
+Checks fall into three categories:
+  1. Structural — required fields, valid types, indices in bounds
+  2. Semantic — transforms concatenate to answer, letter counts match
+  3. Convention — deterministic transform checks (reversal, anagram, etc.)
+                  plus lookup-based checks (abbreviation dictionary)
+"""
+
+import json
+import os
+import re
+import sys
+
+# ---------------------------------------------------------------------------
+# Standard cryptic crossword abbreviations
+# ---------------------------------------------------------------------------
+# Maps lowercase clue word(s) → set of valid uppercase results.
+# Multiple words can map to the same abbreviation.
+# This is not exhaustive — a missing entry produces a warning, not an error.
+
+CRYPTIC_ABBREVIATIONS = {
+    # Titles / people
+    "journalist": {"ED"},
+    "editor": {"ED"},
+    "doctor": {"DR", "MO", "MB", "GP"},
+    "physician": {"DR", "MO", "GP"},
+    "nurse": {"EN", "RN", "SEN"},
+    "soldier": {"GI", "RE", "RA", "RM", "OR", "PTE"},
+    "private": {"GI", "PTE"},
+    "general": {"GEN"},
+    "engineer": {"RE", "CE"},
+    "sailor": {"AB", "OS", "TAR", "SALT"},
+    "artist": {"RA", "ARA"},
+    "king": {"K", "R", "REX"},
+    "queen": {"Q", "R", "ER", "QU"},
+    "prince": {"P"},
+    "princess": {"P"},
+    "bishop": {"B", "RR"},
+    "knight": {"N", "K", "SIR"},
+    "saint": {"S", "ST"},
+    "sir": {"S"},
+    "lord": {"L"},
+    "lady": {"L"},
+    "father": {"FR", "PA", "DAD"},
+    "mother": {"MA", "MOM", "DAM"},
+    "son": {"S"},
+    "daughter": {"D"},
+    "brother": {"BR", "BRO"},
+    "sister": {"SR", "SIS"},
+    "wife": {"W"},
+    "husband": {"H"},
+    "worker": {"ANT", "BEE", "HAND"},
+
+    # Directions / compass
+    "north": {"N"},
+    "south": {"S"},
+    "east": {"E"},
+    "west": {"W"},
+    "northeast": {"NE"},
+    "northwest": {"NW"},
+    "southeast": {"SE"},
+    "southwest": {"SW"},
+    "direction": {"N", "S", "E", "W", "NE", "NW", "SE", "SW"},
+    "point": {"N", "S", "E", "W", "NE", "NW", "SE", "SW"},
+    "quarter": {"N", "S", "E", "W"},
+    "left": {"L", "PORT"},
+    "right": {"R", "RT"},
+
+    # Numbers / letters
+    "number": {"N", "NO"},
+    "nothing": {"O", "NIL"},
+    "zero": {"O"},
+    "love": {"O"},
+    "duck": {"O"},
+    "nil": {"O"},
+    "one": {"I", "A", "AN", "ACE", "UN"},
+    "two": {"II"},
+    "three": {"III"},
+    "four": {"IV"},
+    "five": {"V"},
+    "six": {"VI"},
+    "seven": {"VII"},
+    "eight": {"VIII"},
+    "nine": {"IX"},
+    "ten": {"X"},
+    "eleven": {"XI"},
+    "twelve": {"XII"},
+    "fifty": {"L"},
+    "hundred": {"C"},
+    "five hundred": {"D"},
+    "thousand": {"M", "K"},
+    "a thousand": {"M", "K"},
+    "million": {"M"},
+    "unknown": {"X", "Y", "Z"},
+    "unknown quantity": {"X", "Y", "Z"},
+
+    # Music
+    "note": {"A", "B", "C", "D", "E", "F", "G", "DO", "RE", "MI", "FA", "SO", "LA", "TI", "TE"},
+    "key": {"A", "B", "C", "D", "E", "F", "G"},
+    "sharp": {"S"},
+    "flat": {"B"},
+    "loud": {"F", "FF"},
+    "very loud": {"FF"},
+    "soft": {"P", "PP"},
+    "very soft": {"PP"},
+    "quietly": {"P"},
+
+    # Countries / places
+    "america": {"US", "USA"},
+    "american": {"US"},
+    "france": {"F", "FR"},
+    "french": {"F", "FR"},
+    "germany": {"D", "DE"},
+    "german": {"D", "G"},
+    "italy": {"I", "IT"},
+    "italian": {"I", "IT"},
+    "spain": {"E", "ES"},
+    "spanish": {"E"},
+    "greece": {"GR"},
+    "greek": {"GR"},
+    "roman": {"R"},
+    "england": {"E", "ENG"},
+    "english": {"E"},
+    "scotland": {"S", "SC"},
+    "scottish": {"SC"},
+    "ireland": {"IRL"},
+    "irish": {"IR"},
+    "wales": {"W"},
+    "welsh": {"W"},
+
+    # Common abbreviations
+    "i had": {"ID"},
+    "i would": {"ID"},
+    "cold": {"C"},
+    "piano": {"P"},
+    "roughly": {"C", "CA"},
+    "about": {"C", "CA", "RE"},
+    "against": {"V", "VS"},
+    "year": {"Y", "YR"},
+    "time": {"T"},
+    "second": {"S", "SEC", "MO"},
+    "minute": {"M", "MIN", "MO"},
+    "hour": {"H", "HR"},
+    "day": {"D", "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"},
+    "week": {"W", "WK"},
+    "month": {"M", "MO", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"},
+    "age": {"ERA"},
+    "area": {"A"},
+    "article": {"A", "AN", "THE"},
+    "work": {"OP", "OPUS"},
+    "piece": {"OP", "BIT"},
+    "good": {"G"},
+    "bad": {"B"},
+    "old": {"O", "EX"},
+    "new": {"N"},
+    "small": {"S"},
+    "large": {"L"},
+    "medium": {"M"},
+    "little": {"L"},
+    "big": {"B"},
+    "very": {"V"},
+    "not": {"N"},
+    "the": {"T"},
+    "a": {"A"},
+    "an": {"AN"},
+    "it": {"IT"},
+    "in": {"IN"},
+    "is": {"IS"},
+    "on": {"ON"},
+    "way": {"ST", "RD", "AVE", "WAY"},
+    "road": {"RD", "ST", "AVE"},
+    "street": {"ST"},
+    "avenue": {"AVE", "AV"},
+    "line": {"L", "RY"},
+    "railway": {"RY", "BR"},
+    "river": {"R"},
+    "lake": {"L"},
+    "church": {"CH", "CE"},
+    "school": {"SCH"},
+    "university": {"U", "UNI"},
+    "college": {"C"},
+    "hospital": {"H"},
+    "home": {"IN"},
+    "house": {"HO"},
+    "ring": {"O"},
+    "circle": {"O"},
+    "round": {"O"},
+    "ball": {"O"},
+    "degree": {"D", "BA", "MA"},
+    "island": {"I", "IS"},
+    "pole": {"N", "S"},
+    "party": {"DO", "BALL"},
+    "energy": {"E"},
+    "power": {"P"},
+    "resistance": {"R"},
+    "current": {"I", "AC", "DC"},
+    "head": {"H"},
+    "heart": {"H"},
+    "mark": {"M"},
+    "penny": {"P", "D"},
+    "pound": {"L", "LB"},
+    "bob": {"S"},
+    "grand": {"G", "K"},
+    "copper": {"CU", "P"},
+    "gold": {"AU", "OR"},
+    "silver": {"AG"},
+    "iron": {"FE"},
+    "lead": {"PB"},
+    "tin": {"SN"},
+    "carbon": {"C"},
+    "nitrogen": {"N"},
+    "oxygen": {"O"},
+    "hydrogen": {"H"},
+    "born": {"B", "NEE"},
+    "died": {"D"},
+    "dead": {"D"},
+    "society": {"S", "SOC"},
+    "club": {"C"},
+    "association": {"A"},
+    "united": {"U"},
+    "band": {"RING", "O"},
+    "record": {"EP", "LP", "CD"},
+    "single": {"S"},
+    "run": {"R"},
+    "wicket": {"W"},
+    "over": {"O"},
+    "maiden": {"M"},
+    "bowled": {"B"},
+    "caught": {"C", "CT"},
+    "stumped": {"ST"},
+    "not out": {"NO"},
+    "duck": {"O"},
+    "boundary": {"FOUR", "SIX"},
+}
+
+# Valid template step types (from render_templates.json)
+VALID_STEP_TYPES = {"definition", "wordplay_type", "indicator", "outer_word", "inner_word", "assembly", "fodder"}
+
+# Valid transform types (from assembly.transformPrompts)
+VALID_TRANSFORM_TYPES = {"synonym", "abbreviation", "literal", "reversal", "deletion", "anagram", "container", "letter_selection"}
+
+# Valid indicator types
+VALID_INDICATOR_TYPES = {"container", "anagram", "deletion", "reversal", "ordering", "letter_selection", "hidden_word"}
+
+# Dependent transform types that require a matching indicator step
+DEPENDENT_TRANSFORM_TYPES = {"reversal", "deletion", "anagram", "container"}
+
+# Indicator type equivalences (hidden_word covers reversal)
+INDICATOR_EQUIVALENCES = {"hidden_word": {"reversal", "hidden_word"}}
+
+# Required fields per step type
+STEP_REQUIRED_FIELDS = {
+    "definition": ["indices", "hint"],
+    "wordplay_type": ["expected", "options", "hint"],
+    "indicator": ["indices", "hint", "indicator_type"],
+    "fodder": ["indices", "indicator_type"],
+    "outer_word": ["indices"],
+    "inner_word": ["indices"],
+    "assembly": ["transforms", "result"],
+}
+
+# Required fields per transform
+TRANSFORM_REQUIRED_FIELDS = ["role", "indices", "type", "result", "hint"]
+
+
+# ---------------------------------------------------------------------------
+# Chain-aware helpers (ported from training_handler.py)
+# ---------------------------------------------------------------------------
+
+def _find_consumed_predecessors(transforms, dep_index):
+    """Find predecessor indices consumed by a dependent transform.
+
+    Works backwards from dep_index, accumulating predecessors until
+    the combined letter count matches the dependent's result length.
+    """
+    t = transforms[dep_index]
+    t_type = t.get("type", "")
+    result_len = len(re.sub(r'[^A-Z]', '', t["result"].upper()))
+
+    # Deletion needs one more letter than the result
+    if t_type == "deletion":
+        target_len = result_len + 1
+    else:
+        target_len = result_len
+
+    consumed = []
+    accumulated = 0
+    for j in range(dep_index - 1, -1, -1):
+        pred_len = len(re.sub(r'[^A-Z]', '', transforms[j]["result"].upper()))
+        consumed.append(j)
+        accumulated += pred_len
+        if accumulated >= target_len:
+            break
+
+    consumed.reverse()
+    return consumed
+
+
+def _find_terminal_transforms(transforms):
+    """Identify terminal transforms — those not consumed by a later dependent."""
+    terminal = set(range(len(transforms)))
+    for i, t in enumerate(transforms):
+        t_type = t.get("type", "")
+        if t_type in DEPENDENT_TRANSFORM_TYPES:
+            consumed = _find_consumed_predecessors(transforms, i)
+            for c in consumed:
+                terminal.discard(c)
+    return terminal
+
+
+# ---------------------------------------------------------------------------
+# Deterministic transform checks
+# ---------------------------------------------------------------------------
+
+def _check_literal(clue_words, result):
+    """Literal: result must equal the uppercase of the clue word(s)."""
+    expected = " ".join(clue_words).upper().replace(" ", "")
+    if result != expected:
+        return f"literal check failed: '{' '.join(clue_words)}' should give '{expected}', got '{result}'"
+    return None
+
+
+def _check_reversal(transforms, current_idx, result):
+    """Reversal: result must be the reverse of consumed predecessors' combined result."""
+    consumed = _find_consumed_predecessors(transforms, current_idx)
+    combined = "".join(transforms[c]["result"] for c in consumed)
+    if result == combined[::-1]:
+        return None
+    return f"reversal check failed: '{result}' is not the reverse of consumed input '{combined}'"
+
+
+def _check_deletion(transforms, current_idx, result):
+    """Deletion: result must be consumed predecessor(s) with letter(s) removed."""
+    consumed = _find_consumed_predecessors(transforms, current_idx)
+    combined = "".join(transforms[c]["result"] for c in consumed)
+
+    if len(result) >= len(combined):
+        return f"deletion check failed: result '{result}' is not shorter than input '{combined}'"
+
+    # Check that result can be formed by removing letters from combined.
+    # Walk through combined, matching result characters in order.
+    ri = 0
+    for ch in combined:
+        if ri < len(result) and ch == result[ri]:
+            ri += 1
+    if ri == len(result):
+        return None
+
+    return f"deletion check failed: '{result}' cannot be formed by deleting letters from '{combined}'"
+
+
+def _check_anagram(transforms, current_idx, result):
+    """Anagram: sorted letters of consumed input must match sorted letters of result."""
+    consumed = _find_consumed_predecessors(transforms, current_idx)
+    combined = "".join(transforms[c]["result"] for c in consumed)
+
+    if sorted(combined) != sorted(result):
+        return f"anagram check failed: sorted('{combined}') != sorted('{result}')"
+    return None
+
+
+def _check_container(transforms, current_idx, result):
+    """Container: result must be one consumed piece inserted inside another."""
+    consumed = _find_consumed_predecessors(transforms, current_idx)
+    if len(consumed) < 2:
+        return f"container check failed: need at least 2 consumed predecessors, got {len(consumed)}"
+
+    predecessor_results = [transforms[c]["result"] for c in consumed]
+
+    # Try all pairs: for each pair, check if one goes inside the other
+    for i, outer in enumerate(predecessor_results):
+        for j, inner in enumerate(predecessor_results):
+            if i == j:
+                continue
+            # Try inserting inner into outer at every position
+            for pos in range(1, len(outer)):
+                combined = outer[:pos] + inner + outer[pos:]
+                if combined == result:
+                    return None
+
+    return f"container check failed: '{result}' cannot be formed by inserting one predecessor inside another (predecessors: {predecessor_results})"
+
+
+def _check_letter_selection(clue_words, result):
+    """Letter selection: result must be extractable from source words by a known method."""
+    source = " ".join(clue_words)
+    source_upper = source.upper()
+    source_no_spaces = source_upper.replace(" ", "")
+
+    # Check hidden word: contiguous letters spanning across words
+    if result in source_no_spaces:
+        return None
+
+    # Check first letters of each word
+    firsts = "".join(w[0].upper() for w in clue_words if w)
+    if result in firsts or firsts.startswith(result):
+        return None
+
+    # Check last letters of each word
+    lasts = "".join(w[-1].upper() for w in clue_words if w)
+    if result in lasts or lasts.startswith(result):
+        return None
+
+    # Check alternating letters (every other letter)
+    evens = "".join(source_no_spaces[i] for i in range(0, len(source_no_spaces), 2))
+    odds = "".join(source_no_spaces[i] for i in range(1, len(source_no_spaces), 2))
+    if result in evens or result in odds:
+        return None
+
+    # Check first letter of single word
+    if len(clue_words) == 1 and len(result) == 1 and source_upper[0] == result:
+        return None
+
+    # Check last letter of single word
+    if len(clue_words) == 1 and len(result) == 1 and source_upper[-1] == result:
+        return None
+
+    return f"letter_selection check failed: '{result}' doesn't match first/last/alternating/hidden letters of '{source}'"
+
+
+def _check_abbreviation(clue_words, result):
+    """Abbreviation: check against known cryptic abbreviation dictionary. Returns warning, not error."""
+    key = " ".join(clue_words).lower()
+    if key in CRYPTIC_ABBREVIATIONS:
+        if result in CRYPTIC_ABBREVIATIONS[key]:
+            return None
+        return f"abbreviation warning: '{key}' → '{result}' not in known set {CRYPTIC_ABBREVIATIONS[key]}"
+
+    # Try individual words
+    for word in clue_words:
+        wl = word.lower()
+        if wl in CRYPTIC_ABBREVIATIONS:
+            if result in CRYPTIC_ABBREVIATIONS[wl]:
+                return None
+
+    return f"abbreviation warning: '{key}' → '{result}' not found in abbreviation dictionary"
+
+
+# ---------------------------------------------------------------------------
+# Parse enumeration to total letter count
+# ---------------------------------------------------------------------------
+
+def _parse_enumeration(enum_str):
+    """Parse enumeration string like '7' or '5,3' or '5-6' to total letter count."""
+    # Remove spaces, split on comma or hyphen
+    parts = re.split(r'[,\-]', enum_str.replace(" ", ""))
+    total = 0
+    for p in parts:
+        p = p.strip()
+        if p.isdigit():
+            total += int(p)
+    return total
+
+
+# ---------------------------------------------------------------------------
+# Main validation function
+# ---------------------------------------------------------------------------
+
+def validate_training_item(item_id, item):
+    """
+    Validate a single training item.
+
+    Returns:
+        (errors, warnings) — two lists of strings.
+        errors = fatal issues (block upload/load)
+        warnings = informational issues (log but don't block)
+    """
+    errors = []
+    warnings = []
+
+    # --- 1. Required top-level fields ---
+    required_fields = ["clue", "number", "enumeration", "answer", "words", "clue_type", "difficulty", "steps"]
+    for field in required_fields:
+        if field not in item:
+            errors.append(f"Missing required field: '{field}'")
+
+    # If critical fields missing, can't proceed with further checks
+    if "words" not in item or "steps" not in item or "answer" not in item:
+        return errors, warnings
+
+    words = item["words"]
+    answer = item["answer"]
+    steps = item["steps"]
+
+    # --- 2. Words match clue text (ignoring punctuation) ---
+    if "clue" in item:
+        reconstructed = " ".join(words)
+        # Strip punctuation for comparison — words array omits commas, question marks, etc.
+        strip_punct = lambda s: re.sub(r'[^\w\s\'\'\-]', '', s).strip()
+        if strip_punct(reconstructed) != strip_punct(item["clue"]):
+            errors.append(f"words array doesn't match clue text: '{reconstructed}' != '{item['clue']}'")
+
+    # --- 3. Steps is non-empty, each has type ---
+    if not isinstance(steps, list) or len(steps) == 0:
+        errors.append("'steps' must be a non-empty array")
+        return errors, warnings
+
+    for i, step in enumerate(steps):
+        if "type" not in step:
+            errors.append(f"Step {i}: missing 'type' field")
+            continue
+
+        step_type = step["type"]
+
+        # --- 4. Step type is valid ---
+        if step_type not in VALID_STEP_TYPES:
+            errors.append(f"Step {i}: invalid type '{step_type}', must be one of {VALID_STEP_TYPES}")
+            continue
+
+        # --- 5. Indices in bounds ---
+        if "indices" in step:
+            for idx in step["indices"]:
+                if not isinstance(idx, int) or idx < 0 or idx >= len(words):
+                    errors.append(f"Step {i} ({step_type}): index {idx} out of bounds (words has {len(words)} items)")
+
+        # --- 6. Step-specific required fields ---
+        if step_type in STEP_REQUIRED_FIELDS:
+            for field in STEP_REQUIRED_FIELDS[step_type]:
+                if field not in step:
+                    errors.append(f"Step {i} ({step_type}): missing required field '{field}'")
+
+        # --- 13. Indicator type valid ---
+        if step_type == "indicator" and "indicator_type" in step:
+            if step["indicator_type"] not in VALID_INDICATOR_TYPES:
+                errors.append(f"Step {i} (indicator): invalid indicator_type '{step['indicator_type']}', must be one of {VALID_INDICATOR_TYPES}")
+
+        # --- Assembly-specific checks ---
+        if step_type == "assembly":
+            transforms = step.get("transforms", [])
+            assembly_result = step.get("result", "")
+
+            if not isinstance(transforms, list) or len(transforms) == 0:
+                errors.append(f"Step {i} (assembly): 'transforms' must be a non-empty array")
+                continue
+
+            # --- 7. Assembly result == answer ---
+            if assembly_result != answer:
+                errors.append(f"Step {i} (assembly): result '{assembly_result}' != answer '{answer}'")
+
+            # --- 8. Terminal transform results must produce assembly result ---
+            # Dependent transforms (reversal, deletion, anagram, container) consume
+            # their predecessors — only terminal transforms contribute to the final answer.
+            terminal = _find_terminal_transforms(transforms)
+            terminal_results = [transforms[idx].get("result", "") for idx in sorted(terminal)]
+            concat_letters = re.sub(r'[^A-Z]', '', "".join(terminal_results).upper())
+            assembly_letters = re.sub(r'[^A-Z]', '', assembly_result.upper())
+
+            # For container clues, terminal results are inserted (not concatenated).
+            # For charades with reordering, parts may not be left-to-right.
+            # Check: same letters (sorted) must match.
+            if sorted(concat_letters) != sorted(assembly_letters):
+                errors.append(f"Step {i} (assembly): terminal transform letters '{concat_letters}' don't match assembly result letters '{assembly_letters}'")
+
+            # --- 11. Total letter count matches enumeration ---
+            if "enumeration" in item:
+                expected_len = _parse_enumeration(item["enumeration"])
+                actual_len = len(assembly_letters)
+                if actual_len != expected_len:
+                    errors.append(f"Step {i} (assembly): total letters {actual_len} != enumeration {expected_len} ('{item['enumeration']}')")
+
+            # Validate each transform
+            for ti, transform in enumerate(transforms):
+                # --- 9. Transform required fields ---
+                for field in TRANSFORM_REQUIRED_FIELDS:
+                    if field not in transform:
+                        errors.append(f"Step {i}, transform {ti}: missing required field '{field}'")
+
+                if "type" not in transform or "result" not in transform:
+                    continue
+
+                t_type = transform["type"]
+                t_result = transform["result"]
+
+                # --- 10. Transform type valid ---
+                if t_type not in VALID_TRANSFORM_TYPES:
+                    errors.append(f"Step {i}, transform {ti}: invalid type '{t_type}', must be one of {VALID_TRANSFORM_TYPES}")
+                    continue
+
+                # --- 14. No prompt field on transforms ---
+                if "prompt" in transform:
+                    errors.append(f"Step {i}, transform {ti}: has 'prompt' field — prompts must come from render_templates.json, not individual transforms")
+
+                # --- 5. Transform indices in bounds ---
+                if "indices" in transform:
+                    for idx in transform["indices"]:
+                        if not isinstance(idx, int) or idx < 0 or idx >= len(words):
+                            errors.append(f"Step {i}, transform {ti}: index {idx} out of bounds (words has {len(words)} items)")
+
+                # Get clue words for this transform
+                t_words = []
+                if "indices" in transform:
+                    t_words = [words[idx] for idx in transform["indices"] if 0 <= idx < len(words)]
+
+                # --- Convention checks (15-22) ---
+                if t_type == "literal":
+                    err = _check_literal(t_words, t_result)
+                    if err:
+                        errors.append(f"Step {i}, transform {ti}: {err}")
+
+                elif t_type == "reversal":
+                    err = _check_reversal(transforms, ti, t_result)
+                    if err:
+                        errors.append(f"Step {i}, transform {ti}: {err}")
+
+                elif t_type == "deletion":
+                    err = _check_deletion(transforms, ti, t_result)
+                    if err:
+                        errors.append(f"Step {i}, transform {ti}: {err}")
+
+                elif t_type == "anagram":
+                    err = _check_anagram(transforms, ti, t_result)
+                    if err:
+                        errors.append(f"Step {i}, transform {ti}: {err}")
+
+                elif t_type == "container":
+                    err = _check_container(transforms, ti, t_result)
+                    if err:
+                        errors.append(f"Step {i}, transform {ti}: {err}")
+
+                elif t_type == "letter_selection":
+                    err = _check_letter_selection(t_words, t_result)
+                    if err:
+                        errors.append(f"Step {i}, transform {ti}: {err}")
+
+                elif t_type == "abbreviation":
+                    warn = _check_abbreviation(t_words, t_result)
+                    if warn:
+                        warnings.append(f"Step {i}, transform {ti}: {warn}")
+
+                elif t_type == "synonym":
+                    # Synonym check: no external API for now, just log for awareness
+                    pass
+
+    # --- 12. Indicator coverage ---
+    # Collect indicator types from indicator steps
+    indicator_types_present = set()
+    for step in steps:
+        if step.get("type") == "indicator" and "indicator_type" in step:
+            ind_type = step["indicator_type"]
+            # Apply equivalences
+            if ind_type in INDICATOR_EQUIVALENCES:
+                indicator_types_present.update(INDICATOR_EQUIVALENCES[ind_type])
+            else:
+                indicator_types_present.add(ind_type)
+
+    # Check each dependent transform has a matching indicator
+    for step in steps:
+        if step.get("type") != "assembly":
+            continue
+        for ti, transform in enumerate(step.get("transforms", [])):
+            t_type = transform.get("type", "")
+            if t_type in DEPENDENT_TRANSFORM_TYPES:
+                if t_type not in indicator_types_present:
+                    errors.append(f"Transform {ti} ({t_type}): no matching '{t_type}' indicator step found")
+
+    return errors, warnings
+
+
+# ---------------------------------------------------------------------------
+# Standalone runner
+# ---------------------------------------------------------------------------
+
+def validate_all(clues_db_path=None):
+    """Validate all training items in clues_db.json. Returns (total, passed, failed)."""
+    if clues_db_path is None:
+        clues_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "clues_db.json")
+
+    with open(clues_db_path) as f:
+        db = json.load(f)
+
+    items = db.get("training_items", {})
+    total = len(items)
+    passed = 0
+    failed = 0
+
+    for item_id, item in sorted(items.items()):
+        errors, warnings_list = validate_training_item(item_id, item)
+
+        if errors:
+            failed += 1
+            print(f"\n✗ {item_id} ({item.get('number', '?')}: {item.get('answer', '?')})")
+            for err in errors:
+                print(f"  ERROR: {err}")
+            for warn in warnings_list:
+                print(f"  WARNING: {warn}")
+        elif warnings_list:
+            passed += 1
+            print(f"\n⚠ {item_id} ({item.get('number', '?')}: {item.get('answer', '?')})")
+            for warn in warnings_list:
+                print(f"  WARNING: {warn}")
+        else:
+            passed += 1
+            print(f"✓ {item_id}")
+
+    print(f"\n{'='*40}")
+    print(f"Total: {total}  Passed: {passed}  Failed: {failed}")
+
+    return total, passed, failed
+
+
+if __name__ == "__main__":
+    path = sys.argv[1] if len(sys.argv) > 1 else None
+    total, passed, failed = validate_all(path)
+    sys.exit(1 if failed > 0 else 0)

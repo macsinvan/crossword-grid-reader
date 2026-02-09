@@ -25,6 +25,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from puzzle_store_supabase import PuzzleStoreSupabase
+from validate_training import validate_training_item
 
 
 def parse_training_id(item_id):
@@ -89,6 +90,20 @@ def main():
 
     for item_id, item in training_items.items():
         try:
+            # Validate before uploading
+            validation_errors, validation_warnings = validate_training_item(item_id, item)
+
+            if validation_warnings:
+                for warn in validation_warnings:
+                    print(f"  ⚠ {item_id}: {warn}")
+
+            if validation_errors:
+                failed += 1
+                for err in validation_errors:
+                    print(f"  ✗ {item_id}: {err}")
+                errors.append(f"{item_id}: {len(validation_errors)} validation error(s)")
+                continue
+
             publication, puzzle_number, clue_number, direction = parse_training_id(item_id)
             metadata = extract_metadata(item)
 
