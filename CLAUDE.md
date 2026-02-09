@@ -65,12 +65,12 @@ Every template's user-facing text must connect to these high-level coaching insi
 
 ### Step 2 Rule: Indicators vs No-Indicators
 
-After the student finds the definition, step 2 depends on whether the clue type uses indicator words:
+After the student finds the definition, step 2 depends on whether the clue has indicator words:
 
-- **Clue types WITH indicators** (anagram, container, hidden, deletion, reversal): Show word chips (`tap_words`) so the student can find and tap the indicator word(s). The indicator step comes next.
-- **Clue types WITHOUT indicators** (charade, double definition): Show multiple choice options (`multiple_choice`) so the student can select the clue type. There are no indicator words to find, so word chips are not shown — the student just picks from a list.
+- **Clues WITH indicators** (anagram, container, hidden, deletion, reversal — and charades that contain these): Show word chips (`tap_words`) so the student can find and tap the indicator word(s). A clue can have multiple indicator steps (e.g. 26A has both a reversal and a container indicator). Every dependent transform (reversal, deletion, anagram) in the assembly MUST have a corresponding indicator step — the `test_indicator_coverage` test enforces this.
+- **Clues WITHOUT indicators** (pure charades, double definition): Show multiple choice options (`multiple_choice`) so the student can select the clue type. There are no indicator words to find, so word chips are not shown — the student just picks from a list.
 
-This is why 5D (deletion — has indicator "A lot of") shows word chips at step 2, while 2D (anagram — has indicator "Crooked") also shows word chips. A charade clue would show multiple choice instead because charades typically have no indicator words.
+Examples: 5D (deletion — indicator "A lot of") and 2D (anagram — indicator "Crooked") show word chips at step 2. 26A (charade with reversal+container) has two indicator steps for "back" and "in". Pure charades like 4A and 25A show multiple choice instead.
 
 ## Communication Rules
 
@@ -155,7 +155,7 @@ Open http://localhost:8080
 | `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
 | `clues_db.json` | Pre-annotated clue database (30 clues with flat step metadata) |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
-| `test_regression.py` | Regression test suite: 210 tests (30 clues × 7 tests), stdlib only |
+| `test_regression.py` | Regression test suite: 240 tests (30 clues × 8 tests), stdlib only |
 
 ## Architecture
 
@@ -184,7 +184,7 @@ For full architecture diagrams, data models, template system details, API endpoi
 ## Teaching Mode — Key Concepts
 
 **Simple Sequencer Engine:**
-The trainer engine (`training_handler.py`, ~950 lines) owns ALL trainer business logic: clue database loading/lookup, session management, the sequencer engine, and template variable resolution. It reads flat steps from clue metadata, looks up a render template by step type, presents each step, validates input, and advances. No nesting, no phases within steps (except `assembly` which has sub-phases for transforms). The routes layer (`trainer_routes.py`, ~150 lines) is a thin HTTP wrapper that only extracts request parameters and delegates to `training_handler`.
+The trainer engine (`training_handler.py`, ~1050 lines) owns ALL trainer business logic: clue database loading/lookup, session management, the sequencer engine, and template variable resolution. It reads flat steps from clue metadata, looks up a render template by step type, presents each step, validates input, and advances. No nesting, no phases within steps (except `assembly` which has sub-phases for transforms). The routes layer (`trainer_routes.py`, ~150 lines) is a thin HTTP wrapper that only extracts request parameters and delegates to `training_handler`.
 
 **Two-Layer Template System:**
 - Layer 1: Clue step metadata in `clues_db.json` — clue-specific data (which words, indices, expected answers, hints)
@@ -230,7 +230,7 @@ SUPABASE_ANON_KEY=your-anon-key
 ## Common Commands
 ```bash
 python3 crossword_server.py                                          # Start server
-python3 test_regression.py                                           # Run 72 regression tests (server must be running)
+python3 test_regression.py                                           # Run 240 regression tests (server must be running)
 python3 -c "import json; json.load(open('clues_db.json')); print('Valid')"  # Validate clues_db
 ```
 
@@ -243,60 +243,45 @@ When changing JS/CSS files, bump version in `templates/index.html`:
 ## Mobile Design
 Grid uses CSS Grid with `1fr` units, NOT fixed pixel sizes. See `SPEC.md` Section 11 for full details.
 
-## Pickup Instructions — Clue Conversion
+## Clue Metadata Reference
 
-Convert all 30 clues in `clues_db.json` from the old format to the new flat format with teaching steps. Verify each converted clue works end-to-end (API test or browser).
+All 30 clues in `clues_db.json` are converted to the flat format. When editing or adding clues, follow these patterns.
 
-### Progress
-
-**Converted and verified (30 clues — all complete):**
-1A, 1D, 2D, 3D, 4A, 5D, 6D, 7D, 8D, 9D, 10A, 11A, 12A, 13A, 14D, 15A, 16D, 17D, 18D, 19A, 20D, 21D, 22A, 23D, 24A, 25A, 26A, 26D, 27A, 28A
-
-### Conversion Method
-
-1. Read the old format entry for the clue
-2. Analyze the cryptic wordplay — verify the breakdown is correct
-3. Map to step flow: definition → indicator/wordplay_type → type-specific → assembly
-4. Choose indicator words carefully — only the actual indicator, not connectors ("divided" not "divided by")
-5. Break compound transforms into chains where possible (see 18D, 28A for examples)
-6. Write teaching hints that explain cryptic conventions, not just state facts
-7. Convert the JSON entry in clues_db.json
-8. Validate JSON
-9. Test all steps via API (start session → input each step → verify correct + complete)
-
-### Reference clues — study these BEFORE converting any new clue:
-- **5D** — deletion + reversal chain (indicator clues, tap_words flow)
+### Reference clues — study these BEFORE editing any clue:
+- **5D** — deletion + reversal chain (indicator steps, tap_words flow)
 - **1A** — container (definition → indicator → outer_word → inner_word → assembly)
 - **17D** — container (same pattern as 1A)
-- **4A** — charade (no indicators, multiple_choice wordplay_type step)
-- **25A** — charade (same pattern as 4A)
+- **4A** — pure charade (no indicators, multiple_choice wordplay_type step)
+- **25A** — pure charade (same pattern as 4A)
 - **6D** — charade with ordering indicator ("after")
+- **22A** — charade with anagram indicator ("taking")
+- **26A** — charade with reversal + container indicators ("back", "in")
 - **28A** — charade with reversal chain (CA + RASE→reversed→ESAR)
 - **18D** — charade with reversal of compound (FLEE + G+NIT→reversed→TING)
 - **12A** — anagram with fodder pieces (literal parts + final anagram)
+- **23D** — hidden reversed word with dictionary lookup on transform
 
-### Format Reference
-
-**Old format** has nested `clue` object with `text`/`enumeration`/`answer`/`definition`, separate `metadata`, `publicationId`, `difficulty` with nested ratings, `verified` flag, and steps using `standard_definition`/`anagram`/etc types with `indicator`/`pieces`/`fodder` sub-objects.
-
-**New flat format** — top-level fields:
+### Flat Format — top-level fields:
 ```
 clue (string), number, enumeration, answer, words (array matching clue text exactly),
 clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 ```
 
-**Step types and flows:**
+### Step types and flows:
 - Step 1 always: `definition` (tap_words) — indices, position, hint
-- Step 2 depends on clue type (Step 2 Rule above):
-  - WITH indicators → `indicator` (tap_words) with menuTitle, completedTitle, prompt, intro, hint
+- Step 2 depends on clue (Step 2 Rule above):
+  - WITH indicators → `indicator` (tap_words) — can have multiple indicator steps per clue
   - WITHOUT indicators → `wordplay_type` (multiple_choice) with expected, options, hint
 - Then type-specific steps: `fodder`, `outer_word`, `inner_word` (all tap_words)
 - Final step: `assembly` with intro, failMessage, transforms array, result
 - Each transform: `{role, indices, type, result, hint}` — type is synonym/abbreviation/literal/reversal/deletion/anagram/letter_selection
+- Transforms can optionally have `lookup: {word, url}` for dictionary links and `prompt` for per-clue override of the template prompt
 
-**Key rules:**
+### Key rules:
 - Follow the Step 2 Rule (see above)
+- Every dependent transform (reversal/deletion/anagram) in the assembly MUST have a matching indicator step — `test_indicator_coverage` enforces this
 - Indicator steps must have `indicator_type` field (container, anagram, deletion, reversal, ordering, letter_selection, hidden_word) — the template uses this for type-specific text
+- Indicator type equivalences: `hidden_word` covers `reversal`; `container` covers `anagram` (container insertions are modeled as anagram transforms)
 - Indicator indices must be ONLY the indicator word itself, not connectors like "by", "with", "in"
 - Hints must teach cryptic conventions (e.g. "'work' nearly always means OP"), not just define words
 - Transform `type` must be accurate: use "abbreviation" not "synonym" for standard cryptic mappings
@@ -304,6 +289,7 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 - Assembly intro should teach through consequence: show what happens with raw words first, then ask why it doesn't work
 - Only change the clue you are asked to change
 - When a compound transform is needed, break it into a chain of simple transforms (see 18D, 28A)
+- Transform `role` fields are formatted for display automatically (`part2a` → `Part 2a`, `outer` → `Outer`)
 
 ## Worktrees
 This repo uses git worktrees:
