@@ -281,7 +281,7 @@ def process_pdf_and_store(pdf_file, answers_file=None):
         # Save answers file if provided
         answers_data = None
         if answers_file and answers_file.filename:
-            answers_path = os.path.join(tmpdir, 'answers_file')
+            answers_path = os.path.join(tmpdir, answers_file.filename)
             answers_file.save(answers_path)
             answers_data = load_clues_file(answers_path)
 
@@ -503,7 +503,7 @@ def add_answers(series, puzzle_number):
     answers_file = request.files['answers_file']
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        answers_path = os.path.join(tmpdir, 'answers_file')
+        answers_path = os.path.join(tmpdir, answers_file.filename)
         answers_file.save(answers_path)
 
         try:
