@@ -1045,13 +1045,13 @@ def _resolve_variables(text, step, clue):
                 result = t["result"].upper()
                 if t_type in DEPENDENT_TYPES and parts:
                     consumed = _find_consumed_predecessors(transforms, i)
-                    # Pop all consumed predecessors — use raw results for the arrow
-                    consumed_raws = []
+                    # Pop all consumed predecessors — preserve their display text
+                    consumed_displays = []
                     for _ in consumed:
                         if parts:
-                            _, raw = parts.pop()
-                            consumed_raws.insert(0, raw)
-                    display = "(" + " + ".join(consumed_raws) + " \u2192 " + result + ")"
+                            disp, _ = parts.pop()
+                            consumed_displays.insert(0, disp)
+                    display = "(" + " + ".join(consumed_displays) + " \u2192 " + result + ")"
                     parts.append((display, result))
                 else:
                     # Independent transform: show 'clueWord' → RESULT

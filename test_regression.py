@@ -276,7 +276,7 @@ TEST_CLUES = [
         "dependent_transform_indices": [2],  # deletion at index 2
         "wrong_value_step0": [1, 2],
         "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["antique"],
+        "expected_clue_words_in_breakdown": ["copying antique", "pine"],
     },
 
     # 10. 28A CAESAR — def→indicator(reversal)→assembly (reversal chain)
@@ -420,7 +420,7 @@ TEST_CLUES = [
         "dependent_transform_indices": [2],  # anagram at index 2
         "wrong_value_step0": [2, 3],
         "has_anagram_chain": True,  # flag for anagram breakdown test
-        "expected_breakdown_contains": "(ADHAS \u2192 DASHA)",  # arrow must be parenthesised to show only ADHAS transforms
+        "expected_breakdown_contains": "('ad has' \u2192 ADHAS \u2192 DASHA)",  # arrow must show clue word attribution
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["beauty"],
     },
@@ -612,7 +612,7 @@ TEST_CLUES = [
         "dependent_transform_indices": [2],
         "wrong_value_step0": [0, 1],
         "has_multi_predecessor_chain": True,  # reversal at index 2 consumes PICS(4)+ID(2)=6 letters
-        "expected_breakdown_contains": "(PICS + ID \u2192 DISCIP)",  # NOT just (ID → DISCIP)
+        "expected_breakdown_contains": "('Photos' \u2192 PICS + 'I had' \u2192 ID \u2192 DISCIP)",  # show clue word attribution for all predecessors
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["cover"],
     },
