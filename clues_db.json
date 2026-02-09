@@ -2653,6 +2653,94 @@
           "result": "WINDSWEPT"
         }
       ]
+    },
+    "times-29147-1a": {
+      "id": "times-29147-1a",
+      "clue": "When acting clumsily journalist is overcome by remorse",
+      "number": "1A",
+      "enumeration": "7",
+      "answer": "ASHAMED",
+      "words": [
+        "When",
+        "acting",
+        "clumsily",
+        "journalist",
+        "is",
+        "overcome",
+        "by",
+        "remorse"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "definition": "easy",
+        "wordplay": "easy",
+        "overall": "easy"
+      },
+      "steps": [
+        {
+          "type": "definition",
+          "indices": [
+            5,
+            6,
+            7
+          ],
+          "hint": "Feeling shame or guilt — 'overcome by remorse' is the straight definition",
+          "lookup": {
+            "word": "ashamed",
+            "url": "https://www.merriam-webster.com/dictionary/ashamed"
+          }
+        },
+        {
+          "type": "wordplay_type",
+          "expected": "Charade",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "hint": "No indicator words here — the parts just join end to end. That's a charade."
+        },
+        {
+          "type": "assembly",
+          "failMessage": "'When acting clumsily journalist' is 30 letters — what does each word really mean?",
+          "transforms": [
+            {
+              "role": "part1",
+              "indices": [
+                0
+              ],
+              "type": "synonym",
+              "result": "AS",
+              "hint": "'As' means 'when' — as in 'as I was leaving' means 'when I was leaving'"
+            },
+            {
+              "role": "part2",
+              "indices": [
+                1,
+                2
+              ],
+              "type": "synonym",
+              "result": "HAM",
+              "hint": "A 'ham' is someone who acts clumsily or over-the-top — 'hamming it up'",
+              "lookup": {
+                "word": "ham",
+                "url": "https://www.merriam-webster.com/dictionary/ham"
+              }
+            },
+            {
+              "role": "part3",
+              "indices": [
+                3
+              ],
+              "type": "abbreviation",
+              "result": "ED",
+              "hint": "In cryptics, 'journalist' almost always means ED — short for editor"
+            }
+          ],
+          "result": "ASHAMED"
+        }
+      ]
     }
   },
   "import_logs": {
