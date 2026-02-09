@@ -448,7 +448,7 @@ def _build_assembly_data(session, step, clue):
         raw_list = "'" + "' and '".join(raw_words) + "'"
         fail_message = template["defaultFailMessage"].format(rawWordsList=raw_list)
 
-    DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
+    DEPENDENT_TYPES = {"deletion", "reversal", "anagram", "container"}
 
     # Build transform display data
     transform_list = []
@@ -463,7 +463,7 @@ def _build_assembly_data(session, step, clue):
             raise ValueError(f"Unknown transform type '{t_type}' in clue metadata. Add it to transformPrompts in render_templates.json.")
 
         # Per-transform prompt override (for explicit wordplay), otherwise template
-        DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
+        DEPENDENT_TYPES = {"deletion", "reversal", "anagram", "container"}
         if "prompt" in t:
             prompt = t["prompt"]
         elif t_type in DEPENDENT_TYPES and i > 0:
@@ -601,7 +601,7 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
             # Auto-complete all predecessors consumed by this dependent transform,
             # recursively handling chained dependents (e.g. anagram consumes reversal
             # which consumes synonym)
-            DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
+            DEPENDENT_TYPES = {"deletion", "reversal", "anagram", "container"}
             if "type" not in transforms[transform_index]:
                 raise ValueError(f"Transform {transform_index} is missing 'type' field")
             t_type = transforms[transform_index]["type"]
@@ -683,7 +683,7 @@ def _find_consumed_predecessors(transforms, dep_index):
 
     Returns a list of predecessor indices in ascending order.
     """
-    DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
+    DEPENDENT_TYPES = {"deletion", "reversal", "anagram", "container"}
     t = transforms[dep_index]
     t_type = t["type"]
     result_len = len(re.sub(r'[^A-Z]', '', t["result"].upper()))
@@ -711,7 +711,7 @@ def _find_terminal_transforms(transforms):
 
     Returns a set of terminal transform indices.
     """
-    DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
+    DEPENDENT_TYPES = {"deletion", "reversal", "anagram", "container"}
     terminal = set(range(len(transforms)))
     for i, t in enumerate(transforms):
         if "type" not in t:
@@ -991,7 +991,7 @@ def _resolve_variables(text, step, clue):
     # {assemblyBreakdown} — build from transforms: show the assembly journey
     if "{assemblyBreakdown}" in text and "transforms" in step:
         transforms = step["transforms"]
-        DEPENDENT_TYPES = {"deletion", "reversal", "anagram"}
+        DEPENDENT_TYPES = {"deletion", "reversal", "anagram", "container"}
 
         # Detect container clues (outer/inner roles)
         roles = {t["role"] for t in transforms}

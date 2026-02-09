@@ -280,9 +280,10 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 
 ### Key rules:
 - Follow the Step 2 Rule (see above)
-- Every dependent transform (reversal/deletion/anagram) in the assembly MUST have a matching indicator step — `test_indicator_coverage` enforces this
+- Every dependent transform (reversal/deletion/anagram/container) in the assembly MUST have a matching indicator step — `test_indicator_coverage` enforces this
 - Indicator steps must have `indicator_type` field (container, anagram, deletion, reversal, ordering, letter_selection, hidden_word) — the template uses this for type-specific text
-- Indicator type equivalences: `hidden_word` covers `reversal`; `container` covers `anagram` (container insertions are modeled as anagram transforms)
+- Indicator type equivalences: `hidden_word` covers `reversal`
+- Container insertions use transform type `container` (not `anagram`) — the template explains the insertion operation
 - Indicator indices must be ONLY the indicator word itself, not connectors like "by", "with", "in"
 - Hints must teach cryptic conventions (e.g. "'work' nearly always means OP"), not just define words
 - Transform `type` must be accurate: use "abbreviation" not "synonym" for standard cryptic mappings

@@ -332,7 +332,7 @@ TEST_CLUES = [
         "indicator_types": ["reversal", "container"],
         "assembly_explicit": False,
         "num_assembly_transforms": 5,
-        "dependent_transform_indices": [2, 4],  # reversal at 2, anagram at 4
+        "dependent_transform_indices": [2, 4],  # reversal at 2, container at 4
         "wrong_value_step0": [0, 1],
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["Turn"],
@@ -1253,11 +1253,10 @@ def test_indicator_coverage(server, clue):
         return True, ""  # can't check without metadata
 
     steps = clue_entry.get("steps", [])
-    INDICATOR_TYPES = {"deletion", "reversal", "anagram"}
+    INDICATOR_TYPES = {"deletion", "reversal", "anagram", "container"}
 
     # Collect indicator types covered by indicator steps
     # hidden_word indicators also cover reversal (reversed hidden words)
-    # container indicators also cover anagram (container insertions are modeled as anagram transforms)
     indicator_types_covered = set()
     for s in steps:
         if s["type"] == "indicator":
@@ -1265,8 +1264,6 @@ def test_indicator_coverage(server, clue):
             indicator_types_covered.add(ind_type)
             if ind_type == "hidden_word":
                 indicator_types_covered.add("reversal")
-            if ind_type == "container":
-                indicator_types_covered.add("anagram")
 
     # Check assembly transforms: if a dependent type appears, a matching indicator step should exist
     # Map transform types to their indicator types
@@ -1274,6 +1271,7 @@ def test_indicator_coverage(server, clue):
         "reversal": "reversal",
         "deletion": "deletion",
         "anagram": "anagram",
+        "container": "container",
     }
 
     for s in steps:
@@ -1419,7 +1417,8 @@ def test_dependent_prompt_update(server, clue):
     # "tells you to shorten", "rearrange those letters". If the initial
     # prompt doesn't match these, it's a per-clue override — skip.
     TEMPLATE_MARKERS = ["tells you to reverse", "tells you to shorten",
-                        "rearrange those letters"]
+                        "rearrange those letters",
+                        "tells you one piece goes inside another"]
     uses_template = any(m in initial_prompt for m in TEMPLATE_MARKERS)
 
     if updated_prompt == initial_prompt:
