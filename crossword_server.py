@@ -39,7 +39,16 @@ app.register_blueprint(trainer_bp, url_prefix='/trainer')
 def load_clues_file(filepath):
     """
     Load clues from a YAML file.
-    Returns data in the standard YAML format.
+
+    Accepts a flat list format where each entry has:
+      - number: "1A" or "5D" (direction embedded)
+      - text: clue text
+      - answer: answer string
+      - enumeration: e.g. "7" or "5,3"
+      - definition, solve_guide: optional extra fields (preserved)
+
+    Returns data in the standard across/down format:
+      { 'across': [{number, clue, answer, enumeration, ...}], 'down': [...] }
     """
     filename = os.path.basename(filepath).lower()
 
@@ -48,7 +57,48 @@ def load_clues_file(filepath):
 
     with open(filepath, 'r') as f:
         data = yaml.safe_load(f)  # raises YAMLError with details
+
+    # If already in across/down format, return as-is
+    if isinstance(data, dict) and ('across' in data or 'down' in data):
         return data
+
+    # Flat list format: split into across/down by parsing number field
+    if not isinstance(data, list):
+        raise ValueError(f"Unexpected YAML structure: expected a list or dict with across/down keys")
+
+    across = []
+    down = []
+
+    for entry in data:
+        number_str = str(entry.get('number', ''))
+        match = re.match(r'^(\d+)\s*([AaDd])$', number_str)
+        if not match:
+            raise ValueError(f"Invalid clue number format: '{number_str}'. Expected e.g. '1A' or '5D'")
+
+        num = int(match.group(1))
+        direction = match.group(2).upper()
+
+        clue_entry = {
+            'number': num,
+            'clue': entry.get('text', ''),
+            'answer': entry.get('answer', ''),
+            'enumeration': entry.get('enumeration', ''),
+        }
+
+        # Preserve extra fields
+        for key in ('definition', 'solve_guide'):
+            if key in entry:
+                clue_entry[key] = entry[key]
+
+        if direction == 'A':
+            across.append(clue_entry)
+        else:
+            down.append(clue_entry)
+
+    across.sort(key=lambda x: x['number'])
+    down.sort(key=lambda x: x['number'])
+
+    return {'across': across, 'down': down}
 
 
 def _normalise_clue_text(text):

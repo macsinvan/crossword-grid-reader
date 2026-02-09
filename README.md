@@ -70,17 +70,27 @@ Your progress auto-saves to browser localStorage and survives page refresh.
 
 ### Answers File (Optional)
 
-YAML format with clue text and answers:
+Flat YAML list with direction embedded in the number field:
 ```yaml
-across:
-  - number: 1
-    clue: "Embankment architect lengthened with cob? (5,3)"
-    answer: "ASWANDAM"
-down:
-  - number: 1
-    clue: "Singer in steamy atmosphere (6)"
-    answer: "SCREEN"
+- number: 1A
+  text: "When acting clumsily journalist is overcome by remorse"
+  enumeration: '7'
+  answer: ASHAMED
+  definition:
+    - text: overcome by remorse
+      position: end
+  solve_guide: AS (when) + HAM (acting clumsily) + ED (journalist).
+- number: 1D
+  text: "Bloodless revolution for agents capturing base"
+  enumeration: '7'
+  answer: ANAEMIC
+  definition:
+    - text: Bloodless
+      position: start
+  solve_guide: reversal of CIA containing MEAN.
 ```
+
+Required fields: `number` (e.g. "1A", "5D"), `text`, `answer`. Optional: `enumeration`, `definition`, `solve_guide`.
 
 The clue text is cross-referenced against the PDF's OCR-extracted text during import. Differences are auto-resolved where possible and flagged for review in `imports/<series>_<number>_reconciliation.json`.
 
