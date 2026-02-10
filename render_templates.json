@@ -96,7 +96,7 @@
     },
     "defaultFailMessage": {
       "default": "Try putting {rawWordsList} together \u2014 it doesn\u2019t spell anything useful, does it? So what is each word really telling you?",
-      "double_definition": "Both definitions point to the same answer \u2014 type it in."
+      "double_definition": "All definitions point to the same answer \u2014 type it in."
     },
     "completedTextTemplates": {
       "independent": "'{clueWord}' \u2192 {result}",

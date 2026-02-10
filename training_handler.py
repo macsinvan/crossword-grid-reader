@@ -121,6 +121,17 @@ def get_render(clue_id, clue):
         return _build_all_done(session, clue)
 
     step = steps[step_index]
+
+    # Auto-complete assembly for double definitions — no transforms to show,
+    # the student just types the answer in the answer box
+    if step["type"] == "assembly" and clue.get("clue_type") == "double_definition":
+        session["completed_steps"].append(step_index)
+        session["step_index"] = step_index + 1
+        session["answer_locked"] = True
+        answer_letters = list(re.sub(r'[^A-Z]', '', clue["answer"].upper()))
+        session["user_answer"] = answer_letters
+        return _build_all_done(session, clue)
+
     template = RENDER_TEMPLATES.get(step["type"])
 
     # Build step summary list for the menu sidebar
