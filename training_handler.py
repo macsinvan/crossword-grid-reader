@@ -1004,41 +1004,74 @@ def _resolve_variables(text, step, clue):
 
         if is_container:
             # Container: show insertion notation like SOL(ARE + C + LIPS)E
-            # Find outer and inner parts by role (they are consumed by the
-            # container transform, so they are never "terminal")
+            # Find outer, inner, and container transform by role
             outer_idx = None
             inner_parts = []
+            container_idx = None
             for i, t in enumerate(transforms):
                 if t["role"] == "outer":
                     outer_idx = i
                 elif t["role"] == "inner" or t["role"].startswith("inner_"):
                     inner_parts.append((i, t["result"].upper()))
+                elif t["type"] == "container":
+                    container_idx = i
 
             if outer_idx is not None and inner_parts:
                 outer_result = re.sub(r'[^A-Z]', '', transforms[outer_idx]["result"].upper())
-                # Combine all inner terminal results
                 combined_inner = "".join(re.sub(r'[^A-Z]', '', p[1]) for p in inner_parts)
-                final_result = re.sub(r'[^A-Z]', '', step["result"].upper())
+                # Use the container transform's result for position matching,
+                # not the full assembly result (which may include charade parts)
+                if container_idx is not None:
+                    container_result = re.sub(r'[^A-Z]', '', transforms[container_idx]["result"].upper())
+                else:
+                    container_result = re.sub(r'[^A-Z]', '', step["result"].upper())
 
-                # Find where inner sits inside outer by matching the final result
+                # Find where inner sits inside outer
                 inserted = False
-                for insert_pos in range(len(final_result) - len(combined_inner) + 1):
-                    if final_result[insert_pos:insert_pos + len(combined_inner)] == combined_inner:
-                        remaining = final_result[:insert_pos] + final_result[insert_pos + len(combined_inner):]
+                for insert_pos in range(len(container_result) - len(combined_inner) + 1):
+                    if container_result[insert_pos:insert_pos + len(combined_inner)] == combined_inner:
+                        remaining = container_result[:insert_pos] + container_result[insert_pos + len(combined_inner):]
                         if remaining == outer_result:
                             prefix = outer_result[:insert_pos]
                             suffix = outer_result[insert_pos:]
                             inner_display = " + ".join(p[1] for p in inner_parts)
-                            breakdown = prefix + "(" + inner_display + ")" + suffix
-                            text = text.replace("{assemblyBreakdown}", breakdown)
+                            container_notation = prefix + "(" + inner_display + ")" + suffix
                             inserted = True
                             break
 
                 if not inserted:
-                    # Fallback: show outer(inner) without split
                     inner_display = " + ".join(p[1] for p in inner_parts)
-                    breakdown = outer_result + "(" + inner_display + ")"
-                    text = text.replace("{assemblyBreakdown}", breakdown)
+                    container_notation = outer_result + "(" + inner_display + ")"
+
+                # Collect other terminal transforms not part of the container
+                container_roles = {"outer", "inner", "container"}
+                terminal = _find_terminal_transforms(transforms)
+                other_parts = []
+                for i in sorted(terminal):
+                    t = transforms[i]
+                    role = t["role"]
+                    if role in container_roles or role.startswith("inner_"):
+                        continue
+                    if t["type"] == "container":
+                        continue
+                    other_parts.append(t["result"].upper())
+
+                # Build full breakdown: container notation + any charade parts
+                parts = []
+                # Insert container notation in correct position among terminal transforms
+                container_placed = False
+                for i in sorted(terminal):
+                    t = transforms[i]
+                    if t["type"] == "container" and not container_placed:
+                        parts.append(container_notation)
+                        container_placed = True
+                    elif t["role"] not in container_roles and not t["role"].startswith("inner_"):
+                        parts.append(t["result"].upper())
+                if not container_placed:
+                    parts.insert(0, container_notation)
+
+                breakdown = " + ".join(parts)
+                text = text.replace("{assemblyBreakdown}", breakdown)
             else:
                 raise ValueError("Container clue has outer/inner roles but no terminal outer or inner transforms found")
         else:
