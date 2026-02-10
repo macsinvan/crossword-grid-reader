@@ -191,7 +191,7 @@ class TemplateTrainer {
 
     renderAnswerSection(r) {
         const enumeration = r.enumeration || this.enumeration || '';
-        const parts = enumeration.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+        const parts = enumeration.split(/[,\-\s]+/).map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
         const userAnswer = r.userAnswer || [];
         const locked = r.answerLocked;
 
