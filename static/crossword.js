@@ -217,10 +217,10 @@ class CrosswordPuzzle {
             const data = await response.json();
 
             if (data.error) {
+                const msg = data.message || data.error;
                 document.getElementById('trainer-container').innerHTML = `
                     <div style="padding: 2rem; text-align: center; color: #666;">
-                        <p>${data.error}</p>
-                        <p style="font-style: italic; margin-top: 0.5rem;">This clue has not been annotated for training yet.</p>
+                        <p>${msg}</p>
                     </div>
                 `;
                 return;

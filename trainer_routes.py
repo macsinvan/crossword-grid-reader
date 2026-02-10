@@ -42,9 +42,17 @@ def trainer_start():
         clue_id, clue_data = training_handler.lookup_clue(clue_text, puzzle_number, clue_number, direction)
 
         if not clue_id or not clue_data:
+            # Check if this clue was excluded due to validation errors
+            clue_errors = training_handler.get_clue_errors(puzzle_number, clue_number, direction)
+            if clue_errors:
+                return jsonify({
+                    'error': 'Training data has errors',
+                    'message': 'Training data for this clue has errors and cannot be loaded.',
+                    'validation_errors': clue_errors,
+                }), 422
             return jsonify({
                 'error': 'Clue not found in trainer database',
-                'message': 'This clue has not been annotated for training.',
+                'message': 'This clue has not been annotated for training yet.',
             }), 404
 
         render = training_handler.start_session(clue_id, clue_data)

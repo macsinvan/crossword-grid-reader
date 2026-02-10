@@ -41,6 +41,7 @@ _load_render_templates()
 # --- Clues database (Supabase primary, clues_db.json for development/testing) ---
 
 _CLUES_DB = {}
+_CLUES_ERRORS = {}  # {item_id: [error_strings]} — clues excluded due to validation errors
 _CLUES_DB_SOURCE = None  # 'supabase' or 'file'
 _CLUES_DB_PATH = os.path.join(os.path.dirname(__file__), "clues_db.json")
 _CLUES_DB_MTIME = 0
@@ -117,20 +118,22 @@ def load_clues_db(force=False):
         _CLUES_DB_SOURCE = 'supabase'
         print(f"Loaded {len(_CLUES_DB)} clues from Supabase")
 
-    # Validate all loaded clues
-    all_errors = []
-    for item_id, item in _CLUES_DB.items():
+    # Validate all loaded clues — exclude failures instead of crashing
+    global _CLUES_ERRORS
+    _CLUES_ERRORS = {}
+    excluded = []
+    for item_id, item in list(_CLUES_DB.items()):
         errors, warnings = validate_training_item(item_id, item)
         for warn in warnings:
             print(f"  ⚠ {item_id}: {warn}")
         if errors:
+            _CLUES_ERRORS[item_id] = errors
+            del _CLUES_DB[item_id]
+            excluded.append(item_id)
             for err in errors:
-                all_errors.append(f"{item_id}: {err}")
-    if all_errors:
-        raise ValueError(
-            f"Training metadata validation failed ({len(all_errors)} errors):\n" +
-            "\n".join(f"  - {e}" for e in all_errors)
-        )
+                print(f"  ✗ {item_id}: {err}")
+    if excluded:
+        print(f"Excluded {len(excluded)} clue(s) with validation errors: {', '.join(excluded)}")
 
 
 def maybe_reload_clues_db():
@@ -172,6 +175,17 @@ def lookup_clue(clue_text, puzzle_number, clue_number, direction):
 def get_clue_data(clue_id):
     """Get clue data by ID. Returns clue_data or None if not found."""
     return _CLUES_DB.get(clue_id)
+
+
+def get_clue_errors(puzzle_number, clue_number, direction):
+    """Check if a clue was excluded due to validation errors.
+    Returns list of error strings, or None if no errors."""
+    if puzzle_number and clue_number and direction:
+        dir_suffix = 'a' if direction.lower() == 'across' else 'd'
+        expected_id = f'times-{puzzle_number}-{clue_number}{dir_suffix}'
+        if expected_id in _CLUES_ERRORS:
+            return _CLUES_ERRORS[expected_id]
+    return None
 
 
 load_clues_db(force=True)
