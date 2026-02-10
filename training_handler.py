@@ -711,10 +711,11 @@ def _compute_position_map(step):
     # Identify terminal transforms (those not superseded by a later dependent)
     terminal = _find_terminal_transforms(transforms)
 
-    # Check if this is a container clue (has outer/inner roles)
+    # Check if this is a container clue (has outer/inner roles — inner can be "inner", "inner_a", etc.)
     roles = {t["role"] for t in transforms}
+    has_inner = "inner" in roles or any(r.startswith("inner_") for r in roles)
 
-    if "outer" in roles and "inner" in roles:
+    if "outer" in roles and has_inner:
         return _compute_container_positions(transforms, terminal, result)
     else:
         return _compute_charade_positions(transforms, terminal, result)
@@ -730,9 +731,9 @@ def _compute_container_positions(transforms, terminal, result):
     outer_idx = None
     inner_indices = []
     for i, t in enumerate(transforms):
-        if t["role"] == "outer" and i in terminal:
+        if t["role"] == "outer":
             outer_idx = i
-        if t["role"] == "inner" and i in terminal:
+        if t["role"] == "inner" or t["role"].startswith("inner_"):
             inner_indices.append(i)
 
     if outer_idx is None or not inner_indices:
@@ -1003,15 +1004,14 @@ def _resolve_variables(text, step, clue):
 
         if is_container:
             # Container: show insertion notation like SOL(ARE + C + LIPS)E
-            terminal = _find_terminal_transforms(transforms)
-
-            # Find terminal outer and collect terminal inner parts
+            # Find outer and inner parts by role (they are consumed by the
+            # container transform, so they are never "terminal")
             outer_idx = None
             inner_parts = []
             for i, t in enumerate(transforms):
-                if t["role"] == "outer" and i in terminal:
+                if t["role"] == "outer":
                     outer_idx = i
-                elif (t["role"] == "inner" or t["role"].startswith("inner_")) and i in terminal:
+                elif t["role"] == "inner" or t["role"].startswith("inner_"):
                     inner_parts.append((i, t["result"].upper()))
 
             if outer_idx is not None and inner_parts:
