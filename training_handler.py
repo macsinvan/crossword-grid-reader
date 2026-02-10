@@ -212,11 +212,22 @@ def get_render(clue_id, clue):
         if step_index in session["completed_steps"]:
             current_step["completionText"] = _resolve_on_correct(template, step, clue)
 
+    # Compute answer box groups from enumeration: commas separate words,
+    # hyphens join within a word. "5-6" → [11], "5,3" → [5, 3], "7" → [7]
+    enum_str = clue.get("enumeration", "")
+    answer_groups = []
+    for part in re.split(r'[,\s]+', enum_str):
+        if part:
+            total = sum(int(n) for n in part.split('-') if n.isdigit())
+            if total > 0:
+                answer_groups.append(total)
+
     return {
         "clue_id": clue_id,
         "words": clue["words"],
         "answer": clue["answer"],
         "enumeration": clue["enumeration"],
+        "answerGroups": answer_groups,
         "steps": step_list,
         "currentStep": current_step,
         "stepExpanded": session["step_expanded"],
