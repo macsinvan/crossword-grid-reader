@@ -1,7 +1,6 @@
 ---
 paths:
   - "render_templates.json"
-  - "clues_db.json"
   - "training_handler.py"
 ---
 
@@ -12,9 +11,9 @@ paths:
 - To add new display text: add a new field here, not in Python code
 - Variables: {words}, {enumeration}, {hint}, {position}, {result}, {expected}, {definitionWords}, {indicatorHint}
 
-## clues_db.json
+## Training Metadata (Supabase `clues.training_metadata`)
 - Contains clue-specific data: indices, hints, expected answers, transforms
-- Per-clue overrides (menuTitle, completedTitle, prompt, intro) must follow the template's structural pattern
+- Never add `prompt` fields to individual steps or transforms — all prompts come from render_templates.json
 - words array must exactly match the clue text
 
 ## training_handler.py

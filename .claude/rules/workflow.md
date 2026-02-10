@@ -14,7 +14,7 @@ Every change must be verified before committing:
 - No Python server errors
 
 ## Testing Environment
-The user tests from the **main branch** at `/Users/andrewmackenzie/Desktop/Grid Reader`, running the server with default settings (`TRAINING_SOURCE=supabase`). After changing `clues_db.json`, you MUST upload to Supabase with `python3 upload_training_metadata.py` so the changes are visible to the running server. File-only changes are not enough.
+The user tests from the **main branch** at `/Users/andrewmackenzie/Desktop/Grid Reader`, running the server with default settings. Training data lives in Supabase — the server reads from the `clues.training_metadata` column.
 
 ## Test-First Bug Fixes
 When fixing a bug: write test → confirm FAIL → fix code → confirm PASS.

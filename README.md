@@ -140,7 +140,7 @@ See [PLAN.md](PLAN.md) for detailed roadmap.
 ## Technical Notes
 
 - Teaching mode uses pre-annotated step data (no AI/LLM)
-- 30 clues pre-loaded in `clues_db.json`
+- 56 clues pre-loaded in Supabase (30 from puzzle 29453, 26 from puzzle 29147)
 - Infrastructure routes in `crossword_server.py`, trainer routes in `trainer_routes.py` (Flask Blueprint)
 - Supabase is required — no local file fallback
 - See [TECH_DEBT_AUDIT.md](TECH_DEBT_AUDIT.md) for architecture details

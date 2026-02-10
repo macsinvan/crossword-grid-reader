@@ -149,7 +149,7 @@ ALL intelligence lives on the server. The client is a pure view layer.
 │  └── /trainer/ui-state    → training_handler                │
 ├─────────────────────────────────────────────────────────────┤
 │  training_handler.py (~1120 lines, ALL trainer logic)       │
-│  ├── _CLUES_DB         (from Supabase or clues_db.json)     │
+│  ├── _CLUES_DB         (from Supabase)                      │
 │  ├── RENDER_TEMPLATES  (loaded from render_templates.json)  │
 │  ├── _sessions dict    (all UI state)                       │
 │  ├── lookup_clue()     (find clue by text/puzzle/direction) │
@@ -201,7 +201,7 @@ ALL intelligence lives on the server. The client is a pure view layer.
 **Key Principle:** We control this metadata format completely. It's our own design, optimized for interactive teaching. The format uses flat steps — no nesting, no phases within steps (except `assembly` which has sub-phases for transforms).
 
 **Flat Step Architecture:**
-- Steps are a flat array in `clues_db.json` — each step is one student interaction
+- Steps are a flat array in training metadata — each step is one student interaction
 - Each step has a `type` field that maps 1:1 to a render template in `render_templates.json`
 - Render templates define inputMode, prompt, intro, hint, and onCorrect text
 - New templates are added incrementally as vertical slices
@@ -358,13 +358,13 @@ This is why we control the metadata format completely. We're not constrained by 
 
 **Templates Stored EXTERNAL TO CODE:**
 - **Render Templates:** `render_templates.json` — auto-reloaded by `training_handler.py` when file changes
-- **Clue Metadata:** Supabase `clues.training_metadata` column (default) or `clues_db.json` (when `TRAINING_SOURCE=file`). File source auto-reloads on each `/trainer/start` request; Supabase source requires server restart.
+- **Clue Metadata:** Supabase `clues.training_metadata` column. Requires server restart to pick up changes.
 - **Why external:** Templates and clue data must be editable without code changes
 
 **The Two-Layer System:**
 
 ```
-LAYER 1: Clue Step Metadata (Supabase training_metadata or clues_db.json)
+LAYER 1: Clue Step Metadata (Supabase training_metadata)
   └─ Clue-specific data: which words (indices), expected answers, hints
   └─ Flat array of steps — no nesting
   └─ Example: {"type": "definition", "indices": [0], "position": "start", "hint": "..."}
@@ -404,7 +404,7 @@ Templates use `{variable}` placeholders resolved from step + clue data:
 
 **Example: Definition Step**
 
-**Clue metadata** (in `clues_db.json`):
+**Clue metadata** (in Supabase `training_metadata`):
 ```json
 {"type": "definition", "indices": [0], "position": "start", "hint": "A famous structure on the Nile river"}
 ```
@@ -755,7 +755,7 @@ The `assembly` step has a multi-phase inline UI (used for containers, charades, 
 ## 7. API Endpoints
 
 ### 7.1 POST /trainer/start
-Start a new training session. Triggers auto-reload of both `clues_db.json` and `render_templates.json`, then looks up clue by text/puzzle/direction via `training_handler.lookup_clue()`.
+Start a new training session. Triggers auto-reload of `render_templates.json`, then looks up clue by text/puzzle/direction via `training_handler.lookup_clue()`.
 
 **Request:**
 ```json
@@ -835,9 +835,8 @@ Grid Reader/
 ├── training_handler.py      # ALL trainer logic: clue DB, sessions, sequencer (~1120 lines)
 ├── puzzle_store_supabase.py # Supabase database client (required)
 ├── pdf_processor.py         # PDF parsing, OCR correction
-├── clues_db.json            # Pre-annotated clue steps (flat format) — dev source + upload input
 ├── render_templates.json    # Render templates (auto-reloaded)
-├── upload_training_metadata.py  # Upload clues_db.json training data to Supabase
+├── upload_training_metadata.py  # Upload training data to Supabase
 ├── test_regression.py       # Regression tests: 330 tests, stdlib only (server must be running)
 ├── migrations/
 │   ├── 001_initial_schema.sql       # Publications, puzzles, clues, user_progress
@@ -948,8 +947,7 @@ Two mechanisms keep the server current during development:
 
 **Data file reload (no restart):**
 - `render_templates.json`: Server checks file mtime on each `/trainer/start` request — auto-reloads without restart
-- `clues_db.json` (when `TRAINING_SOURCE=file`): Same mtime-based auto-reload
-- Supabase training data (when `TRAINING_SOURCE=supabase`): No auto-reload — requires server restart
+- Supabase training data: No auto-reload — requires server restart
 
 **Python code restart (automatic):**
 - `crossword_server.py` runs with `debug=True`, which enables Werkzeug's reloader
@@ -968,7 +966,7 @@ Two mechanisms keep the server current during development:
 Assembly letter inputs (`.assembly-transform-letter`, `.assembly-result-letter`) are excluded from the crossword grid's global keydown handler in `crossword.js` to prevent keystroke leaking.
 
 ### 10.9 Step Hints from Clue Metadata
-Interactive step hints are sourced from the `hint` field in each step of `clues_db.json`. No hardcoded hint strings in code. For assembly transforms, each transform has its own `hint` field.
+Interactive step hints are sourced from the `hint` field in each step of the training metadata. No hardcoded hint strings in code. For assembly transforms, each transform has its own `hint` field.
 
 ### 10.10 Dictionary Lookup
 
@@ -978,7 +976,7 @@ Interactive step hints are sourced from the `hint` field in each step of `clues_
 1. **Definition step** — lookup the definition word(s) to show meanings the student may not know
 2. **Assembly transforms** — lookup the clue word for synonym/abbreviation transforms where the connection is non-obvious
 
-**Data model — `clues_db.json`:**
+**Data model — training metadata:**
 
 Add an optional `lookup` field to definition steps and assembly transforms:
 
@@ -1041,7 +1039,7 @@ A small book icon (📖) rendered as a clickable link, positioned next to the ex
 - Style matches the hint icon: 20×20px circle, same colours, same alignment
 - No state management — it's a plain link
 
-**When to add `lookup` to clues_db.json:**
+**When to add `lookup` to training metadata:**
 - Add it wherever Merriam-Webster has an entry for the word
 - Particularly valuable where the definition word has a lesser-known meaning (e.g. "twit" as verb, "see" as noun, "raven" as verb, "fugitive" as adjective)
 - Also useful on synonym transforms where the connection isn't obvious
@@ -1150,8 +1148,7 @@ gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 - Supabase PostgreSQL backend (required — no local fallback)
 - Publications, puzzles, clues, user_progress tables
 - `training_metadata` JSONB column on clues table for pre-annotated step data
-- `TRAINING_SOURCE` env var: `supabase` (default) or `file` (development)
-- `upload_training_metadata.py` script to populate database from `clues_db.json`
+- `upload_training_metadata.py` script to populate database
 - DB status indicator in header
 
 ### Phase 2: Interactive Teaching Mode ✓
@@ -1188,7 +1185,7 @@ gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 - Validates template system completeness
 
 **Why This Matters:**
-Currently, clues must be manually annotated in `clues_db.json`. The solver will automate this process, allowing us to rapidly expand the teaching library. The template-based architecture makes this possible because we only need to generate from a finite, growing set of render templates, not infinite variations. Each generated metadata step type maps 1:1 to an existing render template.
+Currently, clues must be manually annotated in Supabase training metadata. The solver will automate this process, allowing us to rapidly expand the teaching library. The template-based architecture makes this possible because we only need to generate from a finite, growing set of render templates, not infinite variations. Each generated metadata step type maps 1:1 to an existing render template.
 
 ---
 
@@ -1296,7 +1293,7 @@ All 30 annotated clues are tested. The original 12 were chosen to cover all 7 st
 
 1. **Supabase Integration**: Added `numbering` object to response, cross letters from grid
 2. **OCR Validation**: Spell-checking for PDF import
-3. **Annotation Fixes**: Align clues_db.json with puzzle text
+3. **Annotation Fixes**: Align training metadata with puzzle text
 4. **Multi-word Answers**: Handle spaces in answers (e.g. "ASWAN DAM")
 5. **Mobile Responsive Grid**: CSS Grid with `1fr` units, `aspect-ratio: 1` cells, viewport-based sizing
 6. **Engine Redesign (v2)**: Replaced ~4,400-line engine with simple sequencer, flat steps, external render templates (now ~950 lines after adding clue DB management and strict validation)
@@ -1305,6 +1302,6 @@ All 30 annotated clues are tested. The original 12 were chosen to cover all 7 st
 9. **Indicator Type System**: Indicator steps use `indicator_type` field to drive type-specific template text (menuTitle, prompt, intro, completedTitle) via dict-keyed lookup and `{indicatorType}` variable. Assembly steps can override `failMessage`.
 10. **Auto-skip Assembly Check**: When last transform result equals the final answer, assembly auto-completes without redundant retyping
 11. **Architecture Compliance**: Fixed all V-list violations — moved all feedback strings and display text to `render_templates.json`, eliminated silent `.get()` fallbacks (replaced with explicit `ValueError` raises), moved clue DB management and lookup logic from `trainer_routes.py` to `training_handler.py` (routes are now a thin HTTP layer). Added 72-test regression suite (`test_regression.py`): 12 clues × 6 tests covering all 7 step flow patterns, all indicator types, and all transform types.
-12. **Training Data in Supabase**: Added `training_metadata` JSONB column to `clues` table via migration 002. Training handler loads from Supabase by default (`TRAINING_SOURCE=supabase`) or from `clues_db.json` (`TRAINING_SOURCE=file`). Upload script (`upload_training_metadata.py`) populates database from JSON. No silent fallback between sources. Expanded regression suite to 330 tests (30 clues × 11 tests).
+12. **Training Data in Supabase**: Added `training_metadata` JSONB column to `clues` table via migration 002. Training handler loads from Supabase. Upload script (`upload_training_metadata.py`) populates database. Expanded regression suite to 330 tests (30 clues × 11 tests).
 13. **Indicator Hint Deduplication**: Fixed 16 indicator hints that redundantly repeated the indicator type label (e.g. "a classic anagram indicator") — the `completedTitle` template already prefixes with the type. Added guard test in `test_template_text` to prevent regression.
 

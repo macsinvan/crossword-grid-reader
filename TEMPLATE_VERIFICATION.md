@@ -9,7 +9,7 @@ Verify that both clue metadata templates and render templates have everything ne
 - **Authoritative Source:** `clue_step_templates.json`
 - **Purpose:** Capture data from the clue in a form that can be used by the render template to present the step. Has NO knowledge of presentation/process. ONLY has knowledge of the clue itself.
 - **Contents:** Required/optional fields that extract clue-specific data (indices, text, reasoning)
-- **Used in:** `clues_db.json` → `training_items` → `{clue_id}` → `steps[]`
+- **Used in:** Supabase `clues.training_metadata` → `steps[]`
 - **We control this:** This is our custom schema, optimized for data extraction from clues
 - **Documentation:** SPEC.md Appendix B, CLAUDE.md line 73
 
@@ -27,7 +27,7 @@ Verify that both clue metadata templates and render templates have everything ne
 
 ## Verification Process
 For each step type, verify:
-1. **Clue Metadata Template** - What fields exist in clues_db.json
+1. **Clue Metadata Template** - What fields exist in training metadata
 2. **Render Template** - What phases are defined in training_handler.py
 3. **Display Flow** - What sub-steps are defined in step_display_templates.py (if applicable)
 4. **Menu Title Generation** - How to generate human-readable menu title
@@ -37,7 +37,7 @@ For each step type, verify:
 
 ## 1. standard_definition
 
-### 1.1 Clue Metadata Template (clues_db.json)
+### 1.1 Clue Metadata Template (training metadata)
 **Location:** `clue_data["steps"][i]` where `type == "standard_definition"`
 
 **Fields Present:**

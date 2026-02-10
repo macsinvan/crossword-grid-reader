@@ -14,9 +14,9 @@ All user-facing text comes from render_templates.json with {variable} substituti
 - Sequencer resolves variables — that's all it does
 
 ## Two-Layer Template System
-- Layer 1: clues_db.json — clue-specific data (indices, hints, expected answers)
+- Layer 1: Supabase `clues.training_metadata` — clue-specific data (indices, hints, expected answers)
 - Layer 2: render_templates.json — generic presentation ({variable} placeholders)
-- **NO per-clue prompt overrides.** Never add `prompt` fields to individual steps or transforms in clues_db.json. All prompts come from render_templates.json. If a template doesn't cover a case, extend the template. Use `hint` for clue-specific teaching.
+- **NO per-clue prompt overrides.** Never add `prompt` fields to individual steps or transforms in training metadata. All prompts come from render_templates.json. If a template doesn't cover a case, extend the template. Use `hint` for clue-specific teaching.
 
 ## Error Out, Don't Fallback
 No silent fallbacks. If data is missing, crash with a clear error message.

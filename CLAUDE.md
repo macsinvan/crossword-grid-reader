@@ -23,14 +23,14 @@ In charades and container insertions, the clue words are rarely used directly. E
 - Before writing ANY user-facing text, think as a cryptic crossword teacher — research the domain if needed, don't hypothesise from code structure
 
 **Assembly transform prompts — deliver the aha moment:**
-Every transform prompt in the assembly step must teach a cryptic convention, not just label an operation. The student should understand *why* this word points to those letters. Mechanical prompts like "Find a 2-letter synonym for 'in'" or "'IT' is used as-is — type it in (2 letters)" tell the student what to do but not what to learn. The `transformPrompts` in `render_templates.json` and per-transform `hint` text in `clues_db.json` should connect the clue word to the convention being used:
+Every transform prompt in the assembly step must teach a cryptic convention, not just label an operation. The student should understand *why* this word points to those letters. Mechanical prompts like "Find a 2-letter synonym for 'in'" or "'IT' is used as-is — type it in (2 letters)" tell the student what to do but not what to learn. The `transformPrompts` in `render_templates.json` and per-transform `hint` text in training metadata should connect the clue word to the convention being used:
 - **synonym**: guide the student to the specific crossword convention (e.g. "In cryptics, 'work' almost always means OP — it's one of the most common abbreviations")
 - **abbreviation**: explain the shorthand (e.g. "'number' in cryptics usually points to NO — a standard abbreviation")
 - **literal**: explain why this word is taken at face value, not as a clue to something else
 - **letter_selection**: teach the pattern (e.g. "'head of office' = take the first letter — 'head of' always means first letter in cryptics")
 - **reversal/deletion/anagram/container**: connect the indicator word to the operation it signals
 
-**NO per-clue prompt overrides.** All prompts come from the generic `transformPrompts` templates in `render_templates.json`. If a template doesn't cover a case, extend the template — never add a `prompt` field to an individual transform in `clues_db.json`. The `hint` field is for clue-specific teaching (convention explanations, dictionary links); the `prompt` is always template-driven.
+**NO per-clue prompt overrides.** All prompts come from the generic `transformPrompts` templates in `render_templates.json`. If a template doesn't cover a case, extend the template — never add a `prompt` field to an individual transform in training metadata. The `hint` field is for clue-specific teaching (convention explanations, dictionary links); the `prompt` is always template-driven.
 
 ### Template Rules — MANDATORY
 
@@ -117,17 +117,14 @@ Answer/step input boxes sync to server on each keystroke BUT don't trigger re-re
 **Step state resets on advance**
 When `step_index` increments, engine clears: `hint_visible`, `selected_indices`, `step_expanded`, `assembly_transforms_done`, `assembly_hint_index`. Answer boxes persist across steps.
 
-**NO AI/LLM in this app.** Teaching mode uses pre-annotated step data from the Supabase database (or JSON files in development), NOT dynamically generated explanations.
+**NO AI/LLM in this app.** Teaching mode uses pre-annotated step data from the Supabase database, NOT dynamically generated explanations.
 
-**Training data source (`TRAINING_SOURCE` env var)**
-- `supabase` (default): Loads training metadata from the `training_metadata` JSONB column on the `clues` table. Requires `upload_training_metadata.py` to have been run first. No auto-reload — server restart picks up database changes.
-- `file`: Loads from `clues_db.json` file (development/testing only). Auto-reloads on file change (mtime check on each `/trainer/start` request).
-- No silent fallback between sources. If the configured source fails, the server errors out with a clear message.
+**Training data source**
+Training metadata is loaded from the `training_metadata` JSONB column on the `clues` table in Supabase. No auto-reload — server restart picks up database changes. If the source fails, the server errors out with a clear message.
 
 **Auto-reload and auto-restart**
 - **`render_templates.json`**: Server checks file mtime on each `/trainer/start` request, reloads automatically — no server restart needed.
-- **`clues_db.json`** (when `TRAINING_SOURCE=file`): Same mtime-based auto-reload as render templates.
-- **Supabase training data** (when `TRAINING_SOURCE=supabase`): No auto-reload. Restart the server to pick up database changes.
+- **Supabase training data**: No auto-reload. Restart the server to pick up database changes.
 - **Python code**: The server runs with `debug=True` (Werkzeug reloader). Any `.py` file change triggers an automatic server restart. `render_templates.json` is also in `extra_files` as a safety net.
 
 **Error out, don't fallback — MANDATORY**
@@ -161,7 +158,6 @@ Open http://localhost:8080
 | `trainer_routes.py` | Flask Blueprint — thin HTTP layer, all `/trainer/*` routes |
 | `training_handler.py` | All trainer business logic: sequencer engine, clue DB, lookup, sessions |
 | `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
-| `clues_db.json` | Pre-annotated clue database (56 clues: 30 from puzzle 29453 + 26 from puzzle 29147) — development source, also used by upload script |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
 | `validate_training.py` | Training metadata validator — structural, semantic, convention, and publication checks |
 | `test_regression.py` | Regression test suite: 330 tests (30 clues × 11 tests), stdlib only |
@@ -172,7 +168,7 @@ Open http://localhost:8080
 | `migrations/001_initial_schema.sql` | Initial DB schema (publications, puzzles, clues, user_progress) |
 | `migrations/002_add_training_metadata.sql` | Adds `training_metadata` JSONB column to clues table |
 | `migrations/004_add_training_locked.sql` | Adds `training_locked` column to puzzles table |
-| `upload_training_metadata.py` | Uploads training metadata from `clues_db.json` to Supabase (requires `--puzzle` or `--clue` filter) |
+| `upload_training_metadata.py` | Uploads training metadata to Supabase (requires `--puzzle` or `--clue` filter) |
 | `lock_puzzle.py` | Lock/unlock puzzle training data (auto-backs up before locking) |
 | `backup_puzzle.py` | Backup puzzle training data from Supabase to `backups/{puzzle}.json` |
 | `restore_puzzle.py` | Restore puzzle training data from backup file to Supabase |
@@ -191,8 +187,7 @@ Grid Reader (8080)
      │        │        └── delegates to training_handler.py
      │        │
      │        ├── training_handler.py (ALL trainer logic)
-     │        │        ├── Supabase clues.training_metadata (default, TRAINING_SOURCE=supabase)
-     │        │        ├── clues_db.json (dev fallback, TRAINING_SOURCE=file)
+     │        │        ├── Supabase clues.training_metadata
      │        │        └── render_templates.json (presentation templates, always file-based)
      │        │
      │        └── puzzle_store_supabase.py → Supabase PostgreSQL
@@ -205,10 +200,10 @@ For full architecture diagrams, data models, template system details, API endpoi
 ## Teaching Mode — Key Concepts
 
 **Simple Sequencer Engine:**
-The trainer engine (`training_handler.py`, ~1120 lines) owns ALL trainer business logic: clue database loading/lookup (from Supabase or file), session management, the sequencer engine, and template variable resolution. It reads flat steps from clue metadata, looks up a render template by step type, presents each step, validates input, and advances. No nesting, no phases within steps (except `assembly` which has sub-phases for transforms). The routes layer (`trainer_routes.py`, ~150 lines) is a thin HTTP wrapper that only extracts request parameters and delegates to `training_handler`.
+The trainer engine (`training_handler.py`, ~1120 lines) owns ALL trainer business logic: clue database loading/lookup from Supabase, session management, the sequencer engine, and template variable resolution. It reads flat steps from clue metadata, looks up a render template by step type, presents each step, validates input, and advances. No nesting, no phases within steps (except `assembly` which has sub-phases for transforms). The routes layer (`trainer_routes.py`, ~150 lines) is a thin HTTP wrapper that only extracts request parameters and delegates to `training_handler`.
 
 **Two-Layer Template System:**
-- Layer 1: Clue step metadata — clue-specific data (which words, indices, expected answers, hints). Stored in Supabase `clues.training_metadata` (production) or `clues_db.json` (development).
+- Layer 1: Clue step metadata — clue-specific data (which words, indices, expected answers, hints). Stored in Supabase `clues.training_metadata`.
 - Layer 2: Render templates in `render_templates.json` — generic presentation logic (inputMode, prompt, intro, hint, onCorrect). Always file-based.
 - Each step `type` maps 1:1 to a render template
 - For indicator steps: `indicator_type` field drives type-specific text via dict-keyed lookup and `{indicatorType}` variable
@@ -246,13 +241,11 @@ Create `.env` file (see `.env.example`):
 ```
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
-TRAINING_SOURCE=supabase    # 'supabase' (default) or 'file' (uses clues_db.json)
 ```
 
 ## Common Commands
 ```bash
-python3 crossword_server.py                                          # Start server (uses TRAINING_SOURCE=supabase by default)
-TRAINING_SOURCE=file python3 crossword_server.py                     # Start server with file-based training data
+python3 crossword_server.py                                          # Start server
 python3 test_regression.py                                           # Run 330 regression tests (server must be running)
 python3 upload_training_metadata.py --puzzle 29147                   # Upload one puzzle's training data to Supabase
 python3 upload_training_metadata.py --clue times-29147-1d            # Upload one clue's training data
@@ -264,8 +257,7 @@ python3 lock_puzzle.py --list                                        # List all 
 python3 backup_puzzle.py --puzzle 29453                              # Backup puzzle training data from Supabase to backups/29453.json
 python3 restore_puzzle.py --puzzle 29453                             # Restore puzzle training data from backup (must unlock first)
 python3 restore_puzzle.py --puzzle 29453 --dry-run                   # Preview restore without writing
-python3 validate_training.py                                         # Validate all training items (structural + semantic + convention + publication)
-python3 -c "import json; json.load(open('clues_db.json')); print('Valid')"  # Validate clues_db JSON syntax
+python3 validate_training.py                                         # Validate all training items in Supabase (structural + semantic + convention + publication)
 ```
 
 ## Cache Busting
@@ -300,7 +292,7 @@ Once you have the full parse verified, walk through it with the user **one step 
 2. **Remaining words** — which words haven't been assigned a role yet
 3. **The answer** — always visible, always in uppercase with letter count
 
-Present each step for confirmation: definition → indicators → fodder/outer/inner → assembly transforms. Then write the metadata to `clues_db.json` and validate.
+Present each step for confirmation: definition → indicators → fodder/outer/inner → assembly transforms. Then upload the metadata to Supabase and validate.
 
 ### Common pitfalls
 - **Don't fumble through indicators before solving** — solve the wordplay first, then you know what the indicators are.
@@ -312,7 +304,7 @@ Present each step for confirmation: definition → indicators → fodder/outer/i
 
 ## Clue Metadata Reference
 
-All 56 clues in `clues_db.json` are in the flat format. When editing or adding clues, follow these patterns.
+All training metadata in Supabase uses the flat format. When editing or adding clues, follow these patterns.
 
 ### Reference clues — study these BEFORE editing any clue:
 - **5D** — deletion + reversal chain (indicator steps, tap_words flow)
@@ -348,6 +340,7 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 ### Key rules:
 - Follow the Step 2 Rule (see above)
 - Every dependent transform (reversal/deletion/anagram/container) in the assembly MUST have a matching indicator step — `test_indicator_coverage` enforces this
+- **Never add `prompt` fields to individual steps or transforms in training metadata** — all prompts come from `render_templates.json`
 - Indicator steps must have `indicator_type` field (container, anagram, deletion, reversal, ordering, letter_selection, hidden_word) — the template uses this for type-specific text
 - Indicator type equivalences: `hidden_word` covers `reversal`
 - Container insertions use transform type `container` (not `anagram`) — the template explains the insertion operation
@@ -368,7 +361,7 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 **Integration points:**
 - `upload_training_metadata.py` — validates before uploading (errors skip item)
 - `training_handler.py` `load_clues_db()` — validates on load (errors raise ValueError, crash loud)
-- Standalone: `python3 validate_training.py` — validates all items in `clues_db.json`
+- Standalone: `python3 validate_training.py` — validates all items in Supabase
 
 ### Layer 1: Structural checks
 - Required top-level fields exist (clue, number, enumeration, answer, words, clue_type, difficulty, steps)
@@ -482,7 +475,7 @@ Publication is extracted from item ID (e.g. `times-29453-11a` → `times`). All 
 
 **Process:** Two-phase approach: (1) Solve as AI expert with clue+definition+answer, (2) Encode as training metadata. Hints teach Times conventions (the macro-level checks become the hints).
 
-**IMPORTANT: Puzzle 29453 is the verified reference. It is locked in Supabase (`training_locked = TRUE`) and 100% read-only. Never modify any `times-29453-*` entries in `clues_db.json`. The upload script and all store write methods refuse to modify locked puzzles. Use `python3 lock_puzzle.py --unlock 29453` only if you genuinely need to fix data.**
+**IMPORTANT: Puzzle 29453 is the verified reference. It is locked in Supabase (`training_locked = TRUE`) and 100% read-only. The upload script and all store write methods refuse to modify locked puzzles. Use `python3 lock_puzzle.py --unlock 29453` only if you genuinely need to fix data.**
 
 ## Worktrees
 This repo uses git worktrees:

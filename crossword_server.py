@@ -332,11 +332,11 @@ def process_pdf_and_store(pdf_file, answers_file=None):
                 cell_numbers[key] = num
 
         across_clues = [
-            {'number': c['number'], 'clue': c['clue']}
+            {'number': c['number'], 'clue': c['clue'], 'enumeration': c.get('enumeration', '')}
             for c in clue_data.get('across', [])
         ]
         down_clues = [
-            {'number': c['number'], 'clue': c['clue']}
+            {'number': c['number'], 'clue': c['clue'], 'enumeration': c.get('enumeration', '')}
             for c in clue_data.get('down', [])
         ]
 
@@ -376,6 +376,20 @@ def process_pdf_and_store(pdf_file, answers_file=None):
             pdf_path=pdf_path,
             answers_data=answers_data
         )
+
+        # Validate stored clue data against training expectations
+        puzzle_number = puzzle_data.get('number', '')
+        if puzzle_number:
+            stored_items = puzzle_store.get_training_clues()
+            puzzle_items = {k: v for k, v in stored_items.items() if f'-{puzzle_number}-' in k}
+            if puzzle_items:
+                from validate_training import validate_training_item
+                for item_id, item in puzzle_items.items():
+                    errors, warnings = validate_training_item(item_id, item)
+                    for warn in warnings:
+                        validation_warnings.append(f"{item_id}: {warn}")
+                    for err in errors:
+                        validation_warnings.append(f"VALIDATION ERROR {item_id}: {err}")
 
         return puzzle_data, validation_warnings, storage_info
 

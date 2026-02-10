@@ -482,8 +482,17 @@ class PuzzleStoreSupabase:
 
             # Reconstruct the training item format from DB columns + metadata
             metadata = row['training_metadata']
+            # Strip enumeration suffix from clue text — DB 'text' column includes
+            # it (e.g. "...capturing base (7)") but training items expect bare clue
+            clue_text = row['text']
+            enum = row.get('enumeration', '')
+            if enum:
+                # Remove trailing " (enumeration)" from clue text
+                suffix = f' ({enum})'
+                if clue_text.endswith(suffix):
+                    clue_text = clue_text[:-len(suffix)]
             item = {
-                'clue': row['text'],
+                'clue': clue_text,
                 'number': f"{clue_num}{'A' if direction == 'across' else 'D'}",
                 'enumeration': row['enumeration'],
                 'answer': row['answer'],
