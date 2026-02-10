@@ -16,6 +16,7 @@ Dependencies: stdlib only (urllib).
 """
 
 import json
+import re
 import sys
 import urllib.request
 import urllib.error
@@ -66,6 +67,10 @@ TEST_CLUES = [
         "wrong_value_step0": [3, 4],
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["five", "mean"],
+        "enumeration": "5",
+        "expected_answer_groups": [5],
+        "expected_words": ["Come", "by", "five", "do", "you", "mean"],
+        "expected_step_types": ["definition", "wordplay_type", "assembly"],
     },
 
     # 2. 6D RAVEN — def→indicator(ordering)→assembly
@@ -90,6 +95,10 @@ TEST_CLUES = [
         "wrong_value_step0": [0, 1],
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["dance", "number"],
+        "enumeration": "5",
+        "expected_answer_groups": [5],
+        "expected_words": ["Any", "number", "after", "dance", "party", "are", "starving"],
+        "expected_step_types": ["definition", "indicator", "assembly"],
     },
 
     # 3. 1A BROLLY — def→indicator(container)→outer→inner→assembly
@@ -114,6 +123,10 @@ TEST_CLUES = [
         "num_assembly_transforms": 2,
         "dependent_transform_indices": [],
         "wrong_value_step0": [5, 6],
+        "enumeration": "6",
+        "expected_answer_groups": [6],
+        "expected_words": ["Cover", "up", "in", "shower", "Not", "after", "nurses", "turn", "round"],
+        "expected_step_types": ["definition", "indicator", "outer_word", "inner_word", "assembly"],
     },
 
     # 4. 2D OMERTA — def→indicator(anagram)→fodder→assembly (anagram dependent)
@@ -144,6 +157,10 @@ TEST_CLUES = [
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["old"],
         "expected_not_in_breakdown": "'mater' \u2192 MATER",  # literal where result = word should not show redundant arrow
+        "enumeration": "6",
+        "expected_answer_groups": [6],
+        "expected_words": ["Crooked", "old", "mater", "\u2014", "which", "strongly", "suggests", "criminal", "is", "mum"],
+        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
     },
 
     # 5. 3D LATECOMER — def→indicator(letter_selection)→indicator(anagram)→assembly (explicit=True)
@@ -171,6 +188,10 @@ TEST_CLUES = [
         "num_assembly_transforms": 3,
         "dependent_transform_indices": [2],  # anagram at index 2
         "wrong_value_step0": [3, 4],
+        "enumeration": "9",
+        "expected_answer_groups": [9],
+        "expected_words": ["One", "missing", "initially", "admitted", "to", "Electra", "with", "some", "upheaval"],
+        "expected_step_types": ["definition", "indicator", "indicator", "assembly"],
     },
 
     # 6. 17D ASWAN DAM — def→wordplay(Container)→indicator(container)→outer→inner→assembly (hybrid)
@@ -196,6 +217,10 @@ TEST_CLUES = [
         "num_assembly_transforms": 2,
         "dependent_transform_indices": [],
         "wrong_value_step0": [1, 2],
+        "enumeration": "5,3",
+        "expected_answer_groups": [5, 3],
+        "expected_words": ["Embankment", "architect", "lengthened", "with", "cob"],
+        "expected_step_types": ["definition", "wordplay_type", "indicator", "outer_word", "inner_word", "assembly"],
     },
 
     # 7. 5D EEK — def→indicator(deletion)→fodder→indicator(reversal)→assembly (chain)
@@ -224,6 +249,10 @@ TEST_CLUES = [
         "num_assembly_transforms": 3,
         "dependent_transform_indices": [1, 2],  # deletion at 1, reversal at 2
         "wrong_value_step0": [0, 1],
+        "enumeration": "3",
+        "expected_answer_groups": [3],
+        "expected_words": ["A", "lot", "of", "sharp", "turns", "I'm", "afraid"],
+        "expected_step_types": ["definition", "indicator", "fodder", "indicator", "assembly"],
     },
 
     # 8. 13A ANDANTINO — def→wordplay→assembly (3 independent synonyms)
@@ -252,6 +281,10 @@ TEST_CLUES = [
         "wrong_value_step0": [2, 3],
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["also", "opposed", "referendum"],
+        "enumeration": "9",
+        "expected_answer_groups": [9],
+        "expected_words": ["Moderate", "movement", "also", "opposed", "to", "one", "referendum", "option"],
+        "expected_step_types": ["definition", "wordplay_type", "assembly"],
     },
 
     # 9. 4A REPROACH — def→indicator(deletion)→assembly (charade with deletion)
@@ -280,6 +313,10 @@ TEST_CLUES = [
         "wrong_value_step0": [1, 2],
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["copying antique", "pine"],
+        "enumeration": "8",
+        "expected_answer_groups": [8],
+        "expected_words": ["Twit", "copying", "antique", "with", "pine", "mostly"],
+        "expected_step_types": ["definition", "indicator", "assembly"],
     },
 
     # 10. 28A CAESAR — def→indicator(reversal)→assembly (reversal chain)
@@ -308,6 +345,10 @@ TEST_CLUES = [
         "wrong_value_step0": [2, 3],
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["roughly"],
+        "enumeration": "6",
+        "expected_answer_groups": [6],
+        "expected_words": ["Tsar's", "like", "roughly", "level", "after", "revolution"],
+        "expected_step_types": ["definition", "indicator", "assembly"],
     },
 
     # 11. 26A WINDSWEPT — def→indicator(reversal)→indicator(container)→assembly (5 transforms, mixed chain)
@@ -339,6 +380,10 @@ TEST_CLUES = [
         "wrong_value_step0": [0, 1],
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["Turn"],
+        "enumeration": "9",
+        "expected_answer_groups": [9],
+        "expected_words": ["Turn", "bench", "back", "in", "street", "exposed", "to", "blasts"],
+        "expected_step_types": ["definition", "indicator", "indicator", "assembly"],
     },
 
     # 12. 23D PSEUD — def→indicator(hidden_word)→fodder→assembly
@@ -365,6 +410,10 @@ TEST_CLUES = [
         "num_assembly_transforms": 2,
         "dependent_transform_indices": [1],  # reversal at index 1
         "wrong_value_step0": [3, 4],
+        "enumeration": "5",
+        "expected_answer_groups": [5],
+        "expected_words": ["Pretend", "authority", "raised", "undue", "spending", "limits"],
+        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
     },
 
     # 13. 19A SOLAR ECLIPSE — def→indicator(container)→outer→inner→assembly (container with charade inner)
@@ -395,6 +444,10 @@ TEST_CLUES = [
         "dependent_transform_indices": [],
         "wrong_value_step0": [0, 1],
         "is_container": True,  # flag for container-specific completion text test
+        "enumeration": "5,7",
+        "expected_answer_groups": [5, 7],
+        "expected_words": ["Are", "cold", "kissers", "coming", "inside", "only", "when", "it\u2019s", "dark"],
+        "expected_step_types": ["definition", "indicator", "outer_word", "inner_word", "assembly"],
     },
 
     # 14. 16D DISHDASHA — def→indicator(anagram)→fodder→assembly (charade with anagram chain)
@@ -426,6 +479,10 @@ TEST_CLUES = [
         "expected_breakdown_contains": "(ADHAS \u2192 DASHA)",  # literal words used as-is, no redundant arrow
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["beauty"],
+        "enumeration": "9",
+        "expected_answer_groups": [9],
+        "expected_words": ["Arab", "robe", "ad", "has", "misrepresented", "with", "superior", "beauty"],
+        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
     },
 
     # 15. 1D BISHOP — charade: def→wordplay→assembly (2 independent synonyms)
@@ -450,6 +507,10 @@ TEST_CLUES = [
         "wrong_value_step0": [2, 3],
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["bungle", "work"],
+        "enumeration": "6",
+        "expected_answer_groups": [6],
+        "expected_words": ["See", "boss", "bungle", "work"],
+        "expected_step_types": ["definition", "wordplay_type", "assembly"],
     },
 
     # 16. 7D AUSPICES — container: def→indicator(container)→outer→inner→assembly
@@ -475,6 +536,10 @@ TEST_CLUES = [
         "dependent_transform_indices": [],
         "wrong_value_step0": [0, 1],
         "is_container": True,
+        "enumeration": "8",
+        "expected_answer_groups": [8],
+        "expected_words": ["Summits", "welcoming", "American", "patronage"],
+        "expected_step_types": ["definition", "indicator", "outer_word", "inner_word", "assembly"],
     },
 
     # 17. 8D HOTHOUSE — container: def→indicator(container)→outer→inner→assembly
@@ -500,6 +565,10 @@ TEST_CLUES = [
         "dependent_transform_indices": [],
         "wrong_value_step0": [4, 5],
         "is_container": True,
+        "enumeration": "8",
+        "expected_answer_groups": [8],
+        "expected_words": ["Steamy", "in", "here", "but", "you", "must", "wear", "socks"],
+        "expected_step_types": ["definition", "indicator", "outer_word", "inner_word", "assembly"],
     },
 
     # 18. 9D MADAGASCAR — charade: def→wordplay→assembly (4 independent)
@@ -529,6 +598,10 @@ TEST_CLUES = [
         "wrong_value_step0": [1, 2],
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["lunch", "Turkish", "coach"],
+        "enumeration": "10",
+        "expected_answer_groups": [10],
+        "expected_words": ["State", "coach", "for", "Turkish", "leader", "who's", "out", "to", "lunch"],
+        "expected_step_types": ["definition", "wordplay_type", "assembly"],
     },
 
     # 19. 10A SWEET TALK — container with charade inner: def→indicator→outer→inner→assembly
@@ -562,6 +635,10 @@ TEST_CLUES = [
         "expected_backfill": {
             "inner_word": {"must_contain": ["WEE", "T"], "must_not_contain": "'very little time' \u2192 T"},
         },
+        "enumeration": "5,4",
+        "expected_answer_groups": [5, 4],
+        "expected_words": ["Flatter", "track", "takes", "very", "little", "time"],
+        "expected_step_types": ["definition", "indicator", "outer_word", "inner_word", "assembly"],
     },
 
     # 20. 12A OPTIC — dual indicators + explicit assembly: def→indicator(letter_sel)→indicator(anagram)→assembly
@@ -590,6 +667,10 @@ TEST_CLUES = [
         "num_assembly_transforms": 4,
         "dependent_transform_indices": [3],
         "wrong_value_step0": [3, 4],
+        "enumeration": "5",
+        "expected_answer_groups": [5],
+        "expected_words": ["Concerning", "sight", "as", "head", "of", "office", "IT", "struggles", "with", "PC"],
+        "expected_step_types": ["definition", "indicator", "indicator", "assembly"],
     },
 
     # 21. 14D DISCIPLINE — reversal chain: def→indicator(reversal)→fodder→assembly
@@ -622,6 +703,10 @@ TEST_CLUES = [
         "expected_breakdown_contains": "('Photos' \u2192 PICS + 'I had' \u2192 ID \u2192 DISCIP)",  # show clue word attribution for all predecessors
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["cover"],
+        "enumeration": "10",
+        "expected_answer_groups": [10],
+        "expected_words": ["Photos", "I", "had", "mounted", "cover", "the", "inside", "of", "school"],
+        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
     },
 
     # 22. 15A AMBASSADRESS — charade: def→wordplay→assembly (4 independent)
@@ -651,6 +736,10 @@ TEST_CLUES = [
         "wrong_value_step0": [0, 1],
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["Live", "singer", "costume"],
+        "enumeration": "12",
+        "expected_answer_groups": [12],
+        "expected_words": ["Live", "singer", "with", "a", "costume", "representative", "of", "her", "country"],
+        "expected_step_types": ["definition", "wordplay_type", "assembly"],
     },
 
     # 23. 18D FLEETING — charade with reversal: def→indicator(reversal)→assembly
@@ -680,6 +769,10 @@ TEST_CLUES = [
         "wrong_value_step0": [1, 2],
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["escape"],
+        "enumeration": "8",
+        "expected_answer_groups": [8],
+        "expected_words": ["Fugitive's", "attempt", "to", "escape", "upset", "good", "egg"],
+        "expected_step_types": ["definition", "indicator", "assembly"],
     },
 
     # 24. 20D DOZENS — container: def→indicator(container)→outer→inner→assembly
@@ -705,6 +798,10 @@ TEST_CLUES = [
         "dependent_transform_indices": [],
         "wrong_value_step0": [1, 2],
         "is_container": True,
+        "enumeration": "6",
+        "expected_answer_groups": [6],
+        "expected_words": ["Many", "academics", "divided", "by", "gender-neutral", "pronoun"],
+        "expected_step_types": ["definition", "indicator", "outer_word", "inner_word", "assembly"],
     },
 
     # 25. 21D LOW TAR — charade: def→wordplay→assembly (2 independent)
@@ -729,6 +826,10 @@ TEST_CLUES = [
         "wrong_value_step0": [0, 1],
         "check_clue_word_attribution": True,  # assembly title must show clue words, not just results
         "expected_clue_words_in_breakdown": ["doldrums", "Sailor"],  # each transform's source word
+        "enumeration": "3,3",
+        "expected_answer_groups": [3, 3],
+        "expected_words": ["Sailor", "in", "the", "doldrums", "relatively", "OK", "for", "tobacco?"],
+        "expected_step_types": ["definition", "wordplay_type", "assembly"],
     },
 
     # 26. 22A ATEMPORAL — charade with anagram: def→indicator(anagram)→assembly (4 transforms)
@@ -758,6 +859,10 @@ TEST_CLUES = [
         "wrong_value_step0": [0, 1],
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["piano", "exam"],
+        "enumeration": "9",
+        "expected_answer_groups": [9],
+        "expected_words": ["Friend", "taking", "minute", "to", "finish", "piano", "exam", "out", "of", "time"],
+        "expected_step_types": ["definition", "indicator", "assembly"],
     },
 
     # 27. 24A DUOMO — charade: def→wordplay→assembly (2 independent)
@@ -782,6 +887,10 @@ TEST_CLUES = [
         "wrong_value_step0": [0, 1],
         "check_clue_word_attribution": True,
         "expected_clue_words_in_breakdown": ["Couple", "second"],
+        "enumeration": "5",
+        "expected_answer_groups": [5],
+        "expected_words": ["Couple", "taken", "with", "second", "sight", "of", "Florence?"],
+        "expected_step_types": ["definition", "wordplay_type", "assembly"],
     },
 
     # 28. 26D WAS — deletion chain: def→indicator(deletion)→fodder→assembly
@@ -805,6 +914,10 @@ TEST_CLUES = [
         "num_assembly_transforms": 2,
         "dependent_transform_indices": [1],
         "wrong_value_step0": [0, 1],
+        "enumeration": "3",
+        "expected_answer_groups": [3],
+        "expected_words": ["In", "Republican's", "absence", "conflicts", "happened"],
+        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
     },
 
     # 29. 27A MEGADOSE — anagram: def→indicator(anagram)→fodder→assembly
@@ -832,6 +945,10 @@ TEST_CLUES = [
         "num_assembly_transforms": 3,
         "dependent_transform_indices": [2],
         "wrong_value_step0": [2, 3],
+        "enumeration": "8",
+        "expected_answer_groups": [8],
+        "expected_words": ["See", "Dogma", "remade", "as", "massive", "hit"],
+        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
     },
 
     # 30. 25A DRIVE — deletion chain: def→indicator(deletion)→fodder→assembly
@@ -858,6 +975,10 @@ TEST_CLUES = [
         "num_assembly_transforms": 2,
         "dependent_transform_indices": [1],  # deletion at index 1
         "wrong_value_step0": [5, 6],
+        "enumeration": "5",
+        "expected_answer_groups": [5],
+        "expected_words": ["Urge", "removal", "of", "line", "from", "silly", "speech"],
+        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
     },
 ]
 
@@ -1002,6 +1123,74 @@ def walk_to_assembly(server, clue):
 # ---------------------------------------------------------------------------
 # Test functions
 # ---------------------------------------------------------------------------
+
+def test_response_contract(server, clue):
+    """Verify the /start response has the correct shape and values.
+
+    Every field the client needs to render must be present and correct.
+    This catches regressions where server data changes break the UI.
+    """
+    render = start_session(server, clue)
+
+    # --- Required top-level fields ---
+    required_fields = [
+        "clue_id", "words", "answer", "enumeration", "answerGroups",
+        "steps", "currentStep", "stepExpanded", "highlights",
+        "selectedIndices", "userAnswer", "answerLocked",
+    ]
+    for field in required_fields:
+        if field not in render:
+            return False, f"Missing required field '{field}' in /start response"
+
+    # --- clue_id ---
+    if render["clue_id"] != clue["id"]:
+        return False, f"clue_id: got '{render['clue_id']}', expected '{clue['id']}'"
+
+    # --- answer ---
+    if render["answer"] != clue["answer"]:
+        return False, f"answer: got '{render['answer']}', expected '{clue['answer']}'"
+
+    # --- enumeration ---
+    if "enumeration" in clue:
+        if render["enumeration"] != clue["enumeration"]:
+            return False, f"enumeration: got '{render['enumeration']}', expected '{clue['enumeration']}'"
+
+    # --- answerGroups (the field that caused the regression) ---
+    if "expected_answer_groups" in clue:
+        if render["answerGroups"] != clue["expected_answer_groups"]:
+            return False, f"answerGroups: got {render['answerGroups']}, expected {clue['expected_answer_groups']}"
+        # Verify groups sum to answer letter count
+        answer_letters = len(re.sub(r'[^A-Z]', '', clue["answer"]))
+        groups_sum = sum(render["answerGroups"])
+        if groups_sum != answer_letters:
+            return False, f"answerGroups sum {groups_sum} != answer letter count {answer_letters}"
+
+    # --- words ---
+    if "expected_words" in clue:
+        if render["words"] != clue["expected_words"]:
+            return False, f"words: got {render['words']}, expected {clue['expected_words']}"
+
+    # --- steps ---
+    if "expected_step_types" in clue:
+        actual_types = [s["type"] for s in render["steps"]]
+        if actual_types != clue["expected_step_types"]:
+            return False, f"step types: got {actual_types}, expected {clue['expected_step_types']}"
+
+    # --- currentStep shape ---
+    step = render["currentStep"]
+    step_required = ["index", "inputMode", "type"]
+    for field in step_required:
+        if field not in step:
+            return False, f"currentStep missing '{field}'"
+
+    # --- Initial state ---
+    if render["answerLocked"]:
+        return False, "answerLocked should be False at start"
+    if render["stepExpanded"] not in (True, False):
+        return False, f"stepExpanded should be bool, got {render['stepExpanded']}"
+
+    return True, ""
+
 
 def test_full_walkthrough(server, clue):
     """Happy path: correct input at every step -> complete."""
@@ -1548,6 +1737,7 @@ def test_dependent_prompt_update(server, clue):
 # ---------------------------------------------------------------------------
 
 ALL_TESTS = [
+    ("Response contract", test_response_contract),
     ("Full walkthrough", test_full_walkthrough),
     ("Wrong input", test_wrong_input),
     ("Assembly transform status", test_assembly_transform_status),
