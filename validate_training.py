@@ -289,7 +289,7 @@ STEP_REQUIRED_FIELDS = {
     "definition": ["indices", "hint"],
     "wordplay_type": ["expected", "options", "hint"],
     "indicator": ["indices", "hint", "indicator_type"],
-    "fodder": ["indices", "indicator_type"],
+    "fodder": ["indices", "indicator_type", "hint"],
     "multi_definition": ["indices", "hint", "definition_part"],
     "outer_word": ["indices"],
     "inner_word": ["indices"],
