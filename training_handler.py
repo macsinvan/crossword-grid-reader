@@ -401,12 +401,18 @@ def _build_assembly_data(session, step, clue):
     elif "failMessage" in step:
         fail_message = step["failMessage"]
     else:
+        fail_msg_data = template["defaultFailMessage"]
+        if isinstance(fail_msg_data, dict):
+            clue_type = clue.get("clue_type", "standard")
+            fail_msg_template = fail_msg_data.get(clue_type, fail_msg_data.get("default", ""))
+        else:
+            fail_msg_template = fail_msg_data
         raw_words = []
         for t in transforms:
             t_words = [words[i] for i in t["indices"]]
             raw_words.append(" ".join(t_words))
         raw_list = "'" + "' and '".join(raw_words) + "'"
-        fail_message = template["defaultFailMessage"].format(rawWordsList=raw_list)
+        fail_message = fail_msg_template.format(rawWordsList=raw_list)
 
     DEPENDENT_TYPES = {"deletion", "reversal", "anagram", "container"}
 
