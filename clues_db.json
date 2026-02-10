@@ -2787,29 +2787,15 @@
           "indices": [
             1
           ],
-          "hint": "'Revolution' means a full turn — read the whole result backwards",
-          "indicator_type": "reversal"
-        },
-        {
-          "type": "outer_word",
-          "indices": [
-            3
-          ],
-          "hint": "Which word does the capturing — wrapping its letters around the other part?"
-        },
-        {
-          "type": "inner_word",
-          "indices": [
-            5
-          ],
-          "hint": "Which remaining word gets captured — placed inside?"
+          "hint": "'Revolution' suggests turning things around — here it signals rearranging all the letters",
+          "indicator_type": "anagram"
         },
         {
           "type": "assembly",
           "failMessage": "'agents' is 6 letters, 'base' is 4 — far too many for a 7-letter answer. What does each word really mean?",
           "transforms": [
             {
-              "role": "outer",
+              "role": "part1",
               "indices": [
                 3
               ],
@@ -2818,20 +2804,20 @@
               "hint": "In cryptics, 'agents' points to CIA — the Central Intelligence Agency, the most famous spy agency"
             },
             {
-              "role": "inner",
+              "role": "part2",
               "indices": [
                 5
               ],
               "type": "synonym",
               "result": "MEAN",
-              "hint": "'Base' as in low or despicable behaviour — MEAN is a synonym for base",
+              "hint": "'Base' as in low or despicable — MEAN is a classic synonym",
               "lookup": {
                 "word": "base",
                 "url": "https://www.merriam-webster.com/dictionary/base"
               }
             },
             {
-              "role": "captured",
+              "role": "contained",
               "indices": [
                 4
               ],
@@ -2840,13 +2826,13 @@
               "hint": "'Capturing' tells you CIA wraps around MEAN — CI + MEAN + A = CIMEANA"
             },
             {
-              "role": "reversed",
+              "role": "anagrammed",
               "indices": [
                 1
               ],
-              "type": "reversal",
+              "type": "anagram",
               "result": "ANAEMIC",
-              "hint": "'Revolution' tells you to reverse the whole thing — CIMEANA backwards = ANAEMIC"
+              "hint": "'Revolution' rearranges CIMEANA into ANAEMIC — all 7 letters reshuffled"
             }
           ],
           "result": "ANAEMIC"
