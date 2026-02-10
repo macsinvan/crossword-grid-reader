@@ -621,7 +621,9 @@ def _check_container(transforms, current_idx, result):
     if len(consumed) < 2:
         return f"container check failed: need at least 2 consumed predecessors, got {len(consumed)}"
 
-    predecessor_results = [transforms[c]["result"] for c in consumed]
+    # Strip non-alpha for comparison (handles multi-word answers like WARTS AND ALL)
+    predecessor_results = [re.sub(r'[^A-Z]', '', transforms[c]["result"].upper()) for c in consumed]
+    result_alpha = re.sub(r'[^A-Z]', '', result.upper())
 
     # Try all pairs: for each pair, check if one goes inside the other
     for i, outer in enumerate(predecessor_results):
@@ -631,7 +633,7 @@ def _check_container(transforms, current_idx, result):
             # Try inserting inner into outer at every position
             for pos in range(1, len(outer)):
                 combined = outer[:pos] + inner + outer[pos:]
-                if combined == result:
+                if combined == result_alpha:
                     return None
 
     # If more than 2 predecessors, try concatenating all non-outer pieces as inner
@@ -644,7 +646,7 @@ def _check_container(transforms, current_idx, result):
                 inner = "".join(perm)
                 for pos in range(1, len(outer)):
                     combined = outer[:pos] + inner + outer[pos:]
-                    if combined == result:
+                    if combined == result_alpha:
                         return None
 
     return f"container check failed: '{result}' cannot be formed by inserting one predecessor inside another (predecessors: {predecessor_results})"
