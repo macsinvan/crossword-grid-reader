@@ -772,13 +772,17 @@ def validate_training_item(item_id, item):
     answer = item["answer"]
     steps = item["steps"]
 
-    # --- 2. Words match clue text (ignoring punctuation) ---
+    # --- 2. Words match clue text (ignoring enumeration and punctuation) ---
+    # clue is display text (with punctuation, enumeration); words is the tokenised breakdown
     if "clue" in item:
-        reconstructed = " ".join(words)
-        # Strip punctuation for comparison — words array omits commas, question marks, etc.
-        strip_punct = lambda s: re.sub(r'[^\w\s\'\'\-]', '', s).strip()
-        if strip_punct(reconstructed) != strip_punct(item["clue"]):
-            errors.append(f"words array doesn't match clue text: '{reconstructed}' != '{item['clue']}'")
+        clue_text = item["clue"]
+        # Strip trailing enumeration e.g. "(7)", "(5,4)", "(5-4)", "(3,3,4)"
+        clue_text = re.sub(r'\s*\([\d,\-]+\)\s*$', '', clue_text)
+        # Compare just the alphabetic words from both sides
+        clue_words = re.findall(r"[a-zA-Z]+", clue_text)
+        meta_words = re.findall(r"[a-zA-Z]+", " ".join(words))
+        if clue_words != meta_words:
+            errors.append(f"words array doesn't match clue text: words={meta_words} clue={clue_words}")
 
     # --- 3. Steps is non-empty, each has type ---
     if not isinstance(steps, list) or len(steps) == 0:
@@ -955,15 +959,24 @@ def validate_training_item(item_id, item):
 # Standalone runner
 # ---------------------------------------------------------------------------
 
-def validate_all(clues_db_path=None):
-    """Validate all training items in clues_db.json. Returns (total, passed, failed)."""
-    if clues_db_path is None:
-        clues_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "clues_db.json")
+def validate_all(puzzle_number=None):
+    """Validate all training items from Supabase. Returns (total, passed, failed).
 
-    with open(clues_db_path) as f:
-        db = json.load(f)
+    Args:
+        puzzle_number: Optional puzzle number to filter (e.g. '29453').
+                       If None, validates all items.
+    """
+    from puzzle_store_supabase import PuzzleStoreSupabase
 
-    items = db.get("training_items", {})
+    store = PuzzleStoreSupabase()
+    items = store.get_training_clues()
+
+    if puzzle_number:
+        items = {k: v for k, v in items.items() if f'-{puzzle_number}-' in k}
+        if not items:
+            print(f"ERROR: No training data found for puzzle #{puzzle_number}")
+            return 0, 0, 0
+
     total = len(items)
     passed = 0
     failed = 0
@@ -994,6 +1007,6 @@ def validate_all(clues_db_path=None):
 
 
 if __name__ == "__main__":
-    path = sys.argv[1] if len(sys.argv) > 1 else None
-    total, passed, failed = validate_all(path)
+    puzzle = sys.argv[1] if len(sys.argv) > 1 else None
+    total, passed, failed = validate_all(puzzle)
     sys.exit(1 if failed > 0 else 0)
