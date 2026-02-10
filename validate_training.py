@@ -270,16 +270,16 @@ CRYPTIC_ABBREVIATIONS = {
 VALID_STEP_TYPES = {"definition", "wordplay_type", "indicator", "outer_word", "inner_word", "assembly", "fodder", "multi_definition"}
 
 # Valid transform types (from assembly.transformPrompts)
-VALID_TRANSFORM_TYPES = {"synonym", "abbreviation", "literal", "reversal", "deletion", "anagram", "container", "letter_selection"}
+VALID_TRANSFORM_TYPES = {"synonym", "abbreviation", "literal", "reversal", "deletion", "anagram", "container", "letter_selection", "homophone"}
 
 # Valid indicator types
-VALID_INDICATOR_TYPES = {"container", "anagram", "deletion", "reversal", "ordering", "letter_selection", "hidden_word"}
+VALID_INDICATOR_TYPES = {"container", "anagram", "deletion", "reversal", "ordering", "letter_selection", "hidden_word", "homophone"}
 
 # Valid definition_part values for multi_definition steps
 VALID_DEFINITION_PARTS = {"first", "second", "third"}
 
 # Dependent transform types that require a matching indicator step
-DEPENDENT_TRANSFORM_TYPES = {"reversal", "deletion", "anagram", "container"}
+DEPENDENT_TRANSFORM_TYPES = {"reversal", "deletion", "anagram", "container", "homophone"}
 
 # Indicator type equivalences (hidden_word covers reversal)
 INDICATOR_EQUIVALENCES = {"hidden_word": {"reversal", "hidden_word"}}
@@ -934,6 +934,10 @@ def validate_training_item(item_id, item):
 
                 elif t_type == "synonym":
                     # Synonym check: no external API for now, just log for awareness
+                    pass
+
+                elif t_type == "homophone":
+                    # Homophone check: can't verify pronunciation programmatically
                     pass
 
     # --- 12. Indicator coverage ---
