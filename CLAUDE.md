@@ -119,18 +119,18 @@ When `step_index` increments, engine clears: `hint_visible`, `selected_indices`,
 
 **NO AI/LLM in this app.** Teaching mode uses pre-annotated step data from the Supabase database, NOT dynamically generated explanations.
 
-**Training data source**
-Training metadata is loaded from the `training_metadata` JSONB column on the `clues` table in Supabase. No auto-reload — server restart picks up database changes. If the source fails, the server errors out with a clear message.
+**Training data source — lazy-loaded from Supabase**
+Training metadata is fetched on demand from the `training_metadata` JSONB column on the `clues` table in Supabase. Each `/trainer/start` request queries Supabase for the specific clue by key (puzzle_number, clue_number, direction), validates it, and stores it in the session. No bulk loading at startup, no restart needed for DB changes — data is always fresh.
+
+**Scale design:** This architecture supports 100s of puzzles, 1000s of clues, and 100s of simultaneous users. No clue data is held in memory beyond active sessions.
 
 **Auto-reload and auto-restart**
 - **`render_templates.json`**: Server checks file mtime on each `/trainer/start` request, reloads automatically — no server restart needed.
-- **Supabase training data**: No auto-reload. Restart the server to pick up database changes.
+- **Supabase training data**: Lazy-loaded per request — always fresh, no restart needed.
 - **Python code**: The server runs with `debug=True` (Werkzeug reloader). Any `.py` file change triggers an automatic server restart. `render_templates.json` is also in `extra_files` as a safety net.
 
 **Error out, don't fallback — MANDATORY**
 Do NOT add fallbacks in the code without explicit approval from the user. Never silently swallow errors, substitute defaults for missing data, or degrade functionality without raising an error. If something is wrong, crash with a clear message. Silent fallbacks hide bugs and cause confusion.
-
-**Exception — validation on server load:** Training metadata validation errors are non-fatal on server boot. Failing clues are excluded from `_CLUES_DB` (logged to console) and tracked in `_CLUES_ERRORS` so the UI can show a clear error message when that clue is requested. The server continues to serve all valid clues. This is NOT a silent fallback — errors are visible in both the server log and the UI.
 
 ## What This Is
 Web-based Times Cryptic crossword solver. Import PDFs, solve interactively, get step-by-step teaching via template-based step display system.
@@ -158,7 +158,7 @@ Open http://localhost:8080
 | File | Purpose |
 |------|---------|
 | `trainer_routes.py` | Flask Blueprint — thin HTTP layer, all `/trainer/*` routes |
-| `training_handler.py` | All trainer business logic: sequencer engine, clue DB, lookup, sessions |
+| `training_handler.py` | All trainer business logic: sequencer engine, lazy clue lookup, sessions |
 | `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
 | `validate_training.py` | Training metadata validator — structural, semantic, convention, and publication checks |
@@ -189,7 +189,7 @@ Grid Reader (8080)
      │        │        └── delegates to training_handler.py
      │        │
      │        ├── training_handler.py (ALL trainer logic)
-     │        │        ├── Supabase clues.training_metadata
+     │        │        ├── Lazy-loads clues.training_metadata from Supabase per request
      │        │        └── render_templates.json (presentation templates, always file-based)
      │        │
      │        └── puzzle_store_supabase.py → Supabase PostgreSQL
@@ -202,7 +202,7 @@ For full architecture diagrams, data models, template system details, API endpoi
 ## Teaching Mode — Key Concepts
 
 **Simple Sequencer Engine:**
-The trainer engine (`training_handler.py`, ~1120 lines) owns ALL trainer business logic: clue database loading/lookup from Supabase, session management, the sequencer engine, and template variable resolution. It reads flat steps from clue metadata, looks up a render template by step type, presents each step, validates input, and advances. No nesting, no phases within steps (except `assembly` which has sub-phases for transforms). The routes layer (`trainer_routes.py`, ~150 lines) is a thin HTTP wrapper that only extracts request parameters and delegates to `training_handler`.
+The trainer engine (`training_handler.py`, ~1100 lines) owns ALL trainer business logic: lazy clue lookup from Supabase, per-request validation, session management, the sequencer engine, and template variable resolution. It reads flat steps from clue metadata, looks up a render template by step type, presents each step, validates input, and advances. No nesting, no phases within steps (except `assembly` which has sub-phases for transforms). The routes layer (`trainer_routes.py`, ~150 lines) is a thin HTTP wrapper that only extracts request parameters and delegates to `training_handler`.
 
 **Two-Layer Template System:**
 - Layer 1: Clue step metadata — clue-specific data (which words, indices, expected answers, hints). Stored in Supabase `clues.training_metadata`.
@@ -362,8 +362,8 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 
 **Integration points:**
 - `upload_training_metadata.py` — validates before uploading (errors skip item)
-- `training_handler.py` `load_clues_db()` — validates on load, **excludes** failing clues from `_CLUES_DB` and tracks them in `_CLUES_ERRORS` (logs errors to console, does NOT crash the server)
-- `trainer_routes.py` `/trainer/start` — returns 422 with `validation_errors` for excluded clues, 404 for unannotated clues, 200 for success
+- `training_handler.py` `lookup_clue()` — validates per request when fetching from Supabase. Invalid clues raise `ValueError` with error details.
+- `trainer_routes.py` `/trainer/start` — returns 422 with `validation_errors` for invalid clues, 404 for unannotated clues, 200 for success
 - `crossword.js` — displays `data.message` from server (not hardcoded text) for both 422 and 404 errors
 - Standalone: `python3 validate_training.py` — validates all items in Supabase
 
@@ -427,10 +427,10 @@ When starting a new session, check these first:
 - Puzzle **29453** (30 clues) is **locked** and 100% verified — never modify
 - Puzzle **29147** (26/32 clues done) is the active work — 6 clues remaining (see below)
 - Training data lives in **Supabase** (`clues.training_metadata`), not in JSON files
-- The server **gracefully excludes** clues with validation errors (doesn't crash) — excluded clues show an error message in the UI when clicked
+- Training data is **lazy-loaded** from Supabase per request — no restart needed for DB changes
+- Clues with validation errors return **422** with error details when clicked in the UI
 - The standalone validator (`validate_training.py`) loads directly from Supabase
-- After uploading training metadata, **restart the server** to pick up changes (no auto-reload for Supabase data)
-- Known OCR error: puzzle 29147 clue 5D has `fiower` instead of `flower` in the DB `text` column — this causes a words-vs-clue mismatch that excludes 5D from the trainer (fix requires correcting the OCR text in Supabase directly)
+- OCR errors in the DB `text` column cause words-vs-clue mismatches — fix by updating the `text` column directly in Supabase
 
 ## Current Work — Puzzle 29147 Training Metadata
 

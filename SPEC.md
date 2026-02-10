@@ -148,11 +148,11 @@ ALL intelligence lives on the server. The client is a pure view layer.
 │  ├── /trainer/check-answer→ training_handler                │
 │  └── /trainer/ui-state    → training_handler                │
 ├─────────────────────────────────────────────────────────────┤
-│  training_handler.py (~1120 lines, ALL trainer logic)       │
-│  ├── _CLUES_DB         (from Supabase)                      │
+│  training_handler.py (~1100 lines, ALL trainer logic)       │
+│  ├── lookup_clue()     (lazy-load from Supabase by key)     │
 │  ├── RENDER_TEMPLATES  (loaded from render_templates.json)  │
-│  ├── _sessions dict    (all UI state)                       │
-│  ├── lookup_clue()     (find clue by text/puzzle/direction) │
+│  ├── _sessions dict    (all UI state + clue_data per session│
+│  ├── get_clue_data()   (read clue_data from active session) │
 │  ├── get_render()      (build render object from state)     │
 │  ├── handle_input()    (validate & advance step)            │
 │  └── _handle_assembly_input() (multi-phase assembly)        │
@@ -358,7 +358,7 @@ This is why we control the metadata format completely. We're not constrained by 
 
 **Templates Stored EXTERNAL TO CODE:**
 - **Render Templates:** `render_templates.json` — auto-reloaded by `training_handler.py` when file changes
-- **Clue Metadata:** Supabase `clues.training_metadata` column. Requires server restart to pick up changes.
+- **Clue Metadata:** Supabase `clues.training_metadata` column. Lazy-loaded per request — no restart needed.
 - **Why external:** Templates and clue data must be editable without code changes
 
 **The Two-Layer System:**
@@ -947,7 +947,7 @@ Two mechanisms keep the server current during development:
 
 **Data file reload (no restart):**
 - `render_templates.json`: Server checks file mtime on each `/trainer/start` request — auto-reloads without restart
-- Supabase training data: No auto-reload — requires server restart
+- Supabase training data: Lazy-loaded per request — always fresh, no restart needed
 
 **Python code restart (automatic):**
 - `crossword_server.py` runs with `debug=True`, which enables Werkzeug's reloader

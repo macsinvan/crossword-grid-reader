@@ -38,157 +38,50 @@ def maybe_reload_render_templates():
 
 _load_render_templates()
 
-# --- Clues database (Supabase primary, clues_db.json for development/testing) ---
-
-_CLUES_DB = {}
-_CLUES_ERRORS = {}  # {item_id: [error_strings]} — clues excluded due to validation errors
-_CLUES_DB_SOURCE = None  # 'supabase' or 'file'
-_CLUES_DB_PATH = os.path.join(os.path.dirname(__file__), "clues_db.json")
-_CLUES_DB_MTIME = 0
-
-# Set TRAINING_SOURCE=file in environment to use clues_db.json (development only)
-_TRAINING_SOURCE = os.environ.get('TRAINING_SOURCE', 'supabase')
+# --- Clue loading (lazy, per-request from Supabase) ---
 
 
-def _normalize_quotes(text):
-    """Normalize curly quotes to straight quotes for comparison."""
-    if not text:
-        return text
-    text = text.replace('\u2018', "'").replace('\u2019', "'").replace('\u201a', "'")
-    text = text.replace('\u201c', '"').replace('\u201d', '"').replace('\u201e', '"')
-    return text
-
-
-def _get_clue_text(clue_data):
-    """Extract clue text from either old or new format."""
-    clue_field = clue_data.get('clue', '')
-    if isinstance(clue_field, dict):
-        return clue_field.get('text', '')
-    return clue_field
-
-
-def _load_clues_from_supabase():
-    """Load training clues from Supabase. Raises on failure."""
+def _get_store():
+    """Get a Supabase store instance."""
     from puzzle_store_supabase import PuzzleStoreSupabase
-    store = PuzzleStoreSupabase()
-    items = store.get_training_clues()
-    if not items:
-        raise ValueError(
-            "No training clues found in Supabase. "
-            "Run upload_training_metadata.py to populate the database, "
-            "or set TRAINING_SOURCE=file to use clues_db.json."
-        )
-    return items
+    return PuzzleStoreSupabase()
 
 
-def _load_clues_from_file():
-    """Load clues from clues_db.json file (development/testing only)."""
-    global _CLUES_DB_MTIME
+def lookup_clue(puzzle_number, clue_number, direction):
+    """
+    Fetch a clue from Supabase by key, validate it, and return it.
+    Returns (clue_id, clue_data) or (None, None).
+    On validation failure, raises ValueError with error details.
+    """
+    if not (puzzle_number and clue_number and direction):
+        return None, None
 
-    current_mtime = os.path.getmtime(_CLUES_DB_PATH)
-    with open(_CLUES_DB_PATH, 'r') as f:
-        data = json.load(f)
+    dir_full = direction.lower() if direction else ''
+    if dir_full not in ('across', 'down'):
+        return None, None
 
-    if 'training_items' not in data:
-        raise KeyError(f"clues_db.json missing 'training_items'. Keys: {list(data.keys())}")
+    store = _get_store()
+    item_id, item = store.get_training_clue(str(puzzle_number), int(clue_number), dir_full)
 
-    _CLUES_DB_MTIME = current_mtime
-    return data['training_items']
+    if not item_id or not item:
+        return None, None
 
+    # Validate on the spot
+    errors, warnings = validate_training_item(item_id, item)
+    for warn in warnings:
+        print(f"  ⚠ {item_id}: {warn}")
+    if errors:
+        raise ValueError(errors)
 
-def load_clues_db(force=False):
-    """Load clues from configured source (TRAINING_SOURCE env var)."""
-    global _CLUES_DB, _CLUES_DB_SOURCE, _CLUES_DB_MTIME
-
-    if not force and _CLUES_DB:
-        # For file source, check mtime for hot-reload
-        if _CLUES_DB_SOURCE == 'file':
-            current_mtime = os.path.getmtime(_CLUES_DB_PATH)
-            if current_mtime == _CLUES_DB_MTIME:
-                return
-        else:
-            return  # Supabase source — reload on server restart
-
-    if _TRAINING_SOURCE == 'file':
-        _CLUES_DB = _load_clues_from_file()
-        _CLUES_DB_SOURCE = 'file'
-        print(f"Loaded {len(_CLUES_DB)} clues from clues_db.json (TRAINING_SOURCE=file)")
-    else:
-        _CLUES_DB = _load_clues_from_supabase()
-        _CLUES_DB_SOURCE = 'supabase'
-        print(f"Loaded {len(_CLUES_DB)} clues from Supabase")
-
-    # Validate all loaded clues — exclude failures instead of crashing
-    global _CLUES_ERRORS
-    _CLUES_ERRORS = {}
-    excluded = []
-    for item_id, item in list(_CLUES_DB.items()):
-        errors, warnings = validate_training_item(item_id, item)
-        for warn in warnings:
-            print(f"  ⚠ {item_id}: {warn}")
-        if errors:
-            _CLUES_ERRORS[item_id] = errors
-            del _CLUES_DB[item_id]
-            excluded.append(item_id)
-            for err in errors:
-                print(f"  ✗ {item_id}: {err}")
-    if excluded:
-        print(f"Excluded {len(excluded)} clue(s) with validation errors: {', '.join(excluded)}")
-
-
-def maybe_reload_clues_db():
-    """Reload clues if source has changed."""
-    if _CLUES_DB_SOURCE == 'file':
-        current_mtime = os.path.getmtime(_CLUES_DB_PATH)
-        if current_mtime != _CLUES_DB_MTIME:
-            print("[Auto-reload] clues_db.json changed, reloading...")
-            load_clues_db(force=True)
-    # For Supabase source, no auto-reload — server restart picks up DB changes
-
-
-def lookup_clue(clue_text, puzzle_number, clue_number, direction):
-    """Find a clue in the database. Returns (clue_id, clue_data) or (None, None)."""
-    clue_text_normalized = _normalize_quotes(clue_text.strip()) if clue_text else ''
-    clue_text_no_enum = _normalize_quotes(re.sub(r'\s*\([\d,\-\s]+\)\s*$', '', clue_text).strip()) if clue_text else ''
-
-    # Primary: construct ID from puzzle/clue/direction
-    if puzzle_number and clue_number and direction:
-        dir_suffix = 'a' if direction.lower() == 'across' else 'd'
-        expected_id = f'times-{puzzle_number}-{clue_number}{dir_suffix}'
-        if expected_id in _CLUES_DB:
-            candidate = _CLUES_DB[expected_id]
-            annotation_text = _normalize_quotes(_get_clue_text(candidate).strip())
-            if annotation_text == clue_text_normalized or annotation_text == clue_text_no_enum:
-                return expected_id, candidate
-            else:
-                return None, None  # Mismatch
-
-    # Fallback: match by text
-    for cid, cdata in _CLUES_DB.items():
-        candidate_text = _normalize_quotes(_get_clue_text(cdata).strip())
-        if candidate_text == clue_text_normalized or candidate_text == clue_text_no_enum:
-            return cid, cdata
-
-    return None, None
+    return item_id, item
 
 
 def get_clue_data(clue_id):
-    """Get clue data by ID. Returns clue_data or None if not found."""
-    return _CLUES_DB.get(clue_id)
-
-
-def get_clue_errors(puzzle_number, clue_number, direction):
-    """Check if a clue was excluded due to validation errors.
-    Returns list of error strings, or None if no errors."""
-    if puzzle_number and clue_number and direction:
-        dir_suffix = 'a' if direction.lower() == 'across' else 'd'
-        expected_id = f'times-{puzzle_number}-{clue_number}{dir_suffix}'
-        if expected_id in _CLUES_ERRORS:
-            return _CLUES_ERRORS[expected_id]
+    """Get clue data from the active session. Returns clue_data or None."""
+    session = _sessions.get(clue_id)
+    if session:
+        return session.get('clue_data')
     return None
-
-
-load_clues_db(force=True)
 
 # --- Sessions ---
 
@@ -199,6 +92,7 @@ def start_session(clue_id, clue):
     """Initialize a training session. Returns the initial render."""
     _sessions[clue_id] = {
         "clue_id": clue_id,
+        "clue_data": clue,
         "step_index": 0,
         "completed_steps": [],
         "selected_indices": [],

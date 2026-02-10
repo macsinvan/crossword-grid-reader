@@ -504,6 +504,50 @@ class PuzzleStoreSupabase:
 
         return items
 
+    def get_training_clue(self, puzzle_number: str, clue_number: int,
+                          direction: str) -> Optional[tuple]:
+        """
+        Fetch a single clue's training data from Supabase.
+
+        Returns:
+            (item_id, item_dict) matching the training_items format,
+            or (None, None) if not found or no training metadata.
+        """
+        result = self.client.table('clues').select(
+            '*, puzzles!inner(publication_id, puzzle_number)'
+        ).eq('number', clue_number).eq('direction', direction).not_.is_(
+            'training_metadata', 'null'
+        ).execute()
+
+        # Filter to the correct puzzle_number (join filter)
+        for row in result.data or []:
+            puzzle_info = row['puzzles']
+            if str(puzzle_info['puzzle_number']) != str(puzzle_number):
+                continue
+
+            pub_id = puzzle_info['publication_id']
+            dir_suffix = 'a' if direction == 'across' else 'd'
+            item_id = f"{pub_id}-{puzzle_number}-{clue_number}{dir_suffix}"
+
+            metadata = row['training_metadata']
+            clue_text = row['text']
+            enum = row.get('enumeration', '')
+            if enum:
+                suffix = f' ({enum})'
+                if clue_text.endswith(suffix):
+                    clue_text = clue_text[:-len(suffix)]
+
+            item = {
+                'clue': clue_text,
+                'number': f"{clue_number}{'A' if direction == 'across' else 'D'}",
+                'enumeration': row['enumeration'],
+                'answer': row['answer'],
+            }
+            item.update(metadata)
+            return item_id, item
+
+        return None, None
+
     def save_training_metadata(self, series: str, puzzle_number: str,
                                 clue_number: int, direction: str,
                                 metadata: Dict) -> bool:

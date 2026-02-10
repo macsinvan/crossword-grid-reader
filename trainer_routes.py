@@ -26,30 +26,20 @@ trainer_bp = Blueprint('trainer', __name__)
 @trainer_bp.route('/start', methods=['POST'])
 def trainer_start():
     """Start a training session for a clue."""
-    training_handler.maybe_reload_clues_db()
     training_handler.maybe_reload_render_templates()
 
     data = request.get_json()
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
-    clue_text = data.get('clue_text', '')
     puzzle_number = data.get('puzzle_number')
     clue_number = data.get('clue_number')
     direction = data.get('direction', '')
 
     try:
-        clue_id, clue_data = training_handler.lookup_clue(clue_text, puzzle_number, clue_number, direction)
+        clue_id, clue_data = training_handler.lookup_clue(puzzle_number, clue_number, direction)
 
         if not clue_id or not clue_data:
-            # Check if this clue was excluded due to validation errors
-            clue_errors = training_handler.get_clue_errors(puzzle_number, clue_number, direction)
-            if clue_errors:
-                return jsonify({
-                    'error': 'Training data has errors',
-                    'message': 'Training data for this clue has errors and cannot be loaded.',
-                    'validation_errors': clue_errors,
-                }), 422
             return jsonify({
                 'error': 'Clue not found in trainer database',
                 'message': 'This clue has not been annotated for training yet.',
@@ -58,6 +48,14 @@ def trainer_start():
         render = training_handler.start_session(clue_id, clue_data)
         render['clue_id'] = clue_id
         return jsonify(render)
+
+    except ValueError as e:
+        # Validation errors from lookup_clue
+        return jsonify({
+            'error': 'Training data has errors',
+            'message': 'Training data for this clue has errors and cannot be loaded.',
+            'validation_errors': e.args[0] if e.args else [],
+        }), 422
 
     except Exception as e:
         import traceback
