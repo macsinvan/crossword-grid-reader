@@ -130,6 +130,8 @@ Training metadata is loaded from the `training_metadata` JSONB column on the `cl
 **Error out, don't fallback — MANDATORY**
 Do NOT add fallbacks in the code without explicit approval from the user. Never silently swallow errors, substitute defaults for missing data, or degrade functionality without raising an error. If something is wrong, crash with a clear message. Silent fallbacks hide bugs and cause confusion.
 
+**Exception — validation on server load:** Training metadata validation errors are non-fatal on server boot. Failing clues are excluded from `_CLUES_DB` (logged to console) and tracked in `_CLUES_ERRORS` so the UI can show a clear error message when that clue is requested. The server continues to serve all valid clues. This is NOT a silent fallback — errors are visible in both the server log and the UI.
+
 ## What This Is
 Web-based Times Cryptic crossword solver. Import PDFs, solve interactively, get step-by-step teaching via template-based step display system.
 
@@ -356,11 +358,13 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 
 ## Training Metadata Validation
 
-`validate_training.py` runs four layers of checks on every training item before it reaches the server. Errors block upload/load; warnings are logged but don't block.
+`validate_training.py` runs four layers of checks on every training item. Errors block upload; on server load, errors exclude the clue (non-fatal). Warnings are logged but don't block.
 
 **Integration points:**
 - `upload_training_metadata.py` — validates before uploading (errors skip item)
-- `training_handler.py` `load_clues_db()` — validates on load (errors raise ValueError, crash loud)
+- `training_handler.py` `load_clues_db()` — validates on load, **excludes** failing clues from `_CLUES_DB` and tracks them in `_CLUES_ERRORS` (logs errors to console, does NOT crash the server)
+- `trainer_routes.py` `/trainer/start` — returns 422 with `validation_errors` for excluded clues, 404 for unannotated clues, 200 for success
+- `crossword.js` — displays `data.message` from server (not hardcoded text) for both 422 and 404 errors
 - Standalone: `python3 validate_training.py` — validates all items in Supabase
 
 ### Layer 1: Structural checks
@@ -410,6 +414,23 @@ Publication is extracted from item ID (e.g. `times-29453-11a` → `times`). All 
   - British slang: chap=MAN, pub=INN/PH, loo=WC/LAV
 
 **Adding a new publication:** Add a new entry to `PUBLICATION_CONVENTIONS` dict in `validate_training.py` with `spelling_checks` and `extra_abbreviations` keys.
+
+## New Session Startup
+
+When starting a new session, check these first:
+
+1. **Run the validator** to see current state: `python3 validate_training.py` (validates all clues in Supabase)
+2. **Check puzzle lock status**: `python3 lock_puzzle.py --list`
+3. **Read this section** and "Current Work" below for what's in progress
+
+**Key things a new session needs to know:**
+- Puzzle **29453** (30 clues) is **locked** and 100% verified — never modify
+- Puzzle **29147** (26/32 clues done) is the active work — 6 clues remaining (see below)
+- Training data lives in **Supabase** (`clues.training_metadata`), not in JSON files
+- The server **gracefully excludes** clues with validation errors (doesn't crash) — excluded clues show an error message in the UI when clicked
+- The standalone validator (`validate_training.py`) loads directly from Supabase
+- After uploading training metadata, **restart the server** to pick up changes (no auto-reload for Supabase data)
+- Known OCR error: puzzle 29147 clue 5D has `fiower` instead of `flower` in the DB `text` column — this causes a words-vs-clue mismatch that excludes 5D from the trainer (fix requires correcting the OCR text in Supabase directly)
 
 ## Current Work — Puzzle 29147 Training Metadata
 

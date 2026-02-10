@@ -22,6 +22,8 @@ All user-facing text comes from render_templates.json with {variable} substituti
 No silent fallbacks. If data is missing, crash with a clear error message.
 Never substitute defaults for missing data without explicit approval.
 
+**Exception:** Training metadata validation errors on server boot are non-fatal — failing clues are excluded (logged + tracked in `_CLUES_ERRORS`), not silently swallowed. The UI shows a clear error when a user clicks an excluded clue.
+
 ## No Guessing
 Never state something without reading the code first.
 If you don't know, say "I don't know — let me check."
