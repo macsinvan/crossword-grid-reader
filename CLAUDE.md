@@ -171,7 +171,9 @@ Open http://localhost:8080
 |------|---------|
 | `migrations/001_initial_schema.sql` | Initial DB schema (publications, puzzles, clues, user_progress) |
 | `migrations/002_add_training_metadata.sql` | Adds `training_metadata` JSONB column to clues table |
-| `upload_training_metadata.py` | Uploads training metadata from `clues_db.json` to Supabase |
+| `migrations/004_add_training_locked.sql` | Adds `training_locked` column to puzzles table |
+| `upload_training_metadata.py` | Uploads training metadata from `clues_db.json` to Supabase (requires `--puzzle` or `--clue` filter) |
+| `lock_puzzle.py` | Lock/unlock puzzle training data (prevents accidental overwrites of verified data) |
 
 ## Architecture
 
@@ -250,8 +252,13 @@ TRAINING_SOURCE=supabase    # 'supabase' (default) or 'file' (uses clues_db.json
 python3 crossword_server.py                                          # Start server (uses TRAINING_SOURCE=supabase by default)
 TRAINING_SOURCE=file python3 crossword_server.py                     # Start server with file-based training data
 python3 test_regression.py                                           # Run 330 regression tests (server must be running)
-python3 upload_training_metadata.py                                  # Upload clues_db.json training data to Supabase
-python3 upload_training_metadata.py --dry-run                        # Preview upload without writing
+python3 upload_training_metadata.py --puzzle 29147                   # Upload one puzzle's training data to Supabase
+python3 upload_training_metadata.py --clue times-29147-1d            # Upload one clue's training data
+python3 upload_training_metadata.py --puzzle 29147 --dry-run         # Preview upload without writing
+python3 lock_puzzle.py --lock 29453                                  # Lock a puzzle (prevents training data modification)
+python3 lock_puzzle.py --unlock 29453                                # Unlock a puzzle
+python3 lock_puzzle.py --status 29453                                # Check lock status
+python3 lock_puzzle.py --list                                        # List all locked puzzles
 python3 validate_training.py                                         # Validate all training items (structural + semantic + convention + publication)
 python3 -c "import json; json.load(open('clues_db.json')); print('Valid')"  # Validate clues_db JSON syntax
 ```
@@ -470,7 +477,7 @@ Publication is extracted from item ID (e.g. `times-29453-11a` → `times`). All 
 
 **Process:** Two-phase approach: (1) Solve as AI expert with clue+definition+answer, (2) Encode as training metadata. Hints teach Times conventions (the macro-level checks become the hints).
 
-**IMPORTANT: Puzzle 29453 is the verified reference. It is 100% read-only. Never modify any `times-29453-*` entries in `clues_db.json`.**
+**IMPORTANT: Puzzle 29453 is the verified reference. It is locked in Supabase (`training_locked = TRUE`) and 100% read-only. Never modify any `times-29453-*` entries in `clues_db.json`. The upload script and all store write methods refuse to modify locked puzzles. Use `python3 lock_puzzle.py --unlock 29453` only if you genuinely need to fix data.**
 
 ## Worktrees
 This repo uses git worktrees:

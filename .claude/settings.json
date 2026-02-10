@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Bash(cd * && git merge * && git push)",
+      "Bash(cd \"*\" && git merge * && git push)",
       "Bash(git merge *)",
       "Bash(git push)",
       "Bash(git push *)",

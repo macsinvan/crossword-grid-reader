@@ -92,6 +92,22 @@ class PuzzleStoreSupabase:
         else:
             return 'times'  # Default
 
+    def _check_training_lock(self, publication_id: str, puzzle_number: str) -> None:
+        """Check if a puzzle's training data is locked. Raises ValueError if locked."""
+        result = self.client.table('puzzles').select('training_locked').eq(
+            'publication_id', publication_id
+        ).eq('puzzle_number', str(puzzle_number)).execute()
+
+        if not result.data:
+            return  # Puzzle doesn't exist yet — can't be locked
+
+        if result.data[0].get('training_locked'):
+            raise ValueError(
+                f"Puzzle {publication_id} #{puzzle_number} is locked. "
+                f"Training data cannot be modified. "
+                f"Use lock_puzzle.py --unlock to remove the lock if needed."
+            )
+
     def save_puzzle(self, puzzle_data: Dict, pdf_path: str = None, answers_data: Dict = None) -> Dict:
         """
         Save a puzzle to Supabase.
@@ -112,6 +128,7 @@ class PuzzleStoreSupabase:
             raise ValueError("puzzle_data must contain 'number'")
         puzzle_number = str(puzzle_number)
         publication_id = self._map_series_to_publication(series)
+        self._check_training_lock(publication_id, puzzle_number)
 
         # Extract grid info
         grid = puzzle_data.get('grid')
@@ -223,6 +240,7 @@ class PuzzleStoreSupabase:
         Add or update answers for an existing puzzle.
         """
         publication_id = self._map_series_to_publication(series)
+        self._check_training_lock(publication_id, puzzle_number)
 
         # Get puzzle
         result = self.client.table('puzzles').select('id').eq(
@@ -428,6 +446,7 @@ class PuzzleStoreSupabase:
     def delete_puzzle(self, series: str, puzzle_number: str) -> bool:
         """Delete a puzzle from storage."""
         publication_id = self._map_series_to_publication(series)
+        self._check_training_lock(publication_id, puzzle_number)
 
         result = self.client.table('puzzles').delete().eq(
             'publication_id', publication_id
@@ -490,6 +509,7 @@ class PuzzleStoreSupabase:
             metadata: Training metadata dict (words, clue_type, difficulty, steps)
         """
         publication_id = self._map_series_to_publication(series)
+        self._check_training_lock(publication_id, puzzle_number)
 
         # Get puzzle ID
         puzzle_result = self.client.table('puzzles').select('id').eq(

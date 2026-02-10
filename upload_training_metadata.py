@@ -12,8 +12,10 @@ Prerequisites:
     3. .env file with SUPABASE_URL and SUPABASE_ANON_KEY
 
 Usage:
-    python3 upload_training_metadata.py
-    python3 upload_training_metadata.py --dry-run    # Preview without writing
+    python3 upload_training_metadata.py --puzzle 29147              # Upload one puzzle
+    python3 upload_training_metadata.py --puzzle 29147 --dry-run   # Preview without writing
+    python3 upload_training_metadata.py --clue times-29147-1d      # Upload one clue
+    python3 upload_training_metadata.py --clue times-29147-1d --dry-run
 """
 
 import json
@@ -68,6 +70,30 @@ def extract_metadata(item):
 def main():
     dry_run = '--dry-run' in sys.argv
 
+    # Require --puzzle or --clue filter — never upload everything
+    puzzle_filter = None
+    clue_filter = None
+
+    if '--puzzle' in sys.argv:
+        idx = sys.argv.index('--puzzle')
+        if idx + 1 >= len(sys.argv):
+            print("ERROR: --puzzle requires a puzzle number (e.g. --puzzle 29147)")
+            return 1
+        puzzle_filter = sys.argv[idx + 1]
+
+    if '--clue' in sys.argv:
+        idx = sys.argv.index('--clue')
+        if idx + 1 >= len(sys.argv):
+            print("ERROR: --clue requires a clue ID (e.g. --clue times-29147-1d)")
+            return 1
+        clue_filter = sys.argv[idx + 1]
+
+    if not puzzle_filter and not clue_filter:
+        print("ERROR: You must specify --puzzle or --clue to upload. Bulk upload is disabled.")
+        print("  python3 upload_training_metadata.py --puzzle 29147")
+        print("  python3 upload_training_metadata.py --clue times-29147-1d")
+        return 1
+
     # Load clues_db.json
     script_dir = os.path.dirname(os.path.abspath(__file__))
     clues_db_path = os.path.join(script_dir, 'clues_db.json')
@@ -76,13 +102,38 @@ def main():
         data = json.load(f)
 
     training_items = data.get('training_items', {})
-    print(f"Loaded {len(training_items)} training items from clues_db.json")
+
+    if clue_filter:
+        training_items = {k: v for k, v in training_items.items() if k == clue_filter}
+        print(f"Filtered to clue: {clue_filter}")
+    elif puzzle_filter:
+        training_items = {k: v for k, v in training_items.items() if f'-{puzzle_filter}-' in k}
+        print(f"Filtered to {len(training_items)} training items for puzzle {puzzle_filter}")
+
+    if len(training_items) == 0:
+        print(f"ERROR: No matching training items found")
+        return 1
 
     if dry_run:
         print("\n=== DRY RUN — no changes will be written ===\n")
 
     # Connect to Supabase
     store = PuzzleStoreSupabase()
+
+    # Pre-flight: check if the target puzzle is locked
+    target_puzzle = puzzle_filter
+    if not target_puzzle and clue_filter:
+        match = re.match(r'^\w+-(\d+)-\d+[ad]$', clue_filter)
+        if match:
+            target_puzzle = match.group(1)
+    if target_puzzle:
+        check_result = store.client.table('puzzles').select(
+            'training_locked'
+        ).eq('puzzle_number', target_puzzle).execute()
+        if check_result.data and check_result.data[0].get('training_locked'):
+            print(f"ERROR: Puzzle #{target_puzzle} is locked. Training data cannot be modified.")
+            print(f"Use: python3 lock_puzzle.py --unlock {target_puzzle}")
+            return 1
 
     success = 0
     failed = 0
