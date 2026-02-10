@@ -816,8 +816,18 @@ def _build_step_list(session, clue):
 
             # Backfill: enrich outer_word/inner_word titles with transform results
             if step["type"] in ("outer_word", "inner_word") and transform_results:
-                role = "outer" if step["type"] == "outer_word" else "inner"
-                transform_result = transform_results.get(role)
+                if step["type"] == "outer_word":
+                    transform_result = transform_results.get("outer")
+                else:
+                    # inner_word: check "inner" first, then collect inner_a, inner_b, etc.
+                    transform_result = transform_results.get("inner")
+                    if not transform_result:
+                        inner_parts = sorted(
+                            (k, v) for k, v in transform_results.items()
+                            if k.startswith("inner_")
+                        )
+                        if inner_parts:
+                            transform_result = " + ".join(v for _, v in inner_parts)
                 if transform_result:
                     words_str = " ".join(clue["words"][idx] for idx in step["indices"])
                     backfill_tmpl = template["backfillTitle"]
