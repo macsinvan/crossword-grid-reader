@@ -267,13 +267,16 @@ CRYPTIC_ABBREVIATIONS = {
 }
 
 # Valid template step types (from render_templates.json)
-VALID_STEP_TYPES = {"definition", "wordplay_type", "indicator", "outer_word", "inner_word", "assembly", "fodder"}
+VALID_STEP_TYPES = {"definition", "wordplay_type", "indicator", "outer_word", "inner_word", "assembly", "fodder", "multi_definition"}
 
 # Valid transform types (from assembly.transformPrompts)
 VALID_TRANSFORM_TYPES = {"synonym", "abbreviation", "literal", "reversal", "deletion", "anagram", "container", "letter_selection"}
 
 # Valid indicator types
 VALID_INDICATOR_TYPES = {"container", "anagram", "deletion", "reversal", "ordering", "letter_selection", "hidden_word"}
+
+# Valid definition_part values for multi_definition steps
+VALID_DEFINITION_PARTS = {"first", "second", "third"}
 
 # Dependent transform types that require a matching indicator step
 DEPENDENT_TRANSFORM_TYPES = {"reversal", "deletion", "anagram", "container"}
@@ -287,6 +290,7 @@ STEP_REQUIRED_FIELDS = {
     "wordplay_type": ["expected", "options", "hint"],
     "indicator": ["indices", "hint", "indicator_type"],
     "fodder": ["indices", "indicator_type"],
+    "multi_definition": ["indices", "hint", "definition_part"],
     "outer_word": ["indices"],
     "inner_word": ["indices"],
     "assembly": ["transforms", "result"],
@@ -817,6 +821,11 @@ def validate_training_item(item_id, item):
         if step_type == "indicator" and "indicator_type" in step:
             if step["indicator_type"] not in VALID_INDICATOR_TYPES:
                 errors.append(f"Step {i} (indicator): invalid indicator_type '{step['indicator_type']}', must be one of {VALID_INDICATOR_TYPES}")
+
+        # --- 13b. Definition part valid ---
+        if step_type == "multi_definition" and "definition_part" in step:
+            if step["definition_part"] not in VALID_DEFINITION_PARTS:
+                errors.append(f"Step {i} (multi_definition): invalid definition_part '{step['definition_part']}', must be one of {VALID_DEFINITION_PARTS}")
 
         # --- Assembly-specific checks ---
         if step_type == "assembly":

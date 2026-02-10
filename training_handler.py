@@ -138,15 +138,13 @@ def get_render(clue_id, clue):
         }
     else:
         # Build current step render
-        # Resolve prompt (template may be dict keyed by indicator_type)
+        # Resolve prompt (template may be dict keyed by indicator_type or definition_part)
         prompt_data = template["prompt"]
         if isinstance(prompt_data, dict):
-            if "indicator_type" not in step:
-                raise ValueError(f"Step type '{step['type']}' has dict-based prompt template but step metadata is missing 'indicator_type'")
-            itype = step["indicator_type"]
-            if itype not in prompt_data:
-                raise ValueError(f"No prompt for indicator_type '{itype}' in template. Available: {list(prompt_data.keys())}")
-            resolved_prompt = prompt_data[itype]
+            dict_key = _get_dict_key(step)
+            if dict_key not in prompt_data:
+                raise ValueError(f"No prompt for '{dict_key}' in template. Available: {list(prompt_data.keys())}")
+            resolved_prompt = prompt_data[dict_key]
         else:
             resolved_prompt = prompt_data
 
@@ -157,16 +155,14 @@ def get_render(clue_id, clue):
             "prompt": resolved_prompt,
         }
 
-        # Intro (template may be dict keyed by indicator_type)
+        # Intro (template may be dict keyed by indicator_type or definition_part)
         if "intro" in template:
             intro_data = template["intro"]
             if isinstance(intro_data, dict):
-                if "indicator_type" not in step:
-                    raise ValueError(f"Step type '{step['type']}' has dict-based intro template but step metadata is missing 'indicator_type'")
-                itype = step["indicator_type"]
-                if itype not in intro_data:
-                    raise ValueError(f"No intro for indicator_type '{itype}' in template. Available: {list(intro_data.keys())}")
-                current_step["intro"] = intro_data[itype]
+                dict_key = _get_dict_key(step)
+                if dict_key not in intro_data:
+                    raise ValueError(f"No intro for '{dict_key}' in template. Available: {list(intro_data.keys())}")
+                current_step["intro"] = intro_data[dict_key]
             else:
                 current_step["intro"] = intro_data
 
@@ -885,6 +881,22 @@ def _resolve_expected(step, template):
         raise ValueError(f"Unknown expected_source: {source}")
 
 
+def _get_dict_key(step):
+    """Get the dict lookup key from step metadata.
+
+    Templates use dict-keyed fields (prompt, intro) where the key comes from
+    the step's type-specific field: indicator_type or definition_part.
+    """
+    if "indicator_type" in step:
+        return step["indicator_type"]
+    if "definition_part" in step:
+        return step["definition_part"]
+    raise ValueError(
+        f"Step type '{step.get('type', '?')}' has dict-based template field "
+        f"but step metadata has neither 'indicator_type' nor 'definition_part'"
+    )
+
+
 def _resolve_variables(text, step, clue):
     """Replace {variable} placeholders in a template string."""
     if not text:
@@ -930,6 +942,12 @@ def _resolve_variables(text, step, clue):
         if "indicatorHint" not in step:
             raise ValueError(f"Template uses {{indicatorHint}} but step is missing 'indicatorHint'")
         text = text.replace("{indicatorHint}", step["indicatorHint"])
+
+    # {definitionPart} — from multi_definition step's definition_part field (e.g. "first", "second")
+    if "{definitionPart}" in text:
+        if "definition_part" not in step:
+            raise ValueError(f"Template uses {{definitionPart}} but step metadata is missing 'definition_part'")
+        text = text.replace("{definitionPart}", step["definition_part"])
 
     # {indicatorType} — from indicator step's indicator_type field (e.g. "container", "anagram")
     if "{indicatorType}" in text:

@@ -103,6 +103,24 @@
     "expected_source": "result",
     "onCorrect": "The letters combine to give {result}."
   },
+  "multi_definition": {
+    "inputMode": "tap_words",
+    "prompt": {
+      "first": "Which words form the first definition?",
+      "second": "Which words form the second definition?",
+      "third": "Which words form the third definition?"
+    },
+    "menuTitle": "Find the {definitionPart} definition",
+    "completedTitle": "{definitionPart} definition: '{words}' — {hint}",
+    "intro": {
+      "first": "In a multi-definition clue, the whole clue is made of definitions sitting side by side — no wordplay tricks. Find the first one.",
+      "second": "Now find the second definition — a different meaning that points to the same answer.",
+      "third": "There's a third definition here too — another meaning of the same word."
+    },
+    "hint": "Each definition is a separate meaning of the answer word. They sit side by side with no wordplay between them.",
+    "expected_source": "indices",
+    "onCorrect": "'{words}' — {hint}"
+  },
   "fodder": {
     "inputMode": "tap_words",
     "prompt": {
