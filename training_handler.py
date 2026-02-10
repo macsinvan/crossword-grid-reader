@@ -1066,7 +1066,14 @@ def _resolve_variables(text, step, clue):
                         parts.append(container_notation)
                         container_placed = True
                     elif t["role"] not in container_roles and not t["role"].startswith("inner_"):
-                        parts.append(t["result"].upper())
+                        # Show word attribution for charade parts: 'object' → MIND
+                        result_upper = t["result"].upper()
+                        words = clue.get("words", [])
+                        clue_word = " ".join(words[idx] for idx in t["indices"]) if words and "indices" in t else ""
+                        if clue_word and clue_word.upper().replace(" ", "") != result_upper.replace(" ", ""):
+                            parts.append("'" + clue_word + "' → " + result_upper)
+                        else:
+                            parts.append(result_upper)
                 if not container_placed:
                     parts.insert(0, container_notation)
 
