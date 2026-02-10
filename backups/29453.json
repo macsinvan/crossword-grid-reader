@@ -1,0 +1,2627 @@
+{
+  "training_items": {
+    "times-29453-22a": {
+      "clue": "Friend taking minute to finish piano exam out of time (9)",
+      "number": "22A",
+      "enumeration": "",
+      "answer": "ATEMPORAL",
+      "steps": [
+        {
+          "hint": "Existing outside of time \u2014 timeless",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/atemporal",
+            "word": "atemporal"
+          },
+          "indices": [
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "hint": "'Taking' signals a rearrangement \u2014 it tells you to take letters and move them around",
+          "type": "indicator",
+          "indices": [
+            1
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "type": "assembly",
+          "result": "ATEMPORAL",
+          "transforms": [
+            {
+              "hint": "A friend is a mate \u2014 one of the most common synonyms in cryptics",
+              "role": "part1",
+              "type": "synonym",
+              "result": "MATE",
+              "indices": [
+                0
+              ]
+            },
+            {
+              "hint": "'Taking minute to finish' tells you to move M (minute) to the end of MATE \u2014 rearranging the letters gives ATEM",
+              "role": "part1 rearranged",
+              "type": "anagram",
+              "result": "ATEM",
+              "indices": [
+                1,
+                2,
+                3,
+                4
+              ]
+            },
+            {
+              "hint": "In music, P means piano (soft) \u2014 a standard abbreviation in cryptics",
+              "role": "part2",
+              "type": "abbreviation",
+              "result": "P",
+              "indices": [
+                5
+              ]
+            },
+            {
+              "hint": "A spoken exam is an oral \u2014 a common crossword synonym",
+              "role": "part3",
+              "type": "synonym",
+              "result": "ORAL",
+              "indices": [
+                6
+              ]
+            }
+          ],
+          "failMessage": "The raw clue words don't fit \u2014 what does each one really mean?"
+        }
+      ],
+      "words": [
+        "Friend",
+        "taking",
+        "minute",
+        "to",
+        "finish",
+        "piano",
+        "exam",
+        "out",
+        "of",
+        "time"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "hard",
+        "wordplay": "hard",
+        "definition": "hard"
+      }
+    },
+    "times-29453-1d": {
+      "clue": "See boss bungle work (6)",
+      "number": "1D",
+      "enumeration": "",
+      "answer": "BISHOP",
+      "steps": [
+        {
+          "hint": "A 'see' is a diocese \u2014 who runs one?",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/see",
+            "word": "see"
+          },
+          "indices": [
+            0,
+            1
+          ]
+        },
+        {
+          "hint": "No indicator words here \u2014 the parts just join end to end. That's a charade.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "BISHOP",
+          "transforms": [
+            {
+              "hint": "British slang for making a mistake or bungling something",
+              "role": "part1",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/bungle",
+                "word": "bungle"
+              },
+              "result": "BISH",
+              "indices": [
+                2
+              ]
+            },
+            {
+              "hint": "In cryptics, 'work' nearly always means OP (short for opus). One to remember!",
+              "role": "part2",
+              "type": "abbreviation",
+              "result": "OP",
+              "indices": [
+                3
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "See",
+        "boss",
+        "bungle",
+        "work"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "easy",
+        "definition": "medium"
+      }
+    },
+    "times-29453-26d": {
+      "clue": "In Republican's absence, conflicts happened (3)",
+      "number": "26D",
+      "enumeration": "",
+      "answer": "WAS",
+      "steps": [
+        {
+          "hint": "A simple past tense word \u2014 something that occurred",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/was",
+            "word": "was"
+          },
+          "indices": [
+            4
+          ]
+        },
+        {
+          "hint": "'Absence' tells you something is missing \u2014 a letter needs to be removed",
+          "type": "indicator",
+          "indices": [
+            2
+          ],
+          "indicator_type": "deletion"
+        },
+        {
+          "hint": "'Conflicts' is the word that will lose a letter",
+          "type": "fodder",
+          "indices": [
+            3
+          ],
+          "indicator_type": "deletion"
+        },
+        {
+          "type": "assembly",
+          "result": "WAS",
+          "transforms": [
+            {
+              "hint": "'Conflicts' means 'wars' \u2014 armed conflicts are wars",
+              "role": "part1",
+              "type": "synonym",
+              "result": "WARS",
+              "indices": [
+                3
+              ]
+            },
+            {
+              "hint": "'Republican's absence' means remove R (the standard abbreviation for Republican) from WARS",
+              "role": "part2",
+              "type": "deletion",
+              "result": "WAS",
+              "indices": [
+                1,
+                2
+              ]
+            }
+          ],
+          "failMessage": "'Conflicts' doesn't work directly \u2014 what shorter word does it point to?"
+        }
+      ],
+      "words": [
+        "In",
+        "Republican's",
+        "absence",
+        "conflicts",
+        "happened"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "easy"
+      }
+    },
+    "times-29453-13a": {
+      "clue": "Moderate movement also opposed to one referendum option (9)",
+      "number": "13A",
+      "enumeration": "",
+      "answer": "ANDANTINO",
+      "steps": [
+        {
+          "hint": "A musical tempo marking \u2014 moderately slow, between adagio and allegro",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/andantino",
+            "word": "andantino"
+          },
+          "indices": [
+            0,
+            1
+          ]
+        },
+        {
+          "hint": "No indicator words here \u2014 the parts just join end to end. That's a charade.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "ANDANTINO",
+          "transforms": [
+            {
+              "hint": "'Also' is another way of saying 'and' \u2014 they both link things together",
+              "role": "part1",
+              "type": "synonym",
+              "result": "AND",
+              "indices": [
+                2
+              ]
+            },
+            {
+              "hint": "'Opposed to' means 'anti' \u2014 the prefix meaning against",
+              "role": "part2",
+              "type": "synonym",
+              "result": "ANTI",
+              "indices": [
+                3,
+                4
+              ]
+            },
+            {
+              "hint": "In a referendum, the two options are Yes and No \u2014 'one referendum option' is NO",
+              "role": "part3",
+              "type": "synonym",
+              "result": "NO",
+              "indices": [
+                5,
+                6,
+                7
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Moderate",
+        "movement",
+        "also",
+        "opposed",
+        "to",
+        "one",
+        "referendum",
+        "option"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "easy",
+        "definition": "hard"
+      }
+    },
+    "times-29453-12a": {
+      "clue": "Concerning sight as head of office IT struggles with PC (5)",
+      "number": "12A",
+      "enumeration": "",
+      "answer": "OPTIC",
+      "steps": [
+        {
+          "hint": "Related to vision or the eye \u2014 think of an optician",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/optic",
+            "word": "optic"
+          },
+          "indices": [
+            0,
+            1
+          ]
+        },
+        {
+          "hint": "take the first letter of the next word",
+          "type": "indicator",
+          "indices": [
+            3,
+            4
+          ],
+          "indicator_type": "letter_selection"
+        },
+        {
+          "hint": "difficulty or disorder \u2014 a classic signal to rearrange letters",
+          "type": "indicator",
+          "indices": [
+            7
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "type": "assembly",
+          "result": "OPTIC",
+          "explicit": true,
+          "transforms": [
+            {
+              "hint": "'Head of office' means take the first letter \u2014 the 'head' \u2014 of the word 'office'",
+              "role": "part1",
+              "type": "letter_selection",
+              "result": "O",
+              "indices": [
+                3,
+                4,
+                5
+              ]
+            },
+            {
+              "hint": "'IT' is used as-is \u2014 it contributes both its letters",
+              "role": "part2",
+              "type": "literal",
+              "result": "IT",
+              "indices": [
+                6
+              ]
+            },
+            {
+              "hint": "'PC' is used as-is \u2014 it contributes both its letters",
+              "role": "part3",
+              "type": "literal",
+              "result": "PC",
+              "indices": [
+                9
+              ]
+            },
+            {
+              "hint": "Rearrange O + IT + PC (5 letters) \u2014 what word meaning 'concerning sight' can you make?",
+              "role": "part4",
+              "type": "anagram",
+              "result": "OPTIC",
+              "indices": [
+                7,
+                8
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Concerning",
+        "sight",
+        "as",
+        "head",
+        "of",
+        "office",
+        "IT",
+        "struggles",
+        "with",
+        "PC"
+      ],
+      "clue_type": "anagram",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "easy"
+      }
+    },
+    "times-29453-4a": {
+      "clue": "Twit copying antique with pine, mostly (8)",
+      "number": "4A",
+      "enumeration": "",
+      "answer": "REPROACH",
+      "steps": [
+        {
+          "hint": "To criticize or scold someone",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/twit",
+            "word": "twit"
+          },
+          "indices": [
+            0
+          ]
+        },
+        {
+          "hint": "'Mostly' means not all of it \u2014 take most of a word and drop the last letter",
+          "type": "indicator",
+          "indices": [
+            5
+          ],
+          "indicator_type": "deletion"
+        },
+        {
+          "type": "assembly",
+          "result": "REPROACH",
+          "transforms": [
+            {
+              "hint": "A repro is a reproduction or copy of an antique",
+              "role": "part1",
+              "type": "synonym",
+              "result": "REPRO",
+              "indices": [
+                1,
+                2
+              ]
+            },
+            {
+              "hint": "To pine is to ache \u2014 to long painfully for something",
+              "role": "part2",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/pine",
+                "word": "pine"
+              },
+              "result": "ACHE",
+              "indices": [
+                4
+              ]
+            },
+            {
+              "hint": "'Mostly' means take most of the letters \u2014 drop the last one",
+              "role": "part3",
+              "type": "deletion",
+              "result": "ACH",
+              "indices": [
+                5
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Twit",
+        "copying",
+        "antique",
+        "with",
+        "pine",
+        "mostly"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "easy",
+        "definition": "medium"
+      }
+    },
+    "times-29453-10a": {
+      "clue": "Flatter track takes very little time (5-4)",
+      "number": "10A",
+      "enumeration": "",
+      "answer": "SWEET TALK",
+      "steps": [
+        {
+          "hint": "To cajole or charm someone with persuasive words",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/flatter",
+            "word": "flatter"
+          },
+          "indices": [
+            0
+          ]
+        },
+        {
+          "hint": "To 'take' something is to absorb or contain it \u2014 one word goes inside another",
+          "type": "indicator",
+          "indices": [
+            2
+          ],
+          "indicator_type": "container"
+        },
+        {
+          "hint": "Which word provides the letters that wrap around the inner part?",
+          "type": "outer_word",
+          "indices": [
+            1
+          ]
+        },
+        {
+          "hint": "The remaining words build the inner part \u2014 two small clues that join together before being inserted.",
+          "type": "inner_word",
+          "indices": [
+            3,
+            4,
+            5
+          ]
+        },
+        {
+          "type": "assembly",
+          "result": "SWEET TALK",
+          "transforms": [
+            {
+              "hint": "To 'track' someone is to follow or stalk them",
+              "role": "outer",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/track",
+                "word": "track"
+              },
+              "result": "STALK",
+              "indices": [
+                1
+              ]
+            },
+            {
+              "hint": "'Very little' \u2014 a Scottish word for tiny",
+              "role": "inner",
+              "type": "synonym",
+              "result": "WEE",
+              "indices": [
+                3,
+                4
+              ]
+            },
+            {
+              "hint": "T is the standard crossword abbreviation for 'time'",
+              "role": "inner",
+              "type": "abbreviation",
+              "result": "T",
+              "indices": [
+                5
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Flatter",
+        "track",
+        "takes",
+        "very",
+        "little",
+        "time"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "easy"
+      }
+    },
+    "times-29453-8d": {
+      "clue": "Steamy in here, but you must wear socks (8)",
+      "number": "8D",
+      "enumeration": "",
+      "answer": "HOTHOUSE",
+      "steps": [
+        {
+          "hint": "A warm glass building for growing plants \u2014 a greenhouse",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/hothouse",
+            "word": "hothouse"
+          },
+          "indices": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "hint": "To wear something is to put it around you \u2014 the outside wraps around the inside",
+          "type": "indicator",
+          "indices": [
+            6
+          ],
+          "indicator_type": "container"
+        },
+        {
+          "hint": "What gets wrapped around the outside? Think of another word for socks.",
+          "type": "outer_word",
+          "indices": [
+            7
+          ]
+        },
+        {
+          "hint": "What goes inside? An archaic form of 'you'.",
+          "type": "inner_word",
+          "indices": [
+            4
+          ]
+        },
+        {
+          "type": "assembly",
+          "result": "HOTHOUSE",
+          "transforms": [
+            {
+              "hint": "'Socks' are 'hose' \u2014 an old word for stockings that's still common in cryptics",
+              "role": "outer",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/sock",
+                "word": "sock"
+              },
+              "result": "HOSE",
+              "indices": [
+                7
+              ]
+            },
+            {
+              "hint": "'You' in archaic English is 'thou' \u2014 Shakespeare's favourite pronoun",
+              "role": "inner",
+              "type": "synonym",
+              "result": "THOU",
+              "indices": [
+                4
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Steamy",
+        "in",
+        "here",
+        "but",
+        "you",
+        "must",
+        "wear",
+        "socks"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "easy"
+      }
+    },
+    "times-29453-1a": {
+      "clue": "Cover up in shower? Not after nurses turn round (6)",
+      "number": "1A",
+      "enumeration": "",
+      "answer": "BROLLY",
+      "steps": [
+        {
+          "hint": "Something you use to stay dry when it rains",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/brolly",
+            "word": "brolly"
+          },
+          "indices": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "hint": "To nurse something is to hold or cradle it \u2014 one word wraps around another",
+          "type": "indicator",
+          "indices": [
+            6
+          ],
+          "indicator_type": "container"
+        },
+        {
+          "hint": "The indicator tells you this word gets stretched \u2014 which pair wraps around the other?",
+          "type": "outer_word",
+          "indices": [
+            4,
+            5
+          ]
+        },
+        {
+          "hint": "Which remaining words get placed inside?",
+          "type": "inner_word",
+          "indices": [
+            7,
+            8
+          ]
+        },
+        {
+          "type": "assembly",
+          "result": "BROLLY",
+          "transforms": [
+            {
+              "hint": "'Not after' means before \u2014 another word for that is BY",
+              "role": "outer",
+              "type": "synonym",
+              "result": "BY",
+              "indices": [
+                4,
+                5
+              ]
+            },
+            {
+              "hint": "To 'turn round' is to 'roll' \u2014 a simple synonym",
+              "role": "inner",
+              "type": "synonym",
+              "result": "ROLL",
+              "indices": [
+                7,
+                8
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Cover",
+        "up",
+        "in",
+        "shower",
+        "Not",
+        "after",
+        "nurses",
+        "turn",
+        "round"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "hard",
+        "definition": "easy"
+      }
+    },
+    "times-29453-25a": {
+      "clue": "Urge removal of line from silly speech (5)",
+      "number": "25A",
+      "enumeration": "",
+      "answer": "DRIVE",
+      "steps": [
+        {
+          "hint": "To push or propel forward \u2014 'drive' can mean to urge someone on",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/urge",
+            "word": "urge"
+          },
+          "indices": [
+            0
+          ]
+        },
+        {
+          "hint": "'Removal' means something is being taken away \u2014 a letter needs to go",
+          "type": "indicator",
+          "indices": [
+            1
+          ],
+          "indicator_type": "deletion"
+        },
+        {
+          "hint": "'Silly speech' is the phrase that points to the word you'll delete a letter from",
+          "type": "fodder",
+          "indices": [
+            5,
+            6
+          ],
+          "indicator_type": "deletion"
+        },
+        {
+          "type": "assembly",
+          "result": "DRIVE",
+          "transforms": [
+            {
+              "hint": "Drivel is silly, nonsensical speech \u2014 a perfect synonym",
+              "role": "part1",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/drivel",
+                "word": "drivel"
+              },
+              "result": "DRIVEL",
+              "indices": [
+                5,
+                6
+              ]
+            },
+            {
+              "hint": "'Removal of line from' means remove L \u2014 in cryptics, 'line' is a standard abbreviation for the letter L",
+              "role": "part2",
+              "type": "deletion",
+              "result": "DRIVE",
+              "indices": [
+                1,
+                2,
+                3,
+                4
+              ]
+            }
+          ],
+          "failMessage": "'Silly speech' doesn't work directly \u2014 what shorter word does it point to?"
+        }
+      ],
+      "words": [
+        "Urge",
+        "removal",
+        "of",
+        "line",
+        "from",
+        "silly",
+        "speech"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "easy"
+      }
+    },
+    "times-29453-21d": {
+      "clue": "Sailor in the doldrums relatively OK for tobacco? (3-3)",
+      "number": "21D",
+      "enumeration": "",
+      "answer": "LOW TAR",
+      "steps": [
+        {
+          "hint": "A description of cigarettes with reduced harmful content",
+          "type": "definition",
+          "indices": [
+            4,
+            5,
+            6,
+            7
+          ]
+        },
+        {
+          "hint": "No indicator words here \u2014 the parts just join end to end. That's a charade.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "LOW TAR",
+          "transforms": [
+            {
+              "hint": "To be 'in the doldrums' is to feel low \u2014 depressed or down",
+              "role": "part1",
+              "type": "synonym",
+              "result": "LOW",
+              "indices": [
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "hint": "'Tar' is old slang for a sailor \u2014 'Jack Tar' was the classic term for a naval man",
+              "role": "part2",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/tar",
+                "word": "tar"
+              },
+              "result": "TAR",
+              "indices": [
+                0
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Sailor",
+        "in",
+        "the",
+        "doldrums",
+        "relatively",
+        "OK",
+        "for",
+        "tobacco?"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "medium"
+      }
+    },
+    "times-29453-7d": {
+      "clue": "Summits welcoming American patronage (8)",
+      "number": "7D",
+      "enumeration": "",
+      "answer": "AUSPICES",
+      "steps": [
+        {
+          "hint": "Support or protection from someone powerful \u2014 think of acting 'under the auspices of' an organisation",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/auspices",
+            "word": "auspices"
+          },
+          "indices": [
+            3
+          ]
+        },
+        {
+          "hint": "'Welcoming' suggests receiving something into yourself \u2014 one word opens up to let another in",
+          "type": "indicator",
+          "indices": [
+            1
+          ],
+          "indicator_type": "container"
+        },
+        {
+          "hint": "'Summits' is the host \u2014 it 'welcomes' something into itself",
+          "type": "outer_word",
+          "indices": [
+            0
+          ]
+        },
+        {
+          "hint": "'American' is the guest being welcomed in",
+          "type": "inner_word",
+          "indices": [
+            2
+          ]
+        },
+        {
+          "type": "assembly",
+          "result": "AUSPICES",
+          "transforms": [
+            {
+              "hint": "Summits = peaks. The plural of 'apex' is a less common word \u2014 think Latin plurals",
+              "role": "outer",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/summit",
+                "word": "summit"
+              },
+              "result": "APICES",
+              "indices": [
+                0
+              ]
+            },
+            {
+              "hint": "A two-letter abbreviation for American that you see every day",
+              "role": "inner",
+              "type": "abbreviation",
+              "result": "US",
+              "indices": [
+                2
+              ]
+            }
+          ],
+          "failMessage": "Put the short word for 'American' inside the short word for 'Summits'. The letters should spell the answer."
+        }
+      ],
+      "words": [
+        "Summits",
+        "welcoming",
+        "American",
+        "patronage"
+      ],
+      "clue_type": "container",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "medium"
+      }
+    },
+    "times-29453-24a": {
+      "clue": "Couple taken with second sight of Florence? (5)",
+      "number": "24A",
+      "enumeration": "",
+      "answer": "DUOMO",
+      "steps": [
+        {
+          "hint": "A famous cathedral \u2014 one of the great sights of an Italian city",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/duomo",
+            "word": "duomo"
+          },
+          "indices": [
+            4,
+            5,
+            6
+          ]
+        },
+        {
+          "hint": "No indicator words here \u2014 the parts just join end to end. That's a charade.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "DUOMO",
+          "transforms": [
+            {
+              "hint": "A 'couple' is a 'duo' \u2014 a pair of two",
+              "role": "part1",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/couple",
+                "word": "couple"
+              },
+              "result": "DUO",
+              "indices": [
+                0
+              ]
+            },
+            {
+              "hint": "A 'second' of time is a 'mo' \u2014 short for moment",
+              "role": "part2",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/second",
+                "word": "second"
+              },
+              "result": "MO",
+              "indices": [
+                3
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Couple",
+        "taken",
+        "with",
+        "second",
+        "sight",
+        "of",
+        "Florence?"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "easy",
+        "definition": "hard"
+      }
+    },
+    "times-29453-28a": {
+      "clue": "Tsar\u2019s like, roughly level after revolution (6)",
+      "number": "28A",
+      "enumeration": "",
+      "answer": "CAESAR",
+      "steps": [
+        {
+          "hint": "A Roman emperor \u2014 the word 'Tsar' itself derives from this title",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/tsar",
+            "word": "tsar"
+          },
+          "indices": [
+            0,
+            1
+          ]
+        },
+        {
+          "hint": "'Revolution' means a full turn \u2014 letters get reversed",
+          "type": "indicator",
+          "indices": [
+            5
+          ],
+          "indicator_type": "reversal"
+        },
+        {
+          "type": "assembly",
+          "result": "CAESAR",
+          "transforms": [
+            {
+              "hint": "'Roughly' points to CA \u2014 short for 'circa', the Latin word meaning approximately",
+              "role": "part1",
+              "type": "abbreviation",
+              "result": "CA",
+              "indices": [
+                2
+              ]
+            },
+            {
+              "hint": "To 'level' ground is to 'rase' it \u2014 an archaic spelling of 'raze'",
+              "role": "part2",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/level",
+                "word": "level"
+              },
+              "result": "RASE",
+              "indices": [
+                3
+              ]
+            },
+            {
+              "hint": "'Revolution' tells you to reverse RASE \u2192 ESAR",
+              "role": "part3",
+              "type": "reversal",
+              "result": "ESAR",
+              "indices": [
+                5
+              ]
+            }
+          ],
+          "failMessage": "'Roughly' and 'level' don't work as-is \u2014 what does each really mean?"
+        }
+      ],
+      "words": [
+        "Tsar's",
+        "like",
+        "roughly",
+        "level",
+        "after",
+        "revolution"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "hard",
+        "definition": "easy"
+      }
+    },
+    "times-29453-3d": {
+      "clue": "One missing initially, admitted to Electra with some upheaval? (9)",
+      "number": "3D",
+      "enumeration": "",
+      "answer": "LATECOMER",
+      "steps": [
+        {
+          "hint": "Someone who arrives after things have started \u2014 they were the one missing",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/latecomer",
+            "word": "latecomer"
+          },
+          "indices": [
+            0,
+            1
+          ]
+        },
+        {
+          "hint": "take the first letter of each word",
+          "type": "indicator",
+          "indices": [
+            2
+          ],
+          "indicator_type": "letter_selection"
+        },
+        {
+          "hint": "'Some upheaval' suggests things being shaken up \u2014 letters need rearranging",
+          "type": "indicator",
+          "indices": [
+            7,
+            8
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "type": "assembly",
+          "result": "LATECOMER",
+          "explicit": true,
+          "transforms": [
+            {
+              "hint": "'Initially' takes the first letter of each word before the comma. 'One missing' \u2192 O + M = OM.",
+              "role": "part1",
+              "type": "letter_selection",
+              "result": "OM",
+              "indices": [
+                0,
+                1
+              ]
+            },
+            {
+              "hint": "'Electra' is a proper noun used as-is \u2014 'admitted to Electra' means the letters are admitted to (added to) ELECTRA",
+              "role": "part2",
+              "type": "literal",
+              "result": "ELECTRA",
+              "indices": [
+                5
+              ]
+            },
+            {
+              "hint": "'Some upheaval' tells you to rearrange OM + ELECTRA. What 9-letter word meaning 'one missing' can you make?",
+              "role": "part3",
+              "type": "anagram",
+              "result": "LATECOMER",
+              "indices": [
+                7,
+                8
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "One",
+        "missing",
+        "initially",
+        "admitted",
+        "to",
+        "Electra",
+        "with",
+        "some",
+        "upheaval"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "hard",
+        "wordplay": "hard",
+        "definition": "hard"
+      }
+    },
+    "times-29453-23d": {
+      "clue": "Pretend authority raised undue spending limits (5)",
+      "number": "23D",
+      "enumeration": "",
+      "answer": "PSEUD",
+      "steps": [
+        {
+          "hint": "A pretentious person who claims expertise or knowledge they don\u2019t have",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/pseud",
+            "word": "pseud"
+          },
+          "indices": [
+            0,
+            1
+          ]
+        },
+        {
+          "hint": "Two separate words work together as the indicator. 'Raised' in a down clue means reversed (going upward), and 'limits' tells you the letters are bounded within other words \u2014 a hidden reversed word.",
+          "type": "indicator",
+          "indices": [
+            2,
+            5
+          ],
+          "indicator_type": "hidden_word"
+        },
+        {
+          "hint": "The answer is hiding inside these words, spelled backwards. Look for a 5-letter sequence running across the word boundary.",
+          "type": "fodder",
+          "indices": [
+            3,
+            4
+          ],
+          "indicator_type": "hidden_word"
+        },
+        {
+          "type": "assembly",
+          "result": "PSEUD",
+          "transforms": [
+            {
+              "hint": "Look at where 'undue' ends and 'spending' begins \u2014 run the letters together: un-D-U-E-S-P-ending. The 5-letter sequence DUESP spans the boundary.",
+              "role": "fodder",
+              "type": "letter_selection",
+              "result": "DUESP",
+              "indices": [
+                3,
+                4
+              ]
+            },
+            {
+              "hint": "'Raised' in a down clue means read upwards \u2014 reverse DUESP to get PSEUD.",
+              "role": "indicator",
+              "type": "reversal",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/pseud",
+                "word": "pseud"
+              },
+              "result": "PSEUD",
+              "indices": [
+                2
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Pretend",
+        "authority",
+        "raised",
+        "undue",
+        "spending",
+        "limits"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "hard",
+        "wordplay": "hard",
+        "definition": "medium"
+      }
+    },
+    "times-29453-19a": {
+      "clue": "Are cold kissers coming inside only when it\u2019s dark? (5,7)",
+      "number": "19A",
+      "enumeration": "",
+      "answer": "SOLAR ECLIPSE",
+      "steps": [
+        {
+          "hint": "An astronomical event that temporarily blocks sunlight",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/eclipse",
+            "word": "eclipse"
+          },
+          "indices": [
+            6,
+            7,
+            8
+          ]
+        },
+        {
+          "hint": "'Coming inside' tells you something is being placed inside something else",
+          "type": "indicator",
+          "indices": [
+            3,
+            4
+          ],
+          "indicator_type": "container"
+        },
+        {
+          "hint": "Which word provides the letters that wrap around the inner part?",
+          "type": "outer_word",
+          "indices": [
+            5
+          ]
+        },
+        {
+          "hint": "The remaining words build the inner part \u2014 three separate clues that join together before being inserted.",
+          "type": "inner_word",
+          "indices": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "type": "assembly",
+          "result": "SOLAR ECLIPSE",
+          "transforms": [
+            {
+              "hint": "'Only' as in 'the sole survivor' \u2014 a straightforward synonym",
+              "role": "outer",
+              "type": "synonym",
+              "result": "SOLE",
+              "indices": [
+                5
+              ]
+            },
+            {
+              "hint": "Sometimes a word in the clue is used at face value \u2014 'Are' appears as-is in the answer",
+              "role": "inner",
+              "type": "literal",
+              "result": "ARE",
+              "indices": [
+                0
+              ]
+            },
+            {
+              "hint": "C is the standard abbreviation for 'cold' \u2014 you'll see it on taps and in weather notation",
+              "role": "inner",
+              "type": "abbreviation",
+              "result": "C",
+              "indices": [
+                1
+              ]
+            },
+            {
+              "hint": "'Kissers' is informal slang for lips",
+              "role": "inner",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/kisser",
+                "word": "kisser"
+              },
+              "result": "LIPS",
+              "indices": [
+                2
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Are",
+        "cold",
+        "kissers",
+        "coming",
+        "inside",
+        "only",
+        "when",
+        "it\u2019s",
+        "dark"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "hard",
+        "wordplay": "hard",
+        "definition": "medium"
+      }
+    },
+    "times-29453-11a": {
+      "clue": "Come by five, do you mean? (5)",
+      "number": "11A",
+      "enumeration": "",
+      "answer": "VISIT",
+      "steps": [
+        {
+          "hint": "'Come by' means to drop in on someone \u2014 a common 5-letter word",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/visit",
+            "word": "visit"
+          },
+          "indices": [
+            0,
+            1
+          ]
+        },
+        {
+          "hint": "No indicator words here \u2014 the parts just join end to end. That's a charade.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "VISIT",
+          "transforms": [
+            {
+              "hint": "Roman numerals are everywhere in cryptics. Five = V. One to remember!",
+              "role": "part1",
+              "type": "abbreviation",
+              "result": "V",
+              "indices": [
+                2
+              ]
+            },
+            {
+              "hint": "'Do you mean?' is another way of asking 'is it?' \u2014 read it aloud",
+              "role": "part2",
+              "type": "synonym",
+              "result": "ISIT",
+              "indices": [
+                3,
+                4,
+                5
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Come",
+        "by",
+        "five",
+        "do",
+        "you",
+        "mean"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "easy"
+      }
+    },
+    "times-29453-5d": {
+      "clue": "A lot of sharp turns, I\u2019m afraid (3)",
+      "number": "5D",
+      "enumeration": "",
+      "answer": "EEK",
+      "steps": [
+        {
+          "hint": "An exclamation of fright, often seen in comics",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/eek",
+            "word": "eek"
+          },
+          "indices": [
+            5,
+            6
+          ]
+        },
+        {
+          "hint": "'A lot of' means you take most of something \u2014 drop a letter from the end",
+          "type": "indicator",
+          "indices": [
+            0,
+            1,
+            2
+          ],
+          "indicator_type": "deletion"
+        },
+        {
+          "hint": "This is the word the deletion indicator is acting on",
+          "type": "fodder",
+          "indices": [
+            3
+          ],
+          "indicator_type": "deletion"
+        },
+        {
+          "hint": "'Turns' means to spin around \u2014 read the letters backwards",
+          "type": "indicator",
+          "indices": [
+            4
+          ],
+          "indicator_type": "reversal"
+        },
+        {
+          "type": "assembly",
+          "result": "EEK",
+          "transforms": [
+            {
+              "hint": "Keen means sharp, as in a keen edge or a keen blade",
+              "role": "part1",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/keen",
+                "word": "keen"
+              },
+              "result": "KEEN",
+              "indices": [
+                3
+              ]
+            },
+            {
+              "hint": "'A lot of' means take most of the letters \u2014 drop the last one",
+              "role": "part2",
+              "type": "deletion",
+              "result": "KEE",
+              "indices": [
+                0,
+                1,
+                2
+              ]
+            },
+            {
+              "hint": "'Turns' tells you to reverse the letters",
+              "role": "part3",
+              "type": "reversal",
+              "result": "EEK",
+              "indices": [
+                4
+              ]
+            }
+          ],
+          "failMessage": "So 'sharp' doesn't work as-is. What does 'sharp' really mean?"
+        }
+      ],
+      "words": [
+        "A",
+        "lot",
+        "of",
+        "sharp",
+        "turns",
+        "I'm",
+        "afraid"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "easy"
+      }
+    },
+    "times-29453-2d": {
+      "clue": "Crooked old mater \u2014 which strongly suggests criminal is mum (6)",
+      "number": "2D",
+      "enumeration": "",
+      "answer": "OMERTA",
+      "steps": [
+        {
+          "hint": "The mafia code of silence \u2014 if you follow it, you keep quiet about crimes",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/omerta",
+            "word": "omerta"
+          },
+          "indices": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "hint": "'Crooked' means bent or out of shape \u2014 a classic signal to rearrange letters",
+          "type": "indicator",
+          "indices": [
+            0
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "hint": "Look at what sits next to the indicator \u2014 those are the letters you need to rearrange",
+          "type": "fodder",
+          "indices": [
+            1,
+            2
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "type": "assembly",
+          "result": "OMERTA",
+          "transforms": [
+            {
+              "hint": "In cryptics, 'old' nearly always means O. One to remember!",
+              "role": "part1",
+              "type": "abbreviation",
+              "result": "O",
+              "indices": [
+                1
+              ]
+            },
+            {
+              "hint": "'mater' is used as-is \u2014 it provides all 5 of its letters",
+              "role": "part2",
+              "type": "literal",
+              "result": "MATER",
+              "indices": [
+                2
+              ]
+            },
+            {
+              "hint": "'Crooked' tells you to rearrange O + MATER. What 6-letter word can you make?",
+              "role": "part3",
+              "type": "anagram",
+              "result": "OMERTA",
+              "indices": [
+                0
+              ]
+            }
+          ],
+          "failMessage": "'old mater' gives you 8 letters, but the answer is only 6. So what does each word really mean?"
+        }
+      ],
+      "words": [
+        "Crooked",
+        "old",
+        "mater",
+        "\u2014",
+        "which",
+        "strongly",
+        "suggests",
+        "criminal",
+        "is",
+        "mum"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "easy",
+        "definition": "hard"
+      }
+    },
+    "times-29453-18d": {
+      "clue": "Fugitive\u2019s attempt to escape upset good egg (8)",
+      "number": "18D",
+      "enumeration": "",
+      "answer": "FLEETING",
+      "steps": [
+        {
+          "hint": "Passing quickly, transient \u2014 like something that doesn't last",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/fugitive",
+            "word": "fugitive"
+          },
+          "indices": [
+            0
+          ]
+        },
+        {
+          "hint": "'Upset' means turned upside down \u2014 letters get reversed",
+          "type": "indicator",
+          "indices": [
+            4
+          ],
+          "indicator_type": "reversal"
+        },
+        {
+          "type": "assembly",
+          "result": "FLEETING",
+          "transforms": [
+            {
+              "hint": "To 'attempt to escape' is to 'flee' \u2014 to run away",
+              "role": "part1",
+              "type": "synonym",
+              "result": "FLEE",
+              "indices": [
+                1,
+                2,
+                3
+              ]
+            },
+            {
+              "hint": "In cryptics, 'good' is almost always G \u2014 a standard abbreviation",
+              "role": "part2",
+              "type": "abbreviation",
+              "result": "G",
+              "indices": [
+                5
+              ]
+            },
+            {
+              "hint": "An 'egg' of a louse is a 'nit' \u2014 a tiny egg that sticks to hair",
+              "role": "part3",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/egg",
+                "word": "egg"
+              },
+              "result": "NIT",
+              "indices": [
+                6
+              ]
+            },
+            {
+              "hint": "'Upset' reverses G + NIT \u2192 GNIT \u2192 TING",
+              "role": "part4",
+              "type": "reversal",
+              "result": "TING",
+              "indices": [
+                4
+              ]
+            }
+          ],
+          "failMessage": "'Attempt to escape' and 'good egg' are too long \u2014 what does each really mean?"
+        }
+      ],
+      "words": [
+        "Fugitive's",
+        "attempt",
+        "to",
+        "escape",
+        "upset",
+        "good",
+        "egg"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "medium"
+      }
+    },
+    "times-29453-16d": {
+      "clue": "Arab robe ad has misrepresented with superior beauty (9)",
+      "number": "16D",
+      "enumeration": "",
+      "answer": "DISHDASHA",
+      "steps": [
+        {
+          "hint": "A traditional long garment worn in Middle Eastern countries",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/dishdasha",
+            "word": "dishdasha"
+          },
+          "indices": [
+            0,
+            1
+          ]
+        },
+        {
+          "hint": "'Misrepresented' means shown wrongly \u2014 the letters have been jumbled up",
+          "type": "indicator",
+          "indices": [
+            4
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "hint": "'ad has' gives you the letters A-D-H-A-S to rearrange",
+          "type": "fodder",
+          "indices": [
+            2,
+            3
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "type": "assembly",
+          "result": "DISHDASHA",
+          "transforms": [
+            {
+              "hint": "In slang, a 'dish' is a beautiful or attractive person \u2014 a common crossword synonym for beauty",
+              "role": "part1",
+              "type": "synonym",
+              "result": "DISH",
+              "indices": [
+                7
+              ]
+            },
+            {
+              "hint": "'ad has' provides the raw letters A-D-H-A-S \u2014 taken at face value before rearranging",
+              "role": "part2",
+              "type": "literal",
+              "result": "ADHAS",
+              "indices": [
+                2,
+                3
+              ]
+            },
+            {
+              "hint": "'Misrepresented' tells you to rearrange ADHAS \u2014 the letters shuffle into DASHA",
+              "role": "part2 rearranged",
+              "type": "anagram",
+              "result": "DASHA",
+              "indices": [
+                4
+              ]
+            }
+          ],
+          "failMessage": "The raw words don't fit \u2014 what does each one really mean?"
+        }
+      ],
+      "words": [
+        "Arab",
+        "robe",
+        "ad",
+        "has",
+        "misrepresented",
+        "with",
+        "superior",
+        "beauty"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "hard",
+        "wordplay": "medium",
+        "definition": "hard"
+      }
+    },
+    "times-29453-6d": {
+      "clue": "Any number after dance party are starving (5)",
+      "number": "6D",
+      "enumeration": "",
+      "answer": "RAVEN",
+      "steps": [
+        {
+          "hint": "An archaic verb meaning to be extremely hungry \u2014 think 'ravenous'",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/raven",
+            "word": "raven"
+          },
+          "indices": [
+            5,
+            6
+          ]
+        },
+        {
+          "hint": "'After' tells you the first part ('any number') comes after the second part ('dance party')",
+          "type": "indicator",
+          "indices": [
+            2
+          ],
+          "indicator_type": "ordering"
+        },
+        {
+          "type": "assembly",
+          "result": "RAVEN",
+          "transforms": [
+            {
+              "hint": "A 'rave' is a dance party \u2014 an all-night electronic music event",
+              "role": "part1",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/rave",
+                "word": "rave"
+              },
+              "result": "RAVE",
+              "indices": [
+                3,
+                4
+              ]
+            },
+            {
+              "hint": "In maths, N stands for 'any number' \u2014 one of the most common cryptic abbreviations",
+              "role": "part2",
+              "type": "abbreviation",
+              "result": "N",
+              "indices": [
+                0,
+                1
+              ]
+            }
+          ],
+          "failMessage": "'Dance party' is 10 letters and 'any number' is 9 \u2014 what does each really mean?"
+        }
+      ],
+      "words": [
+        "Any",
+        "number",
+        "after",
+        "dance",
+        "party",
+        "are",
+        "starving"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "easy",
+        "definition": "hard"
+      }
+    },
+    "times-29453-9d": {
+      "clue": "State coach for Turkish leader who\u2019s out to lunch? (10)",
+      "number": "9D",
+      "enumeration": "",
+      "answer": "MADAGASCAR",
+      "steps": [
+        {
+          "hint": "An island nation off the coast of Africa",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/Madagascar",
+            "word": "madagascar"
+          },
+          "indices": [
+            0
+          ]
+        },
+        {
+          "hint": "No indicator words \u2014 the parts just join end to end.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "MADAGASCAR",
+          "transforms": [
+            {
+              "hint": "'Out to lunch' is slang for crazy \u2014 and in cryptics, crazy almost always means MAD",
+              "role": "part1",
+              "type": "synonym",
+              "result": "MAD",
+              "indices": [
+                6,
+                7,
+                8
+              ]
+            },
+            {
+              "hint": "An aga is a Turkish military commander \u2014 a classic crossword word",
+              "role": "part2",
+              "type": "synonym",
+              "result": "AGA",
+              "indices": [
+                3,
+                4
+              ]
+            },
+            {
+              "hint": "In cryptics, the apostrophe-s in contractions like 'who's' smuggles in the letter S \u2014 a classic setter trick",
+              "role": "part3",
+              "type": "abbreviation",
+              "result": "S",
+              "indices": [
+                5
+              ]
+            },
+            {
+              "hint": "A coach is a type of vehicle \u2014 and CAR is the short synonym setters love",
+              "role": "part4",
+              "type": "synonym",
+              "result": "CAR",
+              "indices": [
+                1
+              ]
+            }
+          ],
+          "failMessage": "The raw clue words don't fit \u2014 what does each one really mean?"
+        }
+      ],
+      "words": [
+        "State",
+        "coach",
+        "for",
+        "Turkish",
+        "leader",
+        "who's",
+        "out",
+        "to",
+        "lunch"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "hard",
+        "wordplay": "hard",
+        "definition": "easy"
+      }
+    },
+    "times-29453-15a": {
+      "clue": "Live singer with a costume representative of her country (12)",
+      "number": "15A",
+      "enumeration": "",
+      "answer": "AMBASSADRESS",
+      "steps": [
+        {
+          "hint": "A female diplomat who represents her nation abroad",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/ambassadress",
+            "word": "ambassadress"
+          },
+          "indices": [
+            5,
+            6,
+            7,
+            8
+          ]
+        },
+        {
+          "hint": "No indicator words here \u2014 the parts just join end to end. That's a charade.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "AMBASSADRESS",
+          "transforms": [
+            {
+              "hint": "To 'live' is to exist \u2014 'I am' means 'I live'. AM is the verb form.",
+              "role": "part1",
+              "type": "synonym",
+              "result": "AM",
+              "indices": [
+                0
+              ]
+            },
+            {
+              "hint": "A 'bass' is a type of singer \u2014 the lowest male vocal range",
+              "role": "part2",
+              "type": "synonym",
+              "result": "BASS",
+              "indices": [
+                1
+              ]
+            },
+            {
+              "hint": "The letter 'a' is used as-is \u2014 'with' is just a connector",
+              "role": "part3",
+              "type": "literal",
+              "result": "A",
+              "indices": [
+                3
+              ]
+            },
+            {
+              "hint": "A 'costume' is a 'dress' \u2014 something you wear",
+              "role": "part4",
+              "type": "synonym",
+              "result": "DRESS",
+              "indices": [
+                4
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Live",
+        "singer",
+        "with",
+        "a",
+        "costume",
+        "representative",
+        "of",
+        "her",
+        "country"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "easy",
+        "definition": "medium"
+      }
+    },
+    "times-29453-26a": {
+      "clue": "Turn bench back in street exposed to blasts (9)",
+      "number": "26A",
+      "enumeration": "",
+      "answer": "WINDSWEPT",
+      "steps": [
+        {
+          "hint": "Describing a place battered by strong winds",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/windswept",
+            "word": "windswept"
+          },
+          "indices": [
+            5,
+            6,
+            7
+          ]
+        },
+        {
+          "hint": "'Back' means going in reverse \u2014 read the letters backwards",
+          "type": "indicator",
+          "indices": [
+            2
+          ],
+          "indicator_type": "reversal"
+        },
+        {
+          "hint": "'In' tells you one piece goes inside another",
+          "type": "indicator",
+          "indices": [
+            3
+          ],
+          "indicator_type": "container"
+        },
+        {
+          "type": "assembly",
+          "result": "WINDSWEPT",
+          "transforms": [
+            {
+              "hint": "To wind a handle is to turn it \u2014 WIND (rhymes with 'find') means to turn",
+              "role": "part1",
+              "type": "synonym",
+              "result": "WIND",
+              "indices": [
+                0
+              ]
+            },
+            {
+              "hint": "A pew is a church bench \u2014 a classic crossword synonym",
+              "role": "part2a",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/pew",
+                "word": "pew"
+              },
+              "result": "PEW",
+              "indices": [
+                1
+              ]
+            },
+            {
+              "hint": "'Back' tells you to reverse PEW \u2014 reading it backwards gives WEP",
+              "role": "part2a reversed",
+              "type": "reversal",
+              "result": "WEP",
+              "indices": [
+                2
+              ]
+            },
+            {
+              "hint": "ST is the standard abbreviation for street \u2014 one of the most common in cryptics",
+              "role": "part2b",
+              "type": "abbreviation",
+              "result": "ST",
+              "indices": [
+                4
+              ]
+            },
+            {
+              "hint": "'In' tells you WEP goes inside ST \u2014 S + WEP + T = SWEPT",
+              "role": "part2 combined",
+              "type": "container",
+              "result": "SWEPT",
+              "indices": [
+                3
+              ]
+            }
+          ],
+          "failMessage": "The raw words don't work \u2014 each one is pointing to something else."
+        }
+      ],
+      "words": [
+        "Turn",
+        "bench",
+        "back",
+        "in",
+        "street",
+        "exposed",
+        "to",
+        "blasts"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "hard",
+        "wordplay": "hard",
+        "definition": "easy"
+      }
+    },
+    "times-29453-14d": {
+      "clue": "Photos I had mounted cover the inside of school (10)",
+      "number": "14D",
+      "enumeration": "",
+      "answer": "DISCIPLINE",
+      "steps": [
+        {
+          "hint": "To train or teach someone \u2014 'to school' someone means to discipline them",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/school",
+            "word": "school"
+          },
+          "indices": [
+            8
+          ]
+        },
+        {
+          "hint": "'Mounted' means going up \u2014 in a down clue, that means reading letters upwards (backwards)",
+          "type": "indicator",
+          "indices": [
+            3
+          ],
+          "indicator_type": "reversal"
+        },
+        {
+          "hint": "Look at the words between the definition and the indicator \u2014 'Photos I had' is the material that gets reversed",
+          "type": "fodder",
+          "indices": [
+            0,
+            1,
+            2
+          ],
+          "indicator_type": "reversal"
+        },
+        {
+          "type": "assembly",
+          "result": "DISCIPLINE",
+          "transforms": [
+            {
+              "hint": "Photos are pics \u2014 a very common informal synonym",
+              "role": "part1a",
+              "type": "synonym",
+              "result": "PICS",
+              "indices": [
+                0
+              ]
+            },
+            {
+              "hint": "'I had' contracts to 'I'd' \u2014 and in cryptics, contractions like I'd give you the letters ID",
+              "role": "part1b",
+              "type": "abbreviation",
+              "result": "ID",
+              "indices": [
+                1,
+                2
+              ]
+            },
+            {
+              "hint": "'Mounted' tells you to reverse PICSID \u2014 reading it backwards gives DISCIP",
+              "role": "part1 reversed",
+              "type": "reversal",
+              "result": "DISCIP",
+              "indices": [
+                3
+              ]
+            },
+            {
+              "hint": "To line a coat is to cover its inside \u2014 LINE is the synonym here",
+              "role": "part2",
+              "type": "synonym",
+              "result": "LINE",
+              "indices": [
+                4,
+                5,
+                6,
+                7
+              ]
+            }
+          ],
+          "failMessage": "The raw words don't fit \u2014 what does each one really mean?"
+        }
+      ],
+      "words": [
+        "Photos",
+        "I",
+        "had",
+        "mounted",
+        "cover",
+        "the",
+        "inside",
+        "of",
+        "school"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "hard",
+        "wordplay": "hard",
+        "definition": "medium"
+      }
+    },
+    "times-29453-17d": {
+      "clue": "Embankment architect lengthened with cob? (5,3)",
+      "number": "17D",
+      "enumeration": "",
+      "answer": "ASWAN DAM",
+      "steps": [
+        {
+          "hint": "A famous structure on the Nile river",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/embankment",
+            "word": "embankment"
+          },
+          "indices": [
+            0
+          ]
+        },
+        {
+          "hint": "'Lengthened' is a container indicator \u2014 it tells you one word gets stretched by putting letters inside it.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Container"
+        },
+        {
+          "hint": "'Lengthened' suggests stretching a word by putting letters inside it",
+          "type": "indicator",
+          "indices": [
+            2
+          ],
+          "indicator_type": "container"
+        },
+        {
+          "hint": "The indicator tells you this word gets stretched \u2014 which one wraps around the other?",
+          "type": "outer_word",
+          "indices": [
+            1
+          ]
+        },
+        {
+          "hint": "Which remaining word gets placed inside?",
+          "type": "inner_word",
+          "indices": [
+            4
+          ]
+        },
+        {
+          "type": "assembly",
+          "result": "ASWAN DAM",
+          "transforms": [
+            {
+              "hint": "Robert Adam was a famous British architect",
+              "role": "outer",
+              "type": "synonym",
+              "result": "ADAM",
+              "indices": [
+                1
+              ]
+            },
+            {
+              "hint": "A male swan is called a cob",
+              "role": "inner",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/cob",
+                "word": "cob"
+              },
+              "result": "SWAN",
+              "indices": [
+                4
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Embankment",
+        "architect",
+        "lengthened",
+        "with",
+        "cob"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "hard",
+        "wordplay": "hard",
+        "definition": "medium"
+      }
+    },
+    "times-29453-27a": {
+      "clue": "See Dogma remade as massive hit (8)",
+      "number": "27A",
+      "enumeration": "",
+      "answer": "MEGADOSE",
+      "steps": [
+        {
+          "hint": "A very large amount of something \u2014 especially medicine",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/megadose",
+            "word": "megadose"
+          },
+          "indices": [
+            4,
+            5
+          ]
+        },
+        {
+          "hint": "'Remade' means reconstructed \u2014 the letters need to be rearranged into something new",
+          "type": "indicator",
+          "indices": [
+            2
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "hint": "'See Dogma' \u2014 these 8 letters will rearrange into the answer",
+          "type": "fodder",
+          "indices": [
+            0,
+            1
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "type": "assembly",
+          "result": "MEGADOSE",
+          "transforms": [
+            {
+              "hint": "'See' is used as-is \u2014 its 3 letters go directly into the anagram",
+              "role": "part1",
+              "type": "literal",
+              "result": "SEE",
+              "indices": [
+                0
+              ]
+            },
+            {
+              "hint": "'Dogma' is used as-is \u2014 its 5 letters go directly into the anagram",
+              "role": "part2",
+              "type": "literal",
+              "result": "DOGMA",
+              "indices": [
+                1
+              ]
+            },
+            {
+              "hint": "Rearrange S + E + E + D + O + G + M + A \u2014 what 8-letter word meaning 'massive hit' can you make?",
+              "role": "part3",
+              "type": "anagram",
+              "result": "MEGADOSE",
+              "indices": [
+                2
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "See",
+        "Dogma",
+        "remade",
+        "as",
+        "massive",
+        "hit"
+      ],
+      "clue_type": "anagram",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "easy",
+        "definition": "medium"
+      }
+    },
+    "times-29453-20d": {
+      "clue": "Many academics divided by gender-neutral pronoun (6)",
+      "number": "20D",
+      "enumeration": "",
+      "answer": "DOZENS",
+      "steps": [
+        {
+          "hint": "A word meaning a large number of something",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/dozens",
+            "word": "dozens"
+          },
+          "indices": [
+            0
+          ]
+        },
+        {
+          "hint": "To divide something is to split it apart \u2014 one word gets broken open so another can go in between",
+          "type": "indicator",
+          "indices": [
+            2
+          ],
+          "indicator_type": "container"
+        },
+        {
+          "hint": "Which word gets split apart to wrap around the other?",
+          "type": "outer_word",
+          "indices": [
+            1
+          ]
+        },
+        {
+          "hint": "What goes inside the split?",
+          "type": "inner_word",
+          "indices": [
+            4,
+            5
+          ]
+        },
+        {
+          "type": "assembly",
+          "result": "DOZENS",
+          "transforms": [
+            {
+              "hint": "In British English, 'academics' are 'dons' \u2014 university fellows at Oxford and Cambridge",
+              "role": "outer",
+              "type": "synonym",
+              "result": "DONS",
+              "indices": [
+                1
+              ]
+            },
+            {
+              "hint": "'Ze' is a modern gender-neutral pronoun \u2014 a less common word that cryptic setters love",
+              "role": "inner",
+              "type": "synonym",
+              "result": "ZE",
+              "indices": [
+                4,
+                5
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Many",
+        "academics",
+        "divided",
+        "by",
+        "gender-neutral",
+        "pronoun"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "easy"
+      }
+    }
+  }
+}

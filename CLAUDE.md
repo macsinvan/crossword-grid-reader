@@ -173,7 +173,9 @@ Open http://localhost:8080
 | `migrations/002_add_training_metadata.sql` | Adds `training_metadata` JSONB column to clues table |
 | `migrations/004_add_training_locked.sql` | Adds `training_locked` column to puzzles table |
 | `upload_training_metadata.py` | Uploads training metadata from `clues_db.json` to Supabase (requires `--puzzle` or `--clue` filter) |
-| `lock_puzzle.py` | Lock/unlock puzzle training data (prevents accidental overwrites of verified data) |
+| `lock_puzzle.py` | Lock/unlock puzzle training data (auto-backs up before locking) |
+| `backup_puzzle.py` | Backup puzzle training data from Supabase to `backups/{puzzle}.json` |
+| `restore_puzzle.py` | Restore puzzle training data from backup file to Supabase |
 
 ## Architecture
 
@@ -255,10 +257,13 @@ python3 test_regression.py                                           # Run 330 r
 python3 upload_training_metadata.py --puzzle 29147                   # Upload one puzzle's training data to Supabase
 python3 upload_training_metadata.py --clue times-29147-1d            # Upload one clue's training data
 python3 upload_training_metadata.py --puzzle 29147 --dry-run         # Preview upload without writing
-python3 lock_puzzle.py --lock 29453                                  # Lock a puzzle (prevents training data modification)
+python3 lock_puzzle.py --lock 29453                                  # Lock a puzzle (auto-backs up first)
 python3 lock_puzzle.py --unlock 29453                                # Unlock a puzzle
 python3 lock_puzzle.py --status 29453                                # Check lock status
 python3 lock_puzzle.py --list                                        # List all locked puzzles
+python3 backup_puzzle.py --puzzle 29453                              # Backup puzzle training data from Supabase to backups/29453.json
+python3 restore_puzzle.py --puzzle 29453                             # Restore puzzle training data from backup (must unlock first)
+python3 restore_puzzle.py --puzzle 29453 --dry-run                   # Preview restore without writing
 python3 validate_training.py                                         # Validate all training items (structural + semantic + convention + publication)
 python3 -c "import json; json.load(open('clues_db.json')); print('Valid')"  # Validate clues_db JSON syntax
 ```

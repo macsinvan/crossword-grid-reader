@@ -1,0 +1,2068 @@
+{
+  "training_items": {
+    "times-29147-9a": {
+      "clue": "What bacilli regularly can make you (3)",
+      "number": "9A",
+      "enumeration": "",
+      "answer": "AIL",
+      "steps": [
+        {
+          "hint": "To ail is to feel unwell \u2014 bacilli can make you ail",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/ail",
+            "word": "ail"
+          },
+          "indices": [
+            3,
+            4,
+            5
+          ]
+        },
+        {
+          "hint": "'Regularly' means take letters at regular intervals \u2014 every other letter",
+          "type": "indicator",
+          "indices": [
+            2
+          ],
+          "indicator_type": "letter_selection"
+        },
+        {
+          "type": "assembly",
+          "result": "AIL",
+          "transforms": [
+            {
+              "hint": "Take every other letter from 'bacilli': b-A-c-I-l-L-i \u2014 the even positions spell AIL",
+              "role": "part1",
+              "type": "letter_selection",
+              "result": "AIL",
+              "indices": [
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "What",
+        "bacilli",
+        "regularly",
+        "can",
+        "make",
+        "you"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "easy"
+      }
+    },
+    "times-29147-5a": {
+      "clue": "What\u2019s left after touching electricity supply? (7)",
+      "number": "5A",
+      "enumeration": "",
+      "answer": "REMAINS",
+      "steps": [
+        {
+          "hint": "Remains are what's left over \u2014 the straight definition sits at the start",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/remains",
+            "word": "remains"
+          },
+          "indices": [
+            0,
+            1
+          ]
+        },
+        {
+          "hint": "No indicator words \u2014 the parts just join end to end. That's a charade.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "REMAINS",
+          "transforms": [
+            {
+              "hint": "'Touching' in the sense of 'regarding' or 'about' \u2014 RE is the standard abbreviation, from the Latin 're' (in the matter of)",
+              "role": "part1",
+              "type": "abbreviation",
+              "result": "RE",
+              "indices": [
+                3
+              ]
+            },
+            {
+              "hint": "The mains is the electricity supply to your house \u2014 'mains electricity' is the standard UK term",
+              "role": "part2",
+              "type": "synonym",
+              "result": "MAINS",
+              "indices": [
+                4,
+                5
+              ]
+            }
+          ],
+          "failMessage": "'touching electricity supply' is 25 letters \u2014 what does each word really mean?"
+        }
+      ],
+      "words": [
+        "What's",
+        "left",
+        "after",
+        "touching",
+        "electricity",
+        "supply"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "easy"
+      }
+    },
+    "times-29147-19a": {
+      "clue": "Uncertain period after expulsion of old member (4)",
+      "number": "19A",
+      "enumeration": "",
+      "answer": "LIMB",
+      "steps": [
+        {
+          "hint": "A limb is a member of the body \u2014 an arm or leg",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/limb",
+            "word": "limb"
+          },
+          "indices": [
+            6
+          ]
+        },
+        {
+          "hint": "'Expulsion' means something is thrown out \u2014 a deletion indicator",
+          "type": "indicator",
+          "indices": [
+            3
+          ],
+          "indicator_type": "deletion"
+        },
+        {
+          "hint": "These words give you the starting word \u2014 before something gets expelled from it.",
+          "type": "fodder",
+          "indices": [
+            0,
+            1
+          ],
+          "indicator_type": "deletion"
+        },
+        {
+          "type": "assembly",
+          "result": "LIMB",
+          "transforms": [
+            {
+              "hint": "Limbo is an uncertain period \u2014 a state of waiting with no clear outcome",
+              "role": "part1",
+              "type": "synonym",
+              "result": "LIMBO",
+              "indices": [
+                0,
+                1
+              ]
+            },
+            {
+              "hint": "'Expulsion of old' \u2014 remove O (the standard abbreviation for 'old') from LIMBO to get LIMB",
+              "role": "deletion",
+              "type": "deletion",
+              "result": "LIMB",
+              "indices": [
+                3,
+                4,
+                5
+              ]
+            }
+          ],
+          "failMessage": "'Uncertain period' is 15 letters \u2014 what shorter word does it point to?"
+        }
+      ],
+      "words": [
+        "Uncertain",
+        "period",
+        "after",
+        "expulsion",
+        "of",
+        "old",
+        "member"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "easy"
+      }
+    },
+    "times-29147-29a": {
+      "clue": "Left winger beginning to backtrack, as requested (2,5)",
+      "number": "29A",
+      "enumeration": "",
+      "answer": "TO ORDER",
+      "steps": [
+        {
+          "hint": "'To order' means 'as requested' \u2014 'made to order' = 'made as requested'",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/to%20order",
+            "word": "to order"
+          },
+          "indices": [
+            5,
+            6
+          ]
+        },
+        {
+          "hint": "'Backtrack' means go back the way you came \u2014 read everything in reverse",
+          "type": "indicator",
+          "indices": [
+            4
+          ],
+          "indicator_type": "reversal"
+        },
+        {
+          "hint": "These words provide the letters that need reversing \u2014 figure out what each means first.",
+          "type": "fodder",
+          "indices": [
+            0,
+            1,
+            2
+          ],
+          "indicator_type": "reversal"
+        },
+        {
+          "type": "assembly",
+          "result": "TO ORDER",
+          "transforms": [
+            {
+              "hint": "A 'red' is a left-winger \u2014 in politics, red has long been the colour of the left",
+              "role": "part1",
+              "type": "synonym",
+              "result": "RED",
+              "indices": [
+                0,
+                1
+              ]
+            },
+            {
+              "hint": "A root is a beginning or origin \u2014 'the root of the problem' = 'the beginning of the problem'",
+              "role": "part2",
+              "type": "synonym",
+              "result": "ROOT",
+              "indices": [
+                2
+              ]
+            },
+            {
+              "hint": "'Backtrack' tells you to reverse REDROOT \u2014 reading it backwards gives TO ORDER",
+              "role": "reversed",
+              "type": "reversal",
+              "result": "TO ORDER",
+              "indices": [
+                4
+              ]
+            }
+          ],
+          "failMessage": "'Left winger' and 'beginning' are 20 letters \u2014 what does each really mean?"
+        }
+      ],
+      "words": [
+        "Left",
+        "winger",
+        "beginning",
+        "to",
+        "backtrack",
+        "as",
+        "requested"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "medium"
+      }
+    },
+    "times-29147-7d": {
+      "clue": "Great part of Crete seen during holidays (3)",
+      "number": "7D",
+      "enumeration": "",
+      "answer": "IDA",
+      "steps": [
+        {
+          "hint": "Mount Ida is a famous mountain in Crete \u2014 a 'great part' of the island in Greek mythology",
+          "type": "definition",
+          "lookup": {
+            "url": "https://en.wikipedia.org/wiki/Mount_Ida_(Crete)",
+            "word": "Mount Ida"
+          },
+          "indices": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        {
+          "hint": "'Seen during' tells you the answer is hiding inside another word \u2014 a hidden word indicator",
+          "type": "indicator",
+          "indices": [
+            4,
+            5
+          ],
+          "indicator_type": "hidden_word"
+        },
+        {
+          "hint": "The answer is hiding inside this word \u2014 look for a 3-letter sequence.",
+          "type": "fodder",
+          "indices": [
+            6
+          ],
+          "indicator_type": "hidden_word"
+        },
+        {
+          "type": "assembly",
+          "result": "IDA",
+          "transforms": [
+            {
+              "hint": "Look inside 'holidays': hol-I-D-A-ys \u2014 IDA is spelled out in the middle",
+              "role": "fodder",
+              "type": "letter_selection",
+              "result": "IDA",
+              "indices": [
+                6
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Great",
+        "part",
+        "of",
+        "Crete",
+        "seen",
+        "during",
+        "holidays"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "medium"
+      }
+    },
+    "times-29147-2d": {
+      "clue": "Classic beauty peculiar to English female \u2014 only her (5,2,4)",
+      "number": "2D",
+      "enumeration": "",
+      "answer": "HELEN OF TROY",
+      "steps": [
+        {
+          "hint": "The legendary Spartan queen whose face launched a thousand ships",
+          "type": "definition",
+          "lookup": {
+            "url": "https://en.wikipedia.org/wiki/Helen_of_Troy",
+            "word": "Helen of Troy"
+          },
+          "indices": [
+            0,
+            1
+          ]
+        },
+        {
+          "hint": "'Peculiar' suggests something odd or jumbled \u2014 a signal to rearrange letters",
+          "type": "indicator",
+          "indices": [
+            2
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "type": "fodder",
+          "indices": [
+            3,
+            4,
+            5,
+            7,
+            8
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "type": "assembly",
+          "result": "HELEN OF TROY",
+          "transforms": [
+            {
+              "hint": "'To' is used as-is \u2014 it contributes both its letters to the anagram",
+              "role": "part1",
+              "type": "literal",
+              "result": "TO",
+              "indices": [
+                3
+              ]
+            },
+            {
+              "hint": "In cryptics, 'English' is shortened to E \u2014 one of the most common single-letter abbreviations",
+              "role": "part2",
+              "type": "abbreviation",
+              "result": "E",
+              "indices": [
+                4
+              ]
+            },
+            {
+              "hint": "In cryptics, 'female' is shortened to F \u2014 the standard abbreviation",
+              "role": "part3",
+              "type": "abbreviation",
+              "result": "F",
+              "indices": [
+                5
+              ]
+            },
+            {
+              "hint": "'Only' is used as-is \u2014 all four letters feed into the anagram",
+              "role": "part4",
+              "type": "literal",
+              "result": "ONLY",
+              "indices": [
+                7
+              ]
+            },
+            {
+              "hint": "'Her' is used as-is \u2014 all three letters feed into the anagram",
+              "role": "part5",
+              "type": "literal",
+              "result": "HER",
+              "indices": [
+                8
+              ]
+            },
+            {
+              "hint": "Rearrange TO + E + F + ONLY + HER (11 letters) \u2014 'peculiar' tells you to jumble them all",
+              "role": "anagram",
+              "type": "anagram",
+              "result": "HELEN OF TROY",
+              "indices": [
+                2
+              ]
+            }
+          ],
+          "failMessage": "'to English female only her' is 22 letters \u2014 far too many for 11. Some words must be abbreviations."
+        }
+      ],
+      "words": [
+        "Classic",
+        "beauty",
+        "peculiar",
+        "to",
+        "English",
+        "female",
+        "\u2014",
+        "only",
+        "her"
+      ],
+      "clue_type": "anagram",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "easy"
+      }
+    },
+    "times-29147-24d": {
+      "clue": "Unknown quantity, some clown (4)",
+      "number": "24D",
+      "enumeration": "",
+      "answer": "ZANY",
+      "steps": [
+        {
+          "hint": "A zany is a comic performer or clown \u2014 the word originally meant a clown's assistant in commedia dell'arte",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/zany",
+            "word": "zany"
+          },
+          "indices": [
+            3
+          ]
+        },
+        {
+          "hint": "No indicator words \u2014 the parts just join end to end. That's a charade.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "ZANY",
+          "transforms": [
+            {
+              "hint": "In cryptics and maths, an 'unknown quantity' is Z (or X or Y) \u2014 Z is the most common in Times puzzles",
+              "role": "part1",
+              "type": "abbreviation",
+              "result": "Z",
+              "indices": [
+                0,
+                1
+              ]
+            },
+            {
+              "hint": "'Some' and 'any' are closely related \u2014 'have you got some?' means 'have you got any?'",
+              "role": "part2",
+              "type": "synonym",
+              "result": "ANY",
+              "indices": [
+                2
+              ]
+            }
+          ],
+          "failMessage": "'Unknown quantity' and 'some' \u2014 what does each really mean?"
+        }
+      ],
+      "words": [
+        "Unknown",
+        "quantity",
+        "some",
+        "clown"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "easy"
+      }
+    },
+    "times-29147-26d": {
+      "clue": "White garment turning up in shrubland (3)",
+      "number": "26D",
+      "enumeration": "",
+      "answer": "ALB",
+      "steps": [
+        {
+          "hint": "An alb is a white vestment worn by priests during church services",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/alb",
+            "word": "alb"
+          },
+          "indices": [
+            0,
+            1
+          ]
+        },
+        {
+          "hint": "'Turning up' in a down clue means reversed (going upward), and 'in' tells you it's hiding inside another word \u2014 a hidden reversed word",
+          "type": "indicator",
+          "indices": [
+            2,
+            3,
+            4
+          ],
+          "indicator_type": "hidden_word"
+        },
+        {
+          "hint": "The answer is hiding inside this word, spelled backwards. Look for a 3-letter reversed sequence.",
+          "type": "fodder",
+          "indices": [
+            5
+          ],
+          "indicator_type": "hidden_word"
+        },
+        {
+          "type": "assembly",
+          "result": "ALB",
+          "transforms": [
+            {
+              "hint": "Look inside 'shrubland': shru-B-L-A-nd \u2014 the 3-letter sequence BLA is hiding there",
+              "role": "fodder",
+              "type": "letter_selection",
+              "result": "BLA",
+              "indices": [
+                5
+              ]
+            },
+            {
+              "hint": "'Turning up' in a down clue means read upwards \u2014 reverse BLA to get ALB",
+              "role": "indicator",
+              "type": "reversal",
+              "result": "ALB",
+              "indices": [
+                2,
+                3
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "White",
+        "garment",
+        "turning",
+        "up",
+        "in",
+        "shrubland"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "hard"
+      }
+    },
+    "times-29147-17d": {
+      "clue": "Place not so clean (8)",
+      "number": "17D",
+      "enumeration": "",
+      "answer": "SPOTLESS",
+      "steps": [
+        {
+          "hint": "Spotless means perfectly clean \u2014 without a single mark or stain",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/spotless",
+            "word": "spotless"
+          },
+          "indices": [
+            3
+          ]
+        },
+        {
+          "hint": "No indicator words \u2014 the parts just join end to end. That's a charade.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "SPOTLESS",
+          "transforms": [
+            {
+              "hint": "A spot is a place \u2014 'a nice spot for lunch' means 'a nice place'",
+              "role": "part1",
+              "type": "synonym",
+              "result": "SPOT",
+              "indices": [
+                0
+              ]
+            },
+            {
+              "hint": "'Not so' means LESS \u2014 'not so much' = 'less'",
+              "role": "part2",
+              "type": "synonym",
+              "result": "LESS",
+              "indices": [
+                1,
+                2
+              ]
+            }
+          ],
+          "failMessage": "'Place' and 'not so' are just 9 letters \u2014 what does each really mean?"
+        }
+      ],
+      "words": [
+        "Place",
+        "not",
+        "so",
+        "clean"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "easy"
+      }
+    },
+    "times-29147-18d": {
+      "clue": "Cream light source is preserved (7)",
+      "number": "18D",
+      "enumeration": "",
+      "answer": "PICKLED",
+      "steps": [
+        {
+          "hint": "Pickled means preserved \u2014 food kept in brine or vinegar is pickled",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/pickled",
+            "word": "pickled"
+          },
+          "indices": [
+            3,
+            4
+          ]
+        },
+        {
+          "hint": "No indicator words \u2014 the parts just join end to end. That's a charade.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "PICKLED",
+          "transforms": [
+            {
+              "hint": "'The pick' means 'the cream' \u2014 the best of the bunch. 'The pick of the crop' = 'the cream of the crop'",
+              "role": "part1",
+              "type": "synonym",
+              "result": "PICK",
+              "indices": [
+                0
+              ]
+            },
+            {
+              "hint": "An LED (Light-Emitting Diode) is a light source \u2014 a modern abbreviation now common in cryptics",
+              "role": "part2",
+              "type": "abbreviation",
+              "result": "LED",
+              "indices": [
+                1,
+                2
+              ]
+            }
+          ],
+          "failMessage": "'Cream' and 'light source' are 16 letters \u2014 what does each really mean?"
+        }
+      ],
+      "words": [
+        "Cream",
+        "light",
+        "source",
+        "is",
+        "preserved"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "easy"
+      }
+    },
+    "times-29147-8d": {
+      "clue": "In depression collecting pounds in aid of English city (7)",
+      "number": "8D",
+      "enumeration": "",
+      "answer": "SALFORD",
+      "steps": [
+        {
+          "hint": "Salford is a city in Greater Manchester, England",
+          "type": "definition",
+          "lookup": {
+            "url": "https://en.wikipedia.org/wiki/City_of_Salford",
+            "word": "Salford"
+          },
+          "indices": [
+            7,
+            8
+          ]
+        },
+        {
+          "hint": "'Collecting' means gathering things inside \u2014 a container indicator in Times cryptics",
+          "type": "indicator",
+          "indices": [
+            2
+          ],
+          "indicator_type": "container"
+        },
+        {
+          "type": "outer_word",
+          "indices": [
+            1
+          ]
+        },
+        {
+          "type": "inner_word",
+          "indices": [
+            3,
+            4,
+            5,
+            6
+          ]
+        },
+        {
+          "type": "assembly",
+          "result": "SALFORD",
+          "transforms": [
+            {
+              "hint": "SAD means depression \u2014 a low or unhappy feeling",
+              "role": "outer",
+              "type": "synonym",
+              "result": "SAD",
+              "indices": [
+                1
+              ]
+            },
+            {
+              "hint": "'Pounds' in cryptics is L \u2014 from the Latin 'libra', the origin of the \u00a3 symbol",
+              "role": "inner_a",
+              "type": "abbreviation",
+              "result": "L",
+              "indices": [
+                3
+              ]
+            },
+            {
+              "hint": "'In aid of' means FOR \u2014 as in 'a charity run in aid of cancer research' means 'for cancer research'",
+              "role": "inner_b",
+              "type": "synonym",
+              "result": "FOR",
+              "indices": [
+                4,
+                5,
+                6
+              ]
+            },
+            {
+              "hint": "'Collecting' tells you SAD wraps around L + FOR: SA + LFOR + D = SALFORD",
+              "role": "container",
+              "type": "container",
+              "result": "SALFORD",
+              "indices": [
+                2
+              ]
+            }
+          ],
+          "failMessage": "'depression' is 10 letters and 'pounds in aid of' is 14 \u2014 what does each really mean?"
+        }
+      ],
+      "words": [
+        "In",
+        "depression",
+        "collecting",
+        "pounds",
+        "in",
+        "aid",
+        "of",
+        "English",
+        "city"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "medium"
+      }
+    },
+    "times-29147-1a": {
+      "clue": "When acting clumsily journalist is overcome by remorse (7)",
+      "number": "1A",
+      "enumeration": "",
+      "answer": "ASHAMED",
+      "steps": [
+        {
+          "hint": "Feeling shame or guilt \u2014 'overcome by remorse' is the straight definition",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/ashamed",
+            "word": "ashamed"
+          },
+          "indices": [
+            5,
+            6,
+            7
+          ]
+        },
+        {
+          "hint": "No indicator words here \u2014 the parts just join end to end. That's a charade.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "ASHAMED",
+          "transforms": [
+            {
+              "hint": "'As' means 'when' \u2014 as in 'as I was leaving' means 'when I was leaving'",
+              "role": "part1",
+              "type": "synonym",
+              "result": "AS",
+              "indices": [
+                0
+              ]
+            },
+            {
+              "hint": "A 'ham' is someone who acts clumsily or over-the-top \u2014 'hamming it up'",
+              "role": "part2",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/ham",
+                "word": "ham"
+              },
+              "result": "HAM",
+              "indices": [
+                1,
+                2
+              ]
+            },
+            {
+              "hint": "In cryptics, 'journalist' almost always means ED \u2014 short for editor",
+              "role": "part3",
+              "type": "abbreviation",
+              "result": "ED",
+              "indices": [
+                3
+              ]
+            }
+          ],
+          "failMessage": "'When acting clumsily journalist' is 30 letters \u2014 what does each word really mean?"
+        }
+      ],
+      "words": [
+        "When",
+        "acting",
+        "clumsily",
+        "journalist",
+        "is",
+        "overcome",
+        "by",
+        "remorse"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "easy"
+      }
+    },
+    "times-29147-3d": {
+      "clue": "Gracious thing that I should keep! (2,4)",
+      "number": "3D",
+      "enumeration": "",
+      "answer": "MY WORD",
+      "steps": [
+        {
+          "hint": "'My word!' is an exclamation of surprise \u2014 another way of saying 'Gracious!'",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/my%20word",
+            "word": "my word"
+          },
+          "indices": [
+            0
+          ]
+        },
+        {
+          "hint": "No indicator words, no wordplay tricks \u2014 just two meanings of the same phrase sitting side by side.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Double definition",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Double definition"
+        },
+        {
+          "type": "assembly",
+          "result": "MY WORD",
+          "transforms": [
+            {
+              "hint": "'Thing that I should keep' \u2014 your word is your promise, something you keep",
+              "role": "part1",
+              "type": "synonym",
+              "result": "MY WORD",
+              "indices": [
+                1,
+                2,
+                3,
+                4,
+                5
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Gracious",
+        "thing",
+        "that",
+        "I",
+        "should",
+        "keep"
+      ],
+      "clue_type": "double_definition",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "easy"
+      }
+    },
+    "times-29147-4d": {
+      "clue": "Villain in film shoot, female, interrupted by very short commercial (5,5)",
+      "number": "4D",
+      "enumeration": "",
+      "answer": "DARTH VADER",
+      "steps": [
+        {
+          "hint": "One of cinema's most iconic bad guys \u2014 'villain in film' is the straight definition",
+          "type": "definition",
+          "lookup": {
+            "url": "https://en.wikipedia.org/wiki/Darth_Vader",
+            "word": "Darth Vader"
+          },
+          "indices": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "hint": "'Interrupted' means one thing breaks into another \u2014 a classic container signal in Times cryptics",
+          "type": "indicator",
+          "indices": [
+            5
+          ],
+          "indicator_type": "container"
+        },
+        {
+          "type": "outer_word",
+          "indices": [
+            4
+          ]
+        },
+        {
+          "type": "inner_word",
+          "indices": [
+            7,
+            8,
+            9
+          ]
+        },
+        {
+          "type": "assembly",
+          "result": "DARTH VADER",
+          "transforms": [
+            {
+              "hint": "A dart is a quick throw \u2014 'shoot' and 'dart' both describe a fast, aimed movement",
+              "role": "part1",
+              "type": "synonym",
+              "result": "DART",
+              "indices": [
+                3
+              ]
+            },
+            {
+              "hint": "'Female' clues a pronoun \u2014 HER is a standard cryptic synonym for 'female'",
+              "role": "outer",
+              "type": "synonym",
+              "result": "HER",
+              "indices": [
+                4
+              ]
+            },
+            {
+              "hint": "In cryptics, 'very' is shortened to V \u2014 from the Latin 'valde' or by convention",
+              "role": "inner_a",
+              "type": "abbreviation",
+              "result": "V",
+              "indices": [
+                7
+              ]
+            },
+            {
+              "hint": "'Short commercial' \u2014 an ad (advertisement) is a commercial, and 'short' signals the abbreviated form",
+              "role": "inner_b",
+              "type": "abbreviation",
+              "result": "AD",
+              "indices": [
+                8,
+                9
+              ]
+            },
+            {
+              "hint": "'Interrupted' tells you VAD goes inside HER: V + AD breaks into H-ER, giving H + VAD + ER = HVADER",
+              "role": "container",
+              "type": "container",
+              "result": "HVADER",
+              "indices": [
+                5
+              ]
+            }
+          ],
+          "failMessage": "'shoot female very short commercial' is 30 letters \u2014 what does each word really mean?"
+        }
+      ],
+      "words": [
+        "Villain",
+        "in",
+        "film",
+        "shoot",
+        "female",
+        "interrupted",
+        "by",
+        "very",
+        "short",
+        "commercial"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "hard",
+        "wordplay": "hard",
+        "definition": "easy"
+      }
+    },
+    "times-29147-5d": {
+      "clue": "Grew fiower: one used for spray? (4)",
+      "number": "5D",
+      "enumeration": "",
+      "answer": "ROSE",
+      "steps": [
+        {
+          "hint": "ROSE is the past tense of 'rise' \u2014 things that grew upward rose",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/rose",
+            "word": "rose"
+          },
+          "indices": [
+            0
+          ]
+        },
+        {
+          "hint": "Three meanings packed into one clue \u2014 'grew', 'flower', and 'one used for spray' (a watering can rose). No wordplay, just definitions.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Double definition",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Double definition"
+        },
+        {
+          "type": "assembly",
+          "result": "ROSE",
+          "transforms": [
+            {
+              "hint": "A rose is the most famous of flowers \u2014 and also a watering can attachment that creates a spray pattern",
+              "role": "part1",
+              "type": "synonym",
+              "result": "ROSE",
+              "indices": [
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Grew",
+        "flower",
+        "one",
+        "used",
+        "for",
+        "spray"
+      ],
+      "clue_type": "double_definition",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "easy"
+      }
+    },
+    "times-29147-6d": {
+      "clue": "Government department tax giving certain cars priority (8)",
+      "number": "6D",
+      "enumeration": "",
+      "answer": "MINISTRY",
+      "steps": [
+        {
+          "hint": "A ministry is a government department \u2014 like the Ministry of Defence",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/ministry",
+            "word": "ministry"
+          },
+          "indices": [
+            0,
+            1
+          ]
+        },
+        {
+          "hint": "'Priority' tells you which part comes first \u2014 the cars go ahead of the tax",
+          "type": "indicator",
+          "indices": [
+            6
+          ],
+          "indicator_type": "ordering"
+        },
+        {
+          "type": "assembly",
+          "result": "MINISTRY",
+          "transforms": [
+            {
+              "hint": "Minis are a famous type of small British car \u2014 'certain cars' points to a specific make",
+              "role": "part1",
+              "type": "synonym",
+              "result": "MINIS",
+              "indices": [
+                4,
+                5
+              ]
+            },
+            {
+              "hint": "To try someone's patience is to tax it \u2014 'tax' and 'try' both mean to strain or test",
+              "role": "part2",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/try",
+                "word": "try"
+              },
+              "result": "TRY",
+              "indices": [
+                2
+              ]
+            }
+          ],
+          "failMessage": "'tax' and 'certain cars' are 13 letters together \u2014 what does each word really mean?"
+        }
+      ],
+      "words": [
+        "Government",
+        "department",
+        "tax",
+        "giving",
+        "certain",
+        "cars",
+        "priority"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "easy"
+      }
+    },
+    "times-29147-20d": {
+      "clue": "Stomach infection introduces source of irritation (7)",
+      "number": "20D",
+      "enumeration": "",
+      "answer": "BUGBEAR",
+      "steps": [
+        {
+          "hint": "A bugbear is something that causes annoyance or dread \u2014 a persistent source of irritation",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/bugbear",
+            "word": "bugbear"
+          },
+          "indices": [
+            3,
+            4,
+            5
+          ]
+        },
+        {
+          "hint": "No indicator words \u2014 the parts just join end to end. That's a charade. Notice the parts appear in reverse order in the clue.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "BUGBEAR",
+          "transforms": [
+            {
+              "hint": "A bug is an infection \u2014 'I've picked up a bug' means 'I've caught an infection'",
+              "role": "part1",
+              "type": "synonym",
+              "result": "BUG",
+              "indices": [
+                1
+              ]
+            },
+            {
+              "hint": "To bear something is to stomach it \u2014 'I can't bear it' = 'I can't stomach it'",
+              "role": "part2",
+              "type": "synonym",
+              "result": "BEAR",
+              "indices": [
+                0
+              ]
+            }
+          ],
+          "failMessage": "'Stomach' and 'infection' are 17 letters \u2014 what does each really mean?"
+        }
+      ],
+      "words": [
+        "Stomach",
+        "infection",
+        "introduces",
+        "source",
+        "of",
+        "irritation"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "easy"
+      }
+    },
+    "times-29147-14d": {
+      "clue": "General way to assess meaning (10)",
+      "number": "14D",
+      "enumeration": "",
+      "answer": "STRATEGIST",
+      "steps": [
+        {
+          "hint": "A strategist plans campaigns \u2014 'general' in the military sense, someone who devises strategy",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/strategist",
+            "word": "strategist"
+          },
+          "indices": [
+            0
+          ]
+        },
+        {
+          "hint": "No indicator words \u2014 the parts just join end to end. That's a charade.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "STRATEGIST",
+          "transforms": [
+            {
+              "hint": "'Way' in cryptics almost always means ST (street) \u2014 one of the most common two-letter abbreviations",
+              "role": "part1",
+              "type": "abbreviation",
+              "result": "ST",
+              "indices": [
+                1
+              ]
+            },
+            {
+              "hint": "To rate something is to assess it \u2014 'rate the performance' means 'assess the performance'",
+              "role": "part2",
+              "type": "synonym",
+              "result": "RATE",
+              "indices": [
+                3
+              ]
+            },
+            {
+              "hint": "The gist is the meaning or essence \u2014 'the gist of it' = 'the meaning of it'",
+              "role": "part3",
+              "type": "synonym",
+              "result": "GIST",
+              "indices": [
+                4
+              ]
+            }
+          ],
+          "failMessage": "'way', 'assess' and 'meaning' are 16 letters \u2014 what does each really mean?"
+        }
+      ],
+      "words": [
+        "General",
+        "way",
+        "to",
+        "assess",
+        "meaning"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "medium"
+      }
+    },
+    "times-29147-15a": {
+      "clue": "Very loud goodbye from texter leads to slap! (4)",
+      "number": "15A",
+      "enumeration": "",
+      "answer": "CUFF",
+      "steps": [
+        {
+          "hint": "To cuff someone is to slap them \u2014 a light blow, usually on the side of the head",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/cuff",
+            "word": "cuff"
+          },
+          "indices": [
+            7
+          ]
+        },
+        {
+          "hint": "No indicator words \u2014 the parts just join end to end. That's a charade.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "CUFF",
+          "transforms": [
+            {
+              "hint": "CU is text speak for 'see you' \u2014 a texter's goodbye. Modern slang meets cryptic crosswords!",
+              "role": "part1",
+              "type": "abbreviation",
+              "result": "CU",
+              "indices": [
+                2,
+                3,
+                4
+              ]
+            },
+            {
+              "hint": "FF is fortissimo \u2014 the musical direction for 'very loud'. F = forte (loud), FF = fortissimo (very loud)",
+              "role": "part2",
+              "type": "abbreviation",
+              "result": "FF",
+              "indices": [
+                0,
+                1
+              ]
+            }
+          ],
+          "failMessage": "'Goodbye from texter' and 'very loud' are 24 letters \u2014 what does each really mean?"
+        }
+      ],
+      "words": [
+        "Very",
+        "loud",
+        "goodbye",
+        "from",
+        "texter",
+        "leads",
+        "to",
+        "slap"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "hard",
+        "definition": "easy"
+      }
+    },
+    "times-29147-28a": {
+      "clue": "Get down tips on symphony for composer (7)",
+      "number": "28A",
+      "enumeration": "",
+      "answer": "DEBUSSY",
+      "steps": [
+        {
+          "hint": "Claude Debussy \u2014 the great French impressionist composer",
+          "type": "definition",
+          "lookup": {
+            "url": "https://en.wikipedia.org/wiki/Claude_Debussy",
+            "word": "Debussy"
+          },
+          "indices": [
+            6
+          ]
+        },
+        {
+          "hint": "'Tips' means take the tip letters \u2014 the first and last \u2014 of the next word",
+          "type": "indicator",
+          "indices": [
+            2
+          ],
+          "indicator_type": "letter_selection"
+        },
+        {
+          "type": "assembly",
+          "result": "DEBUSSY",
+          "transforms": [
+            {
+              "hint": "To debus is to get down from a vehicle \u2014 a military term for dismounting",
+              "role": "part1",
+              "type": "synonym",
+              "result": "DEBUS",
+              "indices": [
+                0,
+                1
+              ]
+            },
+            {
+              "hint": "'Tips on symphony' \u2014 take the tip letters (first S and last Y) of 'symphony'",
+              "role": "part2",
+              "type": "letter_selection",
+              "result": "SY",
+              "indices": [
+                4
+              ]
+            }
+          ],
+          "failMessage": "'Get down' and 'symphony' are 16 letters \u2014 what does each really mean?"
+        }
+      ],
+      "words": [
+        "Get",
+        "down",
+        "tips",
+        "on",
+        "symphony",
+        "for",
+        "composer"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "medium"
+      }
+    },
+    "times-29147-22a": {
+      "clue": "Modest earnings for salesperson, potentially a predator (6)",
+      "number": "22A",
+      "enumeration": "",
+      "answer": "COYOTE",
+      "steps": [
+        {
+          "hint": "A coyote is a predator \u2014 a wild canine native to North America",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/coyote",
+            "word": "coyote"
+          },
+          "indices": [
+            5,
+            6
+          ]
+        },
+        {
+          "hint": "No indicator words \u2014 the parts just join end to end. That's a charade.",
+          "type": "wordplay_type",
+          "options": [
+            "Charade",
+            "Container",
+            "Anagram",
+            "Hidden word"
+          ],
+          "expected": "Charade"
+        },
+        {
+          "type": "assembly",
+          "result": "COYOTE",
+          "transforms": [
+            {
+              "hint": "Coy means modest or shy \u2014 'playing coy' means 'acting modest'",
+              "role": "part1",
+              "type": "synonym",
+              "result": "COY",
+              "indices": [
+                0
+              ]
+            },
+            {
+              "hint": "OTE stands for On-Target Earnings \u2014 the expected earnings for a salesperson who hits their targets",
+              "role": "part2",
+              "type": "abbreviation",
+              "result": "OTE",
+              "indices": [
+                1,
+                2,
+                3
+              ]
+            }
+          ],
+          "failMessage": "'Modest' and 'earnings for salesperson' are 28 letters \u2014 what does each really mean?"
+        }
+      ],
+      "words": [
+        "Modest",
+        "earnings",
+        "for",
+        "salesperson",
+        "potentially",
+        "a",
+        "predator"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "hard",
+        "definition": "easy"
+      }
+    },
+    "times-29147-23a": {
+      "clue": "Delegating eg pundit for broadcast (8)",
+      "number": "23A",
+      "enumeration": "",
+      "answer": "DEPUTING",
+      "steps": [
+        {
+          "hint": "Deputing means delegating \u2014 appointing someone to act on your behalf",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/depute",
+            "word": "deputing"
+          },
+          "indices": [
+            0
+          ]
+        },
+        {
+          "hint": "'Broadcast' means scattered or spread \u2014 a classic anagram indicator in Times cryptics",
+          "type": "indicator",
+          "indices": [
+            4
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "hint": "These words supply the 8 letters to rearrange \u2014 EG + PUNDIT.",
+          "type": "fodder",
+          "indices": [
+            1,
+            2
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "type": "assembly",
+          "result": "DEPUTING",
+          "transforms": [
+            {
+              "hint": "'eg' is used as-is \u2014 both letters feed into the anagram",
+              "role": "part1",
+              "type": "literal",
+              "result": "EG",
+              "indices": [
+                1
+              ]
+            },
+            {
+              "hint": "'Pundit' is used as-is \u2014 all six letters feed into the anagram",
+              "role": "part2",
+              "type": "literal",
+              "result": "PUNDIT",
+              "indices": [
+                2
+              ]
+            },
+            {
+              "hint": "Rearrange EG + PUNDIT (8 letters) \u2014 'broadcast' tells you to jumble them into DEPUTING",
+              "role": "anagram",
+              "type": "anagram",
+              "result": "DEPUTING",
+              "indices": [
+                4
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Delegating",
+        "eg",
+        "pundit",
+        "for",
+        "broadcast"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "medium"
+      }
+    },
+    "times-29147-18a": {
+      "clue": "Outside help needed with repair, surprisingly (10)",
+      "number": "18A",
+      "enumeration": "",
+      "answer": "PERIPHERAL",
+      "steps": [
+        {
+          "hint": "Peripheral means on the outside \u2014 at the edge rather than the centre",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/peripheral",
+            "word": "peripheral"
+          },
+          "indices": [
+            0
+          ]
+        },
+        {
+          "hint": "'Surprisingly' suggests something unexpected \u2014 a signal that letters need rearranging",
+          "type": "indicator",
+          "indices": [
+            5
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "hint": "These words supply the 10 letters to rearrange \u2014 HELP + REPAIR.",
+          "type": "fodder",
+          "indices": [
+            1,
+            4
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "type": "assembly",
+          "result": "PERIPHERAL",
+          "transforms": [
+            {
+              "hint": "'Help' is used as-is \u2014 all four letters feed into the anagram",
+              "role": "part1",
+              "type": "literal",
+              "result": "HELP",
+              "indices": [
+                1
+              ]
+            },
+            {
+              "hint": "'Repair' is used as-is \u2014 all six letters feed into the anagram",
+              "role": "part2",
+              "type": "literal",
+              "result": "REPAIR",
+              "indices": [
+                4
+              ]
+            },
+            {
+              "hint": "Rearrange HELP + REPAIR (10 letters) \u2014 'surprisingly' tells you to jumble them into PERIPHERAL",
+              "role": "anagram",
+              "type": "anagram",
+              "result": "PERIPHERAL",
+              "indices": [
+                5
+              ]
+            }
+          ]
+        }
+      ],
+      "words": [
+        "Outside",
+        "help",
+        "needed",
+        "with",
+        "repair",
+        "surprisingly"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "easy",
+        "wordplay": "easy",
+        "definition": "easy"
+      }
+    },
+    "times-29147-11a": {
+      "clue": "Britain for one day leading way, finally (8)",
+      "number": "11A",
+      "enumeration": "",
+      "answer": "MONARCHY",
+      "steps": [
+        {
+          "hint": "Britain is a monarchy \u2014 'for one' tells you Britain is an example of this type of government",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/monarchy",
+            "word": "monarchy"
+          },
+          "indices": [
+            0,
+            1,
+            2
+          ]
+        },
+        {
+          "hint": "'Finally' means take the last letter of the nearby word",
+          "type": "indicator",
+          "indices": [
+            6
+          ],
+          "indicator_type": "letter_selection"
+        },
+        {
+          "type": "assembly",
+          "result": "MONARCHY",
+          "transforms": [
+            {
+              "hint": "MON is Monday \u2014 a day of the week. In cryptics, 'day' often means a specific day abbreviation",
+              "role": "part1",
+              "type": "abbreviation",
+              "result": "MON",
+              "indices": [
+                3
+              ]
+            },
+            {
+              "hint": "ARCH means leading or chief \u2014 as in archbishop (chief bishop) or archenemy (chief enemy)",
+              "role": "part2",
+              "type": "synonym",
+              "result": "ARCH",
+              "indices": [
+                4
+              ]
+            },
+            {
+              "hint": "'Way, finally' \u2014 take the final letter of 'way' to get Y",
+              "role": "part3",
+              "type": "letter_selection",
+              "result": "Y",
+              "indices": [
+                5
+              ]
+            }
+          ],
+          "failMessage": "'day', 'leading' and 'way' are 13 letters \u2014 what does each really mean?"
+        }
+      ],
+      "words": [
+        "Britain",
+        "for",
+        "one",
+        "day",
+        "leading",
+        "way",
+        "finally"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "easy"
+      }
+    },
+    "times-29147-16a": {
+      "clue": "Mother keeping small object in hatch (10)",
+      "number": "16A",
+      "enumeration": "",
+      "answer": "MASTERMIND",
+      "steps": [
+        {
+          "hint": "To mastermind is to hatch \u2014 to mastermind a plot means to hatch a plan",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/mastermind",
+            "word": "mastermind"
+          },
+          "indices": [
+            5
+          ]
+        },
+        {
+          "hint": "'Keeping' means holding something inside \u2014 a container indicator",
+          "type": "indicator",
+          "indices": [
+            1
+          ],
+          "indicator_type": "container"
+        },
+        {
+          "type": "outer_word",
+          "indices": [
+            0
+          ]
+        },
+        {
+          "type": "inner_word",
+          "indices": [
+            2
+          ]
+        },
+        {
+          "type": "assembly",
+          "result": "MASTERMIND",
+          "transforms": [
+            {
+              "hint": "Mater is Latin for mother \u2014 a well-known crossword synonym (as in 'alma mater')",
+              "role": "outer",
+              "type": "synonym",
+              "result": "MATER",
+              "indices": [
+                0
+              ]
+            },
+            {
+              "hint": "S is the standard abbreviation for 'small' \u2014 as on clothing labels (S, M, L)",
+              "role": "inner",
+              "type": "abbreviation",
+              "result": "S",
+              "indices": [
+                2
+              ]
+            },
+            {
+              "hint": "'Keeping' tells you MATER holds S inside: MA + S + TER = MASTER",
+              "role": "container",
+              "type": "container",
+              "result": "MASTER",
+              "indices": [
+                1
+              ]
+            },
+            {
+              "hint": "To mind is to object \u2014 'do you mind?' means 'do you object?'",
+              "role": "part2",
+              "type": "synonym",
+              "result": "MIND",
+              "indices": [
+                3
+              ]
+            }
+          ],
+          "failMessage": "'Mother' is 6 letters, 'small' is 5, 'object' is 6 \u2014 what does each really mean?"
+        }
+      ],
+      "words": [
+        "Mother",
+        "keeping",
+        "small",
+        "object",
+        "in",
+        "hatch"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "medium",
+        "wordplay": "medium",
+        "definition": "medium"
+      }
+    },
+    "times-29147-1d": {
+      "clue": "Bloodless revolution for agents capturing base (7)",
+      "number": "1D",
+      "enumeration": "",
+      "answer": "ANAEMIC",
+      "steps": [
+        {
+          "hint": "Lacking colour or vitality \u2014 pale and weak",
+          "type": "definition",
+          "lookup": {
+            "url": "https://www.merriam-webster.com/dictionary/anemic",
+            "word": "anaemic"
+          },
+          "indices": [
+            0
+          ]
+        },
+        {
+          "hint": "'Capturing' tells you one piece grabs hold of another \u2014 wrapping around it",
+          "type": "indicator",
+          "indices": [
+            4
+          ],
+          "indicator_type": "container"
+        },
+        {
+          "hint": "'Revolution' suggests turning things around \u2014 here it signals rearranging all the letters",
+          "type": "indicator",
+          "indices": [
+            1
+          ],
+          "indicator_type": "anagram"
+        },
+        {
+          "type": "assembly",
+          "result": "ANAEMIC",
+          "transforms": [
+            {
+              "hint": "In cryptics, 'agents' points to CIA \u2014 the Central Intelligence Agency, the most famous spy agency",
+              "role": "part1",
+              "type": "abbreviation",
+              "result": "CIA",
+              "indices": [
+                3
+              ]
+            },
+            {
+              "hint": "'Base' as in low or despicable \u2014 MEAN is a classic synonym",
+              "role": "part2",
+              "type": "synonym",
+              "lookup": {
+                "url": "https://www.merriam-webster.com/dictionary/base",
+                "word": "base"
+              },
+              "result": "MEAN",
+              "indices": [
+                5
+              ]
+            },
+            {
+              "hint": "'Capturing' tells you CIA wraps around MEAN \u2014 CI + MEAN + A = CIMEANA",
+              "role": "contained",
+              "type": "container",
+              "result": "CIMEANA",
+              "indices": [
+                4
+              ]
+            },
+            {
+              "hint": "'Revolution' rearranges CIMEANA into ANAEMIC \u2014 all 7 letters reshuffled",
+              "role": "anagrammed",
+              "type": "anagram",
+              "result": "ANAEMIC",
+              "indices": [
+                1
+              ]
+            }
+          ],
+          "failMessage": "'agents' is 6 letters, 'base' is 4 \u2014 far too many for a 7-letter answer. What does each word really mean?"
+        }
+      ],
+      "words": [
+        "Bloodless",
+        "revolution",
+        "for",
+        "agents",
+        "capturing",
+        "base"
+      ],
+      "clue_type": "standard",
+      "difficulty": {
+        "overall": "hard",
+        "wordplay": "hard",
+        "definition": "easy"
+      }
+    }
+  }
+}

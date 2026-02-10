@@ -18,6 +18,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from puzzle_store_supabase import PuzzleStoreSupabase
+from backup_puzzle import backup_puzzle
 
 
 def main():
@@ -82,6 +83,13 @@ def main():
         print("  python3 lock_puzzle.py --status 29453")
         print("  python3 lock_puzzle.py --list")
         return 1
+
+    # Auto-backup before locking
+    if lock_mode:
+        count = backup_puzzle(puzzle_number)
+        if count < 0:
+            print("ERROR: Backup failed — aborting lock")
+            return 1
 
     store = PuzzleStoreSupabase()
 
