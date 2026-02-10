@@ -193,7 +193,7 @@ CRYPTIC_ABBREVIATIONS = {
     "not": {"N"},
     "the": {"T"},
     "a": {"A"},
-    "an": {"AN"},
+    "an": {"AN", "A"},
     "it": {"IT"},
     "in": {"IN"},
     "is": {"IS"},
