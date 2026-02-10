@@ -996,9 +996,10 @@ def _resolve_variables(text, step, clue):
         transforms = step["transforms"]
         DEPENDENT_TYPES = {"deletion", "reversal", "anagram", "container"}
 
-        # Detect container clues (outer/inner roles)
+        # Detect container clues (outer/inner roles — inner can be "inner", "inner_a", etc.)
         roles = {t["role"] for t in transforms}
-        is_container = "outer" in roles and "inner" in roles
+        has_inner = "inner" in roles or any(r.startswith("inner_") for r in roles)
+        is_container = "outer" in roles and has_inner
 
         if is_container:
             # Container: show insertion notation like SOL(ARE + C + LIPS)E
@@ -1010,7 +1011,7 @@ def _resolve_variables(text, step, clue):
             for i, t in enumerate(transforms):
                 if t["role"] == "outer" and i in terminal:
                     outer_idx = i
-                elif t["role"] == "inner" and i in terminal:
+                elif (t["role"] == "inner" or t["role"].startswith("inner_")) and i in terminal:
                     inner_parts.append((i, t["result"].upper()))
 
             if outer_idx is not None and inner_parts:
