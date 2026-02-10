@@ -191,7 +191,12 @@ class TemplateTrainer {
 
     renderAnswerSection(r) {
         const enumeration = r.enumeration || this.enumeration || '';
-        const parts = enumeration.split(/[,\-\s]+/).map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+        // Split on commas only (separate words). Hyphens stay within a part
+        // (e.g. "5-6" is one hyphenated word = 11 letters, "5,3" is two words).
+        // Sum hyphenated sub-parts into a single group count.
+        const parts = enumeration.split(/[,\s]+/).map(s =>
+            s.split('-').reduce((sum, n) => sum + (parseInt(n, 10) || 0), 0)
+        ).filter(n => n > 0);
         const userAnswer = r.userAnswer || [];
         const locked = r.answerLocked;
 
