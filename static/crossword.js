@@ -301,9 +301,9 @@ class CrosswordPuzzle {
             letter: this.userGrid[r][c] || null
         })).filter(cl => cl.letter);
 
-        // Extract enumeration from clue text (e.g., "(5)" or "(3-4)")
-        const enumMatch = clue.clue.match(/\([\d,\-\s]+\)\s*$/);
-        const enumeration = enumMatch ? enumMatch[0].replace(/[()]/g, '').trim() : String(numbering?.length || wordCells.length);
+        // Use the enumeration field from the database — never parse from clue text
+        // (OCR can introduce spaces, e.g. "(5- 6)" which breaks answer box rendering)
+        const enumeration = clue.enumeration || String(numbering?.length || wordCells.length);
 
         return {
             clueNumber: number,
