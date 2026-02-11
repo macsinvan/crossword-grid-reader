@@ -132,11 +132,19 @@ def build_clue_test_data(clue_id, metadata):
         else:
             step_values.append({"type": step_type, "inputMode": "unknown", "value": None})
 
-    # Wrong value for step 0 (definition) — pick indices NOT in the definition
-    def_indices = set(steps_meta[0]["indices"]) if steps_meta else set()
-    wrong = [i for i in range(len(words)) if i not in def_indices][:2]
-    if not wrong:
-        wrong = [0] if 0 not in def_indices else [1]
+    # Wrong value for step 0 — pick indices NOT in the correct answer
+    first_step = steps_meta[0] if steps_meta else {}
+    if "indices" in first_step:
+        def_indices = set(first_step["indices"])
+        wrong = [i for i in range(len(words)) if i not in def_indices][:2]
+        if not wrong:
+            wrong = [0] if 0 not in def_indices else [1]
+    elif "expected" in first_step:
+        # multiple_choice step (e.g. wordplay_type) — pick a wrong option
+        options = first_step.get("options", [])
+        wrong = [o for o in options if o != first_step["expected"]][:1] or ["Wrong"]
+    else:
+        wrong = [0]
 
     # Indicator info
     indicator_types = []
