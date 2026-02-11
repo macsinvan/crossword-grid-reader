@@ -570,6 +570,76 @@ def test_indicator_coverage(server, clue):
     return True, ""
 
 
+def test_abbreviation_scan_consistency(server, clue):
+    """Verify abbreviation_scan mappings keys match indices and assembly transforms."""
+    steps = clue["steps_meta"]
+    words = clue.get("words", [])
+
+    for s in steps:
+        if s["type"] != "abbreviation_scan":
+            continue
+
+        indices = s.get("indices", [])
+        mappings = s.get("mappings", {})
+
+        # Every mappings key must be in indices
+        for key_str in mappings:
+            key_int = int(key_str)
+            if key_int not in indices:
+                word_at_key = words[key_int] if key_int < len(words) else "?"
+                return False, (
+                    f"abbreviation_scan mappings key '{key_str}' (word: '{word_at_key}') "
+                    f"is not in indices {indices}"
+                )
+
+        # Every index must either have a mappings entry or be part of a
+        # multi-word abbreviation (where only the first index has the mapping)
+        # Build set of all indices covered by assembly abbreviation transforms
+        covered_by_transforms = set()
+        for asm in steps:
+            if asm["type"] != "assembly":
+                continue
+            for t in asm.get("transforms", []):
+                if t.get("type") == "abbreviation":
+                    for ti in t.get("indices", []):
+                        covered_by_transforms.add(ti)
+
+        for idx in indices:
+            if str(idx) not in mappings and idx not in covered_by_transforms:
+                word_at_idx = words[idx] if idx < len(words) else "?"
+                return False, (
+                    f"abbreviation_scan index {idx} (word: '{word_at_idx}') "
+                    f"has no entry in mappings {mappings} and is not part of "
+                    f"a multi-word abbreviation transform"
+                )
+
+        # Each mapped abbreviation must match an assembly abbreviation transform
+        # Exception: substitution clues express abbreviations through the substitution
+        # operation, not through separate abbreviation transforms
+        for asm in steps:
+            if asm["type"] != "assembly":
+                continue
+            has_substitution = any(t.get("type") == "substitution" for t in asm.get("transforms", []))
+            if has_substitution:
+                break  # substitution clues don't need abbreviation transforms
+            for key_str, letter in mappings.items():
+                key_int = int(key_str)
+                matched = False
+                for t in asm.get("transforms", []):
+                    if t.get("type") == "abbreviation" and key_int in t.get("indices", []):
+                        if t["result"].upper() == letter.upper():
+                            matched = True
+                            break
+                if not matched:
+                    word_at_key = words[key_int] if key_int < len(words) else "?"
+                    return False, (
+                        f"abbreviation_scan maps '{word_at_key}' (index {key_int}) → {letter}, "
+                        f"but no assembly abbreviation transform matches"
+                    )
+
+    return True, ""
+
+
 def test_assembly_combined_check(server, clue):
     """Submit all assembly transforms and verify auto-skip completes the clue.
 
@@ -690,6 +760,7 @@ ALL_TESTS = [
     ("Template text", test_template_text),
     ("Assembly completion text", test_assembly_completion_text),
     ("Indicator coverage", test_indicator_coverage),
+    ("Abbreviation scan consistency", test_abbreviation_scan_consistency),
     ("Assembly combined check", test_assembly_combined_check),
     ("Dependent prompt update", test_dependent_prompt_update),
 ]
