@@ -385,6 +385,12 @@ When starting a new session, check these first:
 
 3. **Auto-advance scanning steps** — Eliminate the unnecessary "Check" button click to progress scanning steps (definition, indicator, abbreviation_scan). When the student taps the correct word(s), the step should auto-advance without requiring a separate confirmation click.
 
+4. **God functions in training_handler.py** — `_build_assembly_data` (236 lines) and `_resolve_variables` (248 lines) are too large. Break into smaller, focused functions.
+
+5. **Implicit API field contracts** — 40+ fields passed from server to trainer.js with no schema. A field rename or removal silently breaks the client. Needs a contract definition.
+
+6. **New step type touches 5 files** — Adding a step type requires changes in render_templates.json, training_handler.py, validate_training.py, test_regression.py, and trainer.js. Consider reducing change amplification.
+
 ### ~~Architecture violations~~ — DONE
 
 All 17 violations fixed and verified (744/744 tests pass). Changes:

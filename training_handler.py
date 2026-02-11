@@ -426,57 +426,39 @@ def _format_role(role):
     return role_names[role]
 
 
-def _build_assembly_data(session, step, clue):
-    """Build the assemblyData payload for an assembly step.
+def _compute_fail_message(template, step, clue, words, transforms):
+    """Compute the fail message for an assembly step.
 
-    All transforms are always active — no locking. The student sees the full
-    plan and works through them in any order.
+    Three scenarios: explicit clues skip it, step metadata can override,
+    otherwise use the template with raw word list substitution.
     """
-    transforms = step["transforms"]
-    transforms_done = session["assembly_transforms_done"]  # dict: {index: result}
-    assembly_hint_index = session.get("assembly_hint_index")
-    words = clue["words"]
-
-    # Explicit wordplay: indicators already told the student what to do — no fail message
-    is_explicit = step.get("explicit", False)
-
-    # Transform prompt templates from render template (template-driven, not hardcoded)
-    template = RENDER_TEMPLATES.get("assembly", {})
-    TRANSFORM_PROMPTS = template.get("transformPrompts", {})
-
-    # Fail message: explicit skips it; step metadata overrides the default; otherwise template
-    if is_explicit:
-        fail_message = ""
-    elif "failMessage" in step:
-        fail_message = step["failMessage"]
+    if step.get("explicit", False):
+        return ""
+    if "failMessage" in step:
+        return step["failMessage"]
+    fail_msg_data = template["defaultFailMessage"]
+    if isinstance(fail_msg_data, dict):
+        if "clue_type" not in clue:
+            raise ValueError("Clue metadata missing 'clue_type' field")
+        fail_msg_template = fail_msg_data.get(clue["clue_type"], fail_msg_data.get("default", ""))
     else:
-        fail_msg_data = template["defaultFailMessage"]
-        if isinstance(fail_msg_data, dict):
-            if "clue_type" not in clue:
-                raise ValueError("Clue metadata missing 'clue_type' field")
-            clue_type = clue["clue_type"]
-            fail_msg_template = fail_msg_data.get(clue_type, fail_msg_data.get("default", ""))
-        else:
-            fail_msg_template = fail_msg_data
-        raw_words = []
-        for t in transforms:
-            t_words = [words[i] for i in t["indices"]]
-            raw_words.append(" ".join(t_words))
-        raw_list = "'" + "' and '".join(raw_words) + "'"
-        fail_message = fail_msg_template.format(rawWordsList=raw_list)
+        fail_msg_template = fail_msg_data
+    raw_words = []
+    for t in transforms:
+        t_words = [words[i] for i in t["indices"]]
+        raw_words.append(" ".join(t_words))
+    raw_list = "'" + "' and '".join(raw_words) + "'"
+    return fail_msg_template.format(rawWordsList=raw_list)
 
-    # Detect substitution clues early (needed for display logic)
-    has_substitution = any(t["type"] == "substitution" for t in transforms)
 
-    # Identify transforms consumed by substitution (hidden when substitutionLine is shown)
-    substitution_consumed = set()
-    if has_substitution:
-        for i, t in enumerate(transforms):
-            if t["type"] == "substitution" and i > 0:
-                substitution_consumed = _find_consumed_predecessors(transforms, i)
-                break
+def _build_transform_list(transforms, transforms_done, template, clue, words,
+                           assembly_hint_index, substitution_consumed, has_substitution):
+    """Build the display list of transforms for the assembly step.
 
-    # Build transform display data
+    Each transform gets a prompt, status, completion text, and hint visibility.
+    All transforms are always active — no locking.
+    """
+    TRANSFORM_PROMPTS = template.get("transformPrompts", {})
     transform_list = []
     for i, t in enumerate(transforms):
         clue_word = " ".join(words[idx] for idx in t["indices"])
@@ -525,7 +507,6 @@ def _build_assembly_data(session, step, clue):
             # Build completed text from templates
             completed_templates = template["completedTextTemplates"]
             if t_type in DEPENDENT_TRANSFORM_TYPES and i > 0:
-                # Dependent types may consume multiple predecessors
                 consumed = _find_consumed_predecessors(transforms, i)
                 for c in consumed:
                     if c not in transforms_done:
@@ -538,7 +519,6 @@ def _build_assembly_data(session, step, clue):
                 completed_text = completed_templates["independent"].format(
                     clueWord=clue_word, result=result)
         else:
-            # All transforms are always active — no locking
             status = "active"
             result = None
 
@@ -555,44 +535,131 @@ def _build_assembly_data(session, step, clue):
         }
         if status == "completed":
             transform_entry["completedText"] = completed_text
-        # Dictionary lookup (optional, from transform metadata)
         if "lookup" in t:
             transform_entry["lookup"] = t["lookup"]
         transform_list.append(transform_entry)
+    return transform_list
+
+
+def _extract_prior_step_data(clue, words):
+    """Extract data from earlier steps (definition, indicator, etc.) for template resolution.
+
+    Returns a dict with: definitionWords, indicatorHint, indicatorWords,
+    innerWords, outerWords, abbreviationScanMappings.
+    """
+    data = {
+        "definitionWords": "",
+        "indicatorHint": "",
+        "indicatorWords": "",
+        "innerWords": "",
+        "outerWords": "",
+        "abbreviationScanMappings": {},
+    }
+    for s in clue["steps"]:
+        if s["type"] == "definition" and "indices" in s:
+            data["definitionWords"] = " ".join(words[i] for i in s["indices"])
+        elif s["type"] == "indicator" and "indices" in s:
+            data["indicatorHint"] = s.get("hint", "")
+            data["indicatorWords"] = " ".join(words[i] for i in s["indices"])
+        elif s["type"] == "outer_word" and "indices" in s:
+            data["outerWords"] = " ".join(words[i] for i in s["indices"])
+        elif s["type"] == "inner_word" and "indices" in s:
+            data["innerWords"] = " ".join(words[i] for i in s["indices"])
+        elif s["type"] == "abbreviation_scan" and "mappings" in s:
+            data["abbreviationScanMappings"] = s["mappings"]
+    return data
+
+
+def _build_abbreviation_summary(abbreviation_scan_mappings, words, template):
+    """Build abbreviation summary string from abbreviation_scan mappings.
+
+    Uses abbreviationPairTemplate and abbreviationPairJoiner from render template.
+    """
+    if not abbreviation_scan_mappings:
+        return ""
+    pair_template = template.get("abbreviationPairTemplate", "")
+    if not pair_template:
+        raise ValueError("Assembly template missing 'abbreviationPairTemplate'")
+    pair_joiner = template.get("abbreviationPairJoiner", " and ")
+    pairs = []
+    for idx_str, letter in abbreviation_scan_mappings.items():
+        word = words[int(idx_str)]
+        pairs.append(pair_template.replace("{letter}", letter).replace("{word}", word))
+    return pair_joiner.join(pairs) if pairs else ""
+
+
+def _build_coaching_lines(template, virtual_step, clue, has_substitution,
+                           indicator_words, source_word, abbreviation_summary):
+    """Resolve the coaching context lines (definition, indicator, check phase prompt).
+
+    Returns (definition_line, indicator_line, check_phase_prompt).
+    """
+    # Definition line — incorporates abbreviation facts when they exist
+    if abbreviation_summary:
+        definition_line = _resolve_variables(template.get("definitionLineWithAbbreviations", ""), virtual_step, clue)
+    else:
+        definition_line = _resolve_variables(template.get("definitionLine", ""), virtual_step, clue)
+
+    # Resolve the appropriate context line based on clue type
+    indicator_line = ""
+    inner_words = virtual_step.get("innerWords", "")
+    outer_words = virtual_step.get("outerWords", "")
+    if has_substitution and indicator_words and source_word:
+        indicator_line = _resolve_variables(template.get("substitutionLine", ""), virtual_step, clue)
+    elif indicator_words and inner_words and outer_words:
+        indicator_line = _resolve_variables(template.get("indicatorLine", ""), virtual_step, clue)
+
+    # Check phase prompt
+    check_phase_prompt = template.get("checkPhasePrompt", "")
+    if not check_phase_prompt:
+        raise ValueError("Assembly template missing 'checkPhasePrompt'")
+
+    return definition_line, indicator_line, check_phase_prompt
+
+
+def _build_assembly_data(session, step, clue):
+    """Build the assemblyData payload for an assembly step.
+
+    All transforms are always active — no locking. The student sees the full
+    plan and works through them in any order.
+    """
+    transforms = step["transforms"]
+    transforms_done = session["assembly_transforms_done"]  # dict: {index: result}
+    assembly_hint_index = session.get("assembly_hint_index")
+    words = clue["words"]
+    template = RENDER_TEMPLATES.get("assembly", {})
+
+    # Fail message
+    fail_message = _compute_fail_message(template, step, clue, words, transforms)
+
+    # Detect substitution clues early (needed for display logic)
+    has_substitution = any(t["type"] == "substitution" for t in transforms)
+    substitution_consumed = set()
+    if has_substitution:
+        for i, t in enumerate(transforms):
+            if t["type"] == "substitution" and i > 0:
+                substitution_consumed = _find_consumed_predecessors(transforms, i)
+                break
+
+    # Build transform display data
+    transform_list = _build_transform_list(
+        transforms, transforms_done, template, clue, words,
+        assembly_hint_index, substitution_consumed, has_substitution)
 
     # Determine phase: check only when all transforms are done
-    all_done = len(transforms_done) == len(transforms)
-    phase = "check" if all_done else "transforms"
+    phase = "check" if len(transforms_done) == len(transforms) else "transforms"
 
     # Compute result letter grouping for tile spacing (e.g. "ASWAN DAM" → [5, 3])
-    result_text = step["result"]
-    result_parts = [len(word) for word in result_text.split()]
+    result_parts = [len(word) for word in step["result"].split()]
 
     # Compute position map (completed letters computed after auto-complete below)
     position_map = _compute_position_map(step)
 
-    # Extract raw data from earlier steps for template variable resolution
-    definition_words = ""
-    indicator_hint = ""
-    indicator_words = ""
-    inner_words = ""
-    outer_words = ""
-    abbreviation_scan_mappings = {}
-    for s in clue["steps"]:
-        if s["type"] == "definition" and "indices" in s:
-            definition_words = " ".join(words[i] for i in s["indices"])
-        elif s["type"] == "indicator" and "indices" in s:
-            indicator_hint = s.get("hint", "")
-            indicator_words = " ".join(words[i] for i in s["indices"])
-        elif s["type"] == "outer_word" and "indices" in s:
-            outer_words = " ".join(words[i] for i in s["indices"])
-        elif s["type"] == "inner_word" and "indices" in s:
-            inner_words = " ".join(words[i] for i in s["indices"])
-        elif s["type"] == "abbreviation_scan" and "mappings" in s:
-            abbreviation_scan_mappings = s["mappings"]
+    # Extract data from earlier steps
+    prior = _extract_prior_step_data(clue, words)
+    abbreviation_scan_mappings = prior["abbreviationScanMappings"]
 
     # Auto-complete abbreviation transforms when abbreviation_scan step exists
-    # The student already identified these — they are known facts
     if abbreviation_scan_mappings:
         for i, t in enumerate(transforms):
             if t["type"] == "abbreviation" and i not in transforms_done:
@@ -601,55 +668,29 @@ def _build_assembly_data(session, step, clue):
     # Compute completed letters after auto-complete so abbreviation letters show in boxes
     completed_letters = _compute_completed_letters(transforms_done, position_map, step)
 
-    # Build abbreviationSummary from abbreviation_scan step's mappings field
-    # mappings: {"0": "H", "3": "I"} — word index → abbreviation letter
-    # Uses template patterns from render_templates.json assembly section
-    abbreviation_summary = ""
-    if abbreviation_scan_mappings:
-        pair_template = template.get("abbreviationPairTemplate", "")
-        if not pair_template:
-            raise ValueError("Assembly template missing 'abbreviationPairTemplate'")
-        pair_joiner = template.get("abbreviationPairJoiner", " and ")
-        pairs = []
-        for idx_str, letter in abbreviation_scan_mappings.items():
-            word = words[int(idx_str)]
-            pairs.append(pair_template.replace("{letter}", letter).replace("{word}", word))
-        if pairs:
-            abbreviation_summary = pair_joiner.join(pairs)
+    # Build abbreviation summary
+    abbreviation_summary = _build_abbreviation_summary(abbreviation_scan_mappings, words, template)
 
-    # Extract substitution-specific data from assembly transforms
+    # Extract substitution source word
     source_word = ""
-    for t in step["transforms"]:
+    for t in transforms:
         if t["type"] == "literal" and t.get("role") == "source":
             source_word = " ".join(words[i] for i in t["indices"])
 
-    # Resolve coaching lines from assembly render template
-    # Build a virtual step with the extra variables for resolution
+    # Build virtual step with extra variables for template resolution
     virtual_step = dict(step)
-    virtual_step["definitionWords"] = definition_words
-    virtual_step["indicatorHint"] = indicator_hint
-    virtual_step["indicatorWords"] = indicator_words
-    virtual_step["innerWords"] = inner_words
-    virtual_step["outerWords"] = outer_words
+    virtual_step["definitionWords"] = prior["definitionWords"]
+    virtual_step["indicatorHint"] = prior["indicatorHint"]
+    virtual_step["indicatorWords"] = prior["indicatorWords"]
+    virtual_step["innerWords"] = prior["innerWords"]
+    virtual_step["outerWords"] = prior["outerWords"]
     virtual_step["abbreviationSummary"] = abbreviation_summary
     virtual_step["sourceWord"] = source_word
 
-    # Definition line — incorporates abbreviation facts when they exist
-    if abbreviation_summary:
-        definition_line = _resolve_variables(template.get("definitionLineWithAbbreviations", ""), virtual_step, clue)
-    else:
-        definition_line = _resolve_variables(template.get("definitionLine", ""), virtual_step, clue)
-    # Resolve the appropriate context line based on clue type
-    indicator_line = ""
-    if has_substitution and indicator_words and source_word:
-        indicator_line = _resolve_variables(template.get("substitutionLine", ""), virtual_step, clue)
-    elif indicator_words and inner_words and outer_words:
-        indicator_line = _resolve_variables(template.get("indicatorLine", ""), virtual_step, clue)
-
-    # Check phase prompt — sent to client for rendering when all transforms are done
-    check_phase_prompt = template.get("checkPhasePrompt", "")
-    if not check_phase_prompt:
-        raise ValueError("Assembly template missing 'checkPhasePrompt'")
+    # Resolve coaching lines
+    definition_line, indicator_line, check_phase_prompt = _build_coaching_lines(
+        template, virtual_step, clue, has_substitution,
+        prior["indicatorWords"], source_word, abbreviation_summary)
 
     return {
         "phase": phase,
@@ -1077,13 +1118,8 @@ def _get_dict_key(step):
     )
 
 
-def _resolve_variables(text, step, clue):
-    """Replace {variable} placeholders in a template string."""
-    if text is None:
-        raise ValueError("_resolve_variables received None — template field is missing")
-    if text == "":
-        return ""
-
+def _resolve_simple_variables(text, step, clue):
+    """Resolve basic {variable} placeholders: words, enumeration, hint, result, expected."""
     # {words} — joined from clue words at step indices
     if "{words}" in text and "indices" in step:
         words = [clue["words"][i] for i in step["indices"]]
@@ -1113,217 +1149,218 @@ def _resolve_variables(text, step, clue):
             raise ValueError(f"Template uses {{expected}} but step metadata is missing 'expected' for step type '{step.get('type', '?')}'")
         text = text.replace("{expected}", str(step["expected"]))
 
-    # {definitionWords} — extracted from definition step
-    if "{definitionWords}" in text:
-        if "definitionWords" not in step:
-            raise ValueError(f"Template uses {{definitionWords}} but step is missing 'definitionWords'")
-        text = text.replace("{definitionWords}", step["definitionWords"])
-
-    # {indicatorHint} — extracted from indicator step
-    if "{indicatorHint}" in text:
-        if "indicatorHint" not in step:
-            raise ValueError(f"Template uses {{indicatorHint}} but step is missing 'indicatorHint'")
-        text = text.replace("{indicatorHint}", step["indicatorHint"])
-
-    # {definitionPart} — from multi_definition step's definition_part field (e.g. "first", "second")
+    # {definitionPart} — from multi_definition step's definition_part field
     if "{definitionPart}" in text:
         if "definition_part" not in step:
             raise ValueError(f"Template uses {{definitionPart}} but step metadata is missing 'definition_part'")
         text = text.replace("{definitionPart}", step["definition_part"])
 
-    # {indicatorType} — from indicator step's indicator_type field (e.g. "container", "anagram")
+    # {indicatorType} — from indicator step's indicator_type field
     if "{indicatorType}" in text:
         if "indicator_type" not in step:
             raise ValueError(f"Template uses {{indicatorType}} but step metadata is missing 'indicator_type'")
-        # Convert snake_case to display form: "letter_selection" -> "letter selection"
         text = text.replace("{indicatorType}", step["indicator_type"].replace("_", " "))
 
-    # {indicatorWords} — the indicator word(s) from the indicator step
-    if "{indicatorWords}" in text:
-        if "indicatorWords" not in step:
-            raise ValueError(f"Template uses {{indicatorWords}} but step is missing 'indicatorWords'")
-        text = text.replace("{indicatorWords}", step["indicatorWords"])
+    return text
 
-    # {innerWords} — from the inner_word step
-    if "{innerWords}" in text:
-        if "innerWords" not in step:
-            raise ValueError(f"Template uses {{innerWords}} but step is missing 'innerWords'")
-        text = text.replace("{innerWords}", step["innerWords"])
 
-    # {outerWords} — from the outer_word step
-    if "{outerWords}" in text:
-        if "outerWords" not in step:
-            raise ValueError(f"Template uses {{outerWords}} but step is missing 'outerWords'")
-        text = text.replace("{outerWords}", step["outerWords"])
+def _resolve_assembly_context_variables(text, step):
+    """Resolve assembly-specific context variables injected via virtual step."""
+    variable_map = {
+        "{definitionWords}": "definitionWords",
+        "{indicatorHint}": "indicatorHint",
+        "{indicatorWords}": "indicatorWords",
+        "{innerWords}": "innerWords",
+        "{outerWords}": "outerWords",
+        "{abbreviationSummary}": "abbreviationSummary",
+        "{sourceWord}": "sourceWord",
+    }
+    for placeholder, field in variable_map.items():
+        if placeholder in text:
+            if field not in step:
+                raise ValueError(f"Template uses {placeholder} but step is missing '{field}'")
+            text = text.replace(placeholder, step[field])
+    return text
 
-    # {abbreviationSummary} — from abbreviation_scan step paired with assembly transforms
-    if "{abbreviationSummary}" in text:
-        if "abbreviationSummary" not in step:
-            raise ValueError(f"Template uses {{abbreviationSummary}} but step is missing 'abbreviationSummary'")
-        text = text.replace("{abbreviationSummary}", step["abbreviationSummary"])
 
-    # {abbreviationBreakdown} — one line per abbreviation from mappings field
-    # Uses breakdownLineTemplate from the abbreviation_scan render template
-    if "{abbreviationBreakdown}" in text:
-        if "mappings" not in step:
-            raise ValueError(f"Template uses {{abbreviationBreakdown}} but step is missing 'mappings'")
-        abbrev_template = RENDER_TEMPLATES.get("abbreviation_scan", {})
-        line_template = abbrev_template.get("breakdownLineTemplate", "")
-        if not line_template:
-            raise ValueError("abbreviation_scan template missing 'breakdownLineTemplate'")
-        words = clue["words"]
-        lines = []
-        for idx_str, letter in step["mappings"].items():
-            word = words[int(idx_str)]
-            lines.append(line_template.replace("{word}", word).replace("{letter}", letter))
-        text = text.replace("{abbreviationBreakdown}", "\n".join(lines))
+def _resolve_abbreviation_breakdown(text, step, clue):
+    """Resolve {abbreviationBreakdown} — one line per abbreviation from mappings."""
+    if "{abbreviationBreakdown}" not in text:
+        return text
+    if "mappings" not in step:
+        raise ValueError(f"Template uses {{abbreviationBreakdown}} but step is missing 'mappings'")
+    abbrev_template = RENDER_TEMPLATES.get("abbreviation_scan", {})
+    line_template = abbrev_template.get("breakdownLineTemplate", "")
+    if not line_template:
+        raise ValueError("abbreviation_scan template missing 'breakdownLineTemplate'")
+    words = clue["words"]
+    lines = []
+    for idx_str, letter in step["mappings"].items():
+        word = words[int(idx_str)]
+        lines.append(line_template.replace("{word}", word).replace("{letter}", letter))
+    return text.replace("{abbreviationBreakdown}", "\n".join(lines))
 
-    # {sourceWord} — the base word for substitution clues
-    if "{sourceWord}" in text:
-        if "sourceWord" not in step:
-            raise ValueError(f"Template uses {{sourceWord}} but step is missing 'sourceWord'")
-        text = text.replace("{sourceWord}", step["sourceWord"])
 
-    # {assemblyBreakdown} — build from transforms: show the assembly journey
-    # All display patterns come from completedTextTemplates in render_templates.json
-    if "{assemblyBreakdown}" in text and "transforms" in step:
-        transforms = step["transforms"]
+def _resolve_assembly_breakdown(text, step, clue):
+    """Resolve {assemblyBreakdown} — build the assembly journey display.
 
-        # Load display patterns from render template
-        assembly_template = RENDER_TEMPLATES.get("assembly", {})
-        ct = assembly_template.get("completedTextTemplates", {})
-        independent_tpl = ct.get("independent", "")
-        dependent_tpl = ct.get("dependentGroup", "")
-        container_notation_tpl = ct.get("containerNotation", "")
-        container_fallback_tpl = ct.get("containerFallback", "")
-        part_joiner = ct.get("partJoiner", " + ")
-        if not independent_tpl or not dependent_tpl or not container_notation_tpl or not container_fallback_tpl:
-            raise ValueError("Assembly template missing required completedTextTemplates entries")
+    Shows container notation (e.g. SOL(ARE)E) or charade parts (e.g. 'work' → OP + US)
+    using display patterns from completedTextTemplates in render_templates.json.
+    """
+    if "{assemblyBreakdown}" not in text or "transforms" not in step:
+        return text
+    transforms = step["transforms"]
 
-        # Detect container clues (outer/inner roles — inner can be "inner", "inner_a", etc.)
-        roles = {t["role"] for t in transforms}
-        has_inner = "inner" in roles or any(r.startswith("inner_") for r in roles)
-        is_container = "outer" in roles and has_inner
+    # Load display patterns from render template
+    assembly_template = RENDER_TEMPLATES.get("assembly", {})
+    ct = assembly_template.get("completedTextTemplates", {})
+    independent_tpl = ct.get("independent", "")
+    dependent_tpl = ct.get("dependentGroup", "")
+    container_notation_tpl = ct.get("containerNotation", "")
+    container_fallback_tpl = ct.get("containerFallback", "")
+    part_joiner = ct.get("partJoiner", " + ")
+    if not independent_tpl or not dependent_tpl or not container_notation_tpl or not container_fallback_tpl:
+        raise ValueError("Assembly template missing required completedTextTemplates entries")
 
-        if is_container:
-            # Container: show insertion notation like SOL(ARE + C + LIPS)E
-            # Find outer, inner, and container transform by role
-            outer_idx = None
-            inner_parts = []
-            container_idx = None
-            for i, t in enumerate(transforms):
-                if t["role"] == "outer":
-                    outer_idx = i
-                elif t["role"] == "inner" or t["role"].startswith("inner_"):
-                    inner_parts.append((i, t["result"].upper()))
-                elif t["type"] == "container":
-                    container_idx = i
+    # Detect container clues (outer/inner roles — inner can be "inner", "inner_a", etc.)
+    roles = {t["role"] for t in transforms}
+    has_inner = "inner" in roles or any(r.startswith("inner_") for r in roles)
+    is_container = "outer" in roles and has_inner
 
-            # If an inner part is consumed by a dependent transform (e.g. reversal),
-            # use the dependent's result instead of the raw inner result.
-            # Example: inner_b 'fine' → AI, reversal → IA — display IA not AI.
-            consumed_by = {}  # maps consumed index → dependent index
-            for i, t in enumerate(transforms):
-                if i > 0 and t["type"] in DEPENDENT_TRANSFORM_TYPES and t["type"] != "container":
-                    consumed = _find_consumed_predecessors(transforms, i)
-                    for c in consumed:
-                        consumed_by[c] = i
-            inner_parts = [
-                (consumed_by[idx], transforms[consumed_by[idx]]["result"].upper())
-                if idx in consumed_by else (idx, result)
-                for idx, result in inner_parts
-            ]
+    if is_container:
+        breakdown = _resolve_container_breakdown(
+            transforms, step, clue, independent_tpl, container_notation_tpl,
+            container_fallback_tpl, part_joiner)
+    else:
+        breakdown = _resolve_charade_breakdown(
+            transforms, clue, independent_tpl, dependent_tpl, part_joiner)
 
-            if outer_idx is not None and inner_parts:
-                outer_result = re.sub(r'[^A-Z]', '', transforms[outer_idx]["result"].upper())
-                combined_inner = "".join(re.sub(r'[^A-Z]', '', p[1]) for p in inner_parts)
-                # Use the container transform's result for position matching,
-                # not the full assembly result (which may include charade parts)
-                if container_idx is not None:
-                    container_result = re.sub(r'[^A-Z]', '', transforms[container_idx]["result"].upper())
-                else:
-                    container_result = re.sub(r'[^A-Z]', '', step["result"].upper())
+    return text.replace("{assemblyBreakdown}", breakdown)
 
-                # Find where inner sits inside outer
-                inner_display = part_joiner.join(p[1] for p in inner_parts)
-                inserted = False
-                for insert_pos in range(len(container_result) - len(combined_inner) + 1):
-                    if container_result[insert_pos:insert_pos + len(combined_inner)] == combined_inner:
-                        remaining = container_result[:insert_pos] + container_result[insert_pos + len(combined_inner):]
-                        if remaining == outer_result:
-                            prefix = outer_result[:insert_pos]
-                            suffix = outer_result[insert_pos:]
-                            container_notation = container_notation_tpl.replace("{prefix}", prefix).replace("{inner}", inner_display).replace("{suffix}", suffix)
-                            inserted = True
-                            break
 
-                if not inserted:
-                    container_notation = container_fallback_tpl.replace("{outer}", outer_result).replace("{inner}", inner_display)
+def _resolve_container_breakdown(transforms, step, clue, independent_tpl,
+                                  container_notation_tpl, container_fallback_tpl, part_joiner):
+    """Build container notation breakdown (e.g. SOL(ARE + C + LIPS)E)."""
+    # Find outer, inner, and container transform by role
+    outer_idx = None
+    inner_parts = []
+    container_idx = None
+    for i, t in enumerate(transforms):
+        if t["role"] == "outer":
+            outer_idx = i
+        elif t["role"] == "inner" or t["role"].startswith("inner_"):
+            inner_parts.append((i, t["result"].upper()))
+        elif t["type"] == "container":
+            container_idx = i
 
-                # Collect other terminal transforms not part of the container
-                container_roles = {"outer", "inner", "container"}
-                terminal = _find_terminal_transforms(transforms)
+    # If an inner part is consumed by a dependent transform (e.g. reversal),
+    # use the dependent's result instead of the raw inner result.
+    consumed_by = {}  # maps consumed index → dependent index
+    for i, t in enumerate(transforms):
+        if i > 0 and t["type"] in DEPENDENT_TRANSFORM_TYPES and t["type"] != "container":
+            consumed = _find_consumed_predecessors(transforms, i)
+            for c in consumed:
+                consumed_by[c] = i
+    inner_parts = [
+        (consumed_by[idx], transforms[consumed_by[idx]]["result"].upper())
+        if idx in consumed_by else (idx, result)
+        for idx, result in inner_parts
+    ]
 
-                # Build full breakdown: container notation + any charade parts
-                parts = []
-                # Insert container notation in correct position among terminal transforms
-                container_placed = False
-                for i in sorted(terminal):
-                    t = transforms[i]
-                    if t["type"] == "container" and not container_placed:
-                        parts.append(container_notation)
-                        container_placed = True
-                    elif t["role"] not in container_roles and not t["role"].startswith("inner_"):
-                        # Show word attribution for charade parts
-                        result_upper = t["result"].upper()
-                        words = clue.get("words", [])
-                        clue_word = " ".join(words[idx] for idx in t["indices"]) if words and "indices" in t else ""
-                        if clue_word and clue_word.upper().replace(" ", "") != result_upper.replace(" ", ""):
-                            parts.append(independent_tpl.replace("{clueWord}", clue_word).replace("{result}", result_upper))
-                        else:
-                            parts.append(result_upper)
-                if not container_placed:
-                    parts.insert(0, container_notation)
+    if outer_idx is None or not inner_parts:
+        raise ValueError("Container clue has outer/inner roles but no terminal outer or inner transforms found")
 
-                breakdown = part_joiner.join(parts)
-                text = text.replace("{assemblyBreakdown}", breakdown)
-            else:
-                raise ValueError("Container clue has outer/inner roles but no terminal outer or inner transforms found")
-        else:
-            # Charade/chain: show clue word attribution for independent transforms,
-            # and dependent operations with arrows
-            # e.g. 'doldrums' → LOW + 'Sailor' → TAR
-            # e.g. (PICS + ID → DISCIP) + 'cover the inside of' → LINE
+    outer_result = re.sub(r'[^A-Z]', '', transforms[outer_idx]["result"].upper())
+    combined_inner = "".join(re.sub(r'[^A-Z]', '', p[1]) for p in inner_parts)
+    # Use the container transform's result for position matching
+    if container_idx is not None:
+        container_result = re.sub(r'[^A-Z]', '', transforms[container_idx]["result"].upper())
+    else:
+        container_result = re.sub(r'[^A-Z]', '', step["result"].upper())
+
+    # Find where inner sits inside outer
+    inner_display = part_joiner.join(p[1] for p in inner_parts)
+    inserted = False
+    for insert_pos in range(len(container_result) - len(combined_inner) + 1):
+        if container_result[insert_pos:insert_pos + len(combined_inner)] == combined_inner:
+            remaining = container_result[:insert_pos] + container_result[insert_pos + len(combined_inner):]
+            if remaining == outer_result:
+                prefix = outer_result[:insert_pos]
+                suffix = outer_result[insert_pos:]
+                container_notation = container_notation_tpl.replace("{prefix}", prefix).replace("{inner}", inner_display).replace("{suffix}", suffix)
+                inserted = True
+                break
+
+    if not inserted:
+        container_notation = container_fallback_tpl.replace("{outer}", outer_result).replace("{inner}", inner_display)
+
+    # Collect terminal transforms and build full breakdown
+    container_roles = {"outer", "inner", "container"}
+    terminal = _find_terminal_transforms(transforms)
+    parts = []
+    container_placed = False
+    for i in sorted(terminal):
+        t = transforms[i]
+        if t["type"] == "container" and not container_placed:
+            parts.append(container_notation)
+            container_placed = True
+        elif t["role"] not in container_roles and not t["role"].startswith("inner_"):
+            result_upper = t["result"].upper()
             words = clue.get("words", [])
-            # Track both display text and raw result for each part
-            # display: what the student sees; raw: just the result letters (for dependent arrows)
-            parts = []  # list of (display_text, raw_result)
-            for i, t in enumerate(transforms):
-                if "type" not in t:
-                    raise ValueError(f"Transform is missing 'type' field in assembly step")
-                t_type = t["type"]
-                result = t["result"].upper()
-                if t_type in DEPENDENT_TRANSFORM_TYPES and parts:
-                    consumed = _find_consumed_predecessors(transforms, i)
-                    # Pop all consumed predecessors — preserve their display text
-                    consumed_displays = []
-                    for _ in consumed:
-                        if parts:
-                            disp, _ = parts.pop()
-                            consumed_displays.insert(0, disp)
-                    consumed_str = part_joiner.join(consumed_displays)
-                    display = dependent_tpl.replace("{consumed}", consumed_str).replace("{result}", result)
-                    parts.append((display, result))
-                else:
-                    # Independent transform: show 'clueWord' → RESULT
-                    # Skip arrow for literals where result matches the clue word
-                    clue_word = " ".join(words[idx] for idx in t["indices"]) if words else ""
-                    if clue_word.upper().replace(" ", "") == result.replace(" ", ""):
-                        display = result
-                    else:
-                        display = independent_tpl.replace("{clueWord}", clue_word).replace("{result}", result)
-                    parts.append((display, result))
-            text = text.replace("{assemblyBreakdown}", part_joiner.join(d for d, _ in parts))
+            clue_word = " ".join(words[idx] for idx in t["indices"]) if words and "indices" in t else ""
+            if clue_word and clue_word.upper().replace(" ", "") != result_upper.replace(" ", ""):
+                parts.append(independent_tpl.replace("{clueWord}", clue_word).replace("{result}", result_upper))
+            else:
+                parts.append(result_upper)
+    if not container_placed:
+        parts.insert(0, container_notation)
+
+    return part_joiner.join(parts)
+
+
+def _resolve_charade_breakdown(transforms, clue, independent_tpl, dependent_tpl, part_joiner):
+    """Build charade/chain breakdown (e.g. 'doldrums' → LOW + 'Sailor' → TAR)."""
+    words = clue.get("words", [])
+    parts = []  # list of (display_text, raw_result)
+    for i, t in enumerate(transforms):
+        if "type" not in t:
+            raise ValueError(f"Transform is missing 'type' field in assembly step")
+        t_type = t["type"]
+        result = t["result"].upper()
+        if t_type in DEPENDENT_TRANSFORM_TYPES and parts:
+            consumed = _find_consumed_predecessors(transforms, i)
+            consumed_displays = []
+            for _ in consumed:
+                if parts:
+                    disp, _ = parts.pop()
+                    consumed_displays.insert(0, disp)
+            consumed_str = part_joiner.join(consumed_displays)
+            display = dependent_tpl.replace("{consumed}", consumed_str).replace("{result}", result)
+            parts.append((display, result))
+        else:
+            clue_word = " ".join(words[idx] for idx in t["indices"]) if words else ""
+            if clue_word.upper().replace(" ", "") == result.replace(" ", ""):
+                display = result
+            else:
+                display = independent_tpl.replace("{clueWord}", clue_word).replace("{result}", result)
+            parts.append((display, result))
+    return part_joiner.join(d for d, _ in parts)
+
+
+def _resolve_variables(text, step, clue):
+    """Replace {variable} placeholders in a template string.
+
+    Delegates to focused helpers for each category of variable.
+    """
+    if text is None:
+        raise ValueError("_resolve_variables received None — template field is missing")
+    if text == "":
+        return ""
+
+    text = _resolve_simple_variables(text, step, clue)
+    text = _resolve_assembly_context_variables(text, step)
+    text = _resolve_abbreviation_breakdown(text, step, clue)
+    text = _resolve_assembly_breakdown(text, step, clue)
 
     return text
 
