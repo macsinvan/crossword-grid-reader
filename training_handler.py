@@ -471,6 +471,17 @@ def _build_assembly_data(session, step, clue):
 
     DEPENDENT_TYPES = {"deletion", "reversal", "anagram", "container", "homophone", "substitution"}
 
+    # Detect substitution clues early (needed for display logic)
+    has_substitution = any(t["type"] == "substitution" for t in transforms)
+
+    # Identify transforms consumed by substitution (hidden when substitutionLine is shown)
+    substitution_consumed = set()
+    if has_substitution:
+        for i, t in enumerate(transforms):
+            if t["type"] == "substitution" and i > 0:
+                substitution_consumed = _find_consumed_predecessors(transforms, i)
+                break
+
     # Build transform display data
     transform_list = []
     for i, t in enumerate(transforms):
@@ -483,22 +494,33 @@ def _build_assembly_data(session, step, clue):
         if t_type not in TRANSFORM_PROMPTS:
             raise ValueError(f"Unknown transform type '{t_type}' in clue metadata. Add it to transformPrompts in render_templates.json.")
 
+        # Skip consumed source transforms when substitutionLine provides the context
+        if i in substitution_consumed and has_substitution:
+            continue
+
         # Template-driven prompt — no per-clue overrides
         DEPENDENT_TYPES = {"deletion", "reversal", "anagram", "container", "homophone", "substitution"}
         if t_type in DEPENDENT_TYPES and i > 0:
             # Dependent transform: {word} is the indicator, not the input
             consumed = _find_consumed_predecessors(transforms, i)
-            all_solved = all(c in transforms_done for c in consumed)
-            if all_solved:
-                pred_parts = [transforms_done[c] for c in consumed]
-                predecessor_letters = " + ".join(pred_parts)
-                prompt_key = t_type + "_with_input"
+            # Use _with_context prompt when substitutionLine already explains the operation
+            if t_type == "substitution" and substitution_consumed:
+                prompt_key = "substitution_with_context"
                 if prompt_key not in TRANSFORM_PROMPTS:
                     raise ValueError(f"Missing '{prompt_key}' in transformPrompts in render_templates.json")
-                prompt = TRANSFORM_PROMPTS[prompt_key].format(
-                    word=clue_word, predecessorLetters=predecessor_letters, n=letter_count)
+                prompt = TRANSFORM_PROMPTS[prompt_key].format(n=letter_count)
             else:
-                prompt = TRANSFORM_PROMPTS[t_type].format(word=clue_word, n=letter_count)
+                all_solved = all(c in transforms_done for c in consumed)
+                if all_solved:
+                    pred_parts = [transforms_done[c] for c in consumed]
+                    predecessor_letters = " + ".join(pred_parts)
+                    prompt_key = t_type + "_with_input"
+                    if prompt_key not in TRANSFORM_PROMPTS:
+                        raise ValueError(f"Missing '{prompt_key}' in transformPrompts in render_templates.json")
+                    prompt = TRANSFORM_PROMPTS[prompt_key].format(
+                        word=clue_word, predecessorLetters=predecessor_letters, n=letter_count)
+                else:
+                    prompt = TRANSFORM_PROMPTS[t_type].format(word=clue_word, n=letter_count)
         else:
             display_role = _format_role(t["role"])
             prompt = TRANSFORM_PROMPTS[t_type].format(role=display_role, word=clue_word, n=letter_count)
@@ -563,6 +585,7 @@ def _build_assembly_data(session, step, clue):
     indicator_words = ""
     inner_words = ""
     outer_words = ""
+    abbreviation_scan_mappings = {}
     for s in clue["steps"]:
         if s["type"] == "definition" and "indices" in s:
             definition_words = " ".join(words[i] for i in s["indices"])
@@ -573,6 +596,33 @@ def _build_assembly_data(session, step, clue):
             outer_words = " ".join(words[i] for i in s["indices"])
         elif s["type"] == "inner_word" and "indices" in s:
             inner_words = " ".join(words[i] for i in s["indices"])
+        elif s["type"] == "abbreviation_scan" and "mappings" in s:
+            abbreviation_scan_mappings = s["mappings"]
+
+    # Build abbreviationSummary from abbreviation_scan step's mappings field
+    # mappings: {"0": "H", "3": "I"} — word index → abbreviation letter
+    abbreviation_summary = ""
+    if abbreviation_scan_mappings:
+        pairs = []
+        for idx_str, letter in abbreviation_scan_mappings.items():
+            word = words[int(idx_str)]
+            pairs.append(f"{letter} from '{word}'")
+        if pairs:
+            abbreviation_summary = " and ".join(pairs)
+
+    # Extract substitution-specific data from assembly transforms
+    source_word = ""
+    substitution_from = ""
+    substitution_to = ""
+    for t in step["transforms"]:
+        if t["type"] == "literal" and t.get("role") == "source":
+            source_word = " ".join(words[i] for i in t["indices"])
+    # Build from/to from abbreviation mappings (ordered by index for consistent display)
+    if has_substitution and abbreviation_scan_mappings:
+        sorted_mappings = sorted(abbreviation_scan_mappings.items(), key=lambda x: int(x[0]))
+        if len(sorted_mappings) >= 2:
+            substitution_from = sorted_mappings[0][1]
+            substitution_to = sorted_mappings[1][1]
 
     # Resolve coaching lines from assembly render template
     # Build a virtual step with the extra variables for resolution
@@ -582,11 +632,21 @@ def _build_assembly_data(session, step, clue):
     virtual_step["indicatorWords"] = indicator_words
     virtual_step["innerWords"] = inner_words
     virtual_step["outerWords"] = outer_words
+    virtual_step["abbreviationSummary"] = abbreviation_summary
+    virtual_step["sourceWord"] = source_word
+    virtual_step["substitutionFrom"] = substitution_from
+    virtual_step["substitutionTo"] = substitution_to
 
-    definition_line = _resolve_variables(template.get("definitionLine", ""), virtual_step, clue)
-    # Only resolve indicatorLine when the required data exists (e.g. container clues)
+    # Use abbreviation-aware definitionLine when abbreviations were scanned
+    if abbreviation_summary:
+        definition_line = _resolve_variables(template.get("definitionLineWithAbbreviations", ""), virtual_step, clue)
+    else:
+        definition_line = _resolve_variables(template.get("definitionLine", ""), virtual_step, clue)
+    # Resolve the appropriate context line based on clue type
     indicator_line = ""
-    if indicator_words and inner_words and outer_words:
+    if has_substitution and indicator_words and source_word and substitution_from and substitution_to:
+        indicator_line = _resolve_variables(template.get("substitutionLine", ""), virtual_step, clue)
+    elif indicator_words and inner_words and outer_words:
         indicator_line = _resolve_variables(template.get("indicatorLine", ""), virtual_step, clue)
 
     return {
@@ -1045,6 +1105,30 @@ def _resolve_variables(text, step, clue):
         if "outerWords" not in step:
             raise ValueError(f"Template uses {{outerWords}} but step is missing 'outerWords'")
         text = text.replace("{outerWords}", step["outerWords"])
+
+    # {abbreviationSummary} — from abbreviation_scan step paired with assembly transforms
+    if "{abbreviationSummary}" in text:
+        if "abbreviationSummary" not in step:
+            raise ValueError(f"Template uses {{abbreviationSummary}} but step is missing 'abbreviationSummary'")
+        text = text.replace("{abbreviationSummary}", step["abbreviationSummary"])
+
+    # {sourceWord} — the base word for substitution clues
+    if "{sourceWord}" in text:
+        if "sourceWord" not in step:
+            raise ValueError(f"Template uses {{sourceWord}} but step is missing 'sourceWord'")
+        text = text.replace("{sourceWord}", step["sourceWord"])
+
+    # {substitutionFrom} — the letter being replaced
+    if "{substitutionFrom}" in text:
+        if "substitutionFrom" not in step:
+            raise ValueError(f"Template uses {{substitutionFrom}} but step is missing 'substitutionFrom'")
+        text = text.replace("{substitutionFrom}", step["substitutionFrom"])
+
+    # {substitutionTo} — the letter replacing it
+    if "{substitutionTo}" in text:
+        if "substitutionTo" not in step:
+            raise ValueError(f"Template uses {{substitutionTo}} but step is missing 'substitutionTo'")
+        text = text.replace("{substitutionTo}", step["substitutionTo"])
 
     # {assemblyBreakdown} — build from transforms: show the assembly journey
     if "{assemblyBreakdown}" in text and "transforms" in step:

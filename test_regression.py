@@ -122,7 +122,17 @@ def build_clue_test_data(clue_id, metadata):
         step_type = step["type"]
         if step_type == "assembly":
             transforms = step.get("transforms", [])
-            transform_entries = [{"index": i, "value": t["result"]} for i, t in enumerate(transforms)]
+            # Identify hidden transforms: source transforms consumed by substitution
+            has_sub = any(t.get("type") == "substitution" for t in transforms)
+            hidden = set()
+            if has_sub:
+                for i, t in enumerate(transforms):
+                    if t.get("type") == "substitution" and i > 0:
+                        for j in range(i):
+                            if transforms[j].get("type") not in DEPENDENT_TYPES:
+                                hidden.add(j)
+            transform_entries = [{"index": i, "value": t["result"]}
+                                 for i, t in enumerate(transforms) if i not in hidden]
             step_values.append({"type": "assembly", "inputMode": "assembly", "transforms": transform_entries})
         elif step_type in ("definition", "indicator", "outer_word", "inner_word", "fodder",
                            "multi_definition", "abbreviation_scan"):
@@ -161,8 +171,19 @@ def build_clue_test_data(clue_id, metadata):
     for step in steps_meta:
         if step["type"] == "assembly":
             transforms = step.get("transforms", [])
-            num_transforms = len(transforms)
+            # Compute hidden transforms (same logic as above)
+            has_sub = any(t.get("type") == "substitution" for t in transforms)
+            hidden_transforms = set()
+            if has_sub:
+                for i, t in enumerate(transforms):
+                    if t.get("type") == "substitution" and i > 0:
+                        for j in range(i):
+                            if transforms[j].get("type") not in DEPENDENT_TYPES:
+                                hidden_transforms.add(j)
+            num_transforms = len(transforms) - len(hidden_transforms)
             for i, t in enumerate(transforms):
+                if i in hidden_transforms:
+                    continue
                 if t.get("type") in DEPENDENT_TYPES:
                     dependent_indices.append(i)
                 if t.get("type") == "container":

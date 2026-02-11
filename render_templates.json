@@ -82,7 +82,9 @@
     "menuTitle": "Build the answer",
     "completedTitle": "{assemblyBreakdown}",
     "definitionLine": "You're looking for a {enumeration}-letter word meaning '{definitionWords}'",
+    "definitionLineWithAbbreviations": "You're looking for a {enumeration}-letter word meaning '{definitionWords}' that contains {abbreviationSummary}",
     "indicatorLine": "'{indicatorWords}' tells us '{innerWords}' (inner) goes inside '{outerWords}' (outer)",
+    "substitutionLine": "'{indicatorWords}' tells you to swap {substitutionFrom} for {substitutionTo} in '{sourceWord}'",
     "intro": "The words in the clue almost never appear directly in the answer. Each one is really a clue to a shorter word \u2014 a synonym, abbreviation, or clever association. Your job is to figure out what each word is really pointing to.",
     "transformPrompts": {
       "synonym": "{role}, '{word}', has a {n}-letter synonym",
@@ -100,7 +102,8 @@
       "homophone": "say '{word}' out loud — what {n}-letter word sounds the same?",
       "homophone_with_input": "say {predecessorLetters} out loud — what {n}-letter word sounds the same?",
       "substitution": "'{word}' tells you to swap a letter — what {n}-letter word do you get?",
-      "substitution_with_input": "'{word}' tells you to swap a letter in {predecessorLetters} — what {n}-letter word do you get?"
+      "substitution_with_input": "'{word}' tells you to swap a letter in {predecessorLetters} — what {n}-letter word do you get?",
+      "substitution_with_context": "What {n}-letter word do you get?"
     },
     "defaultFailMessage": {
       "default": "Try putting {rawWordsList} together \u2014 it doesn\u2019t spell anything useful, does it? So what is each word really telling you?",

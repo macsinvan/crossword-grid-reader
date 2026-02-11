@@ -291,7 +291,7 @@ STEP_REQUIRED_FIELDS = {
     "indicator": ["indices", "hint", "indicator_type"],
     "fodder": ["indices", "indicator_type", "hint"],
     "multi_definition": ["indices", "hint", "definition_part"],
-    "abbreviation_scan": ["indices", "hint"],
+    "abbreviation_scan": ["indices", "hint", "mappings"],
     "outer_word": ["indices"],
     "inner_word": ["indices"],
     "assembly": ["transforms", "result"],

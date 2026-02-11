@@ -22,14 +22,6 @@ In charades and container insertions, the clue words are rarely used directly. E
 - Completed steps should summarise the insight, not label the category
 - Before writing ANY user-facing text, think as a cryptic crossword teacher — research the domain if needed, don't hypothesise from code structure
 
-**Assembly transform prompts — deliver the aha moment:**
-Every transform prompt in the assembly step must teach a cryptic convention, not just label an operation. The student should understand *why* this word points to those letters. Mechanical prompts like "Find a 2-letter synonym for 'in'" or "'IT' is used as-is — type it in (2 letters)" tell the student what to do but not what to learn. The `transformPrompts` in `render_templates.json` and per-transform `hint` text in training metadata should connect the clue word to the convention being used:
-- **synonym**: guide the student to the specific crossword convention (e.g. "In cryptics, 'work' almost always means OP — it's one of the most common abbreviations")
-- **abbreviation**: explain the shorthand (e.g. "'number' in cryptics usually points to NO — a standard abbreviation")
-- **literal**: explain why this word is taken at face value, not as a clue to something else
-- **letter_selection**: teach the pattern (e.g. "'head of office' = take the first letter — 'head of' always means first letter in cryptics")
-- **reversal/deletion/anagram/container**: connect the indicator word to the operation it signals
-
 **NO per-clue prompt overrides.** All prompts come from the generic `transformPrompts` templates in `render_templates.json`. If a template doesn't cover a case, extend the template — never add a `prompt` field to an individual transform in training metadata. The `hint` field is for clue-specific teaching (convention explanations, dictionary links); the `prompt` is always template-driven.
 
 ### Template Rules — MANDATORY
@@ -37,59 +29,11 @@ Every transform prompt in the assembly step must teach a cryptic convention, not
 When writing or modifying step metadata for clues:
 
 1. **Check existing templates first.** Read `render_templates.json` — can an existing template handle this step? If so, use it. If it needs a small extension, extend it. Don't invent new templates without explicit approval.
-2. **If using an existing template, follow its patterns exactly.** Templates define `completedTitle`, `onCorrect`, `menuTitle`, etc. with specific variable substitution patterns. Match them. For example, the `indicator` template uses `{indicatorType}` in menuTitle/completedTitle and dict-keyed lookup for prompt/intro — indicator steps just need the `indicator_type` field in their metadata.
+2. **If using an existing template, follow its patterns exactly.** Templates define `completedTitle`, `onCorrect`, `menuTitle`, etc. with specific variable substitution patterns. Match them.
 3. **If a new template is genuinely needed, model it on the closest existing one.** Copy the structure (inputMode, prompt, menuTitle, completedTitle, onCorrect, expected_source) and adapt the content.
-4. **Every step must deliver a teaching moment, not a robotic instruction.** We are building a teaching app. Each step should help the student understand a cryptic crossword convention — why something works, not just what to type. Prompts like "Enter the 3-letter result" are mechanical. Prompts like "What does 'work' mean in cryptic crosswords?" teach.
+4. **Every step must deliver a teaching moment, not a robotic instruction.** Prompts like "Enter the 3-letter result" are mechanical. Prompts like "What does 'work' mean in cryptic crosswords?" teach.
 
-### Coaching Guidance Per Template Type
-
-Every template's user-facing text must connect to these high-level coaching insights. Step instructions should flow naturally from this guidance.
-
-**standard_definition** — Every cryptic clue contains a straight definition, always at the very start or very end, never in the middle. Finding it first narrows your search. Completed: confirm what the definition means and where it sits.
-
-**container (insertion)** — An indicator word (e.g. "holding", "within", "nurses", "lengthened") tells you one word goes inside another. You need to identify: which word signals the insertion, which is the outer word, and which goes inside. The clue words themselves rarely *are* the answer letters — each is pointing to another word (synonym, abbreviation, etc.). The assembly step shows this: the raw words don't fit, so what does each one really mean?
-
-**charade** — The wordplay breaks into parts that join end-to-end. Often there are no indicator words at all — that's the giveaway it's a charade. Each part is a clue to a shorter word. Again, the raw words rarely work directly; each is pointing to something else. The assembly step demonstrates this by showing the raw words don't produce the right number of letters.
-
-**anagram** — An indicator word (e.g. "mixed", "confused", "struggling") signals that letters need rearranging. First collect the letters (sometimes from multiple words), then rearrange them into the answer.
-
-**hidden** — The answer is literally hiding in plain sight, spelled out across consecutive letters spanning word boundaries. An indicator like "in", "from", or "some" points to this. Sometimes the hidden word is reversed.
-
-**double_definition** — The clue is simply two definitions side by side, both pointing to the same answer. No wordplay trickery — just spot that both halves define the same word.
-
-**transformation_chain** — Multiple operations applied in sequence: start with a word, then apply each transformation (synonym, deletion, reversal, etc.) one after another. Each step builds on the previous result.
-
-**synonym / abbreviation / literal / reversal / deletion / letter_selection** — These are the building blocks that appear within charades, containers, and chains. Each teaches one specific trick: a word means something else (synonym), a standard short form (abbreviation, e.g. "five" = V), a word used as-is (literal), reading backwards (reversal), removing letters (deletion), or picking specific letters like first/last/middle (letter_selection).
-
-**abbreviation_scan** — Experienced solvers recognise certain words on sight: 'husband' = H, 'one' = I, 'doctor' = DR, etc. These standard abbreviations appear across all setters and are part of the solver's core vocabulary. The abbreviation_scan step teaches students to spot these before assembly, narrowing their search. Only use for commonly repeated abbreviations (not one-off clue-specific tricks).
-
-**connector** — Some words in the clue are just glue — "and", "with", "for" — that don't contribute any letters. Recognising them helps the student focus on the words that matter.
-
-### Scanning Phase Flow
-
-The scanning phase teaches students to break down a clue before attempting assembly. The order is:
-
-1. **Definition** — Find the straight definition (always at start or end)
-2. **Wordplay indicators** — Find indicator words that signal the technique (if present)
-3. **Common abbreviations** — Spot standard crossword abbreviations like husband→H, one→I (if present)
-4. **Assembly** — Put it all together
-
-### Step 2 Rule: Indicators vs No-Indicators
-
-After the student finds the definition, step 2 depends on whether the clue has indicator words:
-
-- **Clues WITH indicators** (anagram, container, hidden, deletion, reversal — and charades that contain these): Show word chips (`tap_words`) so the student can find and tap the indicator word(s). A clue can have multiple indicator steps (e.g. 26A has both a reversal and a container indicator). Every dependent transform (reversal, deletion, anagram) in the assembly MUST have a corresponding indicator step — the `test_indicator_coverage` test enforces this.
-- **Clues WITHOUT indicators** (pure charades, double definition): Show multiple choice options (`multiple_choice`) so the student can select the clue type. There are no indicator words to find, so word chips are not shown — the student just picks from a list.
-
-### Step 3 Rule: Abbreviation Scanning
-
-After indicators (or wordplay type selection), if the clue contains words that are standard crossword abbreviations, add an `abbreviation_scan` step. This teaches students to recognise the "usual suspects" — words that always stand for the same letters across all setters.
-
-- Only include for **commonly repeated abbreviations** (H=husband, I=one, DR=doctor, etc.) — NOT one-off clue-specific tricks
-- Multiple abbreviations in a clue are tapped in any order (engine uses set comparison)
-- The hint should teach the convention: "'Husband' is always H and 'one' is always I"
-
-Examples: 27A (substitution — "Husband" and "one" are standard abbreviations for H and I).
+**For coaching guidance per step type, scanning phase flow, and assembly patterns — see SPEC.md Sections 5.1 and 6.3.**
 
 ## Communication Rules
 
@@ -266,6 +210,8 @@ Assembly is a multi-phase step with its own sub-state (`assembly_phase`, `assemb
 4. **Transform prompts** — role-labelled coaching prompts (e.g. "outer, 'Not after', has a 2-letter synonym"), each with its own hint lightbulb. All transforms are always active — no locking. The student sees the full plan and works through them in any order.
 5. **Combined result display** — editable letter inputs grouped by transform with `+` separators, showing cross letters as overwritable placeholders. Check button submits all filled groups.
 
+**Assembly coaching pattern:** See SPEC.md Section 6.3 for the full pattern. Key principle: state what we have, state the operation, ask the student to solve. Never give the answer.
+
 Transform prompts are template-driven from `transformPrompts` in `render_templates.json`. Definition/indicator lines use `{variable}` substitution via `_resolve_variables()`. When the last transform result equals the final answer, the check phase is auto-skipped.
 
 **Flat Clue Metadata Format (17D example):**
@@ -431,7 +377,7 @@ When starting a new session, check these first:
 
 ## TODO
 
-1. **Regression tests too slow** — 62 clues × 11 tests with per-request Supabase lazy-loading makes the full suite take ~8 minutes. Investigate: bulk-fetch puzzle data once, cache in test session? Avoid per-test `/trainer/start` round-trips to DB?
+1. ~~**Regression tests too slow**~~ — DONE. Puzzle-level bulk cache in `lookup_clue()`. Tests run in ~4s.
 
 2. **Abbreviation scan: per-abbreviation prompts** — Currently the `abbreviation_scan` step asks "Which words are standard crossword abbreviations?" as a single tap-all-at-once step. Instead, each abbreviation should get its own prompt, e.g. "Can you find a word that is commonly abbreviated to 'H'?" This teaches the association better — the student recalls the mapping, not just identifies the word.
 
