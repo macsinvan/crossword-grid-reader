@@ -26,7 +26,7 @@ import urllib.error
 # ---------------------------------------------------------------------------
 
 DEFAULT_SERVER = "http://127.0.0.1:8080"
-DEPENDENT_TYPES = {"reversal", "deletion", "anagram", "container"}
+DEPENDENT_TYPES = {"reversal", "deletion", "anagram", "container", "homophone", "substitution"}
 
 # ---------------------------------------------------------------------------
 # HTTP helpers
@@ -125,7 +125,7 @@ def build_clue_test_data(clue_id, metadata):
             transform_entries = [{"index": i, "value": t["result"]} for i, t in enumerate(transforms)]
             step_values.append({"type": "assembly", "inputMode": "assembly", "transforms": transform_entries})
         elif step_type in ("definition", "indicator", "outer_word", "inner_word", "fodder",
-                           "multi_definition"):
+                           "multi_definition", "abbreviation_scan"):
             step_values.append({"type": step_type, "inputMode": "tap_words", "value": step["indices"]})
         elif step_type == "wordplay_type":
             step_values.append({"type": step_type, "inputMode": "multiple_choice", "value": step["expected"]})

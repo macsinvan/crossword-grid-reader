@@ -325,13 +325,14 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 - **12A** — anagram with fodder pieces (literal parts + final anagram)
 - **23D** — hidden reversed word with dictionary lookup on transform
 
-**Current Render Templates (4 active, 3 deprecated):**
+**Current Render Templates (5 active, 3 deprecated):**
 
 | Template | inputMode | Purpose | Status |
 |----------|-----------|---------|--------|
 | `definition` | `tap_words` | Find the definition at start/end of clue | Active |
 | `wordplay_type` | `multiple_choice` | Identify the type of wordplay (Charade, Container, Anagram, etc.) | Active |
 | `indicator` | `tap_words` | Find indicator word — `indicator_type` field drives type-specific prompt, intro, menuTitle, completedTitle | Active |
+| `abbreviation_scan` | `tap_words` | Spot standard crossword abbreviations (husband→H, one→I, etc.) | Active |
 | `assembly` | `assembly` | Multi-phase: transforms then assembly check (used for containers, charades, and other types) | Active |
 | `outer_word` | `tap_words` | Identify which word wraps around (container clues) | Deprecated |
 | `inner_word` | `tap_words` | Identify which word goes inside (container clues) | Deprecated |
@@ -474,6 +475,7 @@ Templates use `{variable}` placeholders resolved from step + clue data:
 | `definition` | `definition` | `tap_words` | Find definition |
 | `wordplay_type` | `wordplay_type` | `multiple_choice` | Identify wordplay technique |
 | `indicator` | `indicator` | `tap_words` | Find indicator word — `indicator_type` drives type-specific text |
+| `abbreviation_scan` | `abbreviation_scan` | `tap_words` | Spot standard crossword abbreviations |
 | `outer_word` | `outer_word` | `tap_words` | Identify outer word (container clues) |
 | `inner_word` | `inner_word` | `tap_words` | Identify inner word (container clues) |
 | `fodder` | `fodder` | `tap_words` | Identify word being operated on |
@@ -599,6 +601,7 @@ The engine uses a simple sequencer with flat steps. Each step type has one inter
 | `definition` | `tap_words` | Find definition at start/end of clue |
 | `wordplay_type` | `multiple_choice` | Identify the wordplay technique (Charade, Container, etc.) |
 | `indicator` | `tap_words` | Find indicator word — `indicator_type` drives type-specific text |
+| `abbreviation_scan` | `tap_words` | Spot standard crossword abbreviations (husband→H, one→I, etc.) |
 | `outer_word` | `tap_words` | Identify the outer (wrapping) word |
 | `inner_word` | `tap_words` | Identify the inner (inserted) word |
 | `fodder` | `tap_words` | Identify the word being operated on by an indicator |

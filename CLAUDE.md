@@ -61,7 +61,18 @@ Every template's user-facing text must connect to these high-level coaching insi
 
 **synonym / abbreviation / literal / reversal / deletion / letter_selection** — These are the building blocks that appear within charades, containers, and chains. Each teaches one specific trick: a word means something else (synonym), a standard short form (abbreviation, e.g. "five" = V), a word used as-is (literal), reading backwards (reversal), removing letters (deletion), or picking specific letters like first/last/middle (letter_selection).
 
+**abbreviation_scan** — Experienced solvers recognise certain words on sight: 'husband' = H, 'one' = I, 'doctor' = DR, etc. These standard abbreviations appear across all setters and are part of the solver's core vocabulary. The abbreviation_scan step teaches students to spot these before assembly, narrowing their search. Only use for commonly repeated abbreviations (not one-off clue-specific tricks).
+
 **connector** — Some words in the clue are just glue — "and", "with", "for" — that don't contribute any letters. Recognising them helps the student focus on the words that matter.
+
+### Scanning Phase Flow
+
+The scanning phase teaches students to break down a clue before attempting assembly. The order is:
+
+1. **Definition** — Find the straight definition (always at start or end)
+2. **Wordplay indicators** — Find indicator words that signal the technique (if present)
+3. **Common abbreviations** — Spot standard crossword abbreviations like husband→H, one→I (if present)
+4. **Assembly** — Put it all together
 
 ### Step 2 Rule: Indicators vs No-Indicators
 
@@ -70,7 +81,15 @@ After the student finds the definition, step 2 depends on whether the clue has i
 - **Clues WITH indicators** (anagram, container, hidden, deletion, reversal — and charades that contain these): Show word chips (`tap_words`) so the student can find and tap the indicator word(s). A clue can have multiple indicator steps (e.g. 26A has both a reversal and a container indicator). Every dependent transform (reversal, deletion, anagram) in the assembly MUST have a corresponding indicator step — the `test_indicator_coverage` test enforces this.
 - **Clues WITHOUT indicators** (pure charades, double definition): Show multiple choice options (`multiple_choice`) so the student can select the clue type. There are no indicator words to find, so word chips are not shown — the student just picks from a list.
 
-Examples: 5D (deletion — indicator "A lot of") and 2D (anagram — indicator "Crooked") show word chips at step 2. 26A (charade with reversal+container) has two indicator steps for "back" and "in". Pure charades like 4A and 25A show multiple choice instead.
+### Step 3 Rule: Abbreviation Scanning
+
+After indicators (or wordplay type selection), if the clue contains words that are standard crossword abbreviations, add an `abbreviation_scan` step. This teaches students to recognise the "usual suspects" — words that always stand for the same letters across all setters.
+
+- Only include for **commonly repeated abbreviations** (H=husband, I=one, DR=doctor, etc.) — NOT one-off clue-specific tricks
+- Multiple abbreviations in a clue are tapped in any order (engine uses set comparison)
+- The hint should teach the convention: "'Husband' is always H and 'one' is always I"
+
+Examples: 27A (substitution — "Husband" and "one" are standard abbreviations for H and I).
 
 ## Communication Rules
 
@@ -218,12 +237,13 @@ The trainer engine (`training_handler.py`, ~1100 lines) owns ALL trainer busines
 - For indicator steps: `indicator_type` field drives type-specific text via dict-keyed lookup and `{indicatorType}` variable
 - Assembly steps can override `failMessage`
 
-**Current render templates (4 active):**
+**Current render templates (5 active):**
 | Template | inputMode | Purpose |
 |----------|-----------|---------|
 | `definition` | `tap_words` | Find the definition at start/end of clue |
 | `wordplay_type` | `multiple_choice` | Identify the type of wordplay (Charade, Container, etc.) |
 | `indicator` | `tap_words` | Find indicator word — `indicator_type` drives type-specific text |
+| `abbreviation_scan` | `tap_words` | Spot standard crossword abbreviations (husband→H, one→I, etc.) |
 | `assembly` | `assembly` | Coaching context, parallel transforms, combined letter entry |
 
 **Deprecated templates (still supported but no longer used in new clues):**
@@ -401,11 +421,21 @@ When starting a new session, check these first:
 - `_check_reversal`: now strips non-alpha characters (handles multi-word answers like TO ORDER)
 - `_check_substitution`: new check — result must be same length as input, differing by exactly one letter (for 27A TIE)
 - Added `substitution` to VALID_TRANSFORM_TYPES, VALID_INDICATOR_TYPES, and DEPENDENT_TRANSFORM_TYPES
+- Added `abbreviation_scan` to VALID_STEP_TYPES and STEP_REQUIRED_FIELDS
+- Added `substitution` to all DEPENDENT_TYPES sets in training_handler.py (was missing from engine)
 - Added to CRYPTIC_ABBREVIATIONS: agents→CIA, spies→CIA, female→F, male→M, commercial→AD, light source→LED, touching→RE, regarding→RE, concerning→RE, pounds→L, unknown quantity→X/Y/Z, very loud→FF, goodbye from texter→CU, earnings for salesperson→OTE, light→L, advertisement→AD
 
 **Process:** Two-phase approach: (1) Solve as AI expert with clue+definition+answer, (2) Encode as training metadata. Hints teach Times conventions (the macro-level checks become the hints).
 
 **IMPORTANT: Puzzle 29453 is the verified reference. It is locked in Supabase (`training_locked = TRUE`) and 100% read-only. The upload script and all store write methods refuse to modify locked puzzles. Use `python3 lock_puzzle.py --unlock 29453` only if you genuinely need to fix data.**
+
+## TODO
+
+1. **Regression tests too slow** — 62 clues × 11 tests with per-request Supabase lazy-loading makes the full suite take ~8 minutes. Investigate: bulk-fetch puzzle data once, cache in test session? Avoid per-test `/trainer/start` round-trips to DB?
+
+2. **Abbreviation scan: per-abbreviation prompts** — Currently the `abbreviation_scan` step asks "Which words are standard crossword abbreviations?" as a single tap-all-at-once step. Instead, each abbreviation should get its own prompt, e.g. "Can you find a word that is commonly abbreviated to 'H'?" This teaches the association better — the student recalls the mapping, not just identifies the word.
+
+3. **Auto-advance scanning steps** — Eliminate the unnecessary "Check" button click to progress scanning steps (definition, indicator, abbreviation_scan). When the student taps the correct word(s), the step should auto-advance without requiring a separate confirmation click.
 
 ## Worktrees
 This repo uses git worktrees:

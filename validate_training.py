@@ -267,7 +267,7 @@ CRYPTIC_ABBREVIATIONS = {
 }
 
 # Valid template step types (from render_templates.json)
-VALID_STEP_TYPES = {"definition", "wordplay_type", "indicator", "outer_word", "inner_word", "assembly", "fodder", "multi_definition"}
+VALID_STEP_TYPES = {"definition", "wordplay_type", "indicator", "outer_word", "inner_word", "assembly", "fodder", "multi_definition", "abbreviation_scan"}
 
 # Valid transform types (from assembly.transformPrompts)
 VALID_TRANSFORM_TYPES = {"synonym", "abbreviation", "literal", "reversal", "deletion", "anagram", "container", "letter_selection", "homophone", "substitution"}
@@ -291,6 +291,7 @@ STEP_REQUIRED_FIELDS = {
     "indicator": ["indices", "hint", "indicator_type"],
     "fodder": ["indices", "indicator_type", "hint"],
     "multi_definition": ["indices", "hint", "definition_part"],
+    "abbreviation_scan": ["indices", "hint"],
     "outer_word": ["indices"],
     "inner_word": ["indices"],
     "assembly": ["transforms", "result"],
