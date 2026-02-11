@@ -359,6 +359,9 @@ def test_assembly_transform_status(server, clue):
 
     current = render.get("currentStep")
     if not current or current["type"] != "assembly":
+        # Assembly may have auto-completed (e.g. single-transform double definitions)
+        if render.get("complete"):
+            return True, ""
         return False, f"Expected assembly step, got {current.get('type') if current else 'None'}"
 
     assembly_data = current.get("assemblyData", {})
