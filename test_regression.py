@@ -548,7 +548,7 @@ def test_indicator_coverage(server, clue):
 
 
 def test_assembly_combined_check(server, clue):
-    """Combined check: submit only terminal transforms -> complete."""
+    """Submit all assembly transforms and verify completion or check phase."""
     assembly_step = None
     for step in clue["steps"]:
         if step["inputMode"] == "assembly":
@@ -557,24 +557,11 @@ def test_assembly_combined_check(server, clue):
     if not assembly_step:
         return True, ""
 
-    if not clue["dependent_transform_indices"]:
-        return True, ""
-
     clue_id, render = walk_to_assembly(server, clue)
 
-    assembly_data = render["currentStep"]["assemblyData"]
-    pos_map = assembly_data.get("positionMap", {})
-    terminal_indices = {int(k) for k in pos_map.keys()}
-
-    for t in assembly_step["transforms"]:
-        if t["index"] in terminal_indices:
-            correct, render = submit_input(server, clue_id, t["value"],
-                                           transform_index=t["index"])
-            if not correct:
-                return False, (
-                    f"Terminal transform {t['index']} value '{t['value']}' "
-                    f"was rejected"
-                )
+    render = submit_assembly_transforms(
+        server, clue_id, assembly_step["transforms"], render, answer=clue["answer"]
+    )
 
     if not render.get("complete"):
         current = render.get("currentStep", {})
@@ -583,7 +570,7 @@ def test_assembly_combined_check(server, clue):
         incomplete = [t for t in transforms if t["status"] != "completed"]
         incomplete_desc = ", ".join(f"{t['index']}({t['role']})" for t in incomplete)
         return False, (
-            f"Expected auto-complete after terminal transforms, "
+            f"Expected completion after all transforms, "
             f"but these transforms are still incomplete: {incomplete_desc}"
         )
 
