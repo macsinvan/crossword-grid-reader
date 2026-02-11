@@ -207,15 +207,17 @@ class PuzzleStoreSupabase:
                     raise ValueError(f"No grid position found for clue {clue_num} {direction}. Available: {list(clue_positions.keys())}")
                 row, col = clue_positions[pos_key]
 
-                # Get answer if available
+                # Get answer and solve_guide if available
                 answer = None
+                solve_guide = None
                 if answers_data:
                     for ans in answers_data.get(direction, []):
                         if ans.get('number') == clue_num:
                             answer = ans.get('answer')
+                            solve_guide = ans.get('solve_guide')
                             break
 
-                clue_records.append({
+                record = {
                     'puzzle_id': puzzle_id,
                     'number': clue_num,
                     'direction': direction,
@@ -224,7 +226,10 @@ class PuzzleStoreSupabase:
                     'answer': answer,
                     'start_row': row,
                     'start_col': col,
-                })
+                }
+                if solve_guide:
+                    record['solve_guide'] = solve_guide
+                clue_records.append(record)
 
         if clue_records:
             self.client.table('clues').insert(clue_records).execute()
@@ -252,12 +257,15 @@ class PuzzleStoreSupabase:
 
         puzzle_id = result.data[0]['id']
 
-        # Update clues with answers
+        # Update clues with answers (and solve_guide if present)
         for direction in ['across', 'down']:
             for ans in answers_data.get(direction, []):
-                self.client.table('clues').update({
-                    'answer': ans.get('answer')
-                }).eq('puzzle_id', puzzle_id).eq(
+                update_data = {'answer': ans.get('answer')}
+                if ans.get('solve_guide'):
+                    update_data['solve_guide'] = ans['solve_guide']
+                self.client.table('clues').update(
+                    update_data
+                ).eq('puzzle_id', puzzle_id).eq(
                     'number', ans.get('number')
                 ).eq('direction', direction).execute()
 
@@ -497,6 +505,8 @@ class PuzzleStoreSupabase:
                 'enumeration': row['enumeration'],
                 'answer': row['answer'],
             }
+            if row.get('solve_guide'):
+                item['solve_guide'] = row['solve_guide']
             # Merge in the training metadata (words, clue_type, difficulty, steps, etc.)
             item.update(metadata)
 
@@ -543,6 +553,8 @@ class PuzzleStoreSupabase:
                 'enumeration': row['enumeration'],
                 'answer': row['answer'],
             }
+            if row.get('solve_guide'):
+                item['solve_guide'] = row['solve_guide']
             item.update(metadata)
 
             items[(str(puzzle_number), int(clue_num), direction)] = (item_id, item)
@@ -588,6 +600,8 @@ class PuzzleStoreSupabase:
                 'enumeration': row['enumeration'],
                 'answer': row['answer'],
             }
+            if row.get('solve_guide'):
+                item['solve_guide'] = row['solve_guide']
             item.update(metadata)
             return item_id, item
 
