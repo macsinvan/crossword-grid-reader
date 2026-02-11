@@ -162,7 +162,8 @@ Open http://localhost:8080
 | `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
 | `validate_training.py` | Training metadata validator — structural, semantic, convention, and publication checks |
-| `test_regression.py` | Regression test suite: 330 tests (30 clues × 11 tests), stdlib only |
+| `test_regression.py` | Regression test suite: 672 tests (56 clues × 12 tests), stdlib only |
+| `generate_test_clues.py` | Helper: auto-generate test clue entries from running server |
 
 ### Database & Migrations
 | File | Purpose |
@@ -248,7 +249,7 @@ SUPABASE_ANON_KEY=your-anon-key
 ## Common Commands
 ```bash
 python3 crossword_server.py                                          # Start server
-python3 test_regression.py                                           # Run 330 regression tests (server must be running)
+python3 test_regression.py                                           # Run 672 regression tests (server must be running)
 python3 upload_training_metadata.py --puzzle 29147                   # Upload one puzzle's training data to Supabase
 python3 upload_training_metadata.py --clue times-29147-1d            # Upload one clue's training data
 python3 upload_training_metadata.py --puzzle 29147 --dry-run         # Preview upload without writing
@@ -306,114 +307,16 @@ Present each step for confirmation: definition → indicators → fodder/outer/i
 
 ## Clue Metadata Reference
 
-All training metadata in Supabase uses the flat format. When editing or adding clues, follow these patterns.
+See `SPEC.md` Section 4.2.3 for the full metadata format, step types and flows, structural rules, and reference clues.
 
-### Reference clues — study these BEFORE editing any clue:
-- **5D** — deletion + reversal chain (indicator steps, tap_words flow)
-- **1A** — container (definition → indicator → outer_word → inner_word → assembly)
-- **17D** — container (same pattern as 1A)
-- **4A** — pure charade (no indicators, multiple_choice wordplay_type step)
-- **25A** — pure charade (same pattern as 4A)
-- **6D** — charade with ordering indicator ("after")
-- **22A** — charade with anagram indicator ("taking")
-- **26A** — charade with reversal + container indicators ("back", "in")
-- **28A** — charade with reversal chain (CA + RASE→reversed→ESAR)
-- **18D** — charade with reversal of compound (FLEE + G+NIT→reversed→TING)
-- **12A** — anagram with fodder pieces (literal parts + final anagram)
-- **23D** — hidden reversed word with dictionary lookup on transform
-
-### Flat Format — top-level fields:
-```
-clue (string), number, enumeration, answer, words (array matching clue text exactly),
-clue_type, difficulty ({definition, wordplay, overall}), steps (array)
-```
-
-### Step types and flows:
-- Step 1 always: `definition` (tap_words) — indices, position, hint
-- Step 2 depends on clue (Step 2 Rule above):
-  - WITH indicators → `indicator` (tap_words) — can have multiple indicator steps per clue
-  - WITHOUT indicators → `wordplay_type` (multiple_choice) with expected, options, hint
-- Then type-specific steps: `fodder`, `outer_word`, `inner_word` (all tap_words)
-- Final step: `assembly` with intro, failMessage, transforms array, result
-- Each transform: `{role, indices, type, result, hint}` — type is synonym/abbreviation/literal/reversal/deletion/anagram/container/letter_selection
-- Transforms can optionally have `lookup: {word, url}` for dictionary links
-- **Never add a `prompt` field to individual transforms** — all prompts come from `transformPrompts` templates. Use `hint` for clue-specific teaching.
-
-### Key rules:
-- Follow the Step 2 Rule (see above)
-- Every dependent transform (reversal/deletion/anagram/container) in the assembly MUST have a matching indicator step — `test_indicator_coverage` enforces this
-- **Never add `prompt` fields to individual steps or transforms in training metadata** — all prompts come from `render_templates.json`
-- Indicator steps must have `indicator_type` field (container, anagram, deletion, reversal, ordering, letter_selection, hidden_word) — the template uses this for type-specific text
-- Indicator type equivalences: `hidden_word` covers `reversal`
-- Container insertions use transform type `container` (not `anagram`) — the template explains the insertion operation
-- Indicator indices must be ONLY the indicator word itself, not connectors like "by", "with", "in"
+**Claude-specific rules when editing clue metadata:**
 - Hints must teach cryptic conventions (e.g. "'work' nearly always means OP"), not just define words
-- **Indicator hints must NOT repeat the indicator type label** — the `completedTitle` template already prefixes with `{indicatorType} indicator:`, so the hint text must not say "anagram indicator", "deletion indicator", etc. The `test_template_text` guard test enforces this.
-- Transform `type` must be accurate: use "abbreviation" not "synonym" for standard cryptic mappings
-- `words` array must exactly match the clue text (case, spelling, punctuation including —)
 - Assembly intro should teach through consequence: show what happens with raw words first, then ask why it doesn't work
 - Only change the clue you are asked to change
-- When a compound transform is needed, break it into a chain of simple transforms (see 18D, 28A)
-- Transform `role` fields are formatted for display automatically (`part2a` → `Part 2a`, `outer` → `Outer`)
 
 ## Training Metadata Validation
 
-`validate_training.py` runs four layers of checks on every training item. Errors block upload; on server load, errors exclude the clue (non-fatal). Warnings are logged but don't block.
-
-**Integration points:**
-- `upload_training_metadata.py` — validates before uploading (errors skip item)
-- `training_handler.py` `lookup_clue()` — validates per request when fetching from Supabase. Invalid clues raise `ValueError` with error details.
-- `trainer_routes.py` `/trainer/start` — returns 422 with `validation_errors` for invalid clues, 404 for unannotated clues, 200 for success
-- `crossword.js` — displays `data.message` from server (not hardcoded text) for both 422 and 404 errors
-- Standalone: `python3 validate_training.py` — validates all items in Supabase
-
-### Layer 1: Structural checks
-- Required top-level fields exist (clue, number, enumeration, answer, words, clue_type, difficulty, steps)
-- `words` array matches clue text (punctuation-tolerant comparison)
-- Steps is non-empty, each has valid `type` (must be a key in `render_templates.json`)
-- Indices in bounds for steps and transforms
-- Step-specific required fields (e.g. `indicator` needs `indices`, `hint`, `indicator_type`)
-- Valid `indicator_type` values
-
-### Layer 2: Semantic checks
-- Assembly `result` == `answer`
-- Terminal transform letters match assembly result (chain-aware: dependent transforms consume predecessors)
-- Total letter count matches enumeration
-- Each transform has required fields (`role`, `indices`, `type`, `result`, `hint`)
-- Valid transform `type` (synonym/abbreviation/literal/reversal/deletion/anagram/container/letter_selection)
-- No `prompt` field on individual transforms (architecture rule)
-- Indicator coverage: every dependent transform (reversal/deletion/anagram/container) has a matching indicator step
-
-### Layer 3: Convention checks (per-transform)
-Deterministic checks — **hard errors**:
-- **literal**: result == uppercase of clue word(s)
-- **reversal**: result == reverse of consumed predecessor(s)
-- **deletion**: result is predecessor with letter(s) removed (subsequence check)
-- **anagram**: sorted letters of input == sorted letters of result
-- **container**: result is one piece inserted inside another
-- **letter_selection**: result extractable by first/last/alternating/hidden letters
-
-Lookup-based — **warnings**:
-- **abbreviation**: checked against `CRYPTIC_ABBREVIATIONS` (~200 entries) + publication-specific dictionary
-- **synonym**: no check yet (no external API)
-
-### Layer 4: Publication-specific checks
-Publication is extracted from item ID (e.g. `times-29453-11a` → `times`). All publication checks produce **warnings**, not errors.
-
-**Times (`times`) conventions:**
-- **British spelling** — answers checked against ~35 American spelling patterns (COLOR→COLOUR, CENTER→CENTRE, GRAY→GREY, etc.). Ambiguous words with valid shared meanings (tire, curb, draft) are excluded.
-- **Times abbreviation dictionary** (`TIMES_ABBREVIATIONS`, ~70 entries) — extends the general dictionary with UK-specific mappings:
-  - British institutions: RA (Royal Academy), NT (National Trust), BBC, NHS, BM, VA
-  - UK politics: CON, LAB, LIB, MP, PM, TORY
-  - British royalty/honours: ER, HM, OBE, MBE, CBE, MC, DSO, VC
-  - British military: RA (gunners), RE (sappers), RM (marines), RN (fleet/navy), TA (reserves), OR (ranks)
-  - UK education: ETON, SCH, UNI
-  - UK rivers: CAM, DEE, DON, EXE, TAY, URE, USK, WYE, AVON, etc. (including cryptic misdirections: "flower"/"banker"/"runner" = river)
-  - Cricket: duck=O, maiden=M, eleven=XI
-  - Old British currency: bob=S, quid=L, guinea=G/GN, copper=D
-  - British slang: chap=MAN, pub=INN/PH, loo=WC/LAV
-
-**Adding a new publication:** Add a new entry to `PUBLICATION_CONVENTIONS` dict in `validate_training.py` with `spelling_checks` and `extra_abbreviations` keys.
+See `SPEC.md` Section 14 for the full 4-layer validation architecture, integration points, convention checks, and publication-specific dictionaries.
 
 ## New Session Startup
 

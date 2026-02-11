@@ -280,6 +280,51 @@ ALL intelligence lives on the server. The client is a pure view layer.
 4. **Composable:** Container clues use 6 steps; charades use different combinations; deletion/reversal chains use yet another
 5. **Self-contained:** Includes all data needed for validation and teaching
 
+### 4.2.3 Clue Metadata Reference
+
+**Top-level fields:**
+```
+clue (string), number, enumeration, answer, words (array matching clue text exactly),
+clue_type, difficulty ({definition, wordplay, overall}), steps (array)
+```
+
+**Step types and flows:**
+- Step 1 always: `definition` (tap_words) — indices, position, hint
+- Step 2 depends on clue:
+  - WITH indicators → `indicator` (tap_words) — can have multiple indicator steps per clue
+  - WITHOUT indicators → `wordplay_type` (multiple_choice) with expected, options, hint
+- Then type-specific steps: `fodder`, `outer_word`, `inner_word` (all tap_words)
+- Final step: `assembly` with intro, failMessage, transforms array, result
+- Each transform: `{role, indices, type, result, hint}` — type is synonym/abbreviation/literal/reversal/deletion/anagram/container/letter_selection/homophone
+- Transforms can optionally have `lookup: {word, url}` for dictionary links
+
+**Structural rules:**
+- Every dependent transform (reversal/deletion/anagram/container) in the assembly MUST have a matching indicator step — `test_indicator_coverage` enforces this
+- Never add `prompt` fields to individual steps or transforms in training metadata — all prompts come from `render_templates.json`
+- Indicator steps must have `indicator_type` field (container, anagram, deletion, reversal, ordering, letter_selection, hidden_word, homophone) — the template uses this for type-specific text
+- Indicator type equivalences: `hidden_word` covers `reversal`
+- Container insertions use transform type `container` (not `anagram`)
+- Indicator indices must be ONLY the indicator word itself, not connectors like "by", "with", "in"
+- Indicator hints must NOT repeat the indicator type label — the `completedTitle` template already prefixes with `{indicatorType} indicator:`
+- Transform `type` must be accurate: use "abbreviation" not "synonym" for standard cryptic mappings
+- `words` array must exactly match the clue text (case, spelling, punctuation including —)
+- When a compound transform is needed, break it into a chain of simple transforms
+- Transform `role` fields are formatted for display automatically (`part2a` → `Part 2a`, `outer` → `Outer`)
+
+**Reference clues — study these BEFORE editing any clue:**
+- **5D** — deletion + reversal chain (indicator steps, tap_words flow)
+- **1A** — container (definition → indicator → outer_word → inner_word → assembly)
+- **17D** — container (same pattern as 1A)
+- **4A** — pure charade (no indicators, multiple_choice wordplay_type step)
+- **25A** — pure charade (same pattern as 4A)
+- **6D** — charade with ordering indicator ("after")
+- **22A** — charade with anagram indicator ("taking")
+- **26A** — charade with reversal + container indicators ("back", "in")
+- **28A** — charade with reversal chain (CA + RASE→reversed→ESAR)
+- **18D** — charade with reversal of compound (FLEE + G+NIT→reversed→TING)
+- **12A** — anagram with fodder pieces (literal parts + final anagram)
+- **23D** — hidden reversed word with dictionary lookup on transform
+
 **Current Render Templates (7):**
 
 | Template | inputMode | Purpose |
@@ -292,7 +337,7 @@ ALL intelligence lives on the server. The client is a pure view layer.
 | `fodder` | `tap_words` | Identify the word being operated on by an indicator |
 | `assembly` | `assembly` | Multi-phase: transforms then assembly check (used for containers, charades, and other types) |
 
-More templates will be added as new clue types are implemented (anagrams, hidden words, etc.).
+More templates will be added as new clue types are implemented.
 
 ### 4.2.1 Critical: Template System Enables Automated Annotation
 
@@ -837,7 +882,9 @@ Grid Reader/
 ├── pdf_processor.py         # PDF parsing, OCR correction
 ├── render_templates.json    # Render templates (auto-reloaded)
 ├── upload_training_metadata.py  # Upload training data to Supabase
-├── test_regression.py       # Regression tests: 330 tests, stdlib only (server must be running)
+├── test_regression.py       # Regression tests: 672 tests (56 clues × 12 tests), stdlib only
+├── generate_test_clues.py   # Helper: auto-generate test clue entries from running server
+├── validate_training.py     # Training metadata validator (4 layers — see Section 14)
 ├── migrations/
 │   ├── 001_initial_schema.sql       # Publications, puzzles, clues, user_progress
 │   └── 002_add_training_metadata.sql # training_metadata JSONB column on clues
@@ -1204,7 +1251,7 @@ Currently, clues must be manually annotated in Supabase training metadata. The s
 - [ ] Completed steps show green ✓ with completion text
 - [ ] Assembly step transforms validate sequentially
 - [ ] Assembly check validates final result
-- [ ] `python3 test_regression.py` passes all 330 tests (30 clues × 11 tests)
+- [ ] `python3 test_regression.py` passes all 672 tests (56 clues × 12 tests)
 
 ### 13.3 Answer Entry
 - [ ] Answer boxes always visible at top
@@ -1222,9 +1269,9 @@ Currently, clues must be manually annotated in Supabase training metadata. The s
 
 **Running:** `python3 test_regression.py` (server must be running on port 8080, or use `--server URL`)
 
-#### 30 Test Clues — Selection Rationale
+#### 56 Test Clues — Two Puzzles
 
-All 30 annotated clues are tested. The original 12 were chosen to cover all 7 step flow patterns, all indicator types, all transform types, and key edge cases. The remaining 18 were added as they were annotated:
+**Puzzle 29453 (30 clues, locked reference):** All 30 annotated clues are tested. The original 12 were chosen to cover all 7 step flow patterns, all indicator types, all transform types, and key edge cases. The remaining 18 were added as they were annotated.
 
 | # | Clue | Answer | Flow Pattern | Why Selected |
 |---|------|--------|-------------|--------------|
@@ -1241,38 +1288,28 @@ All 30 annotated clues are tested. The original 12 were chosen to cover all 7 st
 | 11 | 26A | WINDSWEPT | def→wordplay→assembly | 5 transforms, mixed chain (reversal + anagram), check phase |
 | 12 | 23D | PSEUD | def→indicator→fodder→assembly | Hidden word indicator, reversal dependent |
 
-**Coverage matrix:**
+**Puzzle 29147 (26 clues):** Auto-generated via `generate_test_clues.py`. Adds coverage for: homophone transforms, container+charade hybrids, triple definitions, deletion+container combos, letter selection fodder, and multi-word hyphenated answers (e.g. LEAVE-TAKING, TO ORDER).
 
-| Feature | Covered By |
-|---------|-----------|
-| Step flow: charade (no indicator) | 1, 8, 9, 11 |
-| Step flow: indicator-led | 2, 3, 4, 5, 6, 7, 10, 12 |
-| Step flow: container (outer/inner) | 3, 6 |
-| Step flow: fodder step | 4, 7, 12 |
-| Step flow: wordplay_type (multiple_choice) | 1, 6, 8, 9, 11 |
-| Step flow: two indicators | 5, 7 |
-| Indicator type: container | 3, 6 |
-| Indicator type: anagram | 4, 5 |
-| Indicator type: deletion | 7 |
-| Indicator type: reversal | 7, 10 |
-| Indicator type: ordering | 2 |
-| Indicator type: letter_selection | 5 |
-| Indicator type: hidden_word | 12 |
-| Transform: synonym | 1, 2, 3, 6, 8, 9, 10 |
-| Transform: abbreviation | 1, 8 |
-| Transform: literal | 2, 4, 8 |
-| Transform: deletion (dependent) | 7, 9 |
-| Transform: reversal (dependent) | 7, 10, 12 |
-| Transform: anagram (dependent) | 4, 5, 11 |
-| Assembly: explicit=true | 5 |
-| Assembly: auto-skip check | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12 |
-| Assembly: check phase (no auto-skip) | 11 |
-| Multi-word answer | 6 |
+**Coverage matrix (combined):**
 
-#### 11 Test Types Per Clue
+| Feature | Covered By (29453) | Also Covered By (29147) |
+|---------|-----------|-----------|
+| Step flow: charade (no indicator) | 1, 8, 9, 11 | 1A, 5A, 14D, 15A, 17D, 18D, 20D, 24D |
+| Step flow: indicator-led | 2, 3, 4, 5, 6, 7, 10, 12 | 1D, 2D, 7D, 8D, 9A, 10A, 11A, 12A, 16A, 18A, 19A, 21D, 22A, 23A, 25A, 26D, 28A, 29A |
+| Step flow: container (outer/inner) | 3, 6 | 1D, 4D, 8D, 10A, 16A, 21D, 25A |
+| Step flow: fodder step | 4, 7, 12 | 7D, 9A, 11A, 12A, 18A, 19A, 21D, 23A, 26D |
+| Indicator type: homophone | — | 12A |
+| Transform: homophone | — | 12A |
+| Transform: container | — | 1D, 4D, 8D, 10A, 16A, 21D, 25A |
+| Transform: letter_selection | 5 | 9A, 11A, 21D, 28A |
+| Multi-word answer | 6 | 2D, 4D, 10A, 25A, 29A |
+| Double/triple definition | — | 3D, 5D |
+
+#### 12 Test Types Per Clue
 
 | Test | What It Verifies |
 |------|-----------------|
+| **Response contract** | `/trainer/start` returns all required fields with correct types (`clue_id`, `words`, `answer`, `enumeration`, `answerGroups`, `steps`, `currentStep`) |
 | **Full walkthrough** | Happy path: correct input at every step → `complete=true`, `answerLocked=true`, `userAnswer` matches |
 | **Wrong input** | Wrong value at step 0 → `correct=false`, step index unchanged (no advancement) |
 | **Assembly transform status** | All transforms start `active` (no locking) |
@@ -1285,7 +1322,7 @@ All 30 annotated clues are tested. The original 12 were chosen to cover all 7 st
 | **Assembly combined check** | Assembly combined check validates letter groups correctly |
 | **Dependent prompt update** | Dependent transform prompts update after prerequisite transforms complete |
 
-**Total: 30 clues × 11 tests = 330 tests**
+**Total: 56 clues × 12 tests = 672 tests**
 
 ---
 
@@ -1302,6 +1339,73 @@ All 30 annotated clues are tested. The original 12 were chosen to cover all 7 st
 9. **Indicator Type System**: Indicator steps use `indicator_type` field to drive type-specific template text (menuTitle, prompt, intro, completedTitle) via dict-keyed lookup and `{indicatorType}` variable. Assembly steps can override `failMessage`.
 10. **Auto-skip Assembly Check**: When last transform result equals the final answer, assembly auto-completes without redundant retyping
 11. **Architecture Compliance**: Fixed all V-list violations — moved all feedback strings and display text to `render_templates.json`, eliminated silent `.get()` fallbacks (replaced with explicit `ValueError` raises), moved clue DB management and lookup logic from `trainer_routes.py` to `training_handler.py` (routes are now a thin HTTP layer). Added 72-test regression suite (`test_regression.py`): 12 clues × 6 tests covering all 7 step flow patterns, all indicator types, and all transform types.
-12. **Training Data in Supabase**: Added `training_metadata` JSONB column to `clues` table via migration 002. Training handler loads from Supabase. Upload script (`upload_training_metadata.py`) populates database. Expanded regression suite to 330 tests (30 clues × 11 tests).
+12. **Training Data in Supabase**: Added `training_metadata` JSONB column to `clues` table via migration 002. Training handler loads from Supabase. Upload script (`upload_training_metadata.py`) populates database.
 13. **Indicator Hint Deduplication**: Fixed 16 indicator hints that redundantly repeated the indicator type label (e.g. "a classic anagram indicator") — the `completedTitle` template already prefixes with the type. Added guard test in `test_template_text` to prevent regression.
+14. **Puzzle 29147 Test Coverage**: Added 26 puzzle 29147 clues to regression suite. Expanded from 330 tests (30 clues × 11 tests) to 672 tests (56 clues × 12 tests). Added `test_response_contract` test type and `generate_test_clues.py` helper.
+
+---
+
+## 14. Training Metadata Validation
+
+`validate_training.py` runs four layers of checks on every training item. Errors block upload; on server load, errors exclude the clue (non-fatal). Warnings are logged but don't block.
+
+### 14.1 Integration Points
+
+- `upload_training_metadata.py` — validates before uploading (errors skip item)
+- `training_handler.py` `lookup_clue()` — validates per request when fetching from Supabase. Invalid clues raise `ValueError` with error details.
+- `trainer_routes.py` `/trainer/start` — returns 422 with `validation_errors` for invalid clues, 404 for unannotated clues, 200 for success
+- `crossword.js` — displays `data.message` from server (not hardcoded text) for both 422 and 404 errors
+- Standalone: `python3 validate_training.py` — validates all items in Supabase
+
+### 14.2 Layer 1: Structural Checks
+
+- Required top-level fields exist (clue, number, enumeration, answer, words, clue_type, difficulty, steps)
+- `words` array matches clue text (punctuation-tolerant comparison)
+- Steps is non-empty, each has valid `type` (must be a key in `render_templates.json`)
+- Indices in bounds for steps and transforms
+- Step-specific required fields (e.g. `indicator` needs `indices`, `hint`, `indicator_type`)
+- Valid `indicator_type` values
+
+### 14.3 Layer 2: Semantic Checks
+
+- Assembly `result` == `answer`
+- Terminal transform letters match assembly result (chain-aware: dependent transforms consume predecessors)
+- Total letter count matches enumeration
+- Each transform has required fields (`role`, `indices`, `type`, `result`, `hint`)
+- Valid transform `type` (synonym/abbreviation/literal/reversal/deletion/anagram/container/letter_selection/homophone)
+- No `prompt` field on individual transforms (architecture rule)
+- Indicator coverage: every dependent transform (reversal/deletion/anagram/container) has a matching indicator step
+
+### 14.4 Layer 3: Convention Checks (Per-Transform)
+
+Deterministic checks — **hard errors**:
+- **literal**: result == uppercase of clue word(s)
+- **reversal**: result == reverse of consumed predecessor(s)
+- **deletion**: result is predecessor with letter(s) removed (subsequence check)
+- **anagram**: sorted letters of input == sorted letters of result
+- **container**: result is one piece inserted inside another
+- **letter_selection**: result extractable by first/last/alternating/hidden letters
+
+Lookup-based — **warnings**:
+- **abbreviation**: checked against `CRYPTIC_ABBREVIATIONS` (~200 entries) + publication-specific dictionary
+- **synonym**: no check yet (no external API)
+
+### 14.5 Layer 4: Publication-Specific Checks
+
+Publication is extracted from item ID (e.g. `times-29453-11a` → `times`). All publication checks produce **warnings**, not errors.
+
+**Times (`times`) conventions:**
+- **British spelling** — answers checked against ~35 American spelling patterns (COLOR→COLOUR, CENTER→CENTRE, GRAY→GREY, etc.). Ambiguous words with valid shared meanings (tire, curb, draft) are excluded.
+- **Times abbreviation dictionary** (`TIMES_ABBREVIATIONS`, ~70 entries) — extends the general dictionary with UK-specific mappings:
+  - British institutions: RA (Royal Academy), NT (National Trust), BBC, NHS, BM, VA
+  - UK politics: CON, LAB, LIB, MP, PM, TORY
+  - British royalty/honours: ER, HM, OBE, MBE, CBE, MC, DSO, VC
+  - British military: RA (gunners), RE (sappers), RM (marines), RN (fleet/navy), TA (reserves), OR (ranks)
+  - UK education: ETON, SCH, UNI
+  - UK rivers: CAM, DEE, DON, EXE, TAY, URE, USK, WYE, AVON, etc. (including cryptic misdirections: "flower"/"banker"/"runner" = river)
+  - Cricket: duck=O, maiden=M, eleven=XI
+  - Old British currency: bob=S, quid=L, guinea=G/GN, copper=D
+  - British slang: chap=MAN, pub=INN/PH, loo=WC/LAV
+
+**Adding a new publication:** Add a new entry to `PUBLICATION_CONVENTIONS` dict in `validate_training.py` with `spelling_checks` and `extra_abbreviations` keys.
 
