@@ -281,8 +281,11 @@ def test_response_contract(server, clue):
     if render["clue_id"] != clue["id"]:
         return False, f"clue_id: got '{render['clue_id']}', expected '{clue['id']}'"
 
-    if render["answer"] != clue["answer"]:
-        return False, f"answer: got '{render['answer']}', expected '{clue['answer']}'"
+    # Compare alpha-only (server may return hyphenated form like LEAVE-TAKING)
+    render_answer = re.sub(r'[^A-Za-z]', '', render["answer"])
+    expected_answer = re.sub(r'[^A-Za-z]', '', clue["answer"])
+    if render_answer != expected_answer:
+        return False, f"answer: got '{render_answer}', expected '{expected_answer}'"
 
     if render["enumeration"] != clue["enumeration"]:
         return False, f"enumeration: got '{render['enumeration']}', expected '{clue['enumeration']}'"
