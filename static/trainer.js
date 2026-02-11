@@ -382,9 +382,6 @@ class TemplateTrainer {
         if (data.definitionLine) {
             html += `<div style="font-size: 0.85rem; font-weight: 600; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.5;">${data.definitionLine}</div>`;
         }
-        if (data.abbreviationLine) {
-            html += `<div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem; line-height: 1.5;">${data.abbreviationLine}</div>`;
-        }
         if (data.indicatorLine) {
             html += `<div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem; line-height: 1.5;">${data.indicatorLine}</div>`;
         }

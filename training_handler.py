@@ -575,9 +575,8 @@ def _build_assembly_data(session, step, clue):
     result_text = step["result"]
     result_parts = [len(word) for word in result_text.split()]
 
-    # Compute position map and completed letters for the combined display
+    # Compute position map (completed letters computed after auto-complete below)
     position_map = _compute_position_map(step)
-    completed_letters = _compute_completed_letters(transforms_done, position_map, step)
 
     # Extract raw data from earlier steps for template variable resolution
     definition_words = ""
@@ -599,6 +598,16 @@ def _build_assembly_data(session, step, clue):
         elif s["type"] == "abbreviation_scan" and "mappings" in s:
             abbreviation_scan_mappings = s["mappings"]
 
+    # Auto-complete abbreviation transforms when abbreviation_scan step exists
+    # The student already identified these — they are known facts
+    if abbreviation_scan_mappings:
+        for i, t in enumerate(transforms):
+            if t["type"] == "abbreviation" and i not in transforms_done:
+                transforms_done[i] = t["result"].upper()
+
+    # Compute completed letters after auto-complete so abbreviation letters show in boxes
+    completed_letters = _compute_completed_letters(transforms_done, position_map, step)
+
     # Build abbreviationSummary from abbreviation_scan step's mappings field
     # mappings: {"0": "H", "3": "I"} — word index → abbreviation letter
     abbreviation_summary = ""
@@ -606,7 +615,7 @@ def _build_assembly_data(session, step, clue):
         pairs = []
         for idx_str, letter in abbreviation_scan_mappings.items():
             word = words[int(idx_str)]
-            pairs.append(f"{letter} from '{word}'")
+            pairs.append(f"the letter {letter} from '{word}'")
         if pairs:
             abbreviation_summary = " and ".join(pairs)
 
@@ -627,12 +636,11 @@ def _build_assembly_data(session, step, clue):
     virtual_step["abbreviationSummary"] = abbreviation_summary
     virtual_step["sourceWord"] = source_word
 
-    # Definition line — always plain (abbreviation facts go in their own line)
-    definition_line = _resolve_variables(template.get("definitionLine", ""), virtual_step, clue)
-    # Abbreviation line — states the facts the student already found
-    abbreviation_line = ""
+    # Definition line — incorporates abbreviation facts when they exist
     if abbreviation_summary:
-        abbreviation_line = _resolve_variables(template.get("abbreviationLine", ""), virtual_step, clue)
+        definition_line = _resolve_variables(template.get("definitionLineWithAbbreviations", ""), virtual_step, clue)
+    else:
+        definition_line = _resolve_variables(template.get("definitionLine", ""), virtual_step, clue)
     # Resolve the appropriate context line based on clue type
     indicator_line = ""
     if has_substitution and indicator_words and source_word:
@@ -648,7 +656,6 @@ def _build_assembly_data(session, step, clue):
         "positionMap": {str(k): v for k, v in position_map.items()},
         "completedLetters": completed_letters,
         "definitionLine": definition_line,
-        "abbreviationLine": abbreviation_line,
         "indicatorLine": indicator_line,
     }
 
