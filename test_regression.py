@@ -672,7 +672,7 @@ ALL_TESTS = [
 ]
 
 
-def run_tests(server):
+def run_tests(server, clue_filter=None):
     """Fetch all clues from server, build test data, run all tests."""
     passed = 0
     failed = 0
@@ -686,7 +686,13 @@ def run_tests(server):
     print("Loading clues from Supabase via /trainer/clue-ids?full=1 ...")
     all_data = api_get(server, "/clue-ids?full=1")
     clues_dict = all_data["clues"]
-    print(f"Found {len(clues_dict)} clues with training data")
+    if clue_filter:
+        matches = {k: v for k, v in clues_dict.items() if clue_filter in k}
+        if not matches:
+            print(f"No clues matching '{clue_filter}' found.")
+            return True
+        clues_dict = matches
+    print(f"Testing {len(clues_dict)} clue(s)")
     print()
 
     # Build test data for each clue
@@ -745,14 +751,19 @@ def run_tests(server):
 
 if __name__ == "__main__":
     server = DEFAULT_SERVER
+    clue_filter = None
 
     for i, arg in enumerate(sys.argv[1:], 1):
         if arg == "--server" and i < len(sys.argv) - 1:
             server = sys.argv[i + 1]
-        elif sys.argv[i - 1] == "--server":
+        elif arg == "--clue" and i < len(sys.argv) - 1:
+            clue_filter = sys.argv[i + 1]
+        elif sys.argv[i - 1] in ("--server", "--clue"):
             pass
         elif arg.startswith("--server="):
             server = arg.split("=", 1)[1]
+        elif arg.startswith("--clue="):
+            clue_filter = arg.split("=", 1)[1]
 
     # Quick connectivity check
     try:
@@ -764,5 +775,5 @@ if __name__ == "__main__":
         print("Make sure crossword_server.py is running.")
         sys.exit(1)
 
-    success = run_tests(server)
+    success = run_tests(server, clue_filter)
     sys.exit(0 if success else 1)
