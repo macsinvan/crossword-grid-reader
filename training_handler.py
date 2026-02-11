@@ -612,17 +612,9 @@ def _build_assembly_data(session, step, clue):
 
     # Extract substitution-specific data from assembly transforms
     source_word = ""
-    substitution_from = ""
-    substitution_to = ""
     for t in step["transforms"]:
         if t["type"] == "literal" and t.get("role") == "source":
             source_word = " ".join(words[i] for i in t["indices"])
-    # Build from/to from abbreviation mappings (ordered by index for consistent display)
-    if has_substitution and abbreviation_scan_mappings:
-        sorted_mappings = sorted(abbreviation_scan_mappings.items(), key=lambda x: int(x[0]))
-        if len(sorted_mappings) >= 2:
-            substitution_from = sorted_mappings[0][1]
-            substitution_to = sorted_mappings[1][1]
 
     # Resolve coaching lines from assembly render template
     # Build a virtual step with the extra variables for resolution
@@ -634,17 +626,16 @@ def _build_assembly_data(session, step, clue):
     virtual_step["outerWords"] = outer_words
     virtual_step["abbreviationSummary"] = abbreviation_summary
     virtual_step["sourceWord"] = source_word
-    virtual_step["substitutionFrom"] = substitution_from
-    virtual_step["substitutionTo"] = substitution_to
 
-    # Use abbreviation-aware definitionLine when abbreviations were scanned
+    # Definition line — always plain (abbreviation facts go in their own line)
+    definition_line = _resolve_variables(template.get("definitionLine", ""), virtual_step, clue)
+    # Abbreviation line — states the facts the student already found
+    abbreviation_line = ""
     if abbreviation_summary:
-        definition_line = _resolve_variables(template.get("definitionLineWithAbbreviations", ""), virtual_step, clue)
-    else:
-        definition_line = _resolve_variables(template.get("definitionLine", ""), virtual_step, clue)
+        abbreviation_line = _resolve_variables(template.get("abbreviationLine", ""), virtual_step, clue)
     # Resolve the appropriate context line based on clue type
     indicator_line = ""
-    if has_substitution and indicator_words and source_word and substitution_from and substitution_to:
+    if has_substitution and indicator_words and source_word:
         indicator_line = _resolve_variables(template.get("substitutionLine", ""), virtual_step, clue)
     elif indicator_words and inner_words and outer_words:
         indicator_line = _resolve_variables(template.get("indicatorLine", ""), virtual_step, clue)
@@ -657,6 +648,7 @@ def _build_assembly_data(session, step, clue):
         "positionMap": {str(k): v for k, v in position_map.items()},
         "completedLetters": completed_letters,
         "definitionLine": definition_line,
+        "abbreviationLine": abbreviation_line,
         "indicatorLine": indicator_line,
     }
 
@@ -815,11 +807,31 @@ def _compute_position_map(step):
     # Identify terminal transforms (those not superseded by a later dependent)
     terminal = _find_terminal_transforms(transforms)
 
-    # Check if this is a container clue (has outer/inner roles — inner can be "inner", "inner_a", etc.)
+    # Check if this is a pure container clue (container result IS the full answer)
+    # vs a hybrid charade+container (container is just one piece among others)
+    # Pure container: outer/inner roles exist and the container result spans the full answer
+    # Hybrid: container exists but other terminal transforms also contribute → charade at top level
+    container_idx = None
+    for i, t in enumerate(transforms):
+        if t["role"] == "container":
+            container_idx = i
+            break
+
+    # Route based on terminal transform structure:
+    # 1. Single container terminal whose result IS the full answer → assign all positions to it
+    # 2. Outer/inner roles without explicit container transform (29453 style) → container positions
+    # 3. Everything else (charades, hybrids) → charade positions
     roles = {t["role"] for t in transforms}
     has_inner = "inner" in roles or any(r.startswith("inner_") for r in roles)
 
-    if "outer" in roles and has_inner:
+    if container_idx is not None and container_idx in terminal and len(terminal) == 1:
+        # Single container terminal — it owns all positions
+        container_result = re.sub(r'[^A-Z]', '', transforms[container_idx]["result"].upper())
+        if container_result == result:
+            return {container_idx: list(range(len(result)))}
+        return _compute_container_positions(transforms, terminal, result)
+    elif "outer" in roles and has_inner and container_idx is None:
+        # No explicit container transform — outer/inner roles define the container (29453 style)
         return _compute_container_positions(transforms, terminal, result)
     else:
         return _compute_charade_positions(transforms, terminal, result)
@@ -1117,18 +1129,6 @@ def _resolve_variables(text, step, clue):
         if "sourceWord" not in step:
             raise ValueError(f"Template uses {{sourceWord}} but step is missing 'sourceWord'")
         text = text.replace("{sourceWord}", step["sourceWord"])
-
-    # {substitutionFrom} — the letter being replaced
-    if "{substitutionFrom}" in text:
-        if "substitutionFrom" not in step:
-            raise ValueError(f"Template uses {{substitutionFrom}} but step is missing 'substitutionFrom'")
-        text = text.replace("{substitutionFrom}", step["substitutionFrom"])
-
-    # {substitutionTo} — the letter replacing it
-    if "{substitutionTo}" in text:
-        if "substitutionTo" not in step:
-            raise ValueError(f"Template uses {{substitutionTo}} but step is missing 'substitutionTo'")
-        text = text.replace("{substitutionTo}", step["substitutionTo"])
 
     # {assemblyBreakdown} — build from transforms: show the assembly journey
     if "{assemblyBreakdown}" in text and "transforms" in step:

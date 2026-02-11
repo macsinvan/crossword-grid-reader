@@ -212,8 +212,8 @@ def build_clue_test_data(clue_id, metadata):
 # Assembly submission helper
 # ---------------------------------------------------------------------------
 
-def submit_assembly_transforms(server, clue_id, transforms, render, answer=None):
-    """Submit assembly transforms in order, handling status and auto-completion."""
+def submit_assembly_transforms(server, clue_id, transforms, render):
+    """Submit assembly transforms in order. Auto-skip must complete the clue."""
     for t in transforms:
         idx = t["index"]
         val = t["value"]
@@ -245,15 +245,6 @@ def submit_assembly_transforms(server, clue_id, transforms, render, answer=None)
         if not correct:
             raise RuntimeError(f"Transform {idx} value '{val}' rejected as incorrect")
 
-    # If assembly entered check phase, submit the full result
-    current = render.get("currentStep")
-    if current and current["type"] == "assembly":
-        assembly_data = current.get("assemblyData", {})
-        if assembly_data.get("phase") == "check" and answer:
-            correct, render = submit_input(server, clue_id, answer)
-            if not correct:
-                raise RuntimeError(f"Assembly check phase rejected answer '{answer}'")
-
     return render
 
 
@@ -280,7 +271,7 @@ def walk_to_completion(server, clue):
     for step in clue["steps"]:
         if step["inputMode"] == "assembly":
             render = submit_assembly_transforms(
-                server, clue_id, step["transforms"], render, answer=clue["answer"]
+                server, clue_id, step["transforms"], render
             )
         else:
             correct, render = submit_input(server, clue_id, step["value"])
@@ -580,7 +571,14 @@ def test_indicator_coverage(server, clue):
 
 
 def test_assembly_combined_check(server, clue):
-    """Submit all assembly transforms and verify completion or check phase."""
+    """Submit all assembly transforms and verify auto-skip completes the clue.
+
+    Auto-skip means: once every transform result is submitted, the engine
+    assembles the letters via position_map and — if they spell the answer —
+    automatically completes the step without a separate check phase.
+    If auto-skip fails (position_map is wrong), the engine falls through to
+    check phase, which this test must detect as a failure.
+    """
     assembly_step = None
     for step in clue["steps"]:
         if step["inputMode"] == "assembly":
@@ -592,12 +590,18 @@ def test_assembly_combined_check(server, clue):
     clue_id, render = walk_to_assembly(server, clue)
 
     render = submit_assembly_transforms(
-        server, clue_id, assembly_step["transforms"], render, answer=clue["answer"]
+        server, clue_id, assembly_step["transforms"], render
     )
 
     if not render.get("complete"):
+        # Auto-skip didn't fire — check if we're stuck in check phase
         current = render.get("currentStep", {})
         assembly_data = current.get("assemblyData", {})
+        if assembly_data.get("phase") == "check":
+            return False, (
+                "All transforms completed but auto-skip failed — stuck in check phase. "
+                "This usually means _compute_position_map returned empty for this clue."
+            )
         transforms = assembly_data.get("transforms", [])
         incomplete = [t for t in transforms if t["status"] != "completed"]
         incomplete_desc = ", ".join(f"{t['index']}({t['role']})" for t in incomplete)

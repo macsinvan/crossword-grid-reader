@@ -99,8 +99,10 @@ Training metadata is fetched on demand from the `training_metadata` JSONB column
 - **Supabase training data**: Lazy-loaded per request — always fresh, no restart needed.
 - **Python code**: The server runs with `debug=True` (Werkzeug reloader). Any `.py` file change triggers an automatic server restart. `render_templates.json` is also in `extra_files` as a safety net.
 
-**Error out, don't fallback — MANDATORY**
+**Error out, don't fallback — MANDATORY (code AND tests)**
 Do NOT add fallbacks in the code without explicit approval from the user. Never silently swallow errors, substitute defaults for missing data, or degrade functionality without raising an error. If something is wrong, crash with a clear message. Silent fallbacks hide bugs and cause confusion.
+
+This applies equally to tests. A test must never compensate for a failing code path by falling back to an alternative route that happens to succeed. If a test submits all assembly transforms and auto-skip should fire, the test must assert auto-skip fired — not silently fall through to the check phase and submit the answer there. A test that always passes is worse than no test at all.
 
 ## What This Is
 Web-based Times Cryptic crossword solver. Import PDFs, solve interactively, get step-by-step teaching via template-based step display system.
