@@ -38,7 +38,13 @@ def maybe_reload_render_templates():
 
 _load_render_templates()
 
-# --- Clue loading (lazy, per-request from Supabase) ---
+# --- Clue loading (lazy, per-request from Supabase with puzzle-level cache) ---
+
+# Process-lifetime cache: keyed by (puzzle_number, clue_number, direction) → (item_id, item)
+# Populated per-puzzle on first request for any clue in that puzzle.
+# Cleared on server restart (which happens on any .py file change via Werkzeug reloader).
+_clue_cache = {}
+_cached_puzzles = set()  # Track which puzzles have been bulk-fetched
 
 
 def _get_store():
@@ -65,6 +71,9 @@ def lookup_clue(puzzle_number, clue_number, direction):
     Fetch a clue from Supabase by key, validate it, and return it.
     Returns (clue_id, clue_data) or (None, None).
     On validation failure, raises ValueError with error details.
+
+    Uses a puzzle-level cache: first request for any clue in a puzzle
+    bulk-fetches all clues for that puzzle in one Supabase query.
     """
     if not (puzzle_number and clue_number and direction):
         return None, None
@@ -73,11 +82,22 @@ def lookup_clue(puzzle_number, clue_number, direction):
     if dir_full not in ('across', 'down'):
         return None, None
 
-    store = _get_store()
-    item_id, item = store.get_training_clue(str(puzzle_number), int(clue_number), dir_full)
+    cache_key = (str(puzzle_number), int(clue_number), dir_full)
 
-    if not item_id or not item:
+    # Bulk-fetch the whole puzzle on first access
+    if str(puzzle_number) not in _cached_puzzles:
+        store = _get_store()
+        puzzle_clues = store.get_training_clues_for_puzzle(str(puzzle_number))
+        _clue_cache.update(puzzle_clues)
+        _cached_puzzles.add(str(puzzle_number))
+        print(f"[Cache] Bulk-loaded {len(puzzle_clues)} clues for puzzle {puzzle_number}")
+
+    # Lookup from cache
+    cached = _clue_cache.get(cache_key)
+    if not cached:
         return None, None
+
+    item_id, item = cached
 
     # Validate on the spot
     errors, warnings = validate_training_item(item_id, item)
