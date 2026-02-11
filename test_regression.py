@@ -16,6 +16,7 @@ Dependencies: stdlib only (urllib).
 """
 
 import json
+import os
 import re
 import sys
 import urllib.request
@@ -26,7 +27,10 @@ import urllib.error
 # ---------------------------------------------------------------------------
 
 DEFAULT_SERVER = "http://127.0.0.1:8080"
-DEPENDENT_TYPES = {"reversal", "deletion", "anagram", "container", "homophone", "substitution"}
+
+# Import from shared constants — single source of truth
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from training_constants import DEPENDENT_TRANSFORM_TYPES
 
 # ---------------------------------------------------------------------------
 # HTTP helpers
@@ -129,7 +133,7 @@ def build_clue_test_data(clue_id, metadata):
                 for i, t in enumerate(transforms):
                     if t.get("type") == "substitution" and i > 0:
                         for j in range(i):
-                            if transforms[j].get("type") not in DEPENDENT_TYPES:
+                            if transforms[j].get("type") not in DEPENDENT_TRANSFORM_TYPES:
                                 hidden.add(j)
             transform_entries = [{"index": i, "value": t["result"]}
                                  for i, t in enumerate(transforms) if i not in hidden]
@@ -178,13 +182,13 @@ def build_clue_test_data(clue_id, metadata):
                 for i, t in enumerate(transforms):
                     if t.get("type") == "substitution" and i > 0:
                         for j in range(i):
-                            if transforms[j].get("type") not in DEPENDENT_TYPES:
+                            if transforms[j].get("type") not in DEPENDENT_TRANSFORM_TYPES:
                                 hidden_transforms.add(j)
             num_transforms = len(transforms) - len(hidden_transforms)
             for i, t in enumerate(transforms):
                 if i in hidden_transforms:
                     continue
-                if t.get("type") in DEPENDENT_TYPES:
+                if t.get("type") in DEPENDENT_TRANSFORM_TYPES:
                     dependent_indices.append(i)
                 if t.get("type") == "container":
                     is_container = True
@@ -589,7 +593,7 @@ def test_indicator_coverage(server, clue):
             continue
         for t in s.get("transforms", []):
             t_type = t.get("type", "")
-            if t_type not in DEPENDENT_TYPES:
+            if t_type not in DEPENDENT_TRANSFORM_TYPES:
                 continue
             if t_type not in indicator_types_covered:
                 words = clue.get("words", [])

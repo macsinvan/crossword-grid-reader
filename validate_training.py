@@ -18,6 +18,8 @@ Checks fall into four categories:
 import json
 import os
 import re
+
+from training_constants import DEPENDENT_TRANSFORM_TYPES
 import sys
 
 # ---------------------------------------------------------------------------
@@ -277,9 +279,6 @@ VALID_INDICATOR_TYPES = {"container", "anagram", "deletion", "reversal", "orderi
 
 # Valid definition_part values for multi_definition steps
 VALID_DEFINITION_PARTS = {"first", "second", "third"}
-
-# Dependent transform types that require a matching indicator step
-DEPENDENT_TRANSFORM_TYPES = {"reversal", "deletion", "anagram", "container", "homophone", "substitution"}
 
 # Indicator type equivalences (hidden_word covers reversal)
 INDICATOR_EQUIVALENCES = {"hidden_word": {"reversal", "hidden_word"}}

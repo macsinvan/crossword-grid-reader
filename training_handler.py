@@ -10,6 +10,7 @@ import json
 import os
 import re
 
+from training_constants import DEPENDENT_TRANSFORM_TYPES
 from validate_training import validate_training_item
 
 # --- Render templates (auto-reload) ---
@@ -37,11 +38,6 @@ def maybe_reload_render_templates():
 
 
 _load_render_templates()
-
-# --- Constants ---
-
-# Transform types that consume predecessor transforms (their input comes from earlier transforms)
-DEPENDENT_TRANSFORM_TYPES = frozenset({"deletion", "reversal", "anagram", "container", "homophone", "substitution"})
 
 # --- Clue loading (lazy, per-request from Supabase with puzzle-level cache) ---
 
