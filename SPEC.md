@@ -882,8 +882,7 @@ Grid Reader/
 ├── pdf_processor.py         # PDF parsing, OCR correction
 ├── render_templates.json    # Render templates (auto-reloaded)
 ├── upload_training_metadata.py  # Upload training data to Supabase
-├── test_regression.py       # Regression tests: 672 tests (56 clues × 12 tests), stdlib only
-├── generate_test_clues.py   # Helper: auto-generate test clue entries from running server
+├── test_regression.py       # Fully dynamic regression tests — zero hardcoded clue data
 ├── validate_training.py     # Training metadata validator (4 layers — see Section 14)
 ├── migrations/
 │   ├── 001_initial_schema.sql       # Publications, puzzles, clues, user_progress
@@ -1251,7 +1250,7 @@ Currently, clues must be manually annotated in Supabase training metadata. The s
 - [ ] Completed steps show green ✓ with completion text
 - [ ] Assembly step transforms validate sequentially
 - [ ] Assembly check validates final result
-- [ ] `python3 test_regression.py` passes all 672 tests (56 clues × 12 tests)
+- [ ] `python3 test_regression.py` passes all tests (dynamically tests every clue in Supabase)
 
 ### 13.3 Answer Entry
 - [ ] Answer boxes always visible at top
@@ -1265,47 +1264,15 @@ Currently, clues must be manually annotated in Supabase training metadata. The s
 
 ### 13.5 Regression Test Suite (`test_regression.py`)
 
-**Strategy:** Black-box API integration tests against a running server. Zero external dependencies (stdlib `urllib` only). Each test starts a fresh session, so tests are independent and idempotent.
+**Strategy:** Fully dynamic black-box API integration tests against a running server. Zero external dependencies (stdlib `urllib` only). Zero hardcoded clue data — the test runner discovers and tests every clue with training data in Supabase.
 
 **Running:** `python3 test_regression.py` (server must be running on port 8080, or use `--server URL`)
 
-#### 56 Test Clues — Two Puzzles
+#### Fully Dynamic — No Hardcoded Clue Data
 
-**Puzzle 29453 (30 clues, locked reference):** All 30 annotated clues are tested. The original 12 were chosen to cover all 7 step flow patterns, all indicator types, all transform types, and key edge cases. The remaining 18 were added as they were annotated.
+The test runner fetches all clues from `/trainer/clue-ids?full=1`, builds test data from live Supabase metadata using `build_clue_test_data()`, and runs all test types against every clue. Adding training data for a new clue automatically includes it in the next test run — no regeneration or manual maintenance needed.
 
-| # | Clue | Answer | Flow Pattern | Why Selected |
-|---|------|--------|-------------|--------------|
-| 1 | 11A | VISIT | def→wordplay→assembly | Simplest charade: 2 independent transforms |
-| 2 | 6D | RAVEN | def→indicator→assembly | Ordering indicator (charade with "after") |
-| 3 | 1A | BROLLY | def→indicator→outer→inner→assembly | Full container flow with outer/inner steps |
-| 4 | 2D | OMERTA | def→indicator→fodder→assembly | Anagram with fodder pieces, dependent transform |
-| 5 | 3D | LATECOMER | def→indicator→indicator→assembly | Two indicators (letter_selection + anagram), explicit=true |
-| 6 | 17D | ASWAN DAM | def→wordplay→indicator→outer→inner→assembly | Hybrid: wordplay_type + indicator, multi-word answer |
-| 7 | 5D | EEK | def→indicator→fodder→indicator→assembly | Deletion→reversal chain, two indicators in sequence |
-| 8 | 13A | ANDANTINO | def→wordplay→assembly | 3 independent transforms (synonym + abbreviation + synonym) |
-| 9 | 4A | REPROACH | def→wordplay→assembly | Deletion dependent transform in charade |
-| 10 | 28A | CAESAR | def→indicator→assembly | Reversal chain (synonym→reversal as dependent) |
-| 11 | 26A | WINDSWEPT | def→wordplay→assembly | 5 transforms, mixed chain (reversal + anagram), check phase |
-| 12 | 23D | PSEUD | def→indicator→fodder→assembly | Hidden word indicator, reversal dependent |
-
-**Puzzle 29147 (26 clues):** Auto-generated via `generate_test_clues.py`. Adds coverage for: homophone transforms, container+charade hybrids, triple definitions, deletion+container combos, letter selection fodder, and multi-word hyphenated answers (e.g. LEAVE-TAKING, TO ORDER).
-
-**Coverage matrix (combined):**
-
-| Feature | Covered By (29453) | Also Covered By (29147) |
-|---------|-----------|-----------|
-| Step flow: charade (no indicator) | 1, 8, 9, 11 | 1A, 5A, 14D, 15A, 17D, 18D, 20D, 24D |
-| Step flow: indicator-led | 2, 3, 4, 5, 6, 7, 10, 12 | 1D, 2D, 7D, 8D, 9A, 10A, 11A, 12A, 16A, 18A, 19A, 21D, 22A, 23A, 25A, 26D, 28A, 29A |
-| Step flow: container (outer/inner) | 3, 6 | 1D, 4D, 8D, 10A, 16A, 21D, 25A |
-| Step flow: fodder step | 4, 7, 12 | 7D, 9A, 11A, 12A, 18A, 19A, 21D, 23A, 26D |
-| Indicator type: homophone | — | 12A |
-| Transform: homophone | — | 12A |
-| Transform: container | — | 1D, 4D, 8D, 10A, 16A, 21D, 25A |
-| Transform: letter_selection | 5 | 9A, 11A, 21D, 28A |
-| Multi-word answer | 6 | 2D, 4D, 10A, 25A, 29A |
-| Double/triple definition | — | 3D, 5D |
-
-#### 12 Test Types Per Clue
+#### 11 Test Types Per Clue
 
 | Test | What It Verifies |
 |------|-----------------|
@@ -1317,12 +1284,9 @@ Currently, clues must be manually annotated in Supabase training metadata. The s
 | **Reveal** | Reveal → all steps `completed`, `complete=true`, `answerLocked=true` |
 | **Template text** | Indicator step titles contain correct `indicator_type` text; hints don't redundantly repeat indicator type label |
 | **Assembly completion text** | Container clues show insertion notation; charade+anagram clues show parenthesised arrows |
-| **Backfill titles** | Completed steps show correct titles with variable substitution |
 | **Indicator coverage** | Every dependent transform (reversal/deletion/anagram) has a matching indicator step |
 | **Assembly combined check** | Assembly combined check validates letter groups correctly |
 | **Dependent prompt update** | Dependent transform prompts update after prerequisite transforms complete |
-
-**Total: 56 clues × 12 tests = 672 tests**
 
 ---
 
@@ -1341,7 +1305,8 @@ Currently, clues must be manually annotated in Supabase training metadata. The s
 11. **Architecture Compliance**: Fixed all V-list violations — moved all feedback strings and display text to `render_templates.json`, eliminated silent `.get()` fallbacks (replaced with explicit `ValueError` raises), moved clue DB management and lookup logic from `trainer_routes.py` to `training_handler.py` (routes are now a thin HTTP layer). Added 72-test regression suite (`test_regression.py`): 12 clues × 6 tests covering all 7 step flow patterns, all indicator types, and all transform types.
 12. **Training Data in Supabase**: Added `training_metadata` JSONB column to `clues` table via migration 002. Training handler loads from Supabase. Upload script (`upload_training_metadata.py`) populates database.
 13. **Indicator Hint Deduplication**: Fixed 16 indicator hints that redundantly repeated the indicator type label (e.g. "a classic anagram indicator") — the `completedTitle` template already prefixes with the type. Added guard test in `test_template_text` to prevent regression.
-14. **Puzzle 29147 Test Coverage**: Added 26 puzzle 29147 clues to regression suite. Expanded from 330 tests (30 clues × 11 tests) to 672 tests (56 clues × 12 tests). Added `test_response_contract` test type and `generate_test_clues.py` helper.
+14. **Puzzle 29147 Test Coverage**: Added puzzle 29147 clues to regression suite.
+15. **Fully Dynamic Test Suite**: Rewrote `test_regression.py` to fetch all clues dynamically from Supabase via `/trainer/clue-ids?full=1`. Zero hardcoded clue data — test data built from live metadata at runtime. Removed `generate_test_clues.py` (no longer needed). Added `/trainer/clue-ids` endpoint with `?full=1` parameter.
 
 ---
 

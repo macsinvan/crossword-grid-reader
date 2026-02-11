@@ -106,6 +106,13 @@ Examples: 5D (deletion — indicator "A lot of") and 2D (anagram — indicator "
 
 Never fix code before proving the test catches the bug. If the test passes before the fix, the test is wrong.
 
+### 2b. Fully Dynamic Test Suite — MANDATORY
+**The test runner has ZERO hardcoded clue data.** It dynamically fetches all clues with training data from Supabase via `/trainer/clue-ids?full=1`, builds test data from live metadata, and runs all tests against every clue. No hardcoded lists, no generated test files, no manual maintenance.
+
+- Adding training data for a new clue automatically includes it in the next test run — no regeneration step needed.
+- Every clue in Supabase is tested. No silent omissions are possible.
+- If a clue's training data is broken, the test fails loudly with a clear error.
+
 ### 3. Key Constraints
 
 **STATELESS CLIENT ARCHITECTURE** (See SPEC.md Section 4.4)
@@ -162,8 +169,7 @@ Open http://localhost:8080
 | `render_templates.json` | **EXTERNAL TO CODE** - Render templates (HOW to present steps) |
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
 | `validate_training.py` | Training metadata validator — structural, semantic, convention, and publication checks |
-| `test_regression.py` | Regression test suite: 672 tests (56 clues × 12 tests), stdlib only |
-| `generate_test_clues.py` | Helper: auto-generate test clue entries from running server |
+| `test_regression.py` | Fully dynamic regression tests — fetches all clues from Supabase, zero hardcoded data |
 
 ### Database & Migrations
 | File | Purpose |
@@ -249,7 +255,7 @@ SUPABASE_ANON_KEY=your-anon-key
 ## Common Commands
 ```bash
 python3 crossword_server.py                                          # Start server
-python3 test_regression.py                                           # Run 672 regression tests (server must be running)
+python3 test_regression.py                                           # Run regression tests (server must be running — tests all clues dynamically)
 python3 upload_training_metadata.py --puzzle 29147                   # Upload one puzzle's training data to Supabase
 python3 upload_training_metadata.py --clue times-29147-1d            # Upload one clue's training data
 python3 upload_training_metadata.py --puzzle 29147 --dry-run         # Preview upload without writing

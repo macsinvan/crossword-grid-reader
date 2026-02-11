@@ -5,6 +5,7 @@ Trainer Routes - Flask Blueprint
 Thin HTTP layer. All business logic lives in training_handler.py.
 
 Routes:
+    /trainer/clue-ids       - List all clue IDs with training data
     /trainer/start          - Start training session
     /trainer/input          - Submit user input (word taps, text)
     /trainer/ui-state       - Update UI state (hint toggle, word select, answer typing)
@@ -22,6 +23,23 @@ trainer_bp = Blueprint('trainer', __name__)
 # ---------------------------------------------------------------------------
 # Routes
 # ---------------------------------------------------------------------------
+
+@trainer_bp.route('/clue-ids', methods=['GET'])
+def trainer_clue_ids():
+    """Return all clue IDs with training data in Supabase.
+    With ?full=1, returns full metadata for each clue (for test runner).
+    """
+    try:
+        if request.args.get('full'):
+            all_data = training_handler.list_all_clue_data()
+            return jsonify({'clues': all_data})
+        clue_ids = training_handler.list_clue_ids()
+        return jsonify({'clue_ids': clue_ids})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
 
 @trainer_bp.route('/start', methods=['POST'])
 def trainer_start():

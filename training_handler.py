@@ -47,6 +47,19 @@ def _get_store():
     return PuzzleStoreSupabase()
 
 
+def list_clue_ids():
+    """Return sorted list of all clue IDs with training data in Supabase."""
+    store = _get_store()
+    items = store.get_training_clues()
+    return sorted(items.keys())
+
+
+def list_all_clue_data():
+    """Return dict of clue_id → clue_data for all clues with training data."""
+    store = _get_store()
+    return store.get_training_clues()
+
+
 def lookup_clue(puzzle_number, clue_number, direction):
     """
     Fetch a clue from Supabase by key, validate it, and return it.

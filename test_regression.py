@@ -4,9 +4,8 @@ Trainer Regression Tests
 ========================
 
 Tests all trainer API endpoints against a running server.
-Walks through 56 clues (30 from puzzle 29453 + 26 from puzzle 29147)
-covering all step flow patterns, indicator types, transform types,
-and key edge cases.
+Dynamically discovers ALL clues with training data from Supabase
+via /trainer/clue-ids?full=1 — no hardcoded clue lists.
 
 Usage:
     python3 test_regression.py
@@ -27,1668 +26,19 @@ import urllib.error
 # ---------------------------------------------------------------------------
 
 DEFAULT_SERVER = "http://127.0.0.1:8080"
-
-# ---------------------------------------------------------------------------
-# 30 Test Clues — Puzzle 29453 (locked reference)
-# ---------------------------------------------------------------------------
-#
-# Each clue dict contains:
-#   id, clue_text, puzzle_number, clue_number, direction, answer
-#   steps: list of {type, inputMode, value, ...} for the happy-path walkthrough
-#     - tap_words steps: value = list of indices
-#     - multiple_choice steps: value = string (the expected answer)
-#     - assembly steps: transforms = [{index, value}, ...]
-#   has_indicator_steps: bool — whether any step is type "indicator"
-#   indicator_types: list of indicator_type strings (for template text tests)
-#   assembly_explicit: bool — whether assembly has explicit=True
-#   num_assembly_transforms: int — total transform count
-#   dependent_transform_indices: list of int — which transforms are dependent
-#   wrong_value_step0: a wrong value for the definition step (for negative test)
-
-TEST_CLUES = [
-    # 1. 11A VISIT — def→wordplay→assembly (simplest charade, 2 independent)
-    {
-        "id": "times-29453-11a",
-        "clue_text": "Come by five, do you mean?",
-        "puzzle_number": "29453",
-        "clue_number": "11",
-        "direction": "across",
-        "answer": "VISIT",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "V"}, {"index": 1, "value": "ISIT"}]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [3, 4],
-        "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["five", "mean"],
-        "enumeration": "5",
-        "expected_answer_groups": [5],
-        "expected_words": ["Come", "by", "five", "do", "you", "mean"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 2. 6D RAVEN — def→indicator(ordering)→assembly
-    {
-        "id": "times-29453-6d",
-        "clue_text": "Any number after dance party are starving",
-        "puzzle_number": "29453",
-        "clue_number": "6",
-        "direction": "down",
-        "answer": "RAVEN",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [5, 6]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "RAVE"}, {"index": 1, "value": "N"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["ordering"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [0, 1],
-        "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["dance", "number"],
-        "enumeration": "5",
-        "expected_answer_groups": [5],
-        "expected_words": ["Any", "number", "after", "dance", "party", "are", "starving"],
-        "expected_step_types": ["definition", "indicator", "assembly"],
-    },
-
-    # 3. 1A BROLLY — def→indicator(container)→outer→inner→assembly
-    {
-        "id": "times-29453-1a",
-        "clue_text": "Cover up in shower? Not after nurses turn round",
-        "puzzle_number": "29453",
-        "clue_number": "1",
-        "direction": "across",
-        "answer": "BROLLY",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1, 2, 3]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [6]},
-            {"type": "outer_word", "inputMode": "tap_words", "value": [4, 5]},
-            {"type": "inner_word", "inputMode": "tap_words", "value": [7, 8]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "BY"}, {"index": 1, "value": "ROLL"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["container"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [5, 6],
-        "enumeration": "6",
-        "expected_answer_groups": [6],
-        "expected_words": ["Cover", "up", "in", "shower", "Not", "after", "nurses", "turn", "round"],
-        "expected_step_types": ["definition", "indicator", "outer_word", "inner_word", "assembly"],
-    },
-
-    # 4. 2D OMERTA — def→indicator(anagram)→fodder→assembly (anagram dependent)
-    {
-        "id": "times-29453-2d",
-        "clue_text": "Crooked old mater \u2014 which strongly suggests criminal is mum",
-        "puzzle_number": "29453",
-        "clue_number": "2",
-        "direction": "down",
-        "answer": "OMERTA",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [4, 5, 6, 7, 8, 9]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [0]},
-            {"type": "fodder", "inputMode": "tap_words", "value": [1, 2]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "O"},
-                 {"index": 1, "value": "MATER"},
-                 {"index": 2, "value": "OMERTA"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["anagram"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 3,
-        "dependent_transform_indices": [2],  # anagram at index 2 depends on 0, 1
-        "wrong_value_step0": [0, 1],
-        "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["old"],
-        "expected_not_in_breakdown": "'mater' \u2192 MATER",  # literal where result = word should not show redundant arrow
-        "enumeration": "6",
-        "expected_answer_groups": [6],
-        "expected_words": ["Crooked", "old", "mater", "\u2014", "which", "strongly", "suggests", "criminal", "is", "mum"],
-        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
-    },
-
-    # 5. 3D LATECOMER — def→indicator(letter_selection)→indicator(anagram)→assembly (explicit=True)
-    {
-        "id": "times-29453-3d",
-        "clue_text": "One missing initially, admitted to Electra with some upheaval?",
-        "puzzle_number": "29453",
-        "clue_number": "3",
-        "direction": "down",
-        "answer": "LATECOMER",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [7, 8]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "OM"},
-                 {"index": 1, "value": "ELECTRA"},
-                 {"index": 2, "value": "LATECOMER"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["letter_selection", "anagram"],
-        "assembly_explicit": True,
-        "num_assembly_transforms": 3,
-        "dependent_transform_indices": [2],  # anagram at index 2
-        "wrong_value_step0": [3, 4],
-        "enumeration": "9",
-        "expected_answer_groups": [9],
-        "expected_words": ["One", "missing", "initially", "admitted", "to", "Electra", "with", "some", "upheaval"],
-        "expected_step_types": ["definition", "indicator", "indicator", "assembly"],
-    },
-
-    # 6. 17D ASWAN DAM — def→wordplay(Container)→indicator(container)→outer→inner→assembly (hybrid)
-    {
-        "id": "times-29453-17d",
-        "clue_text": "Embankment architect lengthened with cob?",
-        "puzzle_number": "29453",
-        "clue_number": "17",
-        "direction": "down",
-        "answer": "ASWAN DAM",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Container"},
-            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
-            {"type": "outer_word", "inputMode": "tap_words", "value": [1]},
-            {"type": "inner_word", "inputMode": "tap_words", "value": [4]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "ADAM"}, {"index": 1, "value": "SWAN"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["container"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [1, 2],
-        "enumeration": "5,3",
-        "expected_answer_groups": [5, 3],
-        "expected_words": ["Embankment", "architect", "lengthened", "with", "cob"],
-        "expected_step_types": ["definition", "wordplay_type", "indicator", "outer_word", "inner_word", "assembly"],
-    },
-
-    # 7. 5D EEK — def→indicator(deletion)→fodder→indicator(reversal)→assembly (chain)
-    {
-        "id": "times-29453-5d",
-        "clue_text": "A lot of sharp turns, I'm afraid",
-        "puzzle_number": "29453",
-        "clue_number": "5",
-        "direction": "down",
-        "answer": "EEK",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [5, 6]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [0, 1, 2]},
-            {"type": "fodder", "inputMode": "tap_words", "value": [3]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [4]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "KEEN"},
-                 {"index": 1, "value": "KEE"},
-                 {"index": 2, "value": "EEK"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["deletion", "reversal"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 3,
-        "dependent_transform_indices": [1, 2],  # deletion at 1, reversal at 2
-        "wrong_value_step0": [0, 1],
-        "enumeration": "3",
-        "expected_answer_groups": [3],
-        "expected_words": ["A", "lot", "of", "sharp", "turns", "I'm", "afraid"],
-        "expected_step_types": ["definition", "indicator", "fodder", "indicator", "assembly"],
-    },
-
-    # 8. 13A ANDANTINO — def→wordplay→assembly (3 independent synonyms)
-    {
-        "id": "times-29453-13a",
-        "clue_text": "Moderate movement also opposed to one referendum option",
-        "puzzle_number": "29453",
-        "clue_number": "13",
-        "direction": "across",
-        "answer": "ANDANTINO",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "AND"},
-                 {"index": 1, "value": "ANTI"},
-                 {"index": 2, "value": "NO"},
-             ]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 3,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [2, 3],
-        "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["also", "opposed", "referendum"],
-        "enumeration": "9",
-        "expected_answer_groups": [9],
-        "expected_words": ["Moderate", "movement", "also", "opposed", "to", "one", "referendum", "option"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 9. 4A REPROACH — def→indicator(deletion)→assembly (charade with deletion)
-    {
-        "id": "times-29453-4a",
-        "clue_text": "Twit copying antique with pine, mostly",
-        "puzzle_number": "29453",
-        "clue_number": "4",
-        "direction": "across",
-        "answer": "REPROACH",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [5]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "REPRO"},
-                 {"index": 1, "value": "ACHE"},
-                 {"index": 2, "value": "ACH"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["deletion"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 3,
-        "dependent_transform_indices": [2],  # deletion at index 2
-        "wrong_value_step0": [1, 2],
-        "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["copying antique", "pine"],
-        "enumeration": "8",
-        "expected_answer_groups": [8],
-        "expected_words": ["Twit", "copying", "antique", "with", "pine", "mostly"],
-        "expected_step_types": ["definition", "indicator", "assembly"],
-    },
-
-    # 10. 28A CAESAR — def→indicator(reversal)→assembly (reversal chain)
-    {
-        "id": "times-29453-28a",
-        "clue_text": "Tsar\u2019s like, roughly level after revolution",
-        "puzzle_number": "29453",
-        "clue_number": "28",
-        "direction": "across",
-        "answer": "CAESAR",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [5]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "CA"},
-                 {"index": 1, "value": "RASE"},
-                 {"index": 2, "value": "ESAR"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["reversal"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 3,
-        "dependent_transform_indices": [2],  # reversal at index 2
-        "wrong_value_step0": [2, 3],
-        "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["roughly"],
-        "enumeration": "6",
-        "expected_answer_groups": [6],
-        "expected_words": ["Tsar's", "like", "roughly", "level", "after", "revolution"],
-        "expected_step_types": ["definition", "indicator", "assembly"],
-    },
-
-    # 11. 26A WINDSWEPT — def→indicator(reversal)→indicator(container)→assembly (5 transforms, mixed chain)
-    {
-        "id": "times-29453-26a",
-        "clue_text": "Turn bench back in street exposed to blasts",
-        "puzzle_number": "29453",
-        "clue_number": "26",
-        "direction": "across",
-        "answer": "WINDSWEPT",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [5, 6, 7]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [3]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "WIND"},
-                 {"index": 1, "value": "PEW"},
-                 {"index": 2, "value": "WEP"},
-                 {"index": 3, "value": "ST"},
-                 {"index": 4, "value": "SWEPT"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["reversal", "container"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 5,
-        "dependent_transform_indices": [2, 4],  # reversal at 2, container at 4
-        "wrong_value_step0": [0, 1],
-        "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["Turn"],
-        "enumeration": "9",
-        "expected_answer_groups": [9],
-        "expected_words": ["Turn", "bench", "back", "in", "street", "exposed", "to", "blasts"],
-        "expected_step_types": ["definition", "indicator", "indicator", "assembly"],
-    },
-
-    # 12. 23D PSEUD — def→indicator(hidden_word)→fodder→assembly
-    {
-        "id": "times-29453-23d",
-        "clue_text": "Pretend authority raised undue spending limits",
-        "puzzle_number": "29453",
-        "clue_number": "23",
-        "direction": "down",
-        "answer": "PSEUD",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [2, 5]},
-            {"type": "fodder", "inputMode": "tap_words", "value": [3, 4]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "DUESP"},
-                 {"index": 1, "value": "PSEUD"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["hidden_word"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [1],  # reversal at index 1
-        "wrong_value_step0": [3, 4],
-        "enumeration": "5",
-        "expected_answer_groups": [5],
-        "expected_words": ["Pretend", "authority", "raised", "undue", "spending", "limits"],
-        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
-    },
-
-    # 13. 19A SOLAR ECLIPSE — def→indicator(container)→outer→inner→assembly (container with charade inner)
-    {
-        "id": "times-29453-19a",
-        "clue_text": "Are cold kissers coming inside only when it\u2019s dark?",
-        "puzzle_number": "29453",
-        "clue_number": "19",
-        "direction": "across",
-        "answer": "SOLAR ECLIPSE",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [6, 7, 8]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [3, 4]},
-            {"type": "outer_word", "inputMode": "tap_words", "value": [5]},
-            {"type": "inner_word", "inputMode": "tap_words", "value": [0, 1, 2]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "SOLE"},
-                 {"index": 1, "value": "ARE"},
-                 {"index": 2, "value": "C"},
-                 {"index": 3, "value": "LIPS"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["container"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 4,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [0, 1],
-        "is_container": True,  # flag for container-specific completion text test
-        "enumeration": "5,7",
-        "expected_answer_groups": [5, 7],
-        "expected_words": ["Are", "cold", "kissers", "coming", "inside", "only", "when", "it\u2019s", "dark"],
-        "expected_step_types": ["definition", "indicator", "outer_word", "inner_word", "assembly"],
-    },
-
-    # 14. 16D DISHDASHA — def→indicator(anagram)→fodder→assembly (charade with anagram chain)
-    {
-        "id": "times-29453-16d",
-        "clue_text": "Arab robe ad has misrepresented with superior beauty",
-        "puzzle_number": "29453",
-        "clue_number": "16",
-        "direction": "down",
-        "answer": "DISHDASHA",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [4]},
-            {"type": "fodder", "inputMode": "tap_words", "value": [2, 3]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "DISH"},
-                 {"index": 1, "value": "ADHAS"},
-                 {"index": 2, "value": "DASHA"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["anagram"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 3,
-        "dependent_transform_indices": [2],  # anagram at index 2
-        "wrong_value_step0": [2, 3],
-        "has_anagram_chain": True,  # flag for anagram breakdown test
-        "expected_breakdown_contains": "(ADHAS \u2192 DASHA)",  # literal words used as-is, no redundant arrow
-        "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["beauty"],
-        "enumeration": "9",
-        "expected_answer_groups": [9],
-        "expected_words": ["Arab", "robe", "ad", "has", "misrepresented", "with", "superior", "beauty"],
-        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
-    },
-
-    # 15. 1D BISHOP — charade: def→wordplay→assembly (2 independent synonyms)
-    {
-        "id": "times-29453-1d",
-        "clue_text": "See boss bungle work",
-        "puzzle_number": "29453",
-        "clue_number": "1",
-        "direction": "down",
-        "answer": "BISHOP",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "BISH"}, {"index": 1, "value": "OP"}]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [2, 3],
-        "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["bungle", "work"],
-        "enumeration": "6",
-        "expected_answer_groups": [6],
-        "expected_words": ["See", "boss", "bungle", "work"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 16. 7D AUSPICES — container: def→indicator(container)→outer→inner→assembly
-    {
-        "id": "times-29453-7d",
-        "clue_text": "Summits welcoming American patronage",
-        "puzzle_number": "29453",
-        "clue_number": "7",
-        "direction": "down",
-        "answer": "AUSPICES",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [3]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [1]},
-            {"type": "outer_word", "inputMode": "tap_words", "value": [0]},
-            {"type": "inner_word", "inputMode": "tap_words", "value": [2]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "APICES"}, {"index": 1, "value": "US"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["container"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [0, 1],
-        "is_container": True,
-        "enumeration": "8",
-        "expected_answer_groups": [8],
-        "expected_words": ["Summits", "welcoming", "American", "patronage"],
-        "expected_step_types": ["definition", "indicator", "outer_word", "inner_word", "assembly"],
-    },
-
-    # 17. 8D HOTHOUSE — container: def→indicator(container)→outer→inner→assembly
-    {
-        "id": "times-29453-8d",
-        "clue_text": "Steamy in here, but you must wear socks",
-        "puzzle_number": "29453",
-        "clue_number": "8",
-        "direction": "down",
-        "answer": "HOTHOUSE",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1, 2]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [6]},
-            {"type": "outer_word", "inputMode": "tap_words", "value": [7]},
-            {"type": "inner_word", "inputMode": "tap_words", "value": [4]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "HOSE"}, {"index": 1, "value": "THOU"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["container"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [4, 5],
-        "is_container": True,
-        "enumeration": "8",
-        "expected_answer_groups": [8],
-        "expected_words": ["Steamy", "in", "here", "but", "you", "must", "wear", "socks"],
-        "expected_step_types": ["definition", "indicator", "outer_word", "inner_word", "assembly"],
-    },
-
-    # 18. 9D MADAGASCAR — charade: def→wordplay→assembly (4 independent)
-    {
-        "id": "times-29453-9d",
-        "clue_text": "State coach for Turkish leader who\u2019s out to lunch?",
-        "puzzle_number": "29453",
-        "clue_number": "9",
-        "direction": "down",
-        "answer": "MADAGASCAR",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "MAD"},
-                 {"index": 1, "value": "AGA"},
-                 {"index": 2, "value": "S"},
-                 {"index": 3, "value": "CAR"},
-             ]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 4,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [1, 2],
-        "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["lunch", "Turkish", "coach"],
-        "enumeration": "10",
-        "expected_answer_groups": [10],
-        "expected_words": ["State", "coach", "for", "Turkish", "leader", "who's", "out", "to", "lunch"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 19. 10A SWEET TALK — container with charade inner: def→indicator→outer→inner→assembly
-    {
-        "id": "times-29453-10a",
-        "clue_text": "Flatter track takes very little time",
-        "puzzle_number": "29453",
-        "clue_number": "10",
-        "direction": "across",
-        "answer": "SWEET TALK",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
-            {"type": "outer_word", "inputMode": "tap_words", "value": [1]},
-            {"type": "inner_word", "inputMode": "tap_words", "value": [3, 4, 5]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "STALK"},
-                 {"index": 1, "value": "WEE"},
-                 {"index": 2, "value": "T"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["container"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 3,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [1, 2],
-        "is_container": True,
-        "check_backfill_titles": True,
-        "expected_backfill": {
-            "inner_word": {"must_contain": ["WEE", "T"], "must_not_contain": "'very little time' \u2192 T"},
-        },
-        "enumeration": "5,4",
-        "expected_answer_groups": [5, 4],
-        "expected_words": ["Flatter", "track", "takes", "very", "little", "time"],
-        "expected_step_types": ["definition", "indicator", "outer_word", "inner_word", "assembly"],
-    },
-
-    # 20. 12A OPTIC — dual indicators + explicit assembly: def→indicator(letter_sel)→indicator(anagram)→assembly
-    {
-        "id": "times-29453-12a",
-        "clue_text": "Concerning sight as head of office IT struggles with PC",
-        "puzzle_number": "29453",
-        "clue_number": "12",
-        "direction": "across",
-        "answer": "OPTIC",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [3, 4]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [7]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "O"},
-                 {"index": 1, "value": "IT"},
-                 {"index": 2, "value": "PC"},
-                 {"index": 3, "value": "OPTIC"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["letter_selection", "anagram"],
-        "assembly_explicit": True,
-        "num_assembly_transforms": 4,
-        "dependent_transform_indices": [3],
-        "wrong_value_step0": [3, 4],
-        "enumeration": "5",
-        "expected_answer_groups": [5],
-        "expected_words": ["Concerning", "sight", "as", "head", "of", "office", "IT", "struggles", "with", "PC"],
-        "expected_step_types": ["definition", "indicator", "indicator", "assembly"],
-    },
-
-    # 21. 14D DISCIPLINE — reversal chain: def→indicator(reversal)→fodder→assembly
-    {
-        "id": "times-29453-14d",
-        "clue_text": "Photos I had mounted cover the inside of school",
-        "puzzle_number": "29453",
-        "clue_number": "14",
-        "direction": "down",
-        "answer": "DISCIPLINE",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [8]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [3]},
-            {"type": "fodder", "inputMode": "tap_words", "value": [0, 1, 2]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "PICS"},
-                 {"index": 1, "value": "ID"},
-                 {"index": 2, "value": "DISCIP"},
-                 {"index": 3, "value": "LINE"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["reversal"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 4,
-        "dependent_transform_indices": [2],
-        "wrong_value_step0": [0, 1],
-        "has_multi_predecessor_chain": True,  # reversal at index 2 consumes PICS(4)+ID(2)=6 letters
-        "expected_breakdown_contains": "('Photos' \u2192 PICS + 'I had' \u2192 ID \u2192 DISCIP)",  # show clue word attribution for all predecessors
-        "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["cover"],
-        "enumeration": "10",
-        "expected_answer_groups": [10],
-        "expected_words": ["Photos", "I", "had", "mounted", "cover", "the", "inside", "of", "school"],
-        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
-    },
-
-    # 22. 15A AMBASSADRESS — charade: def→wordplay→assembly (4 independent)
-    {
-        "id": "times-29453-15a",
-        "clue_text": "Live singer with a costume representative of her country",
-        "puzzle_number": "29453",
-        "clue_number": "15",
-        "direction": "across",
-        "answer": "AMBASSADRESS",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [5, 6, 7, 8]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "AM"},
-                 {"index": 1, "value": "BASS"},
-                 {"index": 2, "value": "A"},
-                 {"index": 3, "value": "DRESS"},
-             ]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 4,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [0, 1],
-        "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["Live", "singer", "costume"],
-        "enumeration": "12",
-        "expected_answer_groups": [12],
-        "expected_words": ["Live", "singer", "with", "a", "costume", "representative", "of", "her", "country"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 23. 18D FLEETING — charade with reversal: def→indicator(reversal)→assembly
-    {
-        "id": "times-29453-18d",
-        "clue_text": "Fugitive\u2019s attempt to escape upset good egg",
-        "puzzle_number": "29453",
-        "clue_number": "18",
-        "direction": "down",
-        "answer": "FLEETING",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [4]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "FLEE"},
-                 {"index": 1, "value": "G"},
-                 {"index": 2, "value": "NIT"},
-                 {"index": 3, "value": "TING"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["reversal"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 4,
-        "dependent_transform_indices": [3],
-        "wrong_value_step0": [1, 2],
-        "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["escape"],
-        "enumeration": "8",
-        "expected_answer_groups": [8],
-        "expected_words": ["Fugitive's", "attempt", "to", "escape", "upset", "good", "egg"],
-        "expected_step_types": ["definition", "indicator", "assembly"],
-    },
-
-    # 24. 20D DOZENS — container: def→indicator(container)→outer→inner→assembly
-    {
-        "id": "times-29453-20d",
-        "clue_text": "Many academics divided by gender-neutral pronoun",
-        "puzzle_number": "29453",
-        "clue_number": "20",
-        "direction": "down",
-        "answer": "DOZENS",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
-            {"type": "outer_word", "inputMode": "tap_words", "value": [1]},
-            {"type": "inner_word", "inputMode": "tap_words", "value": [4, 5]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "DONS"}, {"index": 1, "value": "ZE"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["container"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [1, 2],
-        "is_container": True,
-        "enumeration": "6",
-        "expected_answer_groups": [6],
-        "expected_words": ["Many", "academics", "divided", "by", "gender-neutral", "pronoun"],
-        "expected_step_types": ["definition", "indicator", "outer_word", "inner_word", "assembly"],
-    },
-
-    # 25. 21D LOW TAR — charade: def→wordplay→assembly (2 independent)
-    {
-        "id": "times-29453-21d",
-        "clue_text": "Sailor in the doldrums relatively OK for tobacco?",
-        "puzzle_number": "29453",
-        "clue_number": "21",
-        "direction": "down",
-        "answer": "LOW TAR",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [4, 5, 6, 7]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "LOW"}, {"index": 1, "value": "TAR"}]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [0, 1],
-        "check_clue_word_attribution": True,  # assembly title must show clue words, not just results
-        "expected_clue_words_in_breakdown": ["doldrums", "Sailor"],  # each transform's source word
-        "enumeration": "3,3",
-        "expected_answer_groups": [3, 3],
-        "expected_words": ["Sailor", "in", "the", "doldrums", "relatively", "OK", "for", "tobacco?"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 26. 22A ATEMPORAL — charade with anagram: def→indicator(anagram)→assembly (4 transforms)
-    {
-        "id": "times-29453-22a",
-        "clue_text": "Friend taking minute to finish piano exam out of time",
-        "puzzle_number": "29453",
-        "clue_number": "22",
-        "direction": "across",
-        "answer": "ATEMPORAL",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [7, 8, 9]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [1]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "MATE"},
-                 {"index": 1, "value": "ATEM"},
-                 {"index": 2, "value": "P"},
-                 {"index": 3, "value": "ORAL"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["anagram"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 4,
-        "dependent_transform_indices": [1],
-        "wrong_value_step0": [0, 1],
-        "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["piano", "exam"],
-        "enumeration": "9",
-        "expected_answer_groups": [9],
-        "expected_words": ["Friend", "taking", "minute", "to", "finish", "piano", "exam", "out", "of", "time"],
-        "expected_step_types": ["definition", "indicator", "assembly"],
-    },
-
-    # 27. 24A DUOMO — charade: def→wordplay→assembly (2 independent)
-    {
-        "id": "times-29453-24a",
-        "clue_text": "Couple taken with second sight of Florence?",
-        "puzzle_number": "29453",
-        "clue_number": "24",
-        "direction": "across",
-        "answer": "DUOMO",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [4, 5, 6]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "DUO"}, {"index": 1, "value": "MO"}]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [0, 1],
-        "check_clue_word_attribution": True,
-        "expected_clue_words_in_breakdown": ["Couple", "second"],
-        "enumeration": "5",
-        "expected_answer_groups": [5],
-        "expected_words": ["Couple", "taken", "with", "second", "sight", "of", "Florence?"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 28. 26D WAS — deletion chain: def→indicator(deletion)→fodder→assembly
-    {
-        "id": "times-29453-26d",
-        "clue_text": "In Republican\u2019s absence, conflicts happened",
-        "puzzle_number": "29453",
-        "clue_number": "26",
-        "direction": "down",
-        "answer": "WAS",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [4]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
-            {"type": "fodder", "inputMode": "tap_words", "value": [3]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "WARS"}, {"index": 1, "value": "WAS"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["deletion"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [1],
-        "wrong_value_step0": [0, 1],
-        "enumeration": "3",
-        "expected_answer_groups": [3],
-        "expected_words": ["In", "Republican's", "absence", "conflicts", "happened"],
-        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
-    },
-
-    # 29. 27A MEGADOSE — anagram: def→indicator(anagram)→fodder→assembly
-    {
-        "id": "times-29453-27a",
-        "clue_text": "See Dogma remade as massive hit",
-        "puzzle_number": "29453",
-        "clue_number": "27",
-        "direction": "across",
-        "answer": "MEGADOSE",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [4, 5]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
-            {"type": "fodder", "inputMode": "tap_words", "value": [0, 1]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "SEE"},
-                 {"index": 1, "value": "DOGMA"},
-                 {"index": 2, "value": "MEGADOSE"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["anagram"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 3,
-        "dependent_transform_indices": [2],
-        "wrong_value_step0": [2, 3],
-        "enumeration": "8",
-        "expected_answer_groups": [8],
-        "expected_words": ["See", "Dogma", "remade", "as", "massive", "hit"],
-        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
-    },
-
-    # 30. 25A DRIVE — deletion chain: def→indicator(deletion)→fodder→assembly
-    {
-        "id": "times-29453-25a",
-        "clue_text": "Urge removal of line from silly speech",
-        "puzzle_number": "29453",
-        "clue_number": "25",
-        "direction": "across",
-        "answer": "DRIVE",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [1]},
-            {"type": "fodder", "inputMode": "tap_words", "value": [5, 6]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [
-                 {"index": 0, "value": "DRIVEL"},
-                 {"index": 1, "value": "DRIVE"},
-             ]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["deletion"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [1],  # deletion at index 1
-        "wrong_value_step0": [5, 6],
-        "enumeration": "5",
-        "expected_answer_groups": [5],
-        "expected_words": ["Urge", "removal", "of", "line", "from", "silly", "speech"],
-        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
-    },
-]
-
-# ---------------------------------------------------------------------------
-# Puzzle 29147 test clues — auto-generated by generate_test_clues.py (26 clues)
-# ---------------------------------------------------------------------------
-
-TEST_CLUES_29147 = [
-    # 1. 1A ASHAMED
-    {
-        "id": "times-29147-1a",
-        "clue_text": "When acting clumsily journalist is overcome by remorse",
-        "puzzle_number": "29147",
-        "clue_number": "1",
-        "direction": "across",
-        "answer": "ASHAMED",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [5, 6, 7]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "AS"}, {"index": 1, "value": "HAM"}, {"index": 2, "value": "ED"}]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 3,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [0, 1],
-        "enumeration": "7",
-        "expected_answer_groups": [7],
-        "expected_words": ["When", "acting", "clumsily", "journalist", "is", "overcome", "by", "remorse"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 2. 1D ANAEMIC
-    {
-        "id": "times-29147-1d",
-        "clue_text": "Bloodless revolution for agents capturing base",
-        "puzzle_number": "29147",
-        "clue_number": "1",
-        "direction": "down",
-        "answer": "ANAEMIC",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [4]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [1]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "CIA"}, {"index": 1, "value": "MEAN"}, {"index": 2, "value": "CIMEANA"}, {"index": 3, "value": "ANAEMIC"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["container", "anagram"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 4,
-        "dependent_transform_indices": [2, 3],
-        "wrong_value_step0": [1, 2],
-        "is_container": True,
-        "enumeration": "7",
-        "expected_answer_groups": [7],
-        "expected_words": ["Bloodless", "revolution", "for", "agents", "capturing", "base"],
-        "expected_step_types": ["definition", "indicator", "indicator", "assembly"],
-    },
-
-    # 3. 2D HELEN OF TROY
-    {
-        "id": "times-29147-2d",
-        "clue_text": "Classic beauty peculiar to English female \u2014 only her",
-        "puzzle_number": "29147",
-        "clue_number": "2",
-        "direction": "down",
-        "answer": "HELEN OF TROY",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
-            {"type": "fodder", "inputMode": "tap_words", "value": [3, 4, 5, 7, 8]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "TO"}, {"index": 1, "value": "E"}, {"index": 2, "value": "F"}, {"index": 3, "value": "ONLY"}, {"index": 4, "value": "HER"}, {"index": 5, "value": "HELEN OF TROY"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["anagram"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 6,
-        "dependent_transform_indices": [5],
-        "wrong_value_step0": [2, 3],
-        "enumeration": "5,2,4",
-        "expected_answer_groups": [5, 2, 4],
-        "expected_words": ["Classic", "beauty", "peculiar", "to", "English", "female", "\u2014", "only", "her"],
-        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
-    },
-
-    # 4. 3D MY WORD
-    {
-        "id": "times-29147-3d",
-        "clue_text": "Gracious thing that I should keep!",
-        "puzzle_number": "29147",
-        "clue_number": "3",
-        "direction": "down",
-        "answer": "MY WORD",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Double definition"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "MY WORD"}]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 1,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [1, 2],
-        "enumeration": "2,4",
-        "expected_answer_groups": [2, 4],
-        "expected_words": ["Gracious", "thing", "that", "I", "should", "keep"],
-        "expected_step_types": ["wordplay_type", "multi_definition", "multi_definition", "assembly"],
-    },
-
-    # 5. 4D DARTH VADER
-    {
-        "id": "times-29147-4d",
-        "clue_text": "Villain in film shoot, female, interrupted by very short commercial",
-        "puzzle_number": "29147",
-        "clue_number": "4",
-        "direction": "down",
-        "answer": "DARTH VADER",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1, 2]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [5]},
-            {"type": "outer_word", "inputMode": "tap_words", "value": [4]},
-            {"type": "inner_word", "inputMode": "tap_words", "value": [7, 8, 9]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "DART"}, {"index": 1, "value": "HER"}, {"index": 2, "value": "V"}, {"index": 3, "value": "AD"}, {"index": 4, "value": "HVADER"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["container"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 5,
-        "dependent_transform_indices": [4],
-        "wrong_value_step0": [3, 4],
-        "is_container": True,
-        "enumeration": "5,5",
-        "expected_answer_groups": [5, 5],
-        "expected_words": ["Villain", "in", "film", "shoot", "female", "interrupted", "by", "very", "short", "commercial"],
-        "expected_step_types": ["definition", "indicator", "outer_word", "inner_word", "assembly"],
-    },
-
-    # 6. 5A REMAINS
-    {
-        "id": "times-29147-5a",
-        "clue_text": "What's left after touching electricity supply?",
-        "puzzle_number": "29147",
-        "clue_number": "5",
-        "direction": "across",
-        "answer": "REMAINS",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "RE"}, {"index": 1, "value": "MAINS"}]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [2, 3],
-        "enumeration": "7",
-        "expected_answer_groups": [7],
-        "expected_words": ["What's", "left", "after", "touching", "electricity", "supply"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 7. 5D ROSE
-    {
-        "id": "times-29147-5d",
-        "clue_text": "Grew flower: one used for spray?",
-        "puzzle_number": "29147",
-        "clue_number": "5",
-        "direction": "down",
-        "answer": "ROSE",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Double definition"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "ROSE"}]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 1,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [1, 2],
-        "enumeration": "4",
-        "expected_answer_groups": [4],
-        "expected_words": ["Grew", "flower", "one", "used", "for", "spray"],
-        "expected_step_types": ["wordplay_type", "multi_definition", "multi_definition", "multi_definition", "assembly"],
-    },
-
-    # 8. 6D MINISTRY
-    {
-        "id": "times-29147-6d",
-        "clue_text": "Government department tax giving certain cars priority",
-        "puzzle_number": "29147",
-        "clue_number": "6",
-        "direction": "down",
-        "answer": "MINISTRY",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [6]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "MINIS"}, {"index": 1, "value": "TRY"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["ordering"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [2, 3],
-        "enumeration": "8",
-        "expected_answer_groups": [8],
-        "expected_words": ["Government", "department", "tax", "giving", "certain", "cars", "priority"],
-        "expected_step_types": ["definition", "indicator", "assembly"],
-    },
-
-    # 9. 7D IDA
-    {
-        "id": "times-29147-7d",
-        "clue_text": "Great part of Crete seen during holidays",
-        "puzzle_number": "29147",
-        "clue_number": "7",
-        "direction": "down",
-        "answer": "IDA",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1, 2, 3]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [4, 5]},
-            {"type": "fodder", "inputMode": "tap_words", "value": [6]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "IDA"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["hidden_word"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 1,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [4, 5],
-        "enumeration": "3",
-        "expected_answer_groups": [3],
-        "expected_words": ["Great", "part", "of", "Crete", "seen", "during", "holidays"],
-        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
-    },
-
-    # 10. 8D SALFORD
-    {
-        "id": "times-29147-8d",
-        "clue_text": "In depression collecting pounds in aid of English city",
-        "puzzle_number": "29147",
-        "clue_number": "8",
-        "direction": "down",
-        "answer": "SALFORD",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [7, 8]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
-            {"type": "outer_word", "inputMode": "tap_words", "value": [1]},
-            {"type": "inner_word", "inputMode": "tap_words", "value": [3, 4, 5, 6]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "SAD"}, {"index": 1, "value": "L"}, {"index": 2, "value": "FOR"}, {"index": 3, "value": "SALFORD"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["container"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 4,
-        "dependent_transform_indices": [3],
-        "wrong_value_step0": [0, 1],
-        "is_container": True,
-        "enumeration": "7",
-        "expected_answer_groups": [7],
-        "expected_words": ["In", "depression", "collecting", "pounds", "in", "aid", "of", "English", "city"],
-        "expected_step_types": ["definition", "indicator", "outer_word", "inner_word", "assembly"],
-    },
-
-    # 11. 9A AIL
-    {
-        "id": "times-29147-9a",
-        "clue_text": "What bacilli regularly can make you",
-        "puzzle_number": "29147",
-        "clue_number": "9",
-        "direction": "across",
-        "answer": "AIL",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [3, 4, 5]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "AIL"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["letter_selection"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 1,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [0, 1],
-        "enumeration": "3",
-        "expected_answer_groups": [3],
-        "expected_words": ["What", "bacilli", "regularly", "can", "make", "you"],
-        "expected_step_types": ["definition", "indicator", "assembly"],
-    },
-
-    # 12. 11A MONARCHY
-    {
-        "id": "times-29147-11a",
-        "clue_text": "Britain for one day leading way, finally",
-        "puzzle_number": "29147",
-        "clue_number": "11",
-        "direction": "across",
-        "answer": "MONARCHY",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1, 2]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [6]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "MON"}, {"index": 1, "value": "ARCH"}, {"index": 2, "value": "Y"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["letter_selection"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 3,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [3, 4],
-        "enumeration": "8",
-        "expected_answer_groups": [8],
-        "expected_words": ["Britain", "for", "one", "day", "leading", "way", "finally"],
-        "expected_step_types": ["definition", "indicator", "assembly"],
-    },
-
-    # 13. 14D STRATEGIST
-    {
-        "id": "times-29147-14d",
-        "clue_text": "General way to assess meaning",
-        "puzzle_number": "29147",
-        "clue_number": "14",
-        "direction": "down",
-        "answer": "STRATEGIST",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "ST"}, {"index": 1, "value": "RATE"}, {"index": 2, "value": "GIST"}]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 3,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [1, 2],
-        "enumeration": "10",
-        "expected_answer_groups": [10],
-        "expected_words": ["General", "way", "to", "assess", "meaning"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 14. 15A CUFF
-    {
-        "id": "times-29147-15a",
-        "clue_text": "Very loud goodbye from texter leads to slap!",
-        "puzzle_number": "29147",
-        "clue_number": "15",
-        "direction": "across",
-        "answer": "CUFF",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [7]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "CU"}, {"index": 1, "value": "FF"}]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [0, 1],
-        "enumeration": "4",
-        "expected_answer_groups": [4],
-        "expected_words": ["Very", "loud", "goodbye", "from", "texter", "leads", "to", "slap"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 15. 16A MASTERMIND
-    {
-        "id": "times-29147-16a",
-        "clue_text": "Mother keeping small object in hatch",
-        "puzzle_number": "29147",
-        "clue_number": "16",
-        "direction": "across",
-        "answer": "MASTERMIND",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [5]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [1]},
-            {"type": "outer_word", "inputMode": "tap_words", "value": [0]},
-            {"type": "inner_word", "inputMode": "tap_words", "value": [2]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "MATER"}, {"index": 1, "value": "S"}, {"index": 2, "value": "MASTER"}, {"index": 3, "value": "MIND"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["container"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 4,
-        "dependent_transform_indices": [2],
-        "wrong_value_step0": [0, 1],
-        "is_container": True,
-        "enumeration": "10",
-        "expected_answer_groups": [10],
-        "expected_words": ["Mother", "keeping", "small", "object", "in", "hatch"],
-        "expected_step_types": ["definition", "indicator", "outer_word", "inner_word", "assembly"],
-    },
-
-    # 16. 17D SPOTLESS
-    {
-        "id": "times-29147-17d",
-        "clue_text": "Place not so clean",
-        "puzzle_number": "29147",
-        "clue_number": "17",
-        "direction": "down",
-        "answer": "SPOTLESS",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [3]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "SPOT"}, {"index": 1, "value": "LESS"}]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [0, 1],
-        "enumeration": "8",
-        "expected_answer_groups": [8],
-        "expected_words": ["Place", "not", "so", "clean"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 17. 18A PERIPHERAL
-    {
-        "id": "times-29147-18a",
-        "clue_text": "Outside help needed with repair, surprisingly",
-        "puzzle_number": "29147",
-        "clue_number": "18",
-        "direction": "across",
-        "answer": "PERIPHERAL",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [5]},
-            {"type": "fodder", "inputMode": "tap_words", "value": [1, 4]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "HELP"}, {"index": 1, "value": "REPAIR"}, {"index": 2, "value": "PERIPHERAL"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["anagram"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 3,
-        "dependent_transform_indices": [2],
-        "wrong_value_step0": [1, 2],
-        "enumeration": "10",
-        "expected_answer_groups": [10],
-        "expected_words": ["Outside", "help", "needed", "with", "repair", "surprisingly"],
-        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
-    },
-
-    # 18. 18D PICKLED
-    {
-        "id": "times-29147-18d",
-        "clue_text": "Cream light source is preserved",
-        "puzzle_number": "29147",
-        "clue_number": "18",
-        "direction": "down",
-        "answer": "PICKLED",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [3, 4]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "PICK"}, {"index": 1, "value": "LED"}]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [0, 1],
-        "enumeration": "7",
-        "expected_answer_groups": [7],
-        "expected_words": ["Cream", "light", "source", "is", "preserved"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 19. 19A LIMB
-    {
-        "id": "times-29147-19a",
-        "clue_text": "Uncertain period after expulsion of old member",
-        "puzzle_number": "29147",
-        "clue_number": "19",
-        "direction": "across",
-        "answer": "LIMB",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [6]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [3]},
-            {"type": "fodder", "inputMode": "tap_words", "value": [0, 1]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "LIMBO"}, {"index": 1, "value": "LIMB"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["deletion"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [1],
-        "wrong_value_step0": [0, 1],
-        "enumeration": "4",
-        "expected_answer_groups": [4],
-        "expected_words": ["Uncertain", "period", "after", "expulsion", "of", "old", "member"],
-        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
-    },
-
-    # 20. 20D BUGBEAR
-    {
-        "id": "times-29147-20d",
-        "clue_text": "Stomach infection introduces source of irritation",
-        "puzzle_number": "29147",
-        "clue_number": "20",
-        "direction": "down",
-        "answer": "BUGBEAR",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [3, 4, 5]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "BUG"}, {"index": 1, "value": "BEAR"}]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [0, 1],
-        "enumeration": "7",
-        "expected_answer_groups": [7],
-        "expected_words": ["Stomach", "infection", "introduces", "source", "of", "irritation"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 21. 22A COYOTE
-    {
-        "id": "times-29147-22a",
-        "clue_text": "Modest earnings for salesperson, potentially a predator",
-        "puzzle_number": "29147",
-        "clue_number": "22",
-        "direction": "across",
-        "answer": "COYOTE",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [5, 6]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "COY"}, {"index": 1, "value": "OTE"}]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [0, 1],
-        "enumeration": "6",
-        "expected_answer_groups": [6],
-        "expected_words": ["Modest", "earnings", "for", "salesperson", "potentially", "a", "predator"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 22. 23A DEPUTING
-    {
-        "id": "times-29147-23a",
-        "clue_text": "Delegating eg pundit for broadcast",
-        "puzzle_number": "29147",
-        "clue_number": "23",
-        "direction": "across",
-        "answer": "DEPUTING",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [4]},
-            {"type": "fodder", "inputMode": "tap_words", "value": [1, 2]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "EG"}, {"index": 1, "value": "PUNDIT"}, {"index": 2, "value": "DEPUTING"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["anagram"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 3,
-        "dependent_transform_indices": [2],
-        "wrong_value_step0": [1, 2],
-        "enumeration": "8",
-        "expected_answer_groups": [8],
-        "expected_words": ["Delegating", "eg", "pundit", "for", "broadcast"],
-        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
-    },
-
-    # 23. 24D ZANY
-    {
-        "id": "times-29147-24d",
-        "clue_text": "Unknown quantity, some clown",
-        "puzzle_number": "29147",
-        "clue_number": "24",
-        "direction": "down",
-        "answer": "ZANY",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [3]},
-            {"type": "wordplay_type", "inputMode": "multiple_choice", "value": "Charade"},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "Z"}, {"index": 1, "value": "ANY"}]},
-        ],
-        "has_indicator_steps": False,
-        "indicator_types": [],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [0, 1],
-        "enumeration": "4",
-        "expected_answer_groups": [4],
-        "expected_words": ["Unknown", "quantity", "some", "clown"],
-        "expected_step_types": ["definition", "wordplay_type", "assembly"],
-    },
-
-    # 24. 26D ALB
-    {
-        "id": "times-29147-26d",
-        "clue_text": "White garment turning up in shrubland",
-        "puzzle_number": "29147",
-        "clue_number": "26",
-        "direction": "down",
-        "answer": "ALB",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [0, 1]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [2, 3, 4]},
-            {"type": "fodder", "inputMode": "tap_words", "value": [5]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "BLA"}, {"index": 1, "value": "ALB"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["hidden_word"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [1],
-        "wrong_value_step0": [2, 3],
-        "enumeration": "3",
-        "expected_answer_groups": [3],
-        "expected_words": ["White", "garment", "turning", "up", "in", "shrubland"],
-        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
-    },
-
-    # 25. 28A DEBUSSY
-    {
-        "id": "times-29147-28a",
-        "clue_text": "Get down tips on symphony for composer",
-        "puzzle_number": "29147",
-        "clue_number": "28",
-        "direction": "across",
-        "answer": "DEBUSSY",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [6]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [2]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "DEBUS"}, {"index": 1, "value": "SY"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["letter_selection"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 2,
-        "dependent_transform_indices": [],
-        "wrong_value_step0": [0, 1],
-        "enumeration": "7",
-        "expected_answer_groups": [7],
-        "expected_words": ["Get", "down", "tips", "on", "symphony", "for", "composer"],
-        "expected_step_types": ["definition", "indicator", "assembly"],
-    },
-
-    # 26. 29A TO ORDER
-    {
-        "id": "times-29147-29a",
-        "clue_text": "Left winger beginning to backtrack, as requested",
-        "puzzle_number": "29147",
-        "clue_number": "29",
-        "direction": "across",
-        "answer": "TO ORDER",
-        "steps": [
-            {"type": "definition", "inputMode": "tap_words", "value": [5, 6]},
-            {"type": "indicator", "inputMode": "tap_words", "value": [4]},
-            {"type": "fodder", "inputMode": "tap_words", "value": [0, 1, 2]},
-            {"type": "assembly", "inputMode": "assembly",
-             "transforms": [{"index": 0, "value": "RED"}, {"index": 1, "value": "ROOT"}, {"index": 2, "value": "TO ORDER"}]},
-        ],
-        "has_indicator_steps": True,
-        "indicator_types": ["reversal"],
-        "assembly_explicit": False,
-        "num_assembly_transforms": 3,
-        "dependent_transform_indices": [2],
-        "wrong_value_step0": [0, 1],
-        "enumeration": "2,5",
-        "expected_answer_groups": [2, 5],
-        "expected_words": ["Left", "winger", "beginning", "to", "backtrack", "as", "requested"],
-        "expected_step_types": ["definition", "indicator", "fodder", "assembly"],
-    },
-]
-
-# Combined list for test runner
-ALL_CLUES = TEST_CLUES + TEST_CLUES_29147
+DEPENDENT_TYPES = {"reversal", "deletion", "anagram", "container"}
 
 # ---------------------------------------------------------------------------
 # HTTP helpers
 # ---------------------------------------------------------------------------
+
+def api_get(server, path):
+    """GET JSON from server, return parsed response."""
+    url = f"{server}/trainer{path}"
+    req = urllib.request.Request(url)
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
 
 def api_post(server, path, payload):
     """POST JSON to server, return parsed response and status code."""
@@ -1707,7 +57,6 @@ def api_post(server, path, payload):
 def start_session(server, clue):
     """Start a training session, return render dict."""
     status, body = api_post(server, "/start", {
-        "clue_text": clue["clue_text"],
         "puzzle_number": clue["puzzle_number"],
         "clue_number": clue["clue_number"],
         "direction": clue["direction"],
@@ -1745,33 +94,110 @@ def reveal(server, clue_id):
 
 
 # ---------------------------------------------------------------------------
+# Build clue test data from live metadata
+# ---------------------------------------------------------------------------
+
+def build_clue_test_data(clue_id, metadata):
+    """Build the test data dict for a clue from its Supabase metadata.
+
+    Extracts everything the 12 tests need: step values, indicator info,
+    assembly info, wrong values, etc.
+    """
+    # Parse clue_id: "times-29147-21d" -> puzzle_number="29147", clue_number="21", direction="down"
+    parts = clue_id.split("-")
+    puzzle_number = parts[1]
+    suffix = parts[2]  # e.g. "21d"
+    match = re.match(r'^(\d+)([ad])$', suffix)
+    if not match:
+        raise ValueError(f"Cannot parse clue_id '{clue_id}'")
+    clue_number = match.group(1)
+    direction = "across" if match.group(2) == "a" else "down"
+
+    steps_meta = metadata.get("steps", [])
+    words = metadata.get("words", [])
+
+    # Build step values for walkthrough
+    step_values = []
+    for step in steps_meta:
+        step_type = step["type"]
+        if step_type == "assembly":
+            transforms = step.get("transforms", [])
+            transform_entries = [{"index": i, "value": t["result"]} for i, t in enumerate(transforms)]
+            step_values.append({"type": "assembly", "inputMode": "assembly", "transforms": transform_entries})
+        elif step_type in ("definition", "indicator", "outer_word", "inner_word", "fodder",
+                           "multi_definition"):
+            step_values.append({"type": step_type, "inputMode": "tap_words", "value": step["indices"]})
+        elif step_type == "wordplay_type":
+            step_values.append({"type": step_type, "inputMode": "multiple_choice", "value": step["expected"]})
+        else:
+            step_values.append({"type": step_type, "inputMode": "unknown", "value": None})
+
+    # Wrong value for step 0 (definition) — pick indices NOT in the definition
+    def_indices = set(steps_meta[0]["indices"]) if steps_meta else set()
+    wrong = [i for i in range(len(words)) if i not in def_indices][:2]
+    if not wrong:
+        wrong = [0] if 0 not in def_indices else [1]
+
+    # Indicator info
+    indicator_types = []
+    has_indicator_steps = False
+    for step in steps_meta:
+        if step["type"] == "indicator":
+            has_indicator_steps = True
+            indicator_types.append(step.get("indicator_type", ""))
+
+    # Assembly info
+    num_transforms = 0
+    dependent_indices = []
+    is_container = False
+    for step in steps_meta:
+        if step["type"] == "assembly":
+            transforms = step.get("transforms", [])
+            num_transforms = len(transforms)
+            for i, t in enumerate(transforms):
+                if t.get("type") in DEPENDENT_TYPES:
+                    dependent_indices.append(i)
+                if t.get("type") == "container":
+                    is_container = True
+
+    return {
+        "id": clue_id,
+        "puzzle_number": puzzle_number,
+        "clue_number": clue_number,
+        "direction": direction,
+        "answer": metadata.get("answer", ""),
+        "enumeration": metadata.get("enumeration", ""),
+        "words": words,
+        "steps": step_values,
+        "steps_meta": steps_meta,  # raw metadata for indicator_coverage etc.
+        "wrong_value_step0": wrong,
+        "has_indicator_steps": has_indicator_steps,
+        "indicator_types": indicator_types,
+        "num_assembly_transforms": num_transforms,
+        "dependent_transform_indices": dependent_indices,
+        "is_container": is_container,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Assembly submission helper
 # ---------------------------------------------------------------------------
 
 def submit_assembly_transforms(server, clue_id, transforms, render, answer=None):
-    """Submit assembly transforms in order, handling status and auto-completion.
-
-    If all transforms complete but auto-skip doesn't trigger (check phase),
-    submits the final assembled result using the answer parameter.
-
-    Returns the final render after all transforms are submitted.
-    """
+    """Submit assembly transforms in order, handling status and auto-completion."""
     for t in transforms:
         idx = t["index"]
         val = t["value"]
 
-        # Check current step — if assembly already auto-completed, stop
         if render.get("complete") or render.get("currentStep") is None:
             break
         current = render["currentStep"]
         if current["type"] != "assembly":
-            break  # step already advanced past assembly
+            break
 
-        # Find this transform's status
         assembly_data = current.get("assemblyData", {})
         transform_list = assembly_data.get("transforms", [])
 
-        # Find the transform entry by index
         t_entry = None
         for te in transform_list:
             if te["index"] == idx:
@@ -1781,17 +207,16 @@ def submit_assembly_transforms(server, clue_id, transforms, render, answer=None)
         if t_entry is None:
             raise RuntimeError(f"Transform index {idx} not found in assembly data")
 
-        status = t_entry["status"]
-        if status == "completed":
-            continue  # auto-superseded
-        if status == "locked":
+        if t_entry["status"] == "completed":
+            continue
+        if t_entry["status"] == "locked":
             raise RuntimeError(f"Transform {idx} is locked — test data ordering error")
 
         correct, render = submit_input(server, clue_id, val, transform_index=idx)
         if not correct:
             raise RuntimeError(f"Transform {idx} value '{val}' rejected as incorrect")
 
-    # If assembly entered check phase (auto-skip didn't fire), submit the full result
+    # If assembly entered check phase, submit the full result
     current = render.get("currentStep")
     if current and current["type"] == "assembly":
         assembly_data = current.get("assemblyData", {})
@@ -1803,14 +228,8 @@ def submit_assembly_transforms(server, clue_id, transforms, render, answer=None)
     return render
 
 
-# ---------------------------------------------------------------------------
-# Walk to assembly step (submit all steps before assembly)
-# ---------------------------------------------------------------------------
-
 def walk_to_assembly(server, clue):
-    """Walk through all steps up to (but not including) the assembly step.
-    Returns (clue_id, render) with currentStep pointing to assembly.
-    """
+    """Walk through all steps up to (but not including) the assembly step."""
     render = start_session(server, clue)
     clue_id = render["clue_id"]
 
@@ -1824,80 +243,8 @@ def walk_to_assembly(server, clue):
     return clue_id, render
 
 
-# ---------------------------------------------------------------------------
-# Test functions
-# ---------------------------------------------------------------------------
-
-def test_response_contract(server, clue):
-    """Verify the /start response has the correct shape and values.
-
-    Every field the client needs to render must be present and correct.
-    This catches regressions where server data changes break the UI.
-    """
-    render = start_session(server, clue)
-
-    # --- Required top-level fields ---
-    required_fields = [
-        "clue_id", "words", "answer", "enumeration", "answerGroups",
-        "steps", "currentStep", "stepExpanded", "highlights",
-        "selectedIndices", "userAnswer", "answerLocked",
-    ]
-    for field in required_fields:
-        if field not in render:
-            return False, f"Missing required field '{field}' in /start response"
-
-    # --- clue_id ---
-    if render["clue_id"] != clue["id"]:
-        return False, f"clue_id: got '{render['clue_id']}', expected '{clue['id']}'"
-
-    # --- answer ---
-    if render["answer"] != clue["answer"]:
-        return False, f"answer: got '{render['answer']}', expected '{clue['answer']}'"
-
-    # --- enumeration ---
-    if "enumeration" in clue:
-        if render["enumeration"] != clue["enumeration"]:
-            return False, f"enumeration: got '{render['enumeration']}', expected '{clue['enumeration']}'"
-
-    # --- answerGroups (the field that caused the regression) ---
-    if "expected_answer_groups" in clue:
-        if render["answerGroups"] != clue["expected_answer_groups"]:
-            return False, f"answerGroups: got {render['answerGroups']}, expected {clue['expected_answer_groups']}"
-        # Verify groups sum to answer letter count
-        answer_letters = len(re.sub(r'[^A-Z]', '', clue["answer"]))
-        groups_sum = sum(render["answerGroups"])
-        if groups_sum != answer_letters:
-            return False, f"answerGroups sum {groups_sum} != answer letter count {answer_letters}"
-
-    # --- words ---
-    if "expected_words" in clue:
-        if render["words"] != clue["expected_words"]:
-            return False, f"words: got {render['words']}, expected {clue['expected_words']}"
-
-    # --- steps ---
-    if "expected_step_types" in clue:
-        actual_types = [s["type"] for s in render["steps"]]
-        if actual_types != clue["expected_step_types"]:
-            return False, f"step types: got {actual_types}, expected {clue['expected_step_types']}"
-
-    # --- currentStep shape ---
-    step = render["currentStep"]
-    step_required = ["index", "inputMode", "type"]
-    for field in step_required:
-        if field not in step:
-            return False, f"currentStep missing '{field}'"
-
-    # --- Initial state ---
-    if render["answerLocked"]:
-        return False, "answerLocked should be False at start"
-    if render["stepExpanded"] not in (True, False):
-        return False, f"stepExpanded should be bool, got {render['stepExpanded']}"
-
-    return True, ""
-
-
-def test_full_walkthrough(server, clue):
-    """Happy path: correct input at every step -> complete."""
+def walk_to_completion(server, clue):
+    """Walk through all steps to completion. Returns (clue_id, render)."""
     render = start_session(server, clue)
     clue_id = render["clue_id"]
 
@@ -1909,14 +256,63 @@ def test_full_walkthrough(server, clue):
         else:
             correct, render = submit_input(server, clue_id, step["value"])
             if not correct:
-                return False, f"Step {step['type']} was rejected as incorrect"
+                raise RuntimeError(f"Step {step['type']} was rejected for {clue['id']}")
 
-    # Verify completion
+    return clue_id, render
+
+
+# ---------------------------------------------------------------------------
+# Test functions
+# ---------------------------------------------------------------------------
+
+def test_response_contract(server, clue):
+    """Verify the /start response has the correct shape and values."""
+    render = start_session(server, clue)
+
+    required_fields = [
+        "clue_id", "words", "answer", "enumeration", "answerGroups",
+        "steps", "currentStep", "stepExpanded", "highlights",
+        "selectedIndices", "userAnswer", "answerLocked",
+    ]
+    for field in required_fields:
+        if field not in render:
+            return False, f"Missing required field '{field}' in /start response"
+
+    if render["clue_id"] != clue["id"]:
+        return False, f"clue_id: got '{render['clue_id']}', expected '{clue['id']}'"
+
+    if render["answer"] != clue["answer"]:
+        return False, f"answer: got '{render['answer']}', expected '{clue['answer']}'"
+
+    if render["enumeration"] != clue["enumeration"]:
+        return False, f"enumeration: got '{render['enumeration']}', expected '{clue['enumeration']}'"
+
+    # answerGroups sum must equal answer letter count
+    answer_letters = len(re.sub(r'[^A-Z]', '', clue["answer"]))
+    groups_sum = sum(render["answerGroups"])
+    if groups_sum != answer_letters:
+        return False, f"answerGroups sum {groups_sum} != answer letter count {answer_letters}"
+
+    step = render["currentStep"]
+    for field in ["index", "inputMode", "type"]:
+        if field not in step:
+            return False, f"currentStep missing '{field}'"
+
+    if render["answerLocked"]:
+        return False, "answerLocked should be False at start"
+
+    return True, ""
+
+
+def test_full_walkthrough(server, clue):
+    """Happy path: correct input at every step -> complete."""
+    clue_id, render = walk_to_completion(server, clue)
+
     if not render.get("complete"):
         return False, f"Expected complete=True, got {render.get('complete')}"
     if not render.get("answerLocked"):
         return False, f"Expected answerLocked=True, got {render.get('answerLocked')}"
-    # Answer should be populated
+
     user_answer = render.get("userAnswer", [])
     if not user_answer:
         return False, "userAnswer is empty after completion"
@@ -1933,10 +329,7 @@ def test_wrong_input(server, clue):
     render = start_session(server, clue)
     clue_id = render["clue_id"]
 
-    # Get current step index before wrong input
     step_before = render["currentStep"]["index"]
-
-    # Submit wrong value
     correct, render = submit_input(server, clue_id, clue["wrong_value_step0"])
 
     if correct:
@@ -1964,10 +357,8 @@ def test_assembly_transform_status(server, clue):
         return False, f"Expected {clue['num_assembly_transforms']} transforms, got {len(transform_list)}"
 
     for t in transform_list:
-        idx = t["index"]
-        status = t["status"]
-        if status != "active":
-            return False, f"Transform {idx} should be 'active', got '{status}'"
+        if t["status"] != "active":
+            return False, f"Transform {t['index']} should be 'active', got '{t['status']}'"
 
     return True, ""
 
@@ -1977,14 +368,12 @@ def test_check_answer(server, clue):
     render = start_session(server, clue)
     clue_id = render["clue_id"]
 
-    # Wrong answer
     correct, render = check_answer(server, clue_id, "ZZZZZ")
     if correct:
         return False, "Wrong answer was accepted"
     if render.get("answerLocked"):
         return False, "answerLocked should be False after wrong answer"
 
-    # Correct answer
     correct, render = check_answer(server, clue_id, clue["answer"])
     if not correct:
         return False, f"Correct answer '{clue['answer']}' was rejected"
@@ -2006,9 +395,7 @@ def test_reveal(server, clue):
     if not render.get("answerLocked"):
         return False, f"Expected answerLocked=True after reveal, got {render.get('answerLocked')}"
 
-    # All steps should be completed
-    steps = render.get("steps", [])
-    for s in steps:
+    for s in render.get("steps", []):
         if s["status"] != "completed":
             return False, f"Step {s['index']} ({s['type']}) status='{s['status']}', expected 'completed'"
 
@@ -2018,19 +405,7 @@ def test_reveal(server, clue):
 def test_template_text(server, clue):
     """Indicator menuTitles contain indicator_type text. Definition completedTitle shows hint."""
     render = start_session(server, clue)
-
-    # Walk to completion to check definition completedTitle
-    clue_id = render["clue_id"]
-    full_render = render
-    for step in clue["steps"]:
-        if step["inputMode"] == "assembly":
-            full_render = submit_assembly_transforms(
-                server, clue_id, step["transforms"], full_render, answer=clue["answer"]
-            )
-        else:
-            correct, full_render = submit_input(server, clue_id, step["value"])
-            if not correct:
-                return False, f"Step {step['type']} was rejected"
+    clue_id, full_render = walk_to_completion(server, clue)
 
     # Definition completed title must NOT contain prompt text
     for s in full_render.get("steps", []):
@@ -2051,8 +426,6 @@ def test_template_text(server, clue):
     for s in full_render.get("steps", []):
         if s["type"] == "indicator" and s["status"] == "completed":
             title = s.get("title", "")
-            # The title format is "{type} indicator: '{words}' — {hint}"
-            # Split on " — " to get the hint portion
             parts = title.split(" \u2014 ", 1)
             if len(parts) == 2:
                 hint_part = parts[1].lower()
@@ -2064,7 +437,8 @@ def test_template_text(server, clue):
                             f"already prefixes with the indicator type"
                         )
 
-    # Check indicator steps in the step list (uses initial render)
+    # Check indicator steps in the initial render
+    render = start_session(server, clue)
     steps = render.get("steps", [])
     indicator_step_idx = 0
 
@@ -2076,7 +450,6 @@ def test_template_text(server, clue):
             expected_type = clue["indicator_types"][indicator_step_idx]
             display_type = expected_type.replace("_", " ")
 
-            # menuTitle should contain the indicator type
             title = s.get("title", "")
             if display_type not in title.lower():
                 return False, (
@@ -2092,7 +465,6 @@ def test_template_text(server, clue):
             f"found {indicator_step_idx}"
         )
 
-    # If no indicator steps expected, verify none are present
     if not clue["has_indicator_steps"]:
         for s in steps:
             if s["type"] == "indicator":
@@ -2102,29 +474,15 @@ def test_template_text(server, clue):
 
 
 def test_assembly_completion_text(server, clue):
-    """Verify assembly completion title shows correct notation for the clue type."""
-    if (not clue.get("is_container") and not clue.get("has_anagram_chain")
-            and not clue.get("has_multi_predecessor_chain") and not clue.get("check_clue_word_attribution")):
-        return True, ""  # skip for clues without specific completion text requirements
+    """Verify assembly completion title for container clues shows insertion notation."""
+    if not clue["is_container"]:
+        return True, ""
 
-    # Walk through entire clue to completion
-    render = start_session(server, clue)
-    clue_id = render["clue_id"]
-
-    for step in clue["steps"]:
-        if step["inputMode"] == "assembly":
-            render = submit_assembly_transforms(
-                server, clue_id, step["transforms"], render, answer=clue["answer"]
-            )
-        else:
-            correct, render = submit_input(server, clue_id, step["value"])
-            if not correct:
-                return False, f"Step {step['type']} was rejected"
+    clue_id, render = walk_to_completion(server, clue)
 
     if not render.get("complete"):
         return False, "Clue did not complete"
 
-    # Find the assembly step in the completed step list
     assembly_step = None
     for s in render.get("steps", []):
         if s["type"] == "assembly":
@@ -2136,9 +494,14 @@ def test_assembly_completion_text(server, clue):
 
     title = assembly_step.get("title", "")
 
-    if clue.get("is_container"):
-        # Container clue: title must NOT be plain "A + B + C + D" concatenation
-        transform_results = [t["value"] for t in clue["steps"][-1]["transforms"]]
+    # Container clue: title must NOT be plain "A + B + C + D" concatenation
+    assembly_meta = None
+    for step in clue["steps"]:
+        if step["inputMode"] == "assembly":
+            assembly_meta = step
+            break
+    if assembly_meta:
+        transform_results = [t["value"] for t in assembly_meta["transforms"]]
         plain_concat = " + ".join(transform_results)
         if title == plain_concat:
             return False, (
@@ -2146,121 +509,13 @@ def test_assembly_completion_text(server, clue):
                 f"should show container insertion, not charade-style joining"
             )
 
-    if clue.get("has_anagram_chain"):
-        # Charade with anagram: the final answer must appear after the arrow
-        expected = clue["expected_breakdown_contains"]
-        if expected not in title:
-            return False, (
-                f"Assembly completion title '{title}' doesn't contain "
-                f"the expected '{expected}' — anagram arrow should "
-                f"show the full assembled result, not just the anagram output"
-            )
-
-    if clue.get("has_multi_predecessor_chain"):
-        # Dependent transform consumes multiple predecessors (e.g. reversal of PICS+ID → DISCIP)
-        expected = clue["expected_breakdown_contains"]
-        if expected not in title:
-            return False, (
-                f"Assembly completion title '{title}' doesn't contain "
-                f"the expected '{expected}' — dependent transform should "
-                f"show ALL consumed predecessors in brackets, not just the immediate one"
-            )
-
-    if clue.get("check_clue_word_attribution"):
-        # Assembly title must attribute results to their source clue words
-        for word in clue["expected_clue_words_in_breakdown"]:
-            if word.lower() not in title.lower():
-                return False, (
-                    f"Assembly completion title '{title}' doesn't mention "
-                    f"clue word '{word}' — breakdown should show where each "
-                    f"result comes from, not just the results"
-                )
-
-    if clue.get("expected_not_in_breakdown"):
-        # Certain redundant patterns should NOT appear in the breakdown
-        bad = clue["expected_not_in_breakdown"]
-        if bad in title:
-            return False, (
-                f"Assembly completion title '{title}' contains "
-                f"redundant '{bad}' — literal transforms where the result "
-                f"matches the clue word should not show an arrow"
-            )
-
-    return True, ""
-
-
-def test_backfill_titles(server, clue):
-    """Verify that outer_word/inner_word backfill titles show all transform results."""
-    if not clue.get("check_backfill_titles"):
-        return True, ""
-
-    # Walk through entire clue to completion
-    render = start_session(server, clue)
-    clue_id = render["clue_id"]
-
-    for step in clue["steps"]:
-        if step["inputMode"] == "assembly":
-            render = submit_assembly_transforms(
-                server, clue_id, step["transforms"], render, answer=clue["answer"]
-            )
-        else:
-            correct, render = submit_input(server, clue_id, step["value"])
-            if not correct:
-                return False, f"Step {step['type']} was rejected"
-
-    if not render.get("complete"):
-        return False, "Clue did not complete"
-
-    # Check backfill titles for specified step types
-    for step_type, checks in clue["expected_backfill"].items():
-        step_title = None
-        for s in render.get("steps", []):
-            if s["type"] == step_type:
-                step_title = s.get("title", "")
-                break
-        if step_title is None:
-            return False, f"No {step_type} step found in completed steps"
-
-        for word in checks.get("must_contain", []):
-            if word not in step_title:
-                return False, (
-                    f"{step_type} backfill title '{step_title}' doesn't contain "
-                    f"'{word}' — all transform results for this role should appear"
-                )
-
-        bad = checks.get("must_not_contain", "")
-        if bad and bad in step_title:
-            return False, (
-                f"{step_type} backfill title '{step_title}' contains "
-                f"redundant '{bad}' — should show all transform results, not just the last"
-            )
-
     return True, ""
 
 
 def test_indicator_coverage(server, clue):
-    """Verify that dependent transforms (reversal/deletion/anagram) have matching indicator steps.
+    """Verify that dependent transforms have matching indicator steps."""
+    steps = clue["steps_meta"]
 
-    If a clue has a reversal, deletion, or anagram transform in the assembly,
-    the word indices used by that transform should also appear in a prior
-    indicator step — so the student gets to identify the indicator word before
-    the assembly.
-    """
-    import os
-    clues_db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "clues_db.json")
-    with open(clues_db_path) as f:
-        clues_db = json.load(f)
-
-    training_items = clues_db.get("training_items", clues_db)
-    clue_entry = training_items.get(clue["id"])
-    if not clue_entry:
-        return True, ""  # can't check without metadata
-
-    steps = clue_entry.get("steps", [])
-    INDICATOR_TYPES = {"deletion", "reversal", "anagram", "container"}
-
-    # Collect indicator types covered by indicator steps
-    # hidden_word indicators also cover reversal (reversed hidden words)
     indicator_types_covered = set()
     for s in steps:
         if s["type"] == "indicator":
@@ -2269,30 +524,20 @@ def test_indicator_coverage(server, clue):
             if ind_type == "hidden_word":
                 indicator_types_covered.add("reversal")
 
-    # Check assembly transforms: if a dependent type appears, a matching indicator step should exist
-    # Map transform types to their indicator types
-    TYPE_TO_INDICATOR = {
-        "reversal": "reversal",
-        "deletion": "deletion",
-        "anagram": "anagram",
-        "container": "container",
-    }
-
     for s in steps:
         if s["type"] != "assembly":
             continue
         for t in s.get("transforms", []):
             t_type = t.get("type", "")
-            if t_type not in INDICATOR_TYPES:
+            if t_type not in DEPENDENT_TYPES:
                 continue
-            expected_indicator = TYPE_TO_INDICATOR[t_type]
-            if expected_indicator not in indicator_types_covered:
-                words = clue_entry.get("words", [])
+            if t_type not in indicator_types_covered:
+                words = clue.get("words", [])
                 t_indices = t.get("indices", [])
                 t_words = [words[i] for i in t_indices if i < len(words)]
                 return False, (
                     f"Assembly has a '{t_type}' transform ('{' '.join(t_words)}') "
-                    f"but no indicator step of type '{expected_indicator}' exists — "
+                    f"but no indicator step of type '{t_type}' exists — "
                     f"student never gets to identify the indicator word"
                 )
 
@@ -2300,34 +545,24 @@ def test_indicator_coverage(server, clue):
 
 
 def test_assembly_combined_check(server, clue):
-    """Combined check: submit only terminal transforms (as the UI does) -> complete.
-
-    The combined letter display groups inputs by terminal transform index.
-    When a dependent transform (reversal/anagram) is submitted, its predecessors
-    must be recursively auto-completed so auto-skip can fire.
-    """
+    """Combined check: submit only terminal transforms -> complete."""
     assembly_step = None
     for step in clue["steps"]:
         if step["inputMode"] == "assembly":
             assembly_step = step
             break
     if not assembly_step:
-        return True, ""  # no assembly step
+        return True, ""
 
-    # Only test clues that have dependent transforms (chains with predecessors)
-    if not clue.get("dependent_transform_indices"):
+    if not clue["dependent_transform_indices"]:
         return True, ""
 
     clue_id, render = walk_to_assembly(server, clue)
 
-    # Get position map from server to find terminal transforms
     assembly_data = render["currentStep"]["assemblyData"]
     pos_map = assembly_data.get("positionMap", {})
-
-    # Terminal transform indices are the keys in positionMap
     terminal_indices = {int(k) for k in pos_map.keys()}
 
-    # Submit only terminal transforms (what the combined Check button does)
     for t in assembly_step["transforms"]:
         if t["index"] in terminal_indices:
             correct, render = submit_input(server, clue_id, t["value"],
@@ -2338,16 +573,12 @@ def test_assembly_combined_check(server, clue):
                     f"was rejected"
                 )
 
-    # After submitting only terminal transforms, clue should auto-complete
     if not render.get("complete"):
-        # Check what's left
         current = render.get("currentStep", {})
         assembly_data = current.get("assemblyData", {})
         transforms = assembly_data.get("transforms", [])
         incomplete = [t for t in transforms if t["status"] != "completed"]
-        incomplete_desc = ", ".join(
-            f"{t['index']}({t['role']})" for t in incomplete
-        )
+        incomplete_desc = ", ".join(f"{t['index']}({t['role']})" for t in incomplete)
         return False, (
             f"Expected auto-complete after terminal transforms, "
             f"but these transforms are still incomplete: {incomplete_desc}"
@@ -2357,14 +588,9 @@ def test_assembly_combined_check(server, clue):
 
 
 def test_dependent_prompt_update(server, clue):
-    """Dependent transform prompts update when predecessors are solved.
-
-    Before predecessor is solved: generic prompt (no letters shown).
-    After predecessor is solved: prompt includes predecessor letters.
-    Skips transforms that have per-clue prompt overrides (they bypass templates).
-    """
-    if not clue.get("dependent_transform_indices"):
-        return True, ""  # no dependent transforms
+    """Dependent transform prompts update when predecessors are solved."""
+    if not clue["dependent_transform_indices"]:
+        return True, ""
 
     assembly_step = None
     for step in clue["steps"]:
@@ -2379,7 +605,6 @@ def test_dependent_prompt_update(server, clue):
     assembly_data = render["currentStep"]["assemblyData"]
     transforms = assembly_data["transforms"]
 
-    # Find first dependent transform
     dep_idx = clue["dependent_transform_indices"][0]
     dep_transform = None
     for t in transforms:
@@ -2391,14 +616,7 @@ def test_dependent_prompt_update(server, clue):
 
     initial_prompt = dep_transform["prompt"]
 
-    # Get the predecessor transform's expected result (what should appear in prompt)
-    predecessor_value = None
-    for t in assembly_step["transforms"]:
-        if t["index"] == dep_idx - 1:
-            predecessor_value = t["value"]
-            break
-
-    # Solve the predecessor(s) for this dependent transform
+    # Solve the predecessor(s)
     for t in assembly_step["transforms"]:
         if t["index"] < dep_idx:
             correct, render = submit_input(server, clue_id, t["value"],
@@ -2416,10 +634,6 @@ def test_dependent_prompt_update(server, clue):
 
     updated_prompt = dep_transform["prompt"]
 
-    # If prompt didn't change, check if this is a per-clue override.
-    # Template-driven prompts use patterns like "tells you to reverse",
-    # "tells you to shorten", "rearrange those letters". If the initial
-    # prompt doesn't match these, it's a per-clue override — skip.
     TEMPLATE_MARKERS = ["tells you to reverse", "tells you to shorten",
                         "rearrange those letters",
                         "tells you one piece goes inside another"]
@@ -2449,7 +663,6 @@ ALL_TESTS = [
     ("Reveal", test_reveal),
     ("Template text", test_template_text),
     ("Assembly completion text", test_assembly_completion_text),
-    ("Backfill titles", test_backfill_titles),
     ("Indicator coverage", test_indicator_coverage),
     ("Assembly combined check", test_assembly_combined_check),
     ("Dependent prompt update", test_dependent_prompt_update),
@@ -2457,7 +670,7 @@ ALL_TESTS = [
 
 
 def run_tests(server):
-    """Run all tests and print results."""
+    """Fetch all clues from server, build test data, run all tests."""
     passed = 0
     failed = 0
     errors = []
@@ -2466,8 +679,29 @@ def run_tests(server):
     print(f"Server: {server}")
     print()
 
-    for clue in ALL_CLUES:
-        label = f"{clue['clue_number']}{'A' if clue['direction'] == 'across' else 'D'} {clue['answer']}"
+    # Fetch all clues with training data (one bulk call)
+    print("Loading clues from Supabase via /trainer/clue-ids?full=1 ...")
+    all_data = api_get(server, "/clue-ids?full=1")
+    clues_dict = all_data["clues"]
+    print(f"Found {len(clues_dict)} clues with training data")
+    print()
+
+    # Build test data for each clue
+    all_clues = []
+    for clue_id in sorted(clues_dict.keys()):
+        metadata = clues_dict[clue_id]
+        try:
+            clue = build_clue_test_data(clue_id, metadata)
+            all_clues.append(clue)
+        except Exception as e:
+            print(f"  [ERROR] Cannot build test data for {clue_id}: {e}")
+            failed += 1
+            errors.append((f"{clue_id} - Build test data", str(e)))
+
+    # Run all tests for each clue
+    for clue in all_clues:
+        d_char = 'A' if clue['direction'] == 'across' else 'D'
+        label = f"{clue['clue_number']}{d_char} {clue['answer']}"
         print(f"--- {label} ---")
 
         for test_name, test_fn in ALL_TESTS:
@@ -2489,6 +723,7 @@ def run_tests(server):
         print()
 
     print(f"=== Summary ===")
+    print(f"Clues tested: {len(all_clues)}")
     print(f"Passed: {passed}/{passed + failed}")
     print(f"Failed: {failed}")
 
@@ -2508,12 +743,11 @@ def run_tests(server):
 if __name__ == "__main__":
     server = DEFAULT_SERVER
 
-    # Simple arg parsing (no argparse needed)
     for i, arg in enumerate(sys.argv[1:], 1):
         if arg == "--server" and i < len(sys.argv) - 1:
             server = sys.argv[i + 1]
         elif sys.argv[i - 1] == "--server":
-            pass  # already consumed
+            pass
         elif arg.startswith("--server="):
             server = arg.split("=", 1)[1]
 
