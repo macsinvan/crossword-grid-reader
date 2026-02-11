@@ -268,8 +268,8 @@ class CrosswordPuzzle {
             return;
         }
 
-        // Remove spaces from answer before applying to grid
-        const letters = this.templateTrainer.render.answer.toUpperCase().replace(/\s/g, '').split('');
+        // Strip non-letter characters (hyphens, spaces) before applying to grid
+        const letters = this.templateTrainer.render.answer.toUpperCase().replace(/[^A-Z]/g, '').split('');
         const cells = this.trainerWordData.cells;
 
         cells.forEach(({ r, c }, i) => {

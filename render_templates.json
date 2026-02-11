@@ -135,7 +135,8 @@
       "anagram": "Which words provide the letters to rearrange?",
       "reversal": "Which words get reversed?",
       "hidden_word": "Which words contain the hidden answer?",
-      "homophone": "Which words do you need to 'hear' differently?"
+      "homophone": "Which words do you need to 'hear' differently?",
+      "letter_selection": "Which word provides the letters to select from?"
     },
     "menuTitle": "Find the {indicatorType} fodder",
     "completedTitle": "{indicatorType} fodder: '{words}' — {hint}",
@@ -144,7 +145,8 @@
       "anagram": "The anagram indicator tells you to jumble some letters. Which words supply those letters?",
       "reversal": "The reversal indicator tells you to reverse some letters. Which words provide the raw material?",
       "hidden_word": "The answer is hiding across consecutive letters. Which words contain it?",
-      "homophone": "The homophone indicator tells you some words sound like the answer when spoken aloud. Which words?"
+      "homophone": "The homophone indicator tells you some words sound like the answer when spoken aloud. Which words?",
+      "letter_selection": "The letter selection indicator acts on a nearby word. Which one supplies the letters?"
     },
     "hint": "Look at what's left after the definition and indicators. That's your starting word.",
     "expected_source": "indices",

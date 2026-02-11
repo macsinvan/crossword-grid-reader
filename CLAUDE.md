@@ -425,7 +425,7 @@ When starting a new session, check these first:
 
 **Key things a new session needs to know:**
 - Puzzle **29453** (30 clues) is **locked** and 100% verified — never modify
-- Puzzle **29147** (26/32 clues done) is the active work — 6 clues remaining (see below)
+- Puzzle **29147** (30/32 clues done) is the active work — 2 clues remaining (see below)
 - Training data lives in **Supabase** (`clues.training_metadata`), not in JSON files
 - Training data is **lazy-loaded** from Supabase per request — no restart needed for DB changes
 - Clues with validation errors return **422** with error details when clicked in the UI
@@ -434,9 +434,9 @@ When starting a new session, check these first:
 
 ## Current Work — Puzzle 29147 Training Metadata
 
-**Status:** 26 of 32 clues completed and validated. 6 remaining (see below).
+**Status:** 30 of 32 clues completed and validated. 2 remaining (see below).
 
-**Completed clues (26):**
+**Completed clues (30):**
 - **1A** — ASHAMED: charade (AS + HAM + ED)
 - **1D** — ANAEMIC: container + reversal (CIA contains MEAN → reversed)
 - **2D** — HELEN OF TROY: anagram (TO + E + F + ONLY + HER → anagram)
@@ -448,7 +448,9 @@ When starting a new session, check these first:
 - **7D** — IDA: hidden word in holIDAys
 - **8D** — SALFORD: container (SAD containing L + FOR)
 - **9A** — AIL: letter selection (alternate letters from bAcIlLi)
+- **10A** — WARTS AND ALL: container + deletion (WALk→WAL containing RT + SANDAL)
 - **11A** — MONARCHY: charade + letter selection (MON + ARCH + Y)
+- **12A** — PSEUDO: homophone (SUE + DOUGH → sounds like PSEUDO)
 - **14D** — STRATEGIST: charade (ST + RATE + GIST)
 - **15A** — CUFF: charade (CU + FF)
 - **16A** — MASTERMIND: container + charade (MATER containing S = MASTER + MIND)
@@ -457,31 +459,21 @@ When starting a new session, check these first:
 - **18D** — PICKLED: charade (PICK + LED)
 - **19A** — LIMB: deletion (LIMBO - O)
 - **20D** — BUGBEAR: charade (BUG + BEAR)
+- **21D** — GUNG HO: charade + container (GUN + G(H)O — H inside GO)
 - **22A** — COYOTE: charade (COY + OTE)
 - **23A** — DEPUTING: anagram (EG + PUNDIT)
 - **24D** — ZANY: charade (Z + ANY)
+- **25A** — LEAVE-TAKING: container (LEAKING containing A + VET)
 - **26D** — ALB: hidden reversed word in shruBLAnd
 - **28A** — DEBUSSY: charade + letter selection (DEBUS + SY)
 - **29A** — TO ORDER: reversal (RED + ROOT → reversed)
 
-**Remaining clues (6):** Each needs the wordplay fully solved before encoding. Blog parses are from Times for the Times.
+**Remaining clues (2):** Each needs a new template type before encoding.
 
-- **10A** — "Frank has cut short walk clutching right shoe" (5,3,3) = WARTS AND ALL
-  - Blog parse: WALk (cut short) containing RT (right) + SANDAL (shoe)
-  - Problem: couldn't verify letter-by-letter how WAL+RT+SANDAL → WARTSANDALL (11 letters). Parse needs more analysis.
-- **12A** — "Pretended to beg money from speaker" (6) = PSEUDO
-  - Blog parse: homophone of SUE (beg) + DOUGH (money) → sounds like PSEUDO
-  - Blocker: **no homophone template exists yet** — needs new template in `render_templates.json`
 - **13D** — "Lay egg, fine on reflection, as one must eat" (11) = UNINITIATED
   - Blog parse: UNITED (as one) contains NIT (egg) + IA (A1/fine reversed)
   - Parse verified: UNI + NIT + IA + TED = UNINITIATED ✅
   - Blocker: **validator `_check_container` fails** — the reversal (AI→IA) creates a 4th predecessor that confuses the container check. Need to teach the validator that reversed predecessors replace (not add to) their input.
-- **21D** — "Extremely enthusiastic piece first to highlight boring essay" (4,2) = GUNG HO
-  - Blog parse: GUN (piece) + G (first of highlight) + HO (boring essay — H in GO?)
-  - Problem: HO parse unclear. Possibly H (boring = drill bit?) inside GO (essay/attempt), but G is already used. Needs research.
-- **25A** — "Making disclosure about an old soldier's farewell" (5-6) = LEAVE-TAKING
-  - Blog parse: LEAKING (disclosure) containing VET (old soldier)
-  - Problem: LEAKING (7) + VET (3) = 10, but LEAVE-TAKING has 11 letters. Parse doesn't add up. Possibly "an old soldier" = A + VET (4 letters) but still unclear where insertion happens.
 - **27A** — "Husband turning to one during the match" (3) = TIE
   - Blog parse: H (husband) replaced by I (one) in THE → TIE
   - Blocker: **no letter substitution template exists yet** — needs new template in `render_templates.json`
