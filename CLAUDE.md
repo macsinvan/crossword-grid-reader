@@ -218,16 +218,22 @@ The trainer engine (`training_handler.py`, ~1100 lines) owns ALL trainer busines
 - For indicator steps: `indicator_type` field drives type-specific text via dict-keyed lookup and `{indicatorType}` variable
 - Assembly steps can override `failMessage`
 
-**Current render templates (7):**
+**Current render templates (4 active):**
 | Template | inputMode | Purpose |
 |----------|-----------|---------|
 | `definition` | `tap_words` | Find the definition at start/end of clue |
 | `wordplay_type` | `multiple_choice` | Identify the type of wordplay (Charade, Container, etc.) |
 | `indicator` | `tap_words` | Find indicator word — `indicator_type` drives type-specific text |
+| `assembly` | `assembly` | Coaching context, parallel transforms, combined letter entry |
+
+**Deprecated templates (still supported but no longer used in new clues):**
+| Template | inputMode | Purpose |
+|----------|-----------|---------|
 | `outer_word` | `tap_words` | Identify which word wraps around |
 | `inner_word` | `tap_words` | Identify which word goes inside |
 | `fodder` | `tap_words` | Identify the word being operated on by an indicator |
-| `assembly` | `assembly` | Coaching context, parallel transforms, combined letter entry |
+
+**Why deprecated:** These tap steps are redundant — the words they identify are the same words the assembly transforms operate on. The assembly step handles both identification and transformation in one place, which is simpler for the student and avoids interdependency issues (e.g. when a word needs transformation before its role is clear).
 
 **Step Menu with Inline Expansion:**
 Steps are listed as a roadmap. The active step is collapsed by default (click chevron to expand). Completed steps show green ✓ and completion text. The `stepExpanded` flag in session state controls visibility.
@@ -301,7 +307,7 @@ Once you have the full parse verified, walk through it with the user **one step 
 2. **Remaining words** — which words haven't been assigned a role yet
 3. **The answer** — always visible, always in uppercase with letter count
 
-Present each step for confirmation: definition → indicators → fodder/outer/inner → assembly transforms. Then upload the metadata to Supabase and validate.
+Present each step for confirmation: definition → indicators → assembly transforms. Then upload the metadata to Supabase and validate. (Do NOT add outer_word, inner_word, or fodder steps — all word identification and transformation is handled in the assembly.)
 
 ### Common pitfalls
 - **Don't fumble through indicators before solving** — solve the wordplay first, then you know what the indicators are.

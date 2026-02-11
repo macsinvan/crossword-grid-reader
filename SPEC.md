@@ -293,8 +293,8 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 - Step 2 depends on clue:
   - WITH indicators → `indicator` (tap_words) — can have multiple indicator steps per clue
   - WITHOUT indicators → `wordplay_type` (multiple_choice) with expected, options, hint
-- Then type-specific steps: `fodder`, `outer_word`, `inner_word` (all tap_words)
 - Final step: `assembly` with intro, failMessage, transforms array, result
+- **No outer_word/inner_word/fodder steps for new clues** — all word identification and transformation is handled in the assembly step. These templates are deprecated (still supported for existing clues but not used in new annotations).
 - Each transform: `{role, indices, type, result, hint}` — type is synonym/abbreviation/literal/reversal/deletion/anagram/container/letter_selection/homophone
 - Transforms can optionally have `lookup: {word, url}` for dictionary links
 
@@ -313,8 +313,8 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 
 **Reference clues — study these BEFORE editing any clue:**
 - **5D** — deletion + reversal chain (indicator steps, tap_words flow)
-- **1A** — container (definition → indicator → outer_word → inner_word → assembly)
-- **17D** — container (same pattern as 1A)
+- **1A** — container (definition → indicator → outer_word → inner_word → assembly) — legacy pattern, new clues skip outer/inner steps
+- **17D** — container (same pattern as 1A) — legacy pattern
 - **4A** — pure charade (no indicators, multiple_choice wordplay_type step)
 - **25A** — pure charade (same pattern as 4A)
 - **6D** — charade with ordering indicator ("after")
@@ -325,19 +325,19 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 - **12A** — anagram with fodder pieces (literal parts + final anagram)
 - **23D** — hidden reversed word with dictionary lookup on transform
 
-**Current Render Templates (7):**
+**Current Render Templates (4 active, 3 deprecated):**
 
-| Template | inputMode | Purpose |
-|----------|-----------|---------|
-| `definition` | `tap_words` | Find the definition at start/end of clue |
-| `wordplay_type` | `multiple_choice` | Identify the type of wordplay (Charade, Container, Anagram, etc.) |
-| `indicator` | `tap_words` | Find indicator word — `indicator_type` field drives type-specific prompt, intro, menuTitle, completedTitle |
-| `outer_word` | `tap_words` | Identify which word wraps around (container clues) |
-| `inner_word` | `tap_words` | Identify which word goes inside (container clues) |
-| `fodder` | `tap_words` | Identify the word being operated on by an indicator |
-| `assembly` | `assembly` | Multi-phase: transforms then assembly check (used for containers, charades, and other types) |
+| Template | inputMode | Purpose | Status |
+|----------|-----------|---------|--------|
+| `definition` | `tap_words` | Find the definition at start/end of clue | Active |
+| `wordplay_type` | `multiple_choice` | Identify the type of wordplay (Charade, Container, Anagram, etc.) | Active |
+| `indicator` | `tap_words` | Find indicator word — `indicator_type` field drives type-specific prompt, intro, menuTitle, completedTitle | Active |
+| `assembly` | `assembly` | Multi-phase: transforms then assembly check (used for containers, charades, and other types) | Active |
+| `outer_word` | `tap_words` | Identify which word wraps around (container clues) | Deprecated |
+| `inner_word` | `tap_words` | Identify which word goes inside (container clues) | Deprecated |
+| `fodder` | `tap_words` | Identify the word being operated on by an indicator | Deprecated |
 
-More templates will be added as new clue types are implemented.
+**Deprecated templates** are still supported for existing clues but must not be used in new annotations. The assembly step handles both word identification and transformation, making separate tap steps redundant.
 
 ### 4.2.1 Critical: Template System Enables Automated Annotation
 

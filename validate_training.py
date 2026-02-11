@@ -516,6 +516,8 @@ def _find_consumed_predecessors(transforms, dep_index):
 
     Works backwards from dep_index, accumulating predecessors until
     the combined letter count matches the dependent's result length.
+    Skips predecessors already consumed by intermediate dependent transforms
+    (e.g. a reversal's input is replaced by its output, not added alongside it).
     """
     t = transforms[dep_index]
     t_type = t.get("type", "")
@@ -527,9 +529,19 @@ def _find_consumed_predecessors(transforms, dep_index):
     else:
         target_len = result_len
 
+    # Find predecessors already consumed by intermediate dependent transforms
+    already_consumed = set()
+    for j in range(dep_index - 1, -1, -1):
+        jt = transforms[j].get("type", "")
+        if jt in DEPENDENT_TRANSFORM_TYPES:
+            inner_consumed = _find_consumed_predecessors(transforms, j)
+            already_consumed.update(inner_consumed)
+
     consumed = []
     accumulated = 0
     for j in range(dep_index - 1, -1, -1):
+        if j in already_consumed:
+            continue
         pred_len = len(re.sub(r'[^A-Z]', '', transforms[j]["result"].upper()))
         consumed.append(j)
         accumulated += pred_len
