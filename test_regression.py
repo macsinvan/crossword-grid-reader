@@ -165,7 +165,7 @@ def build_clue_test_data(clue_id, metadata):
         "puzzle_number": puzzle_number,
         "clue_number": clue_number,
         "direction": direction,
-        "answer": metadata.get("answer", ""),
+        "answer": re.sub(r'[^A-Za-z]', '', metadata.get("answer", "")),
         "enumeration": metadata.get("enumeration", ""),
         "words": words,
         "steps": step_values,
