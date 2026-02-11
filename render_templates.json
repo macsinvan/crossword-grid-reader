@@ -139,7 +139,7 @@
     "inputMode": "tap_words",
     "prompt": "Which words are standard crossword abbreviations?",
     "menuTitle": "Spot the abbreviations",
-    "completedTitle": "Abbreviations spotted: '{words}' — {hint}",
+    "completedTitle": "{abbreviationBreakdown}\n{hint}",
     "intro": "Experienced solvers recognise certain words on sight — 'husband', 'one', 'doctor', 'point' etc. always stand for the same letters. Spotting these early narrows your search.",
     "hint": "These are part of the crossword solver's core vocabulary — worth memorising.",
     "expected_source": "indices",

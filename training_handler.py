@@ -1131,6 +1131,17 @@ def _resolve_variables(text, step, clue):
             raise ValueError(f"Template uses {{abbreviationSummary}} but step is missing 'abbreviationSummary'")
         text = text.replace("{abbreviationSummary}", step["abbreviationSummary"])
 
+    # {abbreviationBreakdown} — one line per abbreviation from mappings field
+    if "{abbreviationBreakdown}" in text:
+        if "mappings" not in step:
+            raise ValueError(f"Template uses {{abbreviationBreakdown}} but step is missing 'mappings'")
+        words = clue["words"]
+        lines = []
+        for idx_str, letter in step["mappings"].items():
+            word = words[int(idx_str)]
+            lines.append(f"'{word}' \u2192 {letter}")
+        text = text.replace("{abbreviationBreakdown}", "\n".join(lines))
+
     # {sourceWord} — the base word for substitution clues
     if "{sourceWord}" in text:
         if "sourceWord" not in step:
