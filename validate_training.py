@@ -19,7 +19,7 @@ import json
 import os
 import re
 
-from training_constants import DEPENDENT_TRANSFORM_TYPES
+from training_constants import DEPENDENT_TRANSFORM_TYPES, find_consumed_predecessors, find_terminal_transforms
 import sys
 
 # ---------------------------------------------------------------------------
@@ -511,58 +511,7 @@ def _check_publication_conventions(publication, item):
 # Chain-aware helpers (ported from training_handler.py)
 # ---------------------------------------------------------------------------
 
-def _find_consumed_predecessors(transforms, dep_index):
-    """Find predecessor indices consumed by a dependent transform.
-
-    Works backwards from dep_index, accumulating predecessors until
-    the combined letter count matches the dependent's result length.
-    Skips predecessors already consumed by intermediate dependent transforms
-    (e.g. a reversal's input is replaced by its output, not added alongside it).
-    """
-    t = transforms[dep_index]
-    t_type = t.get("type", "")
-    result_len = len(re.sub(r'[^A-Z]', '', t["result"].upper()))
-
-    # Deletion needs one more letter than the result
-    if t_type == "deletion":
-        target_len = result_len + 1
-    else:
-        target_len = result_len
-
-    # Find predecessors already consumed by intermediate dependent transforms
-    already_consumed = set()
-    for j in range(dep_index - 1, -1, -1):
-        jt = transforms[j].get("type", "")
-        if jt in DEPENDENT_TRANSFORM_TYPES:
-            inner_consumed = _find_consumed_predecessors(transforms, j)
-            already_consumed.update(inner_consumed)
-
-    consumed = []
-    accumulated = 0
-    for j in range(dep_index - 1, -1, -1):
-        if j in already_consumed:
-            continue
-        pred_len = len(re.sub(r'[^A-Z]', '', transforms[j]["result"].upper()))
-        consumed.append(j)
-        accumulated += pred_len
-        if accumulated >= target_len:
-            break
-
-    consumed.reverse()
-    return consumed
-
-
-def _find_terminal_transforms(transforms):
-    """Identify terminal transforms — those not consumed by a later dependent."""
-    terminal = set(range(len(transforms)))
-    for i, t in enumerate(transforms):
-        t_type = t.get("type", "")
-        if t_type in DEPENDENT_TRANSFORM_TYPES:
-            consumed = _find_consumed_predecessors(transforms, i)
-            for c in consumed:
-                terminal.discard(c)
-    return terminal
-
+# find_consumed_predecessors and find_terminal_transforms live in training_constants.py
 
 # ---------------------------------------------------------------------------
 # Deterministic transform checks
@@ -578,7 +527,7 @@ def _check_literal(clue_words, result):
 
 def _check_reversal(transforms, current_idx, result):
     """Reversal: result must be the reverse of consumed predecessors' combined result."""
-    consumed = _find_consumed_predecessors(transforms, current_idx)
+    consumed = find_consumed_predecessors(transforms, current_idx)
     combined = "".join(transforms[c]["result"] for c in consumed)
     # Strip non-alpha characters for comparison (handles multi-word answers like TO ORDER)
     combined_alpha = re.sub(r'[^A-Z]', '', combined.upper())
@@ -590,7 +539,7 @@ def _check_reversal(transforms, current_idx, result):
 
 def _check_deletion(transforms, current_idx, result):
     """Deletion: result must be consumed predecessor(s) with letter(s) removed."""
-    consumed = _find_consumed_predecessors(transforms, current_idx)
+    consumed = find_consumed_predecessors(transforms, current_idx)
     combined = "".join(transforms[c]["result"] for c in consumed)
 
     if len(result) >= len(combined):
@@ -610,7 +559,7 @@ def _check_deletion(transforms, current_idx, result):
 
 def _check_anagram(transforms, current_idx, result):
     """Anagram: sorted letters of consumed input must match sorted letters of result."""
-    consumed = _find_consumed_predecessors(transforms, current_idx)
+    consumed = find_consumed_predecessors(transforms, current_idx)
     combined = "".join(transforms[c]["result"] for c in consumed)
 
     # Strip non-alpha characters (spaces, hyphens) for comparison
@@ -629,7 +578,7 @@ def _check_container(transforms, current_idx, result):
     - 2 predecessors: one inserted inside the other (standard case)
     - 3+ predecessors: one is outer, the rest concatenate as inner (e.g. V+AD inside HER)
     """
-    consumed = _find_consumed_predecessors(transforms, current_idx)
+    consumed = find_consumed_predecessors(transforms, current_idx)
     if len(consumed) < 2:
         return f"container check failed: need at least 2 consumed predecessors, got {len(consumed)}"
 
@@ -703,7 +652,7 @@ def _check_letter_selection(clue_words, result):
 
 def _check_substitution(transforms, current_idx, result):
     """Substitution: result must be same length as consumed predecessor, differing by exactly one letter."""
-    consumed = _find_consumed_predecessors(transforms, current_idx)
+    consumed = find_consumed_predecessors(transforms, current_idx)
     combined = "".join(re.sub(r'[^A-Z]', '', transforms[c]["result"].upper()) for c in consumed)
     result_alpha = re.sub(r'[^A-Z]', '', result.upper())
 
@@ -872,7 +821,7 @@ def validate_training_item(item_id, item):
             # --- 8. Terminal transform results must produce assembly result ---
             # Dependent transforms (reversal, deletion, anagram, container) consume
             # their predecessors — only terminal transforms contribute to the final answer.
-            terminal = _find_terminal_transforms(transforms)
+            terminal = find_terminal_transforms(transforms)
             terminal_results = [transforms[idx].get("result", "") for idx in sorted(terminal)]
             concat_letters = re.sub(r'[^A-Z]', '', "".join(terminal_results).upper())
             assembly_letters = re.sub(r'[^A-Z]', '', assembly_result.upper())

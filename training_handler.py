@@ -10,7 +10,7 @@ import json
 import os
 import re
 
-from training_constants import DEPENDENT_TRANSFORM_TYPES
+from training_constants import DEPENDENT_TRANSFORM_TYPES, find_consumed_predecessors, find_terminal_transforms
 from validate_training import validate_training_item
 
 # --- Render templates (auto-reload) ---
@@ -477,7 +477,7 @@ def _build_transform_list(transforms, transforms_done, template, clue, words,
         # Template-driven prompt — no per-clue overrides
         if t_type in DEPENDENT_TRANSFORM_TYPES and i > 0:
             # Dependent transform: {word} is the indicator, not the input
-            consumed = _find_consumed_predecessors(transforms, i)
+            consumed = find_consumed_predecessors(transforms, i)
             # Use _with_context prompt when substitutionLine already explains the operation
             if t_type == "substitution" and substitution_consumed:
                 prompt_key = "substitution_with_context"
@@ -507,7 +507,7 @@ def _build_transform_list(transforms, transforms_done, template, clue, words,
             # Build completed text from templates
             completed_templates = template["completedTextTemplates"]
             if t_type in DEPENDENT_TRANSFORM_TYPES and i > 0:
-                consumed = _find_consumed_predecessors(transforms, i)
+                consumed = find_consumed_predecessors(transforms, i)
                 for c in consumed:
                     if c not in transforms_done:
                         raise ValueError(f"Transform {i} is dependent but predecessor {c} has no result in transforms_done")
@@ -638,7 +638,7 @@ def _build_assembly_data(session, step, clue):
     if has_substitution:
         for i, t in enumerate(transforms):
             if t["type"] == "substitution" and i > 0:
-                substitution_consumed = _find_consumed_predecessors(transforms, i)
+                substitution_consumed = find_consumed_predecessors(transforms, i)
                 break
 
     # Build transform display data
@@ -758,7 +758,7 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
                 queue = [transform_index]
                 while queue:
                     dep = queue.pop(0)
-                    consumed = _find_consumed_predecessors(transforms, dep)
+                    consumed = find_consumed_predecessors(transforms, dep)
                     for c in consumed:
                         if c not in transforms_done:
                             transforms_done[c] = transforms[c]["result"].upper()
@@ -822,53 +822,8 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
         raise ValueError(f"Invalid transform_index: {transform_index}")
 
 
-def _find_consumed_predecessors(transforms, dep_index):
-    """Find ALL predecessor indices consumed by a dependent transform.
 
-    Works backwards from dep_index, accumulating predecessors until the
-    combined letter count matches what the dependent transform needs:
-    - reversal/anagram: combined input length == result length
-    - deletion: combined input length == result length + 1
-
-    Returns a list of predecessor indices in ascending order.
-    """
-    t = transforms[dep_index]
-    t_type = t["type"]
-    result_len = len(re.sub(r'[^A-Z]', '', t["result"].upper()))
-
-    if t_type == "deletion":
-        target_len = result_len + 1
-    else:
-        target_len = result_len
-
-    consumed = []
-    accumulated = 0
-    for j in range(dep_index - 1, -1, -1):
-        pred_len = len(re.sub(r'[^A-Z]', '', transforms[j]["result"].upper()))
-        consumed.append(j)
-        accumulated += pred_len
-        if accumulated >= target_len:
-            break
-
-    consumed.reverse()
-    return consumed
-
-
-def _find_terminal_transforms(transforms):
-    """Identify terminal transforms — those not consumed by a later dependent.
-
-    Returns a set of terminal transform indices.
-    """
-
-    terminal = set(range(len(transforms)))
-    for i, t in enumerate(transforms):
-        if "type" not in t:
-            raise ValueError(f"Transform {i} is missing 'type' field")
-        if i > 0 and t["type"] in DEPENDENT_TRANSFORM_TYPES:
-            consumed = _find_consumed_predecessors(transforms, i)
-            for c in consumed:
-                terminal.discard(c)
-    return terminal
+# find_consumed_predecessors and find_terminal_transforms live in training_constants.py
 
 
 def _compute_position_map(step):
@@ -882,7 +837,7 @@ def _compute_position_map(step):
     result = re.sub(r'[^A-Z]', '', step["result"].upper())
 
     # Identify terminal transforms (those not superseded by a later dependent)
-    terminal = _find_terminal_transforms(transforms)
+    terminal = find_terminal_transforms(transforms)
 
     # Check if this is a pure container clue (container result IS the full answer)
     # vs a hybrid charade+container (container is just one piece among others)
@@ -1268,7 +1223,7 @@ def _resolve_container_breakdown(transforms, step, clue, independent_tpl,
     consumed_by = {}  # maps consumed index → dependent index
     for i, t in enumerate(transforms):
         if i > 0 and t["type"] in DEPENDENT_TRANSFORM_TYPES and t["type"] != "container":
-            consumed = _find_consumed_predecessors(transforms, i)
+            consumed = find_consumed_predecessors(transforms, i)
             for c in consumed:
                 consumed_by[c] = i
     inner_parts = [
@@ -1306,7 +1261,7 @@ def _resolve_container_breakdown(transforms, step, clue, independent_tpl,
 
     # Collect terminal transforms and build full breakdown
     container_roles = {"outer", "inner", "container"}
-    terminal = _find_terminal_transforms(transforms)
+    terminal = find_terminal_transforms(transforms)
     parts = []
     container_placed = False
     for i in sorted(terminal):
@@ -1338,7 +1293,7 @@ def _resolve_charade_breakdown(transforms, clue, independent_tpl, dependent_tpl,
         t_type = t["type"]
         result = t["result"].upper()
         if t_type in DEPENDENT_TRANSFORM_TYPES and parts:
-            consumed = _find_consumed_predecessors(transforms, i)
+            consumed = find_consumed_predecessors(transforms, i)
             consumed_displays = []
             for _ in consumed:
                 if parts:
