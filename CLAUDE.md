@@ -347,7 +347,7 @@ When starting a new session, check these first:
 
 **Key things a new session needs to know:**
 - Puzzle **29453** (30 clues) is **locked** and 100% verified — never modify
-- Puzzle **29147** (31/32 clues done) is the active work — 1 clue remaining (see below)
+- Puzzle **29147** (32/32 clues done) is complete — all clues annotated and validated
 - Training data lives in **Supabase** (`clues.training_metadata`), not in JSON files
 - Training data is **lazy-loaded** from Supabase per request — no restart needed for DB changes
 - Clues with validation errors return **422** with error details when clicked in the UI
@@ -356,9 +356,9 @@ When starting a new session, check these first:
 
 ## Current Work — Puzzle 29147 Training Metadata
 
-**Status:** 31 of 32 clues completed and validated. 1 remaining (see below).
+**Status:** 32 of 32 clues completed and validated. ✅ Puzzle complete.
 
-**Completed clues (31):**
+**Completed clues (32):**
 - **1A** — ASHAMED: charade (AS + HAM + ED)
 - **1D** — ANAEMIC: container + reversal (CIA contains MEAN → reversed)
 - **2D** — HELEN OF TROY: anagram (TO + E + F + ONLY + HER → anagram)
@@ -388,14 +388,9 @@ When starting a new session, check these first:
 - **24D** — ZANY: charade (Z + ANY)
 - **25A** — LEAVE-TAKING: container (LEAKING containing A + VET)
 - **26D** — ALB: hidden reversed word in shruBLAnd
+- **27A** — TIE: substitution (THE with H→I)
 - **28A** — DEBUSSY: charade + letter selection (DEBUS + SY)
 - **29A** — TO ORDER: reversal (RED + ROOT → reversed)
-
-**Remaining clues (1):**
-
-- **27A** — "Husband turning to one during the match" (3) = TIE
-  - Blog parse: H (husband) replaced by I (one) in THE → TIE
-  - Blocker: **no letter substitution template exists yet** — needs new template in `render_templates.json`
 
 **Known issue (puzzle 29453 — DO NOT MODIFY 29453 DATA):**
 - **9D** — has wrong apostrophe and wrong transform type. Not yet fixed.
@@ -404,6 +399,8 @@ When starting a new session, check these first:
 - `_check_container`: now handles 3+ predecessors (multiple inner pieces concatenated via permutations)
 - `_find_consumed_predecessors`: now skips predecessors already consumed by intermediate dependent transforms (fixes reversal-inside-container like 13D)
 - `_check_reversal`: now strips non-alpha characters (handles multi-word answers like TO ORDER)
+- `_check_substitution`: new check — result must be same length as input, differing by exactly one letter (for 27A TIE)
+- Added `substitution` to VALID_TRANSFORM_TYPES, VALID_INDICATOR_TYPES, and DEPENDENT_TRANSFORM_TYPES
 - Added to CRYPTIC_ABBREVIATIONS: agents→CIA, spies→CIA, female→F, male→M, commercial→AD, light source→LED, touching→RE, regarding→RE, concerning→RE, pounds→L, unknown quantity→X/Y/Z, very loud→FF, goodbye from texter→CU, earnings for salesperson→OTE, light→L, advertisement→AD
 
 **Process:** Two-phase approach: (1) Solve as AI expert with clue+definition+answer, (2) Encode as training metadata. Hints teach Times conventions (the macro-level checks become the hints).

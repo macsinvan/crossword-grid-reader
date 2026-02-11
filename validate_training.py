@@ -270,16 +270,16 @@ CRYPTIC_ABBREVIATIONS = {
 VALID_STEP_TYPES = {"definition", "wordplay_type", "indicator", "outer_word", "inner_word", "assembly", "fodder", "multi_definition"}
 
 # Valid transform types (from assembly.transformPrompts)
-VALID_TRANSFORM_TYPES = {"synonym", "abbreviation", "literal", "reversal", "deletion", "anagram", "container", "letter_selection", "homophone"}
+VALID_TRANSFORM_TYPES = {"synonym", "abbreviation", "literal", "reversal", "deletion", "anagram", "container", "letter_selection", "homophone", "substitution"}
 
 # Valid indicator types
-VALID_INDICATOR_TYPES = {"container", "anagram", "deletion", "reversal", "ordering", "letter_selection", "hidden_word", "homophone"}
+VALID_INDICATOR_TYPES = {"container", "anagram", "deletion", "reversal", "ordering", "letter_selection", "hidden_word", "homophone", "substitution"}
 
 # Valid definition_part values for multi_definition steps
 VALID_DEFINITION_PARTS = {"first", "second", "third"}
 
 # Dependent transform types that require a matching indicator step
-DEPENDENT_TRANSFORM_TYPES = {"reversal", "deletion", "anagram", "container", "homophone"}
+DEPENDENT_TRANSFORM_TYPES = {"reversal", "deletion", "anagram", "container", "homophone", "substitution"}
 
 # Indicator type equivalences (hidden_word covers reversal)
 INDICATOR_EQUIVALENCES = {"hidden_word": {"reversal", "hidden_word"}}
@@ -701,6 +701,21 @@ def _check_letter_selection(clue_words, result):
     return f"letter_selection check failed: '{result}' doesn't match first/last/alternating/hidden letters of '{source}'"
 
 
+def _check_substitution(transforms, current_idx, result):
+    """Substitution: result must be same length as consumed predecessor, differing by exactly one letter."""
+    consumed = _find_consumed_predecessors(transforms, current_idx)
+    combined = "".join(re.sub(r'[^A-Z]', '', transforms[c]["result"].upper()) for c in consumed)
+    result_alpha = re.sub(r'[^A-Z]', '', result.upper())
+
+    if len(result_alpha) != len(combined):
+        return f"substitution check failed: result '{result}' has different length ({len(result_alpha)}) than input '{combined}' ({len(combined)})"
+
+    diffs = sum(1 for a, b in zip(combined, result_alpha) if a != b)
+    if diffs != 1:
+        return f"substitution check failed: result '{result}' differs from input '{combined}' at {diffs} positions (expected exactly 1)"
+    return None
+
+
 def _check_abbreviation(clue_words, result, publication=None):
     """Abbreviation: check against known cryptic abbreviation dictionary. Returns warning, not error."""
     key = " ".join(clue_words).lower()
@@ -951,6 +966,11 @@ def validate_training_item(item_id, item):
                 elif t_type == "homophone":
                     # Homophone check: can't verify pronunciation programmatically
                     pass
+
+                elif t_type == "substitution":
+                    err = _check_substitution(transforms, ti, t_result)
+                    if err:
+                        errors.append(f"Step {i}, transform {ti}: {err}")
 
     # --- 12. Indicator coverage ---
     # Collect indicator types from indicator steps
