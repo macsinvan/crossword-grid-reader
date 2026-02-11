@@ -29,16 +29,11 @@ def trainer_clue_ids():
     """Return all clue IDs with training data in Supabase.
     With ?full=1, returns full metadata for each clue (for test runner).
     """
-    try:
-        if request.args.get('full'):
-            all_data = training_handler.list_all_clue_data()
-            return jsonify({'clues': all_data})
-        clue_ids = training_handler.list_clue_ids()
-        return jsonify({'clue_ids': clue_ids})
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+    if request.args.get('full'):
+        all_data = training_handler.list_all_clue_data()
+        return jsonify({'clues': all_data})
+    clue_ids = training_handler.list_clue_ids()
+    return jsonify({'clue_ids': clue_ids})
 
 
 @trainer_bp.route('/start', methods=['POST'])
@@ -56,17 +51,6 @@ def trainer_start():
 
     try:
         clue_id, clue_data = training_handler.lookup_clue(puzzle_number, clue_number, direction)
-
-        if not clue_id or not clue_data:
-            return jsonify({
-                'error': 'Clue not found in trainer database',
-                'message': 'This clue has not been annotated for training yet.',
-            }), 404
-
-        render = training_handler.start_session(clue_id, clue_data)
-        render['clue_id'] = clue_id
-        return jsonify(render)
-
     except ValueError as e:
         # Validation errors from lookup_clue
         return jsonify({
@@ -75,10 +59,15 @@ def trainer_start():
             'validation_errors': e.args[0] if e.args else [],
         }), 422
 
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+    if not clue_id or not clue_data:
+        return jsonify({
+            'error': 'Clue not found in trainer database',
+            'message': 'This clue has not been annotated for training yet.',
+        }), 404
+
+    render = training_handler.start_session(clue_id, clue_data)
+    render['clue_id'] = clue_id
+    return jsonify(render)
 
 
 @trainer_bp.route('/input', methods=['POST'])
@@ -94,14 +83,10 @@ def trainer_input():
     if not clue_id or not clue_data:
         return jsonify({'error': 'Invalid clue_id'}), 400
 
-    try:
-        transform_index = data.get('transform_index')  # None for non-assembly inputs
-        result = training_handler.handle_input(clue_id, clue_data, value=data.get('value'), transform_index=transform_index)
-        return jsonify(result)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+    transform_index = data.get('transform_index')  # None for non-assembly inputs
+    transform_inputs = data.get('transform_inputs')  # Combined check: {tIdx: letters}
+    result = training_handler.handle_input(clue_id, clue_data, value=data.get('value'), transform_index=transform_index, transform_inputs=transform_inputs)
+    return jsonify(result)
 
 
 @trainer_bp.route('/ui-state', methods=['POST'])
@@ -118,13 +103,8 @@ def trainer_ui_state():
     if not clue_id or not clue_data:
         return jsonify({'error': 'Invalid clue_id'}), 400
 
-    try:
-        render = training_handler.update_ui_state(clue_id, clue_data, action, data)
-        return jsonify(render)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+    render = training_handler.update_ui_state(clue_id, clue_data, action, data)
+    return jsonify(render)
 
 
 @trainer_bp.route('/reveal', methods=['POST'])
@@ -140,13 +120,8 @@ def trainer_reveal():
     if not clue_id or not clue_data:
         return jsonify({'error': 'Invalid clue_id'}), 400
 
-    try:
-        render = training_handler.reveal_answer(clue_id, clue_data)
-        return jsonify(render)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+    render = training_handler.reveal_answer(clue_id, clue_data)
+    return jsonify(render)
 
 
 @trainer_bp.route('/check-answer', methods=['POST'])
@@ -163,10 +138,5 @@ def trainer_check_answer():
     if not clue_id or not clue_data:
         return jsonify({'error': 'Invalid clue_id'}), 400
 
-    try:
-        result = training_handler.check_answer(clue_id, clue_data, answer)
-        return jsonify(result)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
+    result = training_handler.check_answer(clue_id, clue_data, answer)
+    return jsonify(result)

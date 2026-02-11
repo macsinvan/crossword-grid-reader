@@ -385,6 +385,15 @@ When starting a new session, check these first:
 
 3. **Auto-advance scanning steps** — Eliminate the unnecessary "Check" button click to progress scanning steps (definition, indicator, abbreviation_scan). When the student taps the correct word(s), the step should auto-advance without requiring a separate confirmation click.
 
+### ~~Architecture violations~~ — DONE
+
+All 17 violations fixed and verified (744/744 tests pass). Changes:
+- **A (4-7)**: Python UI text → template patterns in `render_templates.json` (`abbreviationPairTemplate`, `breakdownLineTemplate`, `completedTextTemplates` expanded, `roleDisplayNames`)
+- **B (8-10)**: JS hardcoded text → server-provided (`checkPhasePrompt`), dead code removed, jargon fixed
+- **C (11-15)**: Silent fallbacks → `ValueError` crashes (missing template, `clue_type`, `onCorrect`, `completedTitle`, `None` in `_resolve_variables`)
+- **D (16)**: Client-side combined check filtering → server-side `transform_inputs` handler
+- **E (17)**: 6 catch-all `except Exception` handlers removed from `trainer_routes.py`
+
 ## Worktrees
 This repo uses git worktrees:
 - `/Users/andrewmackenzie/Desktop/Grid Reader` - main branch

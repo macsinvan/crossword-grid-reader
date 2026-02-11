@@ -11,12 +11,8 @@ class TemplateTrainer {
     constructor(container, options) {
         this.container = container;
         this.clueId = options.clueId;
-        this.clueText = options.clueText;
-        this.enumeration = options.enumeration;
-        this.answer = options.answer;
         this.crossLetters = options.crossLetters || [];
         this.onComplete = options.onComplete;
-        this.onBack = options.onBack;
 
         this.render = null;
         this.loading = true;
@@ -49,27 +45,6 @@ class TemplateTrainer {
         }
     }
 
-    async submitAssemblyTransform(transformIndex, value) {
-        try {
-            const resp = await fetch('/trainer/input', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clue_id: this.clueId, value, transform_index: transformIndex })
-            });
-            const data = await resp.json();
-
-            this.feedback = { type: data.correct ? 'success' : 'error', message: data.message };
-
-            if (data.render) {
-                this.render = data.render;
-            }
-            this.renderUI();
-
-            setTimeout(() => { this.feedback = null; this.renderUI(); }, 1500);
-        } catch (err) {
-            console.error('submitAssemblyTransform error:', err);
-        }
-    }
 
     async updateUIState(action, data = {}) {
         try {
@@ -374,7 +349,7 @@ class TemplateTrainer {
     renderAssemblyContent(r, step) {
         const data = step.assemblyData;
         if (!data) {
-            return '<div style="padding: 0.75rem; color: #dc2626;">Assembly data missing.</div>';
+            return '<div style="padding: 0.75rem; color: #dc2626;">Step data missing — please reload.</div>';
         }
 
         let html = '<div style="padding: 0.5rem 0 0.75rem 1.75rem;">';
@@ -440,12 +415,6 @@ class TemplateTrainer {
 
             html += `</div>`;
 
-        } else if (transform.status === 'locked') {
-            // Locked — show the prompt greyed out with lock icon
-            html += `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; margin-bottom: 0.25rem; opacity: 0.4;">`;
-            html += `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="4" y="7" width="8" height="6" rx="1" stroke="#94a3b8" stroke-width="1.2" fill="none"/><path d="M6 7V5a2 2 0 0 1 4 0v2" stroke="#94a3b8" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>`;
-            html += `<span style="font-size: 0.8rem; color: #94a3b8;">${transform.prompt} \u2014 solve earlier steps first</span>`;
-            html += `</div>`;
         }
 
         return html;
@@ -541,7 +510,7 @@ class TemplateTrainer {
         let html = '';
 
         html += `<div style="padding: 0.75rem 0;">`;
-        html += `<div style="font-size: 0.8rem; color: #334155; margin-bottom: 0.5rem;">Now combine them — type the full answer:</div>`;
+        html += `<div style="font-size: 0.8rem; color: #334155; margin-bottom: 0.5rem;">${data.checkPhasePrompt}</div>`;
 
         // Letter tiles
         html += `<div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">`;
@@ -632,20 +601,29 @@ class TemplateTrainer {
             });
         });
 
-        // Assembly combined check button — submit each active transform sequentially
+        // Assembly combined check button — send all inputs to server in one request
         this.container.querySelectorAll('.assembly-combined-check').forEach(el => {
             el.addEventListener('click', async () => {
                 const allInputs = this.container.querySelectorAll('.assembly-combined-letter');
                 const byTransform = {};
                 allInputs.forEach(box => {
-                    const tIdx = parseInt(box.dataset.transformIndex, 10);
+                    const tIdx = box.dataset.transformIndex;
                     if (!byTransform[tIdx]) byTransform[tIdx] = [];
                     byTransform[tIdx].push(box.value || box.placeholder || '');
                 });
-                for (const [tIdx, letters] of Object.entries(byTransform)) {
-                    if (letters.every(l => l)) {
-                        await this.submitAssemblyTransform(parseInt(tIdx), letters.join(''));
-                    }
+                try {
+                    const resp = await fetch('/trainer/input', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ clue_id: this.clueId, transform_inputs: byTransform })
+                    });
+                    const data = await resp.json();
+                    this.feedback = { type: data.correct ? 'success' : 'error', message: data.message };
+                    if (data.render) this.render = data.render;
+                    this.renderUI();
+                    setTimeout(() => { this.feedback = null; this.renderUI(); }, 1500);
+                } catch (err) {
+                    console.error('Assembly combined check error:', err);
                 }
             });
         });
