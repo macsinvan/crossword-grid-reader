@@ -326,6 +326,13 @@ See `SPEC.md` Section 4.2.3 for the full metadata format, step types and flows, 
 - Assembly intro should teach through consequence: show what happens with raw words first, then ask why it doesn't work
 - Only change the clue you are asked to change
 
+**Hint checklist — verify every hint before uploading:**
+- Indicator step hints must NEVER contain the indicator type name (anagram, reversal, container, deletion, hidden word, ordering, letter selection) — the template's `completedTitle` already prefixes with it, so repeating it is redundant
+- Hints teach the *convention*, not the *answer* (e.g. "In cryptics, 'mixed' signals rearranging letters" not "The anagram gives PERIPHERAL")
+- Hints are short — one sentence, two at most
+- No programmer jargon (transform, fodder, outer/inner, raw insertion)
+- Read the hint back as a student would see it — does it explain *why*, not just *what*?
+
 ## Training Metadata Validation
 
 See `SPEC.md` Section 14 for the full 4-layer validation architecture, integration points, convention checks, and publication-specific dictionaries.
@@ -340,7 +347,7 @@ When starting a new session, check these first:
 
 **Key things a new session needs to know:**
 - Puzzle **29453** (30 clues) is **locked** and 100% verified — never modify
-- Puzzle **29147** (30/32 clues done) is the active work — 2 clues remaining (see below)
+- Puzzle **29147** (31/32 clues done) is the active work — 1 clue remaining (see below)
 - Training data lives in **Supabase** (`clues.training_metadata`), not in JSON files
 - Training data is **lazy-loaded** from Supabase per request — no restart needed for DB changes
 - Clues with validation errors return **422** with error details when clicked in the UI
@@ -349,9 +356,9 @@ When starting a new session, check these first:
 
 ## Current Work — Puzzle 29147 Training Metadata
 
-**Status:** 30 of 32 clues completed and validated. 2 remaining (see below).
+**Status:** 31 of 32 clues completed and validated. 1 remaining (see below).
 
-**Completed clues (30):**
+**Completed clues (31):**
 - **1A** — ASHAMED: charade (AS + HAM + ED)
 - **1D** — ANAEMIC: container + reversal (CIA contains MEAN → reversed)
 - **2D** — HELEN OF TROY: anagram (TO + E + F + ONLY + HER → anagram)
@@ -366,6 +373,7 @@ When starting a new session, check these first:
 - **10A** — WARTS AND ALL: container + deletion (WALk→WAL containing RT + SANDAL)
 - **11A** — MONARCHY: charade + letter selection (MON + ARCH + Y)
 - **12A** — PSEUDO: homophone (SUE + DOUGH → sounds like PSEUDO)
+- **13D** — UNINITIATED: container + reversal (UNITED contains NIT + IA from A1 reversed)
 - **14D** — STRATEGIST: charade (ST + RATE + GIST)
 - **15A** — CUFF: charade (CU + FF)
 - **16A** — MASTERMIND: container + charade (MATER containing S = MASTER + MIND)
@@ -383,12 +391,8 @@ When starting a new session, check these first:
 - **28A** — DEBUSSY: charade + letter selection (DEBUS + SY)
 - **29A** — TO ORDER: reversal (RED + ROOT → reversed)
 
-**Remaining clues (2):** Each needs a new template type before encoding.
+**Remaining clues (1):**
 
-- **13D** — "Lay egg, fine on reflection, as one must eat" (11) = UNINITIATED
-  - Blog parse: UNITED (as one) contains NIT (egg) + IA (A1/fine reversed)
-  - Parse verified: UNI + NIT + IA + TED = UNINITIATED ✅
-  - Blocker: **validator `_check_container` fails** — the reversal (AI→IA) creates a 4th predecessor that confuses the container check. Need to teach the validator that reversed predecessors replace (not add to) their input.
 - **27A** — "Husband turning to one during the match" (3) = TIE
   - Blog parse: H (husband) replaced by I (one) in THE → TIE
   - Blocker: **no letter substitution template exists yet** — needs new template in `render_templates.json`
@@ -398,6 +402,7 @@ When starting a new session, check these first:
 
 **Validator changes made during 29147 work:**
 - `_check_container`: now handles 3+ predecessors (multiple inner pieces concatenated via permutations)
+- `_find_consumed_predecessors`: now skips predecessors already consumed by intermediate dependent transforms (fixes reversal-inside-container like 13D)
 - `_check_reversal`: now strips non-alpha characters (handles multi-word answers like TO ORDER)
 - Added to CRYPTIC_ABBREVIATIONS: agents→CIA, spies→CIA, female→F, male→M, commercial→AD, light source→LED, touching→RE, regarding→RE, concerning→RE, pounds→L, unknown quantity→X/Y/Z, very loud→FF, goodbye from texter→CU, earnings for salesperson→OTE, light→L, advertisement→AD
 
