@@ -290,18 +290,97 @@ def walk_to_completion(server, clue):
 # Test functions
 # ---------------------------------------------------------------------------
 
-def test_response_contract(server, clue):
-    """Verify the /start response has the correct shape and values."""
-    render = start_session(server, clue)
+def _check_render_shape(render, context=""):
+    """Validate the shape of a render response. Returns (ok, error_message)."""
+    prefix = f"{context}: " if context else ""
 
-    required_fields = [
+    # Top-level required fields
+    top_level = [
         "clue_id", "words", "answer", "enumeration", "answerGroups",
         "steps", "currentStep", "stepExpanded", "highlights",
-        "selectedIndices", "userAnswer", "answerLocked",
+        "selectedIndices", "userAnswer", "answerLocked", "complete",
     ]
-    for field in required_fields:
+    for field in top_level:
         if field not in render:
-            return False, f"Missing required field '{field}' in /start response"
+            return False, f"{prefix}Missing top-level field '{field}'"
+
+    # Step summary shape
+    for i, s in enumerate(render["steps"]):
+        for field in ["index", "type", "title", "status"]:
+            if field not in s:
+                return False, f"{prefix}steps[{i}] missing '{field}'"
+        if s["status"] not in ("completed", "active", "pending"):
+            return False, f"{prefix}steps[{i}] invalid status '{s['status']}'"
+        if s["status"] == "completed" and "completionText" not in s:
+            return False, f"{prefix}steps[{i}] completed but missing 'completionText'"
+
+    # Highlight shape
+    for i, h in enumerate(render["highlights"]):
+        for field in ["indices", "color"]:
+            if field not in h:
+                return False, f"{prefix}highlights[{i}] missing '{field}'"
+
+    # currentStep shape (when present)
+    step = render["currentStep"]
+    if step is not None:
+        for field in ["index", "type", "inputMode", "prompt"]:
+            if field not in step:
+                return False, f"{prefix}currentStep missing '{field}'"
+        if "hintVisible" not in step:
+            return False, f"{prefix}currentStep missing 'hintVisible'"
+
+        # inputMode-specific checks
+        if step["inputMode"] == "multiple_choice":
+            if "options" not in step:
+                return False, f"{prefix}currentStep (multiple_choice) missing 'options'"
+
+        if step["inputMode"] == "assembly":
+            if "assemblyData" not in step:
+                return False, f"{prefix}currentStep (assembly) missing 'assemblyData'"
+            err = _check_assembly_data_shape(step["assemblyData"], prefix)
+            if err:
+                return False, err
+
+    return True, ""
+
+
+def _check_assembly_data_shape(data, prefix=""):
+    """Validate the shape of assemblyData. Returns error string or None."""
+    required = [
+        "phase", "failMessage", "transforms", "resultParts",
+        "positionMap", "completedLetters", "definitionLine",
+        "indicatorLine", "checkPhasePrompt",
+    ]
+    for field in required:
+        if field not in data:
+            return f"{prefix}assemblyData missing '{field}'"
+
+    if data["phase"] not in ("transforms", "check"):
+        return f"{prefix}assemblyData invalid phase '{data['phase']}'"
+
+    # Transform shape
+    for i, t in enumerate(data["transforms"]):
+        required_t = ["role", "clueWord", "prompt", "letterCount",
+                       "status", "result", "hint", "hintVisible", "index"]
+        for field in required_t:
+            if field not in t:
+                return f"{prefix}transform[{i}] missing '{field}'"
+        if t["status"] not in ("completed", "active"):
+            return f"{prefix}transform[{i}] invalid status '{t['status']}'"
+        if t["status"] == "completed" and "completedText" not in t:
+            return f"{prefix}transform[{i}] completed but missing 'completedText'"
+
+    return None
+
+
+def test_response_contract(server, clue):
+    """Verify response shapes across start, input, and completion."""
+    # 1. Start response shape
+    render = start_session(server, clue)
+
+    ok, err = _check_render_shape(render, "/start")
+    if not ok:
+        return False, err
 
     if render["clue_id"] != clue["id"]:
         return False, f"clue_id: got '{render['clue_id']}', expected '{clue['id']}'"
@@ -321,13 +400,56 @@ def test_response_contract(server, clue):
     if groups_sum != answer_letters:
         return False, f"answerGroups sum {groups_sum} != answer letter count {answer_letters}"
 
-    step = render["currentStep"]
-    for field in ["index", "inputMode", "type"]:
-        if field not in step:
-            return False, f"currentStep missing '{field}'"
-
     if render["answerLocked"]:
         return False, "answerLocked should be False at start"
+
+    if render["complete"]:
+        return False, "complete should be False at start"
+
+    # 2. Input response shape — submit first step
+    first_step = clue["steps"][0]
+    if first_step["inputMode"] != "assembly":
+        status, body = api_post(server, "/input", {
+            "clue_id": render["clue_id"], "value": first_step["value"]
+        })
+        if status != 200:
+            return False, f"First input failed ({status})"
+        for field in ["correct", "message", "render"]:
+            if field not in body:
+                return False, f"/input response missing '{field}'"
+        ok, err = _check_render_shape(body["render"], "/input.render")
+        if not ok:
+            return False, err
+
+    # 3. Completion response shape — walk a fresh session to end
+    clue_id, final_render = walk_to_completion(server, clue)
+    ok, err = _check_render_shape(final_render, "completion")
+    if not ok:
+        return False, err
+
+    if not final_render["complete"]:
+        return False, "complete should be True after walkthrough"
+
+    if final_render["currentStep"] is not None:
+        return False, "currentStep should be None after completion"
+
+    # 4. Check-answer response shape
+    render_fresh = start_session(server, clue)
+    status, body = api_post(server, "/check-answer", {
+        "clue_id": render_fresh["clue_id"], "answer": clue["answer"]
+    })
+    if status != 200:
+        return False, f"Check-answer failed ({status})"
+    for field in ["correct", "message", "render"]:
+        if field not in body:
+            return False, f"/check-answer response missing '{field}'"
+
+    # 5. Reveal response shape
+    render_fresh2 = start_session(server, clue)
+    reveal_render = reveal(server, render_fresh2["clue_id"])
+    ok, err = _check_render_shape(reveal_render, "/reveal")
+    if not ok:
+        return False, err
 
     return True, ""
 

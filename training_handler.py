@@ -1070,11 +1070,21 @@ def _build_all_done(session, clue):
         answer_letters = list(re.sub(r'[^A-Z]', '', clue["answer"].upper()))
         session["user_answer"] = answer_letters
 
+    # Compute answer box groups from enumeration (same logic as get_render)
+    enum_str = clue.get("enumeration", "")
+    answer_groups = []
+    for part in re.split(r'[,\s]+', enum_str):
+        if part:
+            total = sum(int(n) for n in part.split('-') if n.isdigit())
+            if total > 0:
+                answer_groups.append(total)
+
     return {
         "clue_id": session["clue_id"],
         "words": clue["words"],
         "answer": clue["answer"],
         "enumeration": clue["enumeration"],
+        "answerGroups": answer_groups,
         "steps": _build_step_list(session, clue),
         "currentStep": None,
         "stepExpanded": False,
