@@ -1172,6 +1172,21 @@ def _resolve_variables(text, step, clue):
                 elif t["type"] == "container":
                     container_idx = i
 
+            # If an inner part is consumed by a dependent transform (e.g. reversal),
+            # use the dependent's result instead of the raw inner result.
+            # Example: inner_b 'fine' → AI, reversal → IA — display IA not AI.
+            consumed_by = {}  # maps consumed index → dependent index
+            for i, t in enumerate(transforms):
+                if i > 0 and t["type"] in DEPENDENT_TYPES and t["type"] != "container":
+                    consumed = _find_consumed_predecessors(transforms, i)
+                    for c in consumed:
+                        consumed_by[c] = i
+            inner_parts = [
+                (consumed_by[idx], transforms[consumed_by[idx]]["result"].upper())
+                if idx in consumed_by else (idx, result)
+                for idx, result in inner_parts
+            ]
+
             if outer_idx is not None and inner_parts:
                 outer_result = re.sub(r'[^A-Z]', '', transforms[outer_idx]["result"].upper())
                 combined_inner = "".join(re.sub(r'[^A-Z]', '', p[1]) for p in inner_parts)

@@ -195,6 +195,7 @@ def build_clue_test_data(clue_id, metadata):
         "clue_number": clue_number,
         "direction": direction,
         "answer": re.sub(r'[^A-Za-z]', '', metadata.get("answer", "")),
+        "answer_raw": metadata.get("answer", ""),
         "enumeration": metadata.get("enumeration", ""),
         "words": words,
         "steps": step_values,
@@ -442,6 +443,39 @@ def test_template_text(server, clue):
                     f"Definition completed title '{title}' still contains "
                     f"prompt text 'can you find' — should show the hint instead"
                 )
+
+    # Definition hint must NOT contain the answer word (case-insensitive)
+    # This catches hints that give away the answer before the student solves it.
+    # The hint is available via the lightbulb during the step, so it must not
+    # reveal what the student is trying to find.
+    # Only check answers of 5+ letters — short words (TIE, ALB, AIL) will
+    # inevitably appear in natural language hints.
+    # Uses word-boundary matching to avoid false positives where the answer
+    # is a substring of a longer word (e.g. OPTIC in "optician", RAVEN in "ravenous").
+    answer = clue["answer"].upper()
+    answer_raw = clue["answer_raw"].upper()
+    if len(answer) >= 5:
+        for s in clue["steps_meta"]:
+            if s["type"] == "definition" and "hint" in s:
+                hint_text = s["hint"]
+                hint_upper = hint_text.upper()
+                # Check the stripped answer (no hyphens/spaces) as a whole word
+                found = bool(re.search(r'\b' + re.escape(answer) + r'\b', hint_upper))
+                # Also check the original answer form for hyphenated/spaced answers
+                if not found and answer_raw != answer:
+                    found = bool(re.search(r'\b' + re.escape(answer_raw) + r'\b', hint_upper))
+                # Also check individual words of multi-word answers (5+ letters each)
+                if not found and (' ' in answer_raw or '-' in answer_raw):
+                    for part in re.split(r'[\s-]+', answer_raw):
+                        part_clean = re.sub(r'[^A-Za-z]', '', part).upper()
+                        if len(part_clean) >= 5 and re.search(r'\b' + re.escape(part_clean) + r'\b', hint_upper):
+                            found = True
+                            break
+                if found:
+                    return False, (
+                        f"Definition hint contains the answer '{answer_raw}': "
+                        f"'{hint_text}' — hints must not give away the answer"
+                    )
 
     # Check completed indicator titles don't redundantly repeat "[type] indicator"
     INDICATOR_TYPE_LABELS = [
