@@ -271,6 +271,7 @@ ALL intelligence lives on the server. The client is a pure view layer.
 
 **Step metadata fields** (beyond type/indices/hint):
 - `indicator_type`: For indicator steps — the type of indicator (container, anagram, deletion, reversal, ordering, letter_selection, hidden_word). Used by the template for type-specific prompt, intro, menuTitle, and completedTitle via `{indicatorType}` variable and dict-keyed lookup.
+- `mappings`: For `abbreviation_scan` steps — maps word indices to abbreviation letters (e.g. `{"0": "H", "3": "I"}`). The indices in the step's `indices` array identify which words to tap; the mappings provide the abbreviation each word represents.
 - `failMessage`: Overrides the default assembly fail message
 
 **Why This Flat Format:**
@@ -293,6 +294,7 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 - Step 2 depends on clue:
   - WITH indicators → `indicator` (tap_words) — can have multiple indicator steps per clue
   - WITHOUT indicators → `wordplay_type` (multiple_choice) with expected, options, hint
+- After indicators: `abbreviation_scan` (tap_words) — if the clue has any abbreviation transforms. One step identifies all abbreviations at once. The student taps the clue words that are standard cryptic abbreviations (e.g. 'Husband' → H, 'one' → I). Step metadata includes `mappings` (`{"0": "H", "3": "I"}`) mapping word indices to abbreviation letters.
 - Final step: `assembly` with intro, failMessage, transforms array, result
 - **No outer_word/inner_word/fodder steps for new clues** — all word identification and transformation is handled in the assembly step. These templates are deprecated (still supported for existing clues but not used in new annotations).
 - Each transform: `{role, indices, type, result, hint}` — type is synonym/abbreviation/literal/reversal/deletion/anagram/container/letter_selection/homophone
@@ -332,6 +334,7 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 | `definition` | `tap_words` | Find the definition at start/end of clue | Active |
 | `wordplay_type` | `multiple_choice` | Identify the type of wordplay (Charade, Container, Anagram, etc.) | Active |
 | `indicator` | `tap_words` | Find indicator word — `indicator_type` field drives type-specific prompt, intro, menuTitle, completedTitle | Active |
+| `abbreviation_scan` | `tap_words` | Spot standard cryptic abbreviations — `mappings` field maps word indices to abbreviation letters | Active |
 | `assembly` | `assembly` | Multi-phase: transforms then assembly check (used for containers, charades, and other types) | Active |
 | `outer_word` | `tap_words` | Identify which word wraps around (container clues) | Deprecated |
 | `inner_word` | `tap_words` | Identify which word goes inside (container clues) | Deprecated |
@@ -599,6 +602,7 @@ The engine uses a simple sequencer with flat steps. Each step type has one inter
 | `definition` | `tap_words` | Find definition at start/end of clue |
 | `wordplay_type` | `multiple_choice` | Identify the wordplay technique (Charade, Container, etc.) |
 | `indicator` | `tap_words` | Find indicator word — `indicator_type` drives type-specific text |
+| `abbreviation_scan` | `tap_words` | Spot standard cryptic abbreviations — one step for all abbreviations in the clue |
 | `outer_word` | `tap_words` | Identify the outer (wrapping) word |
 | `inner_word` | `tap_words` | Identify the inner (inserted) word |
 | `fodder` | `tap_words` | Identify the word being operated on by an indicator |
@@ -606,12 +610,13 @@ The engine uses a simple sequencer with flat steps. Each step type has one inter
 
 **Assembly Layout:**
 The `assembly` step has its own sub-state tracked by `assembly_phase` and `assembly_transforms_done` in session state. The layout shows:
-1. **Definition line**: Reminds student what they're looking for (template: `definitionLine` with `{enumeration}`, `{definitionWords}`)
+1. **Definition line**: Reminds student what they're looking for. When no abbreviations were discovered, uses `definitionLine`: "You're looking for a {enumeration}-letter word meaning '{definitionWords}'". When an `abbreviation_scan` step precedes the assembly, uses `definitionLineWithAbbreviations`: "You're looking for a {enumeration}-letter word meaning '{definitionWords}' that contains {abbreviationSummary}" — incorporating the known abbreviation facts into a single coaching sentence (e.g. "...that contains the letter H from 'Husband' and I from 'one'").
 2. **Indicator line**: For containers, shows piece layout with roles (template: `indicatorLine` with `{indicatorWords}`, `{innerWords}`, `{outerWords}`). Empty for charades/chains.
-3. **Fail message**: Shows that raw clue words don't work (step metadata can override via `failMessage`)
-4. **Transform prompts**: Role-labelled coaching prompts from `transformPrompts` in `render_templates.json`. All transforms are always active — no locking. The student sees the full plan and works through them in any order. Each has its own hint lightbulb.
-5. **Combined result display**: Editable letter inputs grouped by transform with `+` separators based on `positionMap`. Cross letters shown as overwritable placeholders. Check button submits all filled groups.
-6. **Assembly check**: **Auto-skipped** when the last transform result equals the final answer (avoids redundant retyping).
+3. **Substitution line** (substitution clues only): States the operation without revealing which letters — "'turning to' tells you to swap a letter in 'the'".
+4. **Fail message**: Shows that raw clue words don't work (step metadata can override via `failMessage`)
+5. **Transform prompts**: Role-labelled coaching prompts from `transformPrompts` in `render_templates.json`. Abbreviation transforms are **auto-completed** when an `abbreviation_scan` step precedes the assembly — the student already identified these, so they are treated as known facts (shown as completed, no input needed). All remaining transforms are always active — no locking. The student sees the full plan and works through them in any order. Each has its own hint lightbulb.
+6. **Combined result display**: Editable letter inputs grouped by transform with `+` separators based on `positionMap`. Cross letters shown as overwritable placeholders. Check button submits all filled groups.
+7. **Assembly check**: **Auto-skipped** when the last transform result equals the final answer (avoids redundant retyping).
 
 ### 5.2 Input Modes
 
