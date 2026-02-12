@@ -140,6 +140,8 @@
       "inner": "Inner",
       "inner_a": "Inner A",
       "inner_b": "Inner B",
+      "inner_c": "Inner C",
+      "inner reversed": "Inner reversed",
       "contained": "Contained",
       "container": "Container",
       "anagram": "Anagram",
