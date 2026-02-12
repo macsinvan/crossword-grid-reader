@@ -22,6 +22,14 @@ In charades and container insertions, the clue words are rarely used directly. E
 - Completed steps should summarise the insight, not label the category
 - Before writing ANY user-facing text, think as a cryptic crossword teacher — research the domain if needed, don't hypothesise from code structure
 
+**Assembly transform prompts — deliver the aha moment:**
+Every transform prompt in the assembly step must teach a cryptic convention, not just label an operation. The student should understand *why* this word points to those letters. Mechanical prompts like "Find a 2-letter synonym for 'in'" or "'IT' is used as-is — type it in (2 letters)" tell the student what to do but not what to learn. The `transformPrompts` in `render_templates.json` and per-transform `hint` text in training metadata should connect the clue word to the convention being used:
+- **synonym**: guide the student to the specific crossword convention (e.g. "In cryptics, 'work' almost always means OP — it's one of the most common abbreviations")
+- **abbreviation**: explain the shorthand (e.g. "'number' in cryptics usually points to NO — a standard abbreviation")
+- **literal**: explain why this word is taken at face value, not as a clue to something else
+- **letter_selection**: teach the pattern (e.g. "'head of office' = take the first letter — 'head of' always means first letter in cryptics")
+- **reversal/deletion/anagram/container**: connect the indicator word to the operation it signals
+
 **NO per-clue prompt overrides.** All prompts come from the generic `transformPrompts` templates in `render_templates.json`. If a template doesn't cover a case, extend the template — never add a `prompt` field to an individual transform in training metadata. The `hint` field is for clue-specific teaching (convention explanations, dictionary links); the `prompt` is always template-driven.
 
 ### Template Rules — MANDATORY
@@ -29,11 +37,40 @@ In charades and container insertions, the clue words are rarely used directly. E
 When writing or modifying step metadata for clues:
 
 1. **Check existing templates first.** Read `render_templates.json` — can an existing template handle this step? If so, use it. If it needs a small extension, extend it. Don't invent new templates without explicit approval.
-2. **If using an existing template, follow its patterns exactly.** Templates define `completedTitle`, `onCorrect`, `menuTitle`, etc. with specific variable substitution patterns. Match them.
+2. **If using an existing template, follow its patterns exactly.** Templates define `completedTitle`, `onCorrect`, `menuTitle`, etc. with specific variable substitution patterns. Match them. For example, the `indicator` template uses `{indicatorType}` in menuTitle/completedTitle and dict-keyed lookup for prompt/intro — indicator steps just need the `indicator_type` field in their metadata.
 3. **If a new template is genuinely needed, model it on the closest existing one.** Copy the structure (inputMode, prompt, menuTitle, completedTitle, onCorrect, expected_source) and adapt the content.
-4. **Every step must deliver a teaching moment, not a robotic instruction.** Prompts like "Enter the 3-letter result" are mechanical. Prompts like "What does 'work' mean in cryptic crosswords?" teach.
+4. **Every step must deliver a teaching moment, not a robotic instruction.** We are building a teaching app. Each step should help the student understand a cryptic crossword convention — why something works, not just what to type. Prompts like "Enter the 3-letter result" are mechanical. Prompts like "What does 'work' mean in cryptic crosswords?" teach.
 
-**For coaching guidance per step type, scanning phase flow, and assembly patterns — see SPEC.md Sections 5.1 and 6.3.**
+### Coaching Guidance Per Template Type
+
+Every template's user-facing text must connect to these high-level coaching insights. Step instructions should flow naturally from this guidance.
+
+**standard_definition** — Every cryptic clue contains a straight definition, always at the very start or very end, never in the middle. Finding it first narrows your search. Completed: confirm what the definition means and where it sits.
+
+**container (insertion)** — An indicator word (e.g. "holding", "within", "nurses", "lengthened") tells you one word goes inside another. You need to identify: which word signals the insertion, which is the outer word, and which goes inside. The clue words themselves rarely *are* the answer letters — each is pointing to another word (synonym, abbreviation, etc.). The assembly step shows this: the raw words don't fit, so what does each one really mean?
+
+**charade** — The wordplay breaks into parts that join end-to-end. Often there are no indicator words at all — that's the giveaway it's a charade. Each part is a clue to a shorter word. Again, the raw words rarely work directly; each is pointing to something else. The assembly step demonstrates this by showing the raw words don't produce the right number of letters.
+
+**anagram** — An indicator word (e.g. "mixed", "confused", "struggling") signals that letters need rearranging. First collect the letters (sometimes from multiple words), then rearrange them into the answer.
+
+**hidden** — The answer is literally hiding in plain sight, spelled out across consecutive letters spanning word boundaries. An indicator like "in", "from", or "some" points to this. Sometimes the hidden word is reversed.
+
+**double_definition** — The clue is simply two definitions side by side, both pointing to the same answer. No wordplay trickery — just spot that both halves define the same word.
+
+**transformation_chain** — Multiple operations applied in sequence: start with a word, then apply each transformation (synonym, deletion, reversal, etc.) one after another. Each step builds on the previous result.
+
+**synonym / abbreviation / literal / reversal / deletion / letter_selection** — These are the building blocks that appear within charades, containers, and chains. Each teaches one specific trick: a word means something else (synonym), a standard short form (abbreviation, e.g. "five" = V), a word used as-is (literal), reading backwards (reversal), removing letters (deletion), or picking specific letters like first/last/middle (letter_selection).
+
+**connector** — Some words in the clue are just glue — "and", "with", "for" — that don't contribute any letters. Recognising them helps the student focus on the words that matter.
+
+### Step 2 Rule: Indicators vs No-Indicators
+
+After the student finds the definition, step 2 depends on whether the clue has indicator words:
+
+- **Clues WITH indicators** (anagram, container, hidden, deletion, reversal — and charades that contain these): Show word chips (`tap_words`) so the student can find and tap the indicator word(s). A clue can have multiple indicator steps (e.g. 26A has both a reversal and a container indicator). Every dependent transform (reversal, deletion, anagram) in the assembly MUST have a corresponding indicator step — the `test_indicator_coverage` test enforces this.
+- **Clues WITHOUT indicators** (pure charades, double definition): Show multiple choice options (`multiple_choice`) so the student can select the clue type. There are no indicator words to find, so word chips are not shown — the student just picks from a list.
+
+Examples: 5D (deletion — indicator "A lot of") and 2D (anagram — indicator "Crooked") show word chips at step 2. 26A (charade with reversal+container) has two indicator steps for "back" and "in". Pure charades like 4A and 25A show multiple choice instead.
 
 ## Communication Rules
 
@@ -183,13 +220,12 @@ The trainer engine (`training_handler.py`, ~1100 lines) owns ALL trainer busines
 - For indicator steps: `indicator_type` field drives type-specific text via dict-keyed lookup and `{indicatorType}` variable
 - Assembly steps can override `failMessage`
 
-**Current render templates (5 active):**
+**Current render templates (4 active):**
 | Template | inputMode | Purpose |
 |----------|-----------|---------|
 | `definition` | `tap_words` | Find the definition at start/end of clue |
 | `wordplay_type` | `multiple_choice` | Identify the type of wordplay (Charade, Container, etc.) |
 | `indicator` | `tap_words` | Find indicator word — `indicator_type` drives type-specific text |
-| `abbreviation_scan` | `tap_words` | Spot standard crossword abbreviations (husband→H, one→I, etc.) |
 | `assembly` | `assembly` | Coaching context, parallel transforms, combined letter entry |
 
 **Deprecated templates (still supported but no longer used in new clues):**
@@ -211,8 +247,6 @@ Assembly is a multi-phase step with its own sub-state (`assembly_phase`, `assemb
 3. **Fail message** — shows raw words don't work, prompting transformation
 4. **Transform prompts** — role-labelled coaching prompts (e.g. "outer, 'Not after', has a 2-letter synonym"), each with its own hint lightbulb. All transforms are always active — no locking. The student sees the full plan and works through them in any order.
 5. **Combined result display** — editable letter inputs grouped by transform with `+` separators, showing cross letters as overwritable placeholders. Check button submits all filled groups.
-
-**Assembly coaching pattern:** See SPEC.md Section 6.3 for the full pattern. Key principle: state what we have, state the operation, ask the student to solve. Never give the answer.
 
 Transform prompts are template-driven from `transformPrompts` in `render_templates.json`. Definition/indicator lines use `{variable}` substitution via `_resolve_variables()`. When the last transform result equals the final answer, the check phase is auto-skipped.
 
@@ -316,89 +350,69 @@ When starting a new session, check these first:
 **Key things a new session needs to know:**
 - Puzzle **29453** (30 clues) is **locked** and 100% verified — never modify
 - Puzzle **29147** (32/32 clues done) is complete — all clues annotated and validated
+- Puzzle **29463** (30/30 clues done) is complete — all clues annotated and validated
 - Training data lives in **Supabase** (`clues.training_metadata`), not in JSON files
 - Training data is **lazy-loaded** from Supabase per request — no restart needed for DB changes
 - Clues with validation errors return **422** with error details when clicked in the UI
 - The standalone validator (`validate_training.py`) loads directly from Supabase
 - OCR errors in the DB `text` column cause words-vs-clue mismatches — fix by updating the `text` column directly in Supabase
 
-## Current Work — Puzzle 29147 Training Metadata
+## Current Work
 
-**Status:** 32 of 32 clues completed and validated. ✅ Puzzle complete.
+### Puzzle 29147 — COMPLETE (32/32 clues)
+All 32 clues annotated, validated, and passing regression tests.
 
-**Completed clues (32):**
-- **1A** — ASHAMED: charade (AS + HAM + ED)
-- **1D** — ANAEMIC: container + reversal (CIA contains MEAN → reversed)
-- **2D** — HELEN OF TROY: anagram (TO + E + F + ONLY + HER → anagram)
-- **3D** — MY WORD: double definition (exclamation + promise)
-- **4D** — DARTH VADER: charade + container (DART + HER containing V + AD)
-- **5A** — REMAINS: charade (RE + MAINS)
-- **5D** — ROSE: triple definition (grew/flower/spray attachment)
-- **6D** — MINISTRY: charade with ordering (MINIS + TRY, "priority" = ordering indicator)
-- **7D** — IDA: hidden word in holIDAys
-- **8D** — SALFORD: container (SAD containing L + FOR)
-- **9A** — AIL: letter selection (alternate letters from bAcIlLi)
-- **10A** — WARTS AND ALL: container + deletion (WALk→WAL containing RT + SANDAL)
-- **11A** — MONARCHY: charade + letter selection (MON + ARCH + Y)
-- **12A** — PSEUDO: homophone (SUE + DOUGH → sounds like PSEUDO)
-- **13D** — UNINITIATED: container + reversal (UNITED contains NIT + IA from A1 reversed)
-- **14D** — STRATEGIST: charade (ST + RATE + GIST)
-- **15A** — CUFF: charade (CU + FF)
-- **16A** — MASTERMIND: container + charade (MATER containing S = MASTER + MIND)
-- **17D** — SPOTLESS: charade (SPOT + LESS)
-- **18A** — PERIPHERAL: anagram (HELP + REPAIR)
-- **18D** — PICKLED: charade (PICK + LED)
-- **19A** — LIMB: deletion (LIMBO - O)
-- **20D** — BUGBEAR: charade (BUG + BEAR)
-- **21D** — GUNG HO: charade + container (GUN + G(H)O — H inside GO)
-- **22A** — COYOTE: charade (COY + OTE)
-- **23A** — DEPUTING: anagram (EG + PUNDIT)
-- **24D** — ZANY: charade (Z + ANY)
-- **25A** — LEAVE-TAKING: container (LEAKING containing A + VET)
-- **26D** — ALB: hidden reversed word in shruBLAnd
-- **27A** — TIE: substitution (THE with H→I)
-- **28A** — DEBUSSY: charade + letter selection (DEBUS + SY)
-- **29A** — TO ORDER: reversal (RED + ROOT → reversed)
+### Puzzle 29463 — COMPLETE (30/30 clues)
+All 30 clues annotated, validated, and passing regression tests (1104/1104 tests pass across 92 total clues).
+
+**Completed clues (29463):**
+- **1A** — CAPUCHIN: deletion (CAPUCHINO - O)
+- **1D** — CUTTER: double definition (knife + boat)
+- **2D** — PATRIOTIC: charade + abbreviation (PAT + RIOT + IC)
+- **3D** — CAESURA: container + reversal (CASE contains RUA reversed)
+- **4D** — IMIDE: container (I'M containing IDE)
+- **5A** — GAMBIT: charade (GAMB + IT)
+- **6D** — ASHAMED: charade (AS + HAM + ED)
+- **7D** — BRUIN: charade (B + RUIN)
+- **8D** — THEORIST: anagram (HIS + OTTER)
+- **9D** — PHOSGENE: container + charade (PH + OS containing H + ENE)
+- **10A** — TO THE LIGHTHOUSE: charade (TO + THE + LIGHT + HOUSE)
+- **11A** — EPICURE: container (EPIC containing URE)
+- **12A** — SEMINAR: hidden word in houSEMINARy
+- **13A** — STRADDLE: container (SADDLE containing TR)
+- **14D** — DIATRIBE: container (DIRE containing AT + RIB)
+- **15A** — DRIPS: charade (DR + IPS)
+- **16D** — INTERBRED: anagram (BIRD + ENTER)
+- **17D** — BAGPIPER: container (BIER containing AGP — A + GP)
+- **18A** — ASCOT: deletion (MASCOT - M)
+- **19D** — TRIREME: charade (TRIER + EME)
+- **20A** — ACERBITY: container (ACERY containing BIT)
+- **21D** — BELLINI: charade (BELL + IN + I)
+- **22D** — TEASER: charade (TR + EASER)
+- **23A** — POTTIER: anagram (AGRIPOT - AG + TIER)
+- **24D** — TACIT: reversal (TICAT → TACIT)
+- **25A** — SPLURGE: container + reversal (SURGE containing LP reversed)
+- **25D** — SOLVE: charade (SO + LVE)
+- **26A** — POCKET BILLIARDS: charade (POCKET + BILL + I + ARDS)
+- **27A** — ROTTER: charade (ROT + TER)
+- **28A** — BEWILDER: container (BEWIDER containing L from "left")
 
 **Known issue (puzzle 29453 — DO NOT MODIFY 29453 DATA):**
 - **9D** — has wrong apostrophe and wrong transform type. Not yet fixed.
 
-**Validator changes made during 29147 work:**
+**Validator changes made during 29147/29463 work:**
 - `_check_container`: now handles 3+ predecessors (multiple inner pieces concatenated via permutations)
-- `_find_consumed_predecessors`: now skips predecessors already consumed by intermediate dependent transforms (fixes reversal-inside-container like 13D)
+- `_find_consumed_predecessors`: now skips predecessors already consumed by intermediate dependent transforms
 - `_check_reversal`: now strips non-alpha characters (handles multi-word answers like TO ORDER)
-- `_check_substitution`: new check — result must be same length as input, differing by exactly one letter (for 27A TIE)
+- `_check_substitution`: new check — result must be same length as input, differing by exactly one letter
 - Added `substitution` to VALID_TRANSFORM_TYPES, VALID_INDICATOR_TYPES, and DEPENDENT_TRANSFORM_TYPES
 - Added `abbreviation_scan` to VALID_STEP_TYPES and STEP_REQUIRED_FIELDS
-- Added `substitution` to all DEPENDENT_TYPES sets in training_handler.py (was missing from engine)
-- Added to CRYPTIC_ABBREVIATIONS: agents→CIA, spies→CIA, female→F, male→M, commercial→AD, light source→LED, touching→RE, regarding→RE, concerning→RE, pounds→L, unknown quantity→X/Y/Z, very loud→FF, goodbye from texter→CU, earnings for salesperson→OTE, light→L, advertisement→AD
+- Added `inner_c` and `inner reversed` to roleDisplayNames in render_templates.json
+- Added many entries to CRYPTIC_ABBREVIATIONS dictionary
 
 **Process:** Two-phase approach: (1) Solve as AI expert with clue+definition+answer, (2) Encode as training metadata. Hints teach Times conventions (the macro-level checks become the hints).
 
 **IMPORTANT: Puzzle 29453 is the verified reference. It is locked in Supabase (`training_locked = TRUE`) and 100% read-only. The upload script and all store write methods refuse to modify locked puzzles. Use `python3 lock_puzzle.py --unlock 29453` only if you genuinely need to fix data.**
-
-## TODO
-
-1. ~~**Regression tests too slow**~~ — DONE. Puzzle-level bulk cache in `lookup_clue()`. Tests run in ~4s.
-
-2. **Abbreviation scan: per-abbreviation prompts** — Currently the `abbreviation_scan` step asks "Which words are standard crossword abbreviations?" as a single tap-all-at-once step. Instead, each abbreviation should get its own prompt, e.g. "Can you find a word that is commonly abbreviated to 'H'?" This teaches the association better — the student recalls the mapping, not just identifies the word.
-
-3. **Auto-advance scanning steps** — Eliminate the unnecessary "Check" button click to progress scanning steps (definition, indicator, abbreviation_scan). When the student taps the correct word(s), the step should auto-advance without requiring a separate confirmation click.
-
-4. ~~**God functions in training_handler.py**~~ — DONE. `_build_assembly_data` split into 5 helpers + orchestrator. `_resolve_variables` split into 6 helpers + orchestrator.
-
-5. ~~**Implicit API field contracts**~~ — DONE. `test_response_contract` now validates all 55 response fields across every endpoint. Also caught and fixed missing `answerGroups` in completion response.
-
-6. ~~**New step type touches 5 files**~~ — RESOLVED. Audit showed architecture already handles this well: new step types with existing inputModes only need render_templates.json + validate_training.py constants. Engine and client are generic.
-
-### ~~Architecture violations~~ — DONE
-
-All 17 violations fixed and verified (744/744 tests pass). Changes:
-- **A (4-7)**: Python UI text → template patterns in `render_templates.json` (`abbreviationPairTemplate`, `breakdownLineTemplate`, `completedTextTemplates` expanded, `roleDisplayNames`)
-- **B (8-10)**: JS hardcoded text → server-provided (`checkPhasePrompt`), dead code removed, jargon fixed
-- **C (11-15)**: Silent fallbacks → `ValueError` crashes (missing template, `clue_type`, `onCorrect`, `completedTitle`, `None` in `_resolve_variables`)
-- **D (16)**: Client-side combined check filtering → server-side `transform_inputs` handler
-- **E (17)**: 6 catch-all `except Exception` handlers removed from `trainer_routes.py`
 
 ## Worktrees
 This repo uses git worktrees:

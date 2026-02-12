@@ -271,6 +271,7 @@ ALL intelligence lives on the server. The client is a pure view layer.
 
 **Step metadata fields** (beyond type/indices/hint):
 - `indicator_type`: For indicator steps — the type of indicator (container, anagram, deletion, reversal, ordering, letter_selection, hidden_word). Used by the template for type-specific prompt, intro, menuTitle, and completedTitle via `{indicatorType}` variable and dict-keyed lookup.
+- `mappings`: For `abbreviation_scan` steps — maps word indices to abbreviation letters (e.g. `{"0": "H", "3": "I"}`). The indices in the step's `indices` array identify which words to tap; the mappings provide the abbreviation each word represents.
 - `failMessage`: Overrides the default assembly fail message
 
 **Why This Flat Format:**
@@ -293,6 +294,7 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 - Step 2 depends on clue:
   - WITH indicators → `indicator` (tap_words) — can have multiple indicator steps per clue
   - WITHOUT indicators → `wordplay_type` (multiple_choice) with expected, options, hint
+- After indicators: `abbreviation_scan` (tap_words) — if the clue has any abbreviation transforms. One step identifies all abbreviations at once. The student taps the clue words that are standard cryptic abbreviations (e.g. 'Husband' → H, 'one' → I). Step metadata includes `mappings` (`{"0": "H", "3": "I"}`) mapping word indices to abbreviation letters.
 - Final step: `assembly` with intro, failMessage, transforms array, result
 - **No outer_word/inner_word/fodder steps for new clues** — all word identification and transformation is handled in the assembly step. These templates are deprecated (still supported for existing clues but not used in new annotations).
 - Each transform: `{role, indices, type, result, hint}` — type is synonym/abbreviation/literal/reversal/deletion/anagram/container/letter_selection/homophone
@@ -325,14 +327,14 @@ clue_type, difficulty ({definition, wordplay, overall}), steps (array)
 - **12A** — anagram with fodder pieces (literal parts + final anagram)
 - **23D** — hidden reversed word with dictionary lookup on transform
 
-**Current Render Templates (5 active, 3 deprecated):**
+**Current Render Templates (4 active, 3 deprecated):**
 
 | Template | inputMode | Purpose | Status |
 |----------|-----------|---------|--------|
 | `definition` | `tap_words` | Find the definition at start/end of clue | Active |
 | `wordplay_type` | `multiple_choice` | Identify the type of wordplay (Charade, Container, Anagram, etc.) | Active |
 | `indicator` | `tap_words` | Find indicator word — `indicator_type` field drives type-specific prompt, intro, menuTitle, completedTitle | Active |
-| `abbreviation_scan` | `tap_words` | Spot standard crossword abbreviations (husband→H, one→I, etc.) | Active |
+| `abbreviation_scan` | `tap_words` | Spot standard cryptic abbreviations — `mappings` field maps word indices to abbreviation letters | Active |
 | `assembly` | `assembly` | Multi-phase: transforms then assembly check (used for containers, charades, and other types) | Active |
 | `outer_word` | `tap_words` | Identify which word wraps around (container clues) | Deprecated |
 | `inner_word` | `tap_words` | Identify which word goes inside (container clues) | Deprecated |
@@ -475,7 +477,6 @@ Templates use `{variable}` placeholders resolved from step + clue data:
 | `definition` | `definition` | `tap_words` | Find definition |
 | `wordplay_type` | `wordplay_type` | `multiple_choice` | Identify wordplay technique |
 | `indicator` | `indicator` | `tap_words` | Find indicator word — `indicator_type` drives type-specific text |
-| `abbreviation_scan` | `abbreviation_scan` | `tap_words` | Spot standard crossword abbreviations |
 | `outer_word` | `outer_word` | `tap_words` | Identify outer word (container clues) |
 | `inner_word` | `inner_word` | `tap_words` | Identify inner word (container clues) |
 | `fodder` | `fodder` | `tap_words` | Identify word being operated on |
@@ -590,32 +591,7 @@ class Trainer {
 
 ## 5. Training Flow
 
-### 5.1 Scanning Phase Flow
-
-The scanning phase teaches students to break down a clue before attempting assembly. The order is:
-
-1. **Definition** — Find the straight definition (always at start or end)
-2. **Wordplay indicators** — Find indicator words that signal the technique (if present)
-3. **Common abbreviations** — Spot standard crossword abbreviations like husband→H, one→I (if present)
-4. **Assembly** — Put it all together
-
-**Step 2: Indicators vs No-Indicators**
-
-After the student finds the definition, step 2 depends on whether the clue has indicator words:
-
-- **Clues WITH indicators** (anagram, container, hidden, deletion, reversal — and charades that contain these): Show word chips (`tap_words`) so the student can find and tap the indicator word(s). A clue can have multiple indicator steps (e.g. 26A has both a reversal and a container indicator). Every dependent transform (reversal, deletion, anagram) in the assembly MUST have a corresponding indicator step — the `test_indicator_coverage` test enforces this.
-- **Clues WITHOUT indicators** (pure charades, double definition): Show multiple choice options (`multiple_choice`) so the student can select the clue type. There are no indicator words to find, so word chips are not shown — the student just picks from a list.
-
-**Step 3: Abbreviation Scanning**
-
-After indicators (or wordplay type selection), if the clue contains words that are standard crossword abbreviations, add an `abbreviation_scan` step. This teaches students to recognise the "usual suspects" — words that always stand for the same letters across all setters.
-
-- Only include for **commonly repeated abbreviations** (H=husband, I=one, DR=doctor, etc.) — NOT one-off clue-specific tricks
-- Multiple abbreviations in a clue are tapped in any order (engine uses set comparison)
-- The `abbreviation_scan` step metadata must include a `mappings` field (e.g. `{"0": "H", "3": "I"}`) mapping word indices to their abbreviation letters
-- The hint should teach the convention: "'Husband' is always H and 'one' is always I"
-
-### 5.2 Step Types
+### 5.1 Step Types
 
 **See section 4.2.2 for the complete metadata → render template mapping.**
 
@@ -626,42 +602,23 @@ The engine uses a simple sequencer with flat steps. Each step type has one inter
 | `definition` | `tap_words` | Find definition at start/end of clue |
 | `wordplay_type` | `multiple_choice` | Identify the wordplay technique (Charade, Container, etc.) |
 | `indicator` | `tap_words` | Find indicator word — `indicator_type` drives type-specific text |
-| `abbreviation_scan` | `tap_words` | Spot standard crossword abbreviations (husband→H, one→I, etc.) |
+| `abbreviation_scan` | `tap_words` | Spot standard cryptic abbreviations — one step for all abbreviations in the clue |
 | `outer_word` | `tap_words` | Identify the outer (wrapping) word |
 | `inner_word` | `tap_words` | Identify the inner (inserted) word |
 | `fodder` | `tap_words` | Identify the word being operated on by an indicator |
 | `assembly` | `assembly` | Coaching context, parallel transforms, combined letter entry |
 
-**Coaching guidance per step type:**
-
-- **definition** — Every cryptic clue contains a straight definition, always at the very start or very end, never in the middle. Finding it first narrows your search.
-- **container** — An indicator word (e.g. "holding", "within", "nurses") tells you one word goes inside another. The clue words themselves rarely *are* the answer letters — each is pointing to another word.
-- **charade** — The wordplay breaks into parts that join end-to-end. Often there are no indicator words at all — that's the giveaway. Each part is a clue to a shorter word.
-- **anagram** — An indicator word (e.g. "mixed", "confused") signals that letters need rearranging. First collect the letters, then rearrange them.
-- **hidden** — The answer is literally hiding in plain sight, spelled out across consecutive letters spanning word boundaries.
-- **double_definition** — Two definitions side by side, both pointing to the same answer. No wordplay trickery.
-- **abbreviation_scan** — Experienced solvers recognise certain words on sight: 'husband' = H, 'one' = I, 'doctor' = DR. These standard abbreviations appear across all setters.
-- **connector** — Some words in the clue are just glue — "and", "with", "for" — that don't contribute any letters.
-
-**Assembly transform prompt guidance:**
-
-Every transform prompt must teach a cryptic convention, not just label an operation:
-- **synonym**: guide the student to the specific crossword convention (e.g. "In cryptics, 'work' almost always means OP")
-- **abbreviation**: explain the shorthand (e.g. "'number' in cryptics usually points to NO")
-- **literal**: explain why this word is taken at face value
-- **letter_selection**: teach the pattern (e.g. "'head of' always means first letter in cryptics")
-- **reversal/deletion/anagram/container**: connect the indicator word to the operation it signals
-
 **Assembly Layout:**
 The `assembly` step has its own sub-state tracked by `assembly_phase` and `assembly_transforms_done` in session state. The layout shows:
-1. **Definition line**: Reminds student what they're looking for (template: `definitionLine` with `{enumeration}`, `{definitionWords}`)
+1. **Definition line**: Reminds student what they're looking for. When no abbreviations were discovered, uses `definitionLine`: "You're looking for a {enumeration}-letter word meaning '{definitionWords}'". When an `abbreviation_scan` step precedes the assembly, uses `definitionLineWithAbbreviations`: "You're looking for a {enumeration}-letter word meaning '{definitionWords}' that contains {abbreviationSummary}" — incorporating the known abbreviation facts into a single coaching sentence (e.g. "...that contains the letter H from 'Husband' and I from 'one'").
 2. **Indicator line**: For containers, shows piece layout with roles (template: `indicatorLine` with `{indicatorWords}`, `{innerWords}`, `{outerWords}`). Empty for charades/chains.
-3. **Fail message**: Shows that raw clue words don't work (step metadata can override via `failMessage`)
-4. **Transform prompts**: Role-labelled coaching prompts from `transformPrompts` in `render_templates.json`. All transforms are always active — no locking. The student sees the full plan and works through them in any order. Each has its own hint lightbulb.
-5. **Combined result display**: Editable letter inputs grouped by transform with `+` separators based on `positionMap`. Cross letters shown as overwritable placeholders. Check button submits all filled groups.
-6. **Assembly check**: **Auto-skipped** when the last transform result equals the final answer (avoids redundant retyping).
+3. **Substitution line** (substitution clues only): States the operation without revealing which letters — "'turning to' tells you to swap a letter in 'the'".
+4. **Fail message**: Shows that raw clue words don't work (step metadata can override via `failMessage`)
+5. **Transform prompts**: Role-labelled coaching prompts from `transformPrompts` in `render_templates.json`. Abbreviation transforms are **auto-completed** when an `abbreviation_scan` step precedes the assembly — the student already identified these, so they are treated as known facts (shown as completed, no input needed). All remaining transforms are always active — no locking. The student sees the full plan and works through them in any order. Each has its own hint lightbulb.
+6. **Combined result display**: Editable letter inputs grouped by transform with `+` separators based on `positionMap`. Cross letters shown as overwritable placeholders. Check button submits all filled groups.
+7. **Assembly check**: **Auto-skipped** when the last transform result equals the final answer (avoids redundant retyping).
 
-### 5.3 Input Modes
+### 5.2 Input Modes
 
 | Mode | User Action | Validation |
 |------|-------------|------------|
@@ -670,7 +627,7 @@ The `assembly` step has its own sub-state tracked by `assembly_phase` and `assem
 | `text` | Type in a text input | Stripped uppercase comparison against expected |
 | `assembly` | Type in letter boxes (transforms then assembly) | Sequential transform validation then final result check |
 
-### 5.4 Render Object Structure
+### 5.3 Render Object Structure
 
 **The Complete Truth:** This object contains EVERYTHING the client needs to render the UI. The client has NO other data sources, NO local state, NO decision-making logic.
 
@@ -823,32 +780,6 @@ The `assembly` step has a multi-phase inline UI (used for containers, charades, 
 1. **Fail message** (amber): Shows raw words don't combine to anything
 2. **Transform inputs** (sequential, blue): Active transform shows letter boxes + hint 💡; completed transforms show green ✓ with result; pending transforms are grayed out
 3. **Assembly check** (purple): Letter tiles with word spacing + Check Answer button
-
-**Assembly Coaching Pattern — State What We Have, Then Ask:**
-
-Assembly puts together everything the student learned in scanning. The pattern is always: state the known pieces as facts, then ask the student to combine them. Never give the answer — coach the student to connect the dots themselves.
-
-1. **State what we have** — abbreviations found, indicator meaning, fodder identified
-2. **State the operation** — what the indicator tells us to do
-3. **Ask the student to solve** — one input, one answer
-
-This pattern applies regardless of wordplay type:
-- **Anagram**: "Part 1, 'eg', is used as-is / Part 2, 'pundit', is used as-is / now rearrange those letters — what 8-letter word do you get?"
-- **Substitution**: abbreviations stated in definitionLine; substitutionLine states the swap; single prompt asks for the result
-- **Container**: indicatorLine states which piece goes inside which; transforms ask for each piece's meaning; container prompt combines them
-
-**Substitution-specific assembly:**
-
-For substitution clues with abbreviation_scan, the assembly uses three coaching lines instead of the standard fail-message + multi-transform pattern:
-1. `definitionLineWithAbbreviations` — states the target and the abbreviations found: "You're looking for a 3-letter word meaning 'match' that contains H from 'Husband' and I from 'one'"
-2. `substitutionLine` — states the operation: "'turning to' tells you to swap H for I in 'the'"
-3. Single `substitution_with_context` prompt — just asks: "What 3-letter word do you get?"
-
-The literal source transform (the base word being operated on) is hidden from display since the substitutionLine already names it. The source is auto-completed behind the scenes when the student submits the substitution result.
-
-**Abbreviation-aware definitionLine:**
-
-When an `abbreviation_scan` step precedes assembly, the definitionLine incorporates the discovered abbreviations via `{abbreviationSummary}`. The `abbreviation_scan` step metadata must include a `mappings` field (e.g. `{"0": "H", "3": "I"}`) mapping word indices to their abbreviation letters.
 
 ### 6.4 Completion View
 
