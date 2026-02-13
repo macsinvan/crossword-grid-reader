@@ -449,30 +449,26 @@ Supabase Auth with Google OAuth implemented (Phase 4):
 ### Non-Linear Step Completion — COMPLETE
 All pre-assembly steps available simultaneously. Assembly gated on all prior steps complete. `step_index` repurposed as expanded-step pointer. New `select_step` UI action for switching steps. Four visual states in step list rendering.
 
-### Assembly Coaching Rework — IN PROGRESS
-Reworking all assembly coaching text to read as coherent, flowing guidance from an expert teacher — not disconnected robotic steps. Each clue type gets a dedicated coaching template that connects the prior steps to the assembly as one natural paragraph.
+### Assembly Coaching Rework — COMPLETE
+All assembly coaching text reworked as coherent, flowing guidance from an expert teacher. Each clue type has a dedicated coaching template in `render_templates.json` that connects prior steps to the assembly as one natural paragraph.
 
-**Principle:** Fidelity over efficiency. Each clue type deserves its own template rather than sharing generic text that reads mechanically.
+**Principle:** Fidelity over efficiency. Each clue type has its own template rather than sharing generic text.
 
-**Completed:**
-- **Simple anagram** — Dedicated `straightAnagramCoaching` template in `render_templates.json`. For clues with exactly one literal word → anagram (e.g. 12A SEMINAR), the student sees a single flowing paragraph: "You found the anagram indicator — notice you have '{word}', a {n}-letter word adjacent to the indicator. Now rearrange {WORD} into a {n}-letter word meaning '{definition}'." No separate definition line, no transform prompts, no fail message — just coaching text and letter boxes. See 12A as the reference example.
-- **Simple hidden word** — Dedicated `simpleHiddenWordCoaching` template. For clues with exactly one letter_selection transform + hidden_word indicator (e.g. 7D IDA). Single coaching paragraph: "You found the hidden word indicator — now look at '{word}' next to it. The answer is spelled out inside: scan for a {n}-letter sequence meaning '{definition}'."
-- **Simple substitution** — Dedicated `simpleSubstitutionCoaching` template. For clues with literal source + substitution transform + substitution indicator (e.g. 27A TIE). Single coaching paragraph connecting the abbreviation scan, indicator, and source word into one flowing sentence.
-- **Container with transforms** — Dedicated `containerCoaching` template. For container clues where parts need synonyms/abbreviations before inserting. Replaces definition + indicator + fail message with a coaching paragraph; container transform remains visible for student to complete.
+**Templates:** `straightAnagramCoaching`, `simpleHiddenWordCoaching`, `simpleSubstitutionCoaching`, `containerCoaching`, `charadeCoaching`, `deletionCharadeCoaching`, `reversalCharadeCoaching`, `compoundAnagramCoaching`, `letterSelectionCharadeCoaching`, `homophoneCoaching`, `reversedHiddenWordCoaching`, `orderingCharadeCoaching`, `deletionReversalCharadeCoaching`.
 
-**TODO — Simple indicator-based clues (dedicated coaching flow, no transforms):**
-- Simple container — indicator + outer + inner, no transforms needed
-- Simple reversal — indicator + word, just reverse it
-- Simple deletion — indicator + word, remove letters
+### Stateless Client Violations — TODO
+Architectural audit found 8 violations of the stateless client rule in `trainer.js`. The client derives data, makes rendering decisions, and syncs DOM cross-widget — all of which should be server-driven.
 
-**TODO — Clues with transforms (full assembly machinery: fail message, transform prompts, combined check):**
-- Charade with transforms — parts need synonyms/abbreviations before joining
-- Compound anagram — multiple parts (some transformed) → anagram
-- Deletion with transforms — base word needs transformation before deletion
-
-**TODO — Review existing:**
-- Double definition — review current flow
-- Reversal with transforms — review if needed
+| # | Violation | Location | Fix |
+|---|-----------|----------|-----|
+| V1 | Client builds `posToTransform` reverse map | trainer.js:518-524, 569-595 | Server sends pre-computed `resultGroups` |
+| V2 | Client derives per-position render metadata `{letter, isEditable}` | trainer.js:527-530, 544 | Server sends per-position `{letter, isEditable}` |
+| V3 | Client decides Check button visibility from transform statuses | trainer.js:558 | Server sends `showCombinedCheck` flag |
+| V4 | Client DOM-walks to build `byTransform` for submission | trainer.js:711-717 | Client submits raw letters+positions, server does grouping |
+| V5 | DOM cross-widget sync of check-phase inputs to answer boxes | trainer.js:752-755 | Remove — server handles answer state |
+| V6 | Client decides whether to re-render | trainer.js:64-66 | Server sends `shouldRender` flag |
+| V7 | Client guards submit button with own validation | trainer.js:810-813 | Submit button only rendered when server says valid |
+| V8 | Cross letters merged into assembly position data client-side | trainer.js | Server merges cross letters into position data |
 
 **IMPORTANT: Puzzle 29453 is the verified reference. It is locked in Supabase (`training_locked = TRUE`) and 100% read-only. The upload script and all store write methods refuse to modify locked puzzles. Use `python3 lock_puzzle.py --unlock 29453` only if you genuinely need to fix data.**
 
