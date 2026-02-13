@@ -255,7 +255,7 @@ def get_render(clue_id, clue, session):
         "index": step_index,
         "type": step["type"],
         "inputMode": template["inputMode"],
-        "prompt": resolved_prompt,
+        "prompt": _resolve_variables(resolved_prompt, step, clue),
     }
 
     # Intro (template may be dict keyed by indicator_type or definition_part)
