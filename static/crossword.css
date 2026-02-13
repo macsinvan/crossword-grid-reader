@@ -1079,6 +1079,34 @@ header h1 {
     margin-top: 20px;
 }
 
+.modal-status {
+    margin-top: 15px;
+    font-size: 0.9rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.modal-status.hidden {
+    display: none;
+}
+
+.modal-status .status-importing {
+    color: #2563eb;
+    font-weight: 500;
+}
+
+.modal-status .status-success {
+    color: #16a34a;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.modal-status .status-error {
+    color: #dc2626;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
 /* Responsive adjustments for puzzle list */
 @media (max-width: 600px) {
     .puzzle-item {
