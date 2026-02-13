@@ -91,14 +91,21 @@
     "straightAnagramCoaching": "You found the anagram indicator \u2014 notice you have '{fodderWord}', a {enumeration}-letter word adjacent to the indicator. Now rearrange {fodderWordUpper} into a {enumeration}-letter word meaning '{definitionWords}'.",
     "simpleHiddenWordCoaching": "You found the hidden word indicator \u2014 now look at '{fodderWord}' next to it. The answer is spelled out inside: scan for a {enumeration}-letter sequence meaning '{definitionWords}'.",
     "simpleSubstitutionCoaching": "You spotted that {abbreviationSummary}, and '{indicatorWords}' signals a letter swap. The word '{sourceWord}' is sitting right there in the clue \u2014 swap one letter for the other and you get a {enumeration}-letter word meaning '{definitionWords}'.",
+    "containerCoaching": "'{indicatorWords}' tells you one piece goes inside another. Can you find synonyms for the remaining words that combine to make {enumeration} letters meaning '{definitionWords}'?",
     "intro": {
       "default": "The words in the clue almost never appear directly in the answer. Each one is really a clue to a shorter word \u2014 a synonym, abbreviation, or clever association. Your job is to figure out what each word is really pointing to.",
       "anagram": "You found the anagram indicator. Now look at the remaining words next to it \u2014 their letters are what you need to rearrange.",
       "double_definition": "Both halves of the clue define the same word. Type in the answer that fits both meanings."
     },
     "transformPrompts": {
-      "synonym": "{role}, '{word}', has a {n}-letter synonym",
-      "abbreviation": "{role}, '{word}', has a {n}-letter abbreviation",
+      "synonym": {
+        "default": "{role}, '{word}', has a {n}-letter synonym",
+        "container": "Find a {n}-letter synonym for '{word}'"
+      },
+      "abbreviation": {
+        "default": "{role}, '{word}', has a {n}-letter abbreviation",
+        "container": "What {n}-letter abbreviation does '{word}' give you?"
+      },
       "literal": {
         "default": "The word '{word}' gives you {n} letters directly.",
         "anagram": "Notice '{word}', a {n}-letter word adjacent to the indicator."

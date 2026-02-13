@@ -896,9 +896,17 @@ def test_dependent_prompt_update(server, clue):
             dep_transform = t
             break
     if dep_transform is None:
-        # Straight anagrams have no visible transforms — skip this test
+        # Straight anagrams have no visible transforms — skip this test.
+        # Container transforms are also hidden (auto-completed) — skip.
         if len(transforms) == 0:
             return True, ""
+        # Check if the dependent transform is a container type (hidden from display)
+        for step_meta in clue["steps_meta"]:
+            if step_meta["type"] == "assembly":
+                raw_transforms = step_meta.get("transforms", [])
+                if dep_idx < len(raw_transforms) and raw_transforms[dep_idx].get("type") == "container":
+                    return True, ""
+                break
         return False, f"Dependent transform {dep_idx} not found in assembly data"
 
     initial_prompt = dep_transform["prompt"]

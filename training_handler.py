@@ -540,14 +540,19 @@ def _compute_fail_message(template, step, clue, words, transforms):
     return fail_msg_template.format(rawWordsList=raw_list)
 
 
-def _resolve_transform_prompt(prompt_template, clue_type, format_kwargs):
+def _resolve_transform_prompt(prompt_template, clue_type, format_kwargs, profile_key=None):
     """Resolve a transform prompt, which may be a string or a dict keyed by clue_type.
 
-    If the template value is a dict, picks the clue_type-specific version or falls
-    back to 'default'. If it's a string, uses it directly. Then applies .format().
+    If the template value is a dict, picks the profile_key-specific version first,
+    then clue_type-specific, then falls back to 'default'. If it's a string, uses
+    it directly. Then applies .format().
     """
     if isinstance(prompt_template, dict):
-        prompt_str = prompt_template.get(clue_type, prompt_template.get("default"))
+        prompt_str = None
+        if profile_key:
+            prompt_str = prompt_template.get(profile_key)
+        if prompt_str is None:
+            prompt_str = prompt_template.get(clue_type, prompt_template.get("default"))
         if prompt_str is None:
             raise ValueError(
                 f"Transform prompt dict has no key for clue_type '{clue_type}' and no 'default'. "
@@ -559,7 +564,7 @@ def _resolve_transform_prompt(prompt_template, clue_type, format_kwargs):
 
 def _build_transform_list(transforms, transforms_done, template, clue, words,
                            assembly_hint_index, substitution_consumed, has_substitution,
-                           prior_data=None):
+                           prior_data=None, profile_key=None):
     """Build the display list of transforms for the assembly step.
 
     Each transform gets a prompt, status, completion text, and hint visibility.
@@ -594,7 +599,8 @@ def _build_transform_list(transforms, transforms_done, template, clue, words,
                     raise ValueError(f"Missing '{prompt_key}' in transformPrompts in render_templates.json")
                 prompt = _resolve_transform_prompt(
                     TRANSFORM_PROMPTS[prompt_key], clue_type,
-                    {"n": letter_count, "definitionWords": definition_words})
+                    {"n": letter_count, "definitionWords": definition_words},
+                    profile_key=profile_key)
             else:
                 all_solved = all(c in transforms_done for c in consumed)
                 if all_solved:
@@ -606,17 +612,20 @@ def _build_transform_list(transforms, transforms_done, template, clue, words,
                     prompt = _resolve_transform_prompt(
                         TRANSFORM_PROMPTS[prompt_key], clue_type,
                         {"word": clue_word, "predecessorLetters": predecessor_letters,
-                         "n": letter_count, "definitionWords": definition_words})
+                         "n": letter_count, "definitionWords": definition_words},
+                        profile_key=profile_key)
                 else:
                     prompt = _resolve_transform_prompt(
                         TRANSFORM_PROMPTS[t_type], clue_type,
-                        {"word": clue_word, "n": letter_count, "definitionWords": definition_words})
+                        {"word": clue_word, "n": letter_count, "definitionWords": definition_words},
+                        profile_key=profile_key)
         else:
             display_role = _format_role(t["role"])
             prompt = _resolve_transform_prompt(
                 TRANSFORM_PROMPTS[t_type], clue_type,
                 {"role": display_role, "word": clue_word, "n": letter_count,
-                 "definitionWords": definition_words})
+                 "definitionWords": definition_words},
+                profile_key=profile_key)
 
         # Determine status: completed, active, or locked
         if i in transforms_done:
@@ -807,11 +816,45 @@ def _build_assembly_data(session, step, clue):
         transforms_done[0] = transforms[0]["result"].upper()
         fail_message = ""
 
+    # Container with transforms detection: clue has a container indicator,
+    # and the assembly has a container transform plus other transforms (synonym,
+    # abbreviation, etc.). The coaching paragraph replaces definition + indicator +
+    # fail message. The container transform is auto-completed and hidden — only the
+    # independent transforms (synonyms, abbreviations) are shown to the student.
+    has_container_indicator = any(
+        s.get("type") == "indicator" and s.get("indicator_type") == "container"
+        for s in clue.get("steps", [])
+    )
+    container_transform_indices = [
+        i for i, t in enumerate(transforms) if t["type"] == "container"
+    ]
+    is_container_with_transforms = (
+        has_container_indicator
+        and len(container_transform_indices) > 0
+    )
+    # Auto-complete container transforms — the student doesn't enter these
+    if is_container_with_transforms:
+        for ci in container_transform_indices:
+            if ci not in transforms_done:
+                # Only auto-complete if all predecessors are done
+                consumed = find_consumed_predecessors(transforms, ci)
+                if all(c in transforms_done for c in consumed):
+                    transforms_done[ci] = transforms[ci]["result"].upper()
+        fail_message = ""
+
+    # Determine profile_key for transform prompt lookup
+    profile_key = "container" if is_container_with_transforms else None
+
     # Build transform display data
     transform_list = _build_transform_list(
         transforms, transforms_done, template, clue, words,
         assembly_hint_index, substitution_consumed, has_substitution,
-        prior_data=prior)
+        prior_data=prior, profile_key=profile_key)
+
+    # For container profiles, hide the container transform from display —
+    # it's auto-completed, the student only sees independent transforms
+    if is_container_with_transforms:
+        transform_list = [t for t in transform_list if t["role"] != "container"]
 
     # For simple coaching profiles, hide ALL transforms from display —
     # the coaching paragraph replaces the definition line + transform prompt with one
@@ -883,6 +926,12 @@ def _build_assembly_data(session, step, clue):
     # Simple substitution: replace definitionLine with single coaching paragraph
     if is_simple_substitution:
         coaching_template = template.get("simpleSubstitutionCoaching", "")
+        definition_line = _resolve_variables(coaching_template, virtual_step, clue)
+        indicator_line = ""  # No separate indicator line needed
+
+    # Container with transforms: replace definitionLine with coaching paragraph
+    if is_container_with_transforms:
+        coaching_template = template.get("containerCoaching", "")
         definition_line = _resolve_variables(coaching_template, virtual_step, clue)
         indicator_line = ""  # No separate indicator line needed
 
@@ -960,6 +1009,14 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
                             # If this predecessor is itself dependent, recurse
                             if c > 0 and transforms[c]["type"] in DEPENDENT_TRANSFORM_TYPES:
                                 queue.append(c)
+
+            # Auto-complete container transforms whose predecessors are all done
+            # (only container — other dependent types like reversal/anagram need student input)
+            for j, jt in enumerate(transforms):
+                if j not in transforms_done and jt["type"] == "container" and j > 0:
+                    consumed = find_consumed_predecessors(transforms, j)
+                    if consumed and all(c in transforms_done for c in consumed):
+                        transforms_done[j] = jt["result"].upper()
 
             # Check if all transforms now complete → auto-skip if answer is spelled out
             if len(transforms_done) == len(transforms):

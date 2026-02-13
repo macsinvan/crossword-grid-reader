@@ -281,7 +281,7 @@ VALID_INDICATOR_TYPES = {"container", "anagram", "deletion", "reversal", "orderi
 VALID_DEFINITION_PARTS = {"first", "second", "third"}
 
 # Valid profile values (coaching flow identifiers)
-VALID_PROFILES = {"simple_anagram", "simple_hidden_word", "simple_substitution"}
+VALID_PROFILES = {"simple_anagram", "simple_hidden_word", "simple_substitution", "container_with_transforms"}
 
 # Indicator type equivalences (hidden_word covers reversal)
 INDICATOR_EQUIVALENCES = {"hidden_word": {"reversal", "hidden_word"}}
