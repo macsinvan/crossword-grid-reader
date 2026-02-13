@@ -1234,6 +1234,12 @@ def _resolve_simple_variables(text, step, clue):
             raise ValueError(f"Template uses {{definitionPart}} but step metadata is missing 'definition_part'")
         text = text.replace("{definitionPart}", step["definition_part"])
 
+    # {wordPlural} — "word" or "words" based on how many indices the step expects
+    if "{wordPlural}" in text:
+        if "indices" not in step:
+            raise ValueError(f"Template uses {{wordPlural}} but step metadata is missing 'indices'")
+        text = text.replace("{wordPlural}", "word" if len(step["indices"]) == 1 else "words")
+
     # {indicatorType} — from indicator step's indicator_type field
     if "{indicatorType}" in text:
         if "indicator_type" not in step:

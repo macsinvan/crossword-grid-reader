@@ -1,7 +1,7 @@
 {
   "definition": {
     "inputMode": "tap_words",
-    "prompt": "Tap the definition <strong>word or words</strong>",
+    "prompt": "Tap the definition <strong>{wordPlural}</strong>",
     "menuTitle": "Find the definition",
     "completedTitle": "Definition found: '{words}' — {hint}",
     "intro": "Every cryptic clue contains a straight definition \u2014 a word or phrase that means the same as the answer, just as you\u2019d find in a dictionary.\n\nTo spot it, ignore the misleading surface story. Read the start and end of the clue separately \u2014 does either phrase describe something specific? Could it be a dictionary entry?",
@@ -29,15 +29,15 @@
     "menuTitle": "Find the {indicatorType} indicator",
     "completedTitle": "{indicatorType} indicator: '{words}' — {hint}",
     "prompt": {
-      "container": "Which word tells you something is being placed inside something else?",
-      "anagram": "Which word signals that letters need rearranging?",
-      "deletion": "Which word signals that something is being removed or shortened?",
-      "reversal": "Which word signals that letters need to be reversed?",
-      "ordering": "Which word tells you about the ordering of the parts?",
-      "letter_selection": "Which <strong>word or words</strong> tell you to pick specific letters?",
-      "hidden_word": "Which <strong>word or words</strong> signal the answer is hiding in plain sight?",
-      "homophone": "Which words tell you this clue involves a sound-alike?",
-      "substitution": "Which words tell you one letter is being swapped for another?"
+      "container": "Which <strong>{wordPlural}</strong> tell you something is being placed inside something else?",
+      "anagram": "Which <strong>{wordPlural}</strong> signal that letters need rearranging?",
+      "deletion": "Which <strong>{wordPlural}</strong> signal that something is being removed or shortened?",
+      "reversal": "Which <strong>{wordPlural}</strong> signal that letters need to be reversed?",
+      "ordering": "Which <strong>{wordPlural}</strong> tell you about the ordering of the parts?",
+      "letter_selection": "Which <strong>{wordPlural}</strong> tell you to pick specific letters?",
+      "hidden_word": "Which <strong>{wordPlural}</strong> signal the answer is hiding in plain sight?",
+      "homophone": "Which <strong>{wordPlural}</strong> tell you this clue involves a sound-alike?",
+      "substitution": "Which <strong>{wordPlural}</strong> tell you one letter is being swapped for another?"
     },
     "intro": {
       "container": "A container indicator tells you one word goes inside another — look for words suggesting holding, wrapping, or containing.",
@@ -177,7 +177,7 @@
   },
   "abbreviation_scan": {
     "inputMode": "tap_words",
-    "prompt": "Which <strong>word or words</strong> are standard crossword abbreviations?",
+    "prompt": "Which <strong>{wordPlural}</strong> are standard crossword abbreviations?",
     "menuTitle": "Spot the abbreviations",
     "completedTitle": "{abbreviationBreakdown}\n{hint}",
     "breakdownLineTemplate": "'{word}' \u2192 {letter}",
