@@ -434,8 +434,8 @@ class TemplateTrainer {
 
         let html = '<div style="padding: 0.5rem 0 0.75rem 1.75rem;">';
 
-        // Assembly phase help
-        if (r.helpText) {
+        // Assembly phase help — hide when coaching paragraph is present
+        if (r.helpText && !data.definitionLine) {
             html += this.renderPhaseHelp(r);
         }
 

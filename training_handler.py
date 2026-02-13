@@ -832,9 +832,13 @@ def _build_assembly_data(session, step, clue):
     container_transform_indices = [
         i for i, t in enumerate(transforms) if t["type"] == "container"
     ]
+    has_outer_inner_roles = (
+        any(t.get("role") == "outer" for t in transforms)
+        and any(t.get("role", "").startswith("inner") for t in transforms)
+    )
     is_container_with_transforms = (
         has_container_indicator
-        and len(container_transform_indices) > 0
+        and (len(container_transform_indices) > 0 or has_outer_inner_roles)
     )
     if is_container_with_transforms:
         fail_message = ""
@@ -880,8 +884,9 @@ def _build_assembly_data(session, step, clue):
         fail_message = ""
 
     # Compound anagram detection: anagram indicator, transforms include anagram
-    # plus literals/abbreviations/synonyms (more than just one literal → anagram)
-    compound_anagram_types = {"synonym", "abbreviation", "literal", "anagram"}
+    # plus literals/abbreviations/synonyms/letter_selection/deletion
+    # (more than just one literal → anagram)
+    compound_anagram_types = {"synonym", "abbreviation", "literal", "anagram", "letter_selection", "deletion"}
     is_compound_anagram = (
         "anagram" in indicator_types
         and not is_container_with_transforms
@@ -890,6 +895,52 @@ def _build_assembly_data(session, step, clue):
         and not is_straight_anagram
     )
     if is_compound_anagram:
+        fail_message = ""
+
+    # Homophone charade detection: exactly one homophone indicator, no container,
+    # transforms are synonyms/abbreviations/literals/homophones
+    homophone_charade_types = {"synonym", "abbreviation", "literal", "homophone"}
+    is_homophone_charade = (
+        "homophone" in indicator_types
+        and not is_container_with_transforms
+        and any(t["type"] == "homophone" for t in transforms)
+        and all(t["type"] in homophone_charade_types for t in transforms)
+    )
+    if is_homophone_charade:
+        fail_message = ""
+
+    # Ordering charade detection: exactly one ordering indicator, no container,
+    # transforms are synonyms/abbreviations/literals
+    ordering_charade_types = {"synonym", "abbreviation", "literal"}
+    is_ordering_charade = (
+        indicator_types == ["ordering"]
+        and not is_container_with_transforms
+        and all(t["type"] in ordering_charade_types for t in transforms)
+    )
+    if is_ordering_charade:
+        fail_message = ""
+
+    # Reversed hidden word detection: hidden_word indicator, transforms are
+    # letter_selection + reversal (answer hidden backwards in adjacent text)
+    is_reversed_hidden_word = (
+        "hidden_word" in indicator_types
+        and any(t["type"] == "letter_selection" for t in transforms)
+        and any(t["type"] == "reversal" for t in transforms)
+        and all(t["type"] in {"letter_selection", "reversal"} for t in transforms)
+    )
+    if is_reversed_hidden_word:
+        fail_message = ""
+
+    # Deletion+reversal charade detection: both deletion and reversal indicators,
+    # transforms chain through synonym → deletion → reversal
+    deletion_reversal_types = {"synonym", "abbreviation", "literal", "deletion", "reversal"}
+    is_deletion_reversal_charade = (
+        "deletion" in indicator_types
+        and "reversal" in indicator_types
+        and not is_container_with_transforms
+        and all(t["type"] in deletion_reversal_types for t in transforms)
+    )
+    if is_deletion_reversal_charade:
         fail_message = ""
 
     # Determine profile_key for transform prompt lookup
@@ -951,6 +1002,9 @@ def _build_assembly_data(session, step, clue):
     virtual_step["deletionIndicatorWords"] = indicators_by_type.get("deletion", "")
     virtual_step["letterSelectionIndicatorWords"] = indicators_by_type.get("letter_selection", "")
     virtual_step["anagramIndicatorWords"] = indicators_by_type.get("anagram", "")
+    virtual_step["homophoneIndicatorWords"] = indicators_by_type.get("homophone", "")
+    virtual_step["orderingIndicatorWords"] = indicators_by_type.get("ordering", "")
+    virtual_step["hiddenWordIndicatorWords"] = indicators_by_type.get("hidden_word", "")
 
     # For straight anagrams and simple hidden words, add fodder word variables for the coaching template
     if is_straight_anagram or is_simple_hidden_word:
@@ -1020,6 +1074,30 @@ def _build_assembly_data(session, step, clue):
     # Compound anagram: coaching paragraph
     if is_compound_anagram:
         coaching_template = template.get("compoundAnagramCoaching", "")
+        definition_line = _resolve_variables(coaching_template, virtual_step, clue)
+        indicator_line = ""
+
+    # Homophone charade: coaching paragraph
+    if is_homophone_charade:
+        coaching_template = template.get("homophoneCoaching", "")
+        definition_line = _resolve_variables(coaching_template, virtual_step, clue)
+        indicator_line = ""
+
+    # Ordering charade: coaching paragraph
+    if is_ordering_charade:
+        coaching_template = template.get("orderingCharadeCoaching", "")
+        definition_line = _resolve_variables(coaching_template, virtual_step, clue)
+        indicator_line = ""
+
+    # Reversed hidden word: coaching paragraph
+    if is_reversed_hidden_word:
+        coaching_template = template.get("reversedHiddenWordCoaching", "")
+        definition_line = _resolve_variables(coaching_template, virtual_step, clue)
+        indicator_line = ""
+
+    # Deletion+reversal charade: coaching paragraph
+    if is_deletion_reversal_charade:
+        coaching_template = template.get("deletionReversalCharadeCoaching", "")
         definition_line = _resolve_variables(coaching_template, virtual_step, clue)
         indicator_line = ""
 
@@ -1586,6 +1664,9 @@ def _resolve_assembly_context_variables(text, step):
         "{deletionIndicatorWords}": "deletionIndicatorWords",
         "{letterSelectionIndicatorWords}": "letterSelectionIndicatorWords",
         "{anagramIndicatorWords}": "anagramIndicatorWords",
+        "{homophoneIndicatorWords}": "homophoneIndicatorWords",
+        "{orderingIndicatorWords}": "orderingIndicatorWords",
+        "{hiddenWordIndicatorWords}": "hiddenWordIndicatorWords",
     }
     for placeholder, field in variable_map.items():
         if placeholder in text:
