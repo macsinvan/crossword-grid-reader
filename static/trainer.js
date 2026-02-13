@@ -261,13 +261,13 @@ class TemplateTrainer {
         let html = '<div style="padding: 0.25rem 1.25rem 1rem;">';
 
         for (const step of steps) {
-            const isActive = currentStep && step.index === currentStep.index;
+            const isAvailable = step.status === 'active';
             const isCompleted = step.status === 'completed';
-            const isExpanded = isActive && r.stepExpanded;
+            const isExpanded = isAvailable && currentStep && step.index === currentStep.index && r.stepExpanded;
 
-            html += this.renderStepRow(step, isActive, isCompleted, isExpanded);
+            html += this.renderStepRow(step, isAvailable, isCompleted, isExpanded);
 
-            // Expanded content
+            // Expanded content — only for the one expanded step
             if (isExpanded && currentStep) {
                 html += this.renderActiveStep(r, currentStep);
             }
@@ -277,7 +277,7 @@ class TemplateTrainer {
         return html;
     }
 
-    renderStepRow(step, isActive, isCompleted, isExpanded) {
+    renderStepRow(step, isAvailable, isCompleted, isExpanded) {
         // Completed: small muted checkmark + title, single line
         if (isCompleted) {
             const titleHtml = step.title.replace(/\n/g, '<br>');
@@ -287,11 +287,9 @@ class TemplateTrainer {
             </div>`;
         }
 
-        // Active: bold, clickable
-        if (isActive) {
-            const chevron = isExpanded
-                ? '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 5l3 3 3-3" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>'
-                : '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M5 3l3 3-3 3" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>';
+        // Active + expanded: bold, chevron, full interaction area
+        if (isAvailable && isExpanded) {
+            const chevron = '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M3 5l3 3 3-3" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>';
 
             return `<div class="step-header-active" data-step-index="${step.index}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; cursor: pointer;">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#3b82f6"/><circle cx="8" cy="8" r="3" fill="white"/></svg>
@@ -300,7 +298,15 @@ class TemplateTrainer {
             </div>`;
         }
 
-        // Pending: muted
+        // Active + collapsed: clickable, blue circle, but no chevron or expanded content
+        if (isAvailable) {
+            return `<div class="step-header-available" data-step-index="${step.index}" style="display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0; cursor: pointer;">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" fill="#3b82f6"/><circle cx="8" cy="8" r="3" fill="white"/></svg>
+                <span style="font-size: 0.9rem; color: #1e293b; font-weight: 600; flex: 1;">${step.title}</span>
+            </div>`;
+        }
+
+        // Pending: muted (assembly before all prior steps are done)
         return `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; opacity: 0.35;">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#94a3b8" stroke-width="1.5"/></svg>
             <span style="font-size: 0.8rem; color: #94a3b8;">${step.title}</span>
@@ -581,10 +587,18 @@ class TemplateTrainer {
     // =========================================================================
 
     attachEventListeners() {
-        // Active step header click (expand/collapse)
+        // Expanded step header click (collapse/toggle)
         this.container.querySelectorAll('.step-header-active').forEach(el => {
             el.addEventListener('click', () => {
                 this.updateUIState('expand_step');
+            });
+        });
+
+        // Available (collapsed) step header click — switch to this step
+        this.container.querySelectorAll('.step-header-available').forEach(el => {
+            el.addEventListener('click', () => {
+                const stepIndex = parseInt(el.dataset.stepIndex, 10);
+                this.updateUIState('select_step', { step_index: stepIndex });
             });
         });
 

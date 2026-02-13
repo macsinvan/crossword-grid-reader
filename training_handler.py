@@ -205,10 +205,20 @@ def get_render(clue_id, clue, session):
     step_index = session["step_index"]
 
     # All steps done → show completed step list (no separate completion view)
-    if step_index >= len(steps):
+    if step_index >= len(steps) or set(range(len(steps))).issubset(set(session["completed_steps"])):
+        session["step_index"] = len(steps)
         return _build_all_done(session, clue, clue_id)
 
     step = steps[step_index]
+
+    # If the expanded step is already completed (e.g. after auto-advance landed on it),
+    # find the next available step
+    if step_index in session["completed_steps"]:
+        step_index = _next_active_step(steps, session["completed_steps"], step_index)
+        session["step_index"] = step_index
+        if step_index >= len(steps):
+            return _build_all_done(session, clue, clue_id)
+        step = steps[step_index]
 
     # Auto-complete assembly for double definitions — no transforms to show,
     # the student just types the answer in the answer box
@@ -365,9 +375,9 @@ def handle_input(clue_id, clue, session, value, transform_index=None, transform_
                 "role": step["type"],
             })
 
-        # Mark completed, advance
+        # Mark completed, advance to next available step
         session["completed_steps"].append(step_index)
-        session["step_index"] = step_index + 1
+        session["step_index"] = _next_active_step(steps, session["completed_steps"], step_index)
         session["selected_indices"] = []
         session["hint_visible"] = False
         session["step_expanded"] = False
@@ -406,6 +416,20 @@ def update_ui_state(clue_id, clue, session, action, data):
 
     elif action == "expand_step":
         session["step_expanded"] = True
+
+    elif action == "select_step":
+        # Switch to a different active step (non-linear step completion)
+        new_index = data.get("step_index")
+        steps = clue["steps"]
+        if new_index is not None and 0 <= new_index < len(steps):
+            step = steps[new_index]
+            if _is_step_available(new_index, step, steps, session["completed_steps"]):
+                session["step_index"] = new_index
+                session["selected_indices"] = []
+                session["hint_visible"] = False
+                session["step_expanded"] = True
+                session["assembly_transforms_done"] = {}
+                session["assembly_hint_index"] = None
 
     elif action == "type_step_input":
         # For text input steps (not used in definition, but ready)
@@ -749,6 +773,7 @@ def _build_assembly_data(session, step, clue):
 
 def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=None, transform_inputs=None):
     """Handle input for an assembly step. Transforms can be submitted in any order."""
+    steps = clue["steps"]
     transforms = step["transforms"]
     transforms_done = session["assembly_transforms_done"]
     feedback = RENDER_TEMPLATES["feedback"]
@@ -819,7 +844,7 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
                     # Auto-skip check phase — assembly is complete
                     step_index = session["step_index"]
                     session["completed_steps"].append(step_index)
-                    session["step_index"] = step_index + 1
+                    session["step_index"] = _next_active_step(steps, session["completed_steps"], step_index)
                     session["selected_indices"] = []
                     session["step_expanded"] = False
                     session["assembly_transforms_done"] = {}
@@ -846,7 +871,7 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
         if user_text == expected_text:
             step_index = session["step_index"]
             session["completed_steps"].append(step_index)
-            session["step_index"] = step_index + 1
+            session["step_index"] = _next_active_step(steps, session["completed_steps"], step_index)
             session["selected_indices"] = []
             session["hint_visible"] = False
             session["step_expanded"] = False
@@ -980,14 +1005,43 @@ def _compute_completed_letters(transforms_done, position_map, step):
     return letters
 
 
+def _is_step_available(step_index, step, steps, completed_steps):
+    """Determine if a step is available (active) for the student to work on.
+
+    All non-assembly steps are always available (unless already completed).
+    Assembly steps are gated: available only when ALL prior steps are completed.
+    """
+    if step_index in completed_steps:
+        return False  # Already done
+    if step["type"] == "assembly":
+        pre_assembly = set(range(step_index))
+        return pre_assembly.issubset(set(completed_steps))
+    return True  # All non-assembly steps always available
+
+
+def _next_active_step(steps, completed_steps, current_index):
+    """Find the next uncompleted, available step after current_index.
+
+    Scans forward from current_index+1, then wraps to 0.
+    Returns the step index, or len(steps) if all steps are completed.
+    """
+    n = len(steps)
+    for offset in range(1, n + 1):
+        candidate = (current_index + offset) % n
+        if _is_step_available(candidate, steps[candidate], steps, completed_steps):
+            return candidate
+    # All steps completed
+    return n
+
+
 def _build_step_list(session, clue):
     """Build the step summary list for the sidebar/menu."""
     steps = clue["steps"]
-    step_index = session["step_index"]
+    completed_steps = session["completed_steps"]
 
     # Build transform results map: role → result (from assembly step data)
     # Only backfill when the assembly step itself is completed
-    transform_results = _get_transform_results(steps, session["completed_steps"])
+    transform_results = _get_transform_results(steps, completed_steps)
 
     result = []
 
@@ -997,7 +1051,7 @@ def _build_step_list(session, clue):
             raise ValueError(f"No render template for step type '{step['type']}'")
         title = _resolve_variables(template["menuTitle"], step, clue)
 
-        if i in session["completed_steps"]:
+        if i in completed_steps:
             status = "completed"
             if "completedTitle" not in template:
                 raise ValueError(f"Render template for step type '{step['type']}' missing 'completedTitle' field")
@@ -1022,7 +1076,7 @@ def _build_step_list(session, clue):
                     words_str = " ".join(clue["words"][idx] for idx in step["indices"])
                     backfill_tmpl = template["backfillTitle"]
                     title = backfill_tmpl.replace("{words}", words_str).replace("{transformResult}", transform_result)
-        elif i == step_index:
+        elif _is_step_available(i, step, steps, completed_steps):
             status = "active"
             completion_text = None
         else:
