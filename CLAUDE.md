@@ -456,10 +456,11 @@ Reworking all assembly coaching text to read as coherent, flowing guidance from 
 
 **Completed:**
 - **Simple anagram** — Dedicated `straightAnagramCoaching` template in `render_templates.json`. For clues with exactly one literal word → anagram (e.g. 12A SEMINAR), the student sees a single flowing paragraph: "You found the anagram indicator — notice you have '{word}', a {n}-letter word adjacent to the indicator. Now rearrange {WORD} into a {n}-letter word meaning '{definition}'." No separate definition line, no transform prompts, no fail message — just coaching text and letter boxes. See 12A as the reference example.
+- **Simple hidden word** — Dedicated `simpleHiddenWordCoaching` template. For clues with exactly one letter_selection transform + hidden_word indicator (e.g. 7D IDA). Single coaching paragraph: "You found the hidden word indicator — now look at '{word}' next to it. The answer is spelled out inside: scan for a {n}-letter sequence meaning '{definition}'."
+- **Simple substitution** — Dedicated `simpleSubstitutionCoaching` template. For clues with literal source + substitution transform + substitution indicator (e.g. 27A TIE). Single coaching paragraph connecting the abbreviation scan, indicator, and source word into one flowing sentence.
 
 **TODO — Simple indicator-based clues (dedicated coaching flow, no transforms):**
 - Simple container — indicator + outer + inner, no transforms needed
-- Simple hidden word — indicator + source text, answer is literally inside
 - Simple reversal — indicator + word, just reverse it
 - Simple deletion — indicator + word, remove letters
 

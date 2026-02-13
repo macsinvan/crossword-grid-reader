@@ -789,16 +789,34 @@ def _build_assembly_data(session, step, clue):
     if is_simple_hidden_word:
         fail_message = ""
 
+    # Simple substitution detection: exactly 2 transforms (literal source + substitution),
+    # clue has a substitution indicator. Auto-complete the literal so the student sees
+    # only coaching text + letter boxes.
+    has_substitution_indicator = any(
+        s.get("type") == "indicator" and s.get("indicator_type") == "substitution"
+        for s in clue.get("steps", [])
+    )
+    is_simple_substitution = (
+        has_substitution_indicator
+        and len(transforms) == 2
+        and transforms[0]["type"] == "literal"
+        and transforms[0].get("role") == "source"
+        and transforms[1]["type"] == "substitution"
+    )
+    if is_simple_substitution and 0 not in transforms_done:
+        transforms_done[0] = transforms[0]["result"].upper()
+        fail_message = ""
+
     # Build transform display data
     transform_list = _build_transform_list(
         transforms, transforms_done, template, clue, words,
         assembly_hint_index, substitution_consumed, has_substitution,
         prior_data=prior)
 
-    # For straight anagrams and simple hidden words, hide ALL transforms from display —
+    # For simple coaching profiles, hide ALL transforms from display —
     # the coaching paragraph replaces the definition line + transform prompt with one
     # flowing sentence. The transform still runs server-side via the letter boxes.
-    if is_straight_anagram or is_simple_hidden_word:
+    if is_straight_anagram or is_simple_hidden_word or is_simple_substitution:
         transform_list = []
 
     # Determine phase: check only when all transforms are done
@@ -859,6 +877,12 @@ def _build_assembly_data(session, step, clue):
     # Simple hidden word: replace definitionLine with single coaching paragraph
     if is_simple_hidden_word:
         coaching_template = template.get("simpleHiddenWordCoaching", "")
+        definition_line = _resolve_variables(coaching_template, virtual_step, clue)
+        indicator_line = ""  # No separate indicator line needed
+
+    # Simple substitution: replace definitionLine with single coaching paragraph
+    if is_simple_substitution:
+        coaching_template = template.get("simpleSubstitutionCoaching", "")
         definition_line = _resolve_variables(coaching_template, virtual_step, clue)
         indicator_line = ""  # No separate indicator line needed
 
