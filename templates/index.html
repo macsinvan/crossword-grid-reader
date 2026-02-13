@@ -16,6 +16,13 @@
                     <span class="status-text">...</span>
                 </div>
                 <span id="server-info" style="font-size:0.65rem;font-family:monospace;color:#94a3b8;margin-left:0.5rem;"></span>
+                <div id="auth-container" style="margin-left:auto;display:flex;align-items:center;gap:0.5rem;">
+                    <button id="auth-login-btn" class="btn btn-small" style="display:none;font-size:0.75rem;padding:0.25rem 0.75rem;background:#3b82f6;color:white;border:none;border-radius:4px;cursor:pointer;">Sign in</button>
+                    <div id="auth-user-info" style="display:none;align-items:center;gap:0.5rem;">
+                        <span id="auth-user-email" style="font-size:0.7rem;color:#64748b;font-family:system-ui,sans-serif;"></span>
+                        <button id="auth-logout-btn" class="btn btn-small" style="font-size:0.7rem;padding:0.2rem 0.5rem;background:#e2e8f0;color:#475569;border:none;border-radius:4px;cursor:pointer;">Sign out</button>
+                    </div>
+                </div>
             </div>
             <p class="subtitle" id="puzzle-info" style="display:none;"></p>
         </header>
@@ -23,7 +30,7 @@
         <!-- Navigation tabs -->
         <nav class="nav-tabs">
             <button class="nav-tab active" data-tab="puzzles">My Puzzles</button>
-            <button class="nav-tab" data-tab="import">Import PDF</button>
+            <button class="nav-tab" data-tab="import" style="display:none;">Import PDF</button>
         </nav>
 
         <!-- Puzzle List Section -->
@@ -155,8 +162,14 @@
         </section>
     </div>
 
+    <script>
+        window.__SUPABASE_URL = {{ supabase_url|tojson }};
+        window.__SUPABASE_ANON_KEY = {{ supabase_anon_key|tojson }};
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/static/auth.js?v=1"></script>
     <script src="/static/trainer.js?v=112"></script>
-    <script src="/static/crossword.js?v=40"></script>
+    <script src="/static/crossword.js?v=41"></script>
     <script>fetch('/server-info').then(r=>r.json()).then(d=>{if(d.dir)document.getElementById('server-info').textContent=d.dir+' ['+d.branch+']';});</script>
 </body>
 </html>

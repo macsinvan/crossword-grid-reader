@@ -413,6 +413,11 @@ class CrosswordPuzzle {
                 this.deletePuzzle(btn.dataset.series, btn.dataset.number);
             });
         });
+
+        // Update auth-dependent UI (hide delete buttons for non-admins)
+        if (typeof AuthModule !== 'undefined') {
+            AuthModule.updateUI();
+        }
     }
 
     async deletePuzzle(series, puzzleNumber) {
@@ -421,8 +426,13 @@ class CrosswordPuzzle {
         }
 
         try {
+            const token = await AuthModule.getAccessToken();
+            const headers = {};
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+
             const response = await fetch(`/puzzles/${encodeURIComponent(series)}/${puzzleNumber}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: headers
             });
 
             if (!response.ok) {
@@ -519,8 +529,13 @@ class CrosswordPuzzle {
         formData.append('answers_file', answersFile);
 
         try {
+            const token = await AuthModule.getAccessToken();
+            const headers = {};
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+
             const response = await fetch(`/puzzles/${encodeURIComponent(series)}/${puzzleNumber}/answers`, {
                 method: 'POST',
+                headers: headers,
                 body: formData
             });
 
@@ -588,8 +603,13 @@ class CrosswordPuzzle {
         this.hideError();
 
         try {
+            const token = await AuthModule.getAccessToken();
+            const headers = {};
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+
             const response = await fetch('/upload', {
                 method: 'POST',
+                headers: headers,
                 body: formData
             });
 

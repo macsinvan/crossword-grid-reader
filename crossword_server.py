@@ -21,6 +21,8 @@ from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 import yaml
 
+from auth import require_admin, get_current_user
+
 # Supabase is required — no silent fallback to local storage
 from puzzle_store_supabase import get_puzzle_store
 puzzle_store = get_puzzle_store()
@@ -412,7 +414,19 @@ def process_pdf_and_store(pdf_file, answers_file=None):
 @app.route('/')
 def index():
     """Serve the main page"""
-    return render_template('index.html')
+    return render_template('index.html',
+        supabase_url=os.environ.get('SUPABASE_URL', ''),
+        supabase_anon_key=os.environ.get('SUPABASE_ANON_KEY', ''),
+    )
+
+
+@app.route('/auth/me')
+def auth_me():
+    """Return current user info if authenticated, or null."""
+    user = get_current_user()
+    if user is None:
+        return jsonify({"user": None})
+    return jsonify({"user": {"email": user["email"], "role": user["role"]}})
 
 
 @app.route('/status')
@@ -446,6 +460,7 @@ def server_info():
 
 
 @app.route('/upload', methods=['POST'])
+@require_admin
 def upload():
     """
     Process uploaded PDF file with optional answers file.
@@ -502,6 +517,7 @@ def get_puzzle(series, puzzle_number):
 
 
 @app.route('/puzzles/<series>/<puzzle_number>/answers', methods=['POST'])
+@require_admin
 def add_answers(series, puzzle_number):
     """Add answers to an existing puzzle."""
     if 'answers_file' not in request.files:
@@ -562,6 +578,7 @@ def add_answers(series, puzzle_number):
 
 
 @app.route('/puzzles/<series>/<puzzle_number>', methods=['DELETE'])
+@require_admin
 def delete_puzzle(series, puzzle_number):
     """Delete a stored puzzle."""
     if puzzle_store.delete_puzzle(series, puzzle_number):

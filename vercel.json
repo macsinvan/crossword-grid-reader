@@ -5,7 +5,7 @@
       "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
-        "includeFiles": "static/**,templates/**,render_templates.json,training_constants.py,training_handler.py,trainer_routes.py,crossword_server.py,puzzle_store_supabase.py,validate_training.py"
+        "includeFiles": "static/**,templates/**,render_templates.json,training_constants.py,training_handler.py,trainer_routes.py,crossword_server.py,puzzle_store_supabase.py,validate_training.py,auth.py"
       }
     }
   ],
