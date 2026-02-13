@@ -1,7 +1,7 @@
 {
   "definition": {
     "inputMode": "tap_words",
-    "prompt": "Tap the definition words",
+    "prompt": "Tap the definition <strong>word or words</strong>",
     "menuTitle": "Find the definition",
     "completedTitle": "Definition found: '{words}' — {hint}",
     "intro": "Every cryptic clue contains a straight definition \u2014 a word or phrase that means the same as the answer, just as you\u2019d find in a dictionary.\n\nTo spot it, ignore the misleading surface story. Read the start and end of the clue separately \u2014 does either phrase describe something specific? Could it be a dictionary entry?",
@@ -34,8 +34,8 @@
       "deletion": "Which word signals that something is being removed or shortened?",
       "reversal": "Which word signals that letters need to be reversed?",
       "ordering": "Which word tells you about the ordering of the parts?",
-      "letter_selection": "Which words tell you to pick specific letters?",
-      "hidden_word": "Which words signal the answer is hiding in plain sight?",
+      "letter_selection": "Which <strong>word or words</strong> tell you to pick specific letters?",
+      "hidden_word": "Which <strong>word or words</strong> signal the answer is hiding in plain sight?",
       "homophone": "Which words tell you this clue involves a sound-alike?",
       "substitution": "Which words tell you one letter is being swapped for another?"
     },
@@ -177,7 +177,7 @@
   },
   "abbreviation_scan": {
     "inputMode": "tap_words",
-    "prompt": "Which words are standard crossword abbreviations?",
+    "prompt": "Which <strong>word or words</strong> are standard crossword abbreviations?",
     "menuTitle": "Spot the abbreviations",
     "completedTitle": "{abbreviationBreakdown}\n{hint}",
     "breakdownLineTemplate": "'{word}' \u2192 {letter}",
