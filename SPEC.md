@@ -1213,10 +1213,73 @@ gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 - Deletion/reversal chain flow: definition → indicator(s) → fodder → assembly with transforms
 - Step metadata `hint` fields for clue-specific teaching text (no per-clue prompt overrides)
 
-### Phase 3: Vercel Deployment (Planned)
-- Serverless Flask on Vercel
-- Environment variables for keys
-- Static assets from Vercel CDN
+### Phase 3: Vercel Deployment
+
+The app is deployment-ready. The codebase has been restructured for stateless serverless operation.
+
+**Architecture changes made:**
+- **Client-carried sessions**: Trainer session state (step progress, highlights, answer) travels in every request/response as JSON. The server stores nothing in memory between requests, enabling horizontal scaling across serverless function instances.
+- **Lazy-loaded PDF dependencies**: `opencv-python`, `pdfplumber`, `Pillow`, and `numpy` are only imported when a PDF upload is processed — not on cold start. This keeps cold starts fast for the 99% of requests that are trainer or grid interactions.
+- **Environment variable fallback**: `puzzle_store_supabase.py` accepts env vars directly when no `.env` file exists (standard for Vercel/production).
+- **Vercel entry point**: `api/index.py` imports the Flask app. `vercel.json` routes all requests through it, with static files served directly by Vercel's CDN.
+
+**Deployment steps:**
+
+1. **Install Vercel CLI** (if not already installed):
+   ```bash
+   npm i -g vercel
+   ```
+
+2. **Link the project** (run from the repo root):
+   ```bash
+   cd /Users/andrewmackenzie/Desktop/Grid\ Reader
+   vercel link
+   ```
+   Follow the prompts to create or link to a Vercel project.
+
+3. **Set environment variables** in Vercel:
+   ```bash
+   vercel env add SUPABASE_URL        # paste your Supabase project URL
+   vercel env add SUPABASE_ANON_KEY   # paste your Supabase anon key
+   ```
+   Or set them in the Vercel dashboard: Project Settings > Environment Variables.
+
+4. **Deploy**:
+   ```bash
+   vercel          # preview deployment (staging URL)
+   vercel --prod   # production deployment
+   ```
+
+5. **Verify**:
+   - Open the deployment URL
+   - Load a puzzle from the puzzle list
+   - Double-tap a clue to open the trainer
+   - Complete a training session end-to-end
+
+**What works on Vercel:**
+- All trainer routes (`/trainer/*`) — fully stateless via client-carried sessions
+- Puzzle listing and loading (`/puzzles`, `/puzzles/<series>/<number>`)
+- Grid UI with localStorage persistence
+- PDF import (`/upload`) — works but has slower cold start due to heavy dependencies
+- Static assets served from Vercel CDN with cache busting (`?v=N`)
+
+**Known limitations:**
+- PDF import cold start is ~5-10 seconds (opencv + numpy loading). Acceptable since only admins use this, at most once per day.
+- No user authentication yet (Phase 4). All data is publicly readable via Supabase anon key.
+- No rate limiting yet (Phase 5).
+
+**Files added/modified for deployment:**
+| File | Purpose |
+|------|---------|
+| `vercel.json` | Vercel build and routing configuration |
+| `api/index.py` | Serverless entry point — imports Flask app |
+| `training_handler.py` | Removed `_sessions` dict, functions take `session` parameter |
+| `trainer_routes.py` | Extracts session from request body, passes to handler |
+| `trainer.js` | Stores and sends `session` with every API call |
+| `crossword.js` | Captures session from `/trainer/start` response |
+| `crossword_server.py` | Lazy-loads PDF processing imports |
+| `puzzle_store_supabase.py` | Falls through to env vars when no `.env` file |
+| `test_regression.py` | Threads session state through all test API calls |
 
 ### Phase 4: User Authentication (Planned)
 - Supabase Auth (Google OAuth + email/password)
