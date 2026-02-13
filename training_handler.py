@@ -1289,33 +1289,63 @@ def _expand_container_terminal(transforms, terminal, container_idx, offset):
     Finds the outer and terminal inner transforms that feed into this container,
     pattern-matches where the inner sits inside the outer, and returns position
     assignments for each piece (offset by the container's start position).
+
+    Uses find_consumed_predecessors to identify the container's direct inputs,
+    then classifies each as outer or inner by tracing back through dependency
+    chains to the original role (e.g. reversal of inner_b inherits inner role).
     """
-    # Find outer and terminal inner transforms
+    # Find the container's direct inputs via dependency analysis
+    direct_inputs = find_consumed_predecessors(transforms, container_idx)
+
     outer_idx = None
     inner_indices = []
-    for i, t in enumerate(transforms):
-        if i in terminal:
-            continue  # terminal transforms are peers, not inputs to this container
-        if t["role"] == "outer":
+    for i in direct_inputs:
+        effective_role = _trace_effective_role(transforms, i)
+        if effective_role == "outer":
             outer_idx = i
-        elif t["role"] == "inner" or t["role"].startswith("inner_"):
-            # Only use terminal inners (not consumed by a later dependent)
-            if i in terminal or not _is_consumed_before(transforms, i, container_idx):
-                inner_indices.append(i)
+        elif effective_role == "inner" or effective_role.startswith("inner_"):
+            inner_indices.append(i)
 
+    container_result = re.sub(r'[^A-Z]', '', transforms[container_idx]["result"].upper())
+
+    # If role-based classification didn't find outer/inner (e.g. sub-container
+    # in a charade using part roles), determine from letter pattern matching:
+    # try each direct input as outer, rest as inner, check if insertion works.
     if outer_idx is None or not inner_indices:
-        container_result = re.sub(r'[^A-Z]', '', transforms[container_idx]["result"].upper())
-        raise ValueError(
-            f"Container transform {container_idx} (result={container_result}) "
-            f"has no outer/inner inputs. Roles: {[t['role'] for t in transforms]}"
-        )
+        from itertools import permutations as _perms
+        input_results = {
+            i: re.sub(r'[^A-Z]', '', transforms[i]["result"].upper())
+            for i in direct_inputs
+        }
+        found = False
+        for candidate_outer in direct_inputs:
+            candidate_inners = [i for i in direct_inputs if i != candidate_outer]
+            for perm in _perms(candidate_inners):
+                combined = "".join(input_results[i] for i in perm)
+                for pos in range(len(container_result) - len(combined) + 1):
+                    if container_result[pos:pos + len(combined)] == combined:
+                        remaining = container_result[:pos] + container_result[pos + len(combined):]
+                        if remaining == input_results[candidate_outer]:
+                            outer_idx = candidate_outer
+                            inner_indices = list(perm)
+                            found = True
+                            break
+                if found:
+                    break
+            if found:
+                break
+        if not found:
+            raise ValueError(
+                f"Container transform {container_idx} (result={container_result}) "
+                f"cannot determine outer/inner from inputs. "
+                f"Roles: {[transforms[i]['role'] for i in direct_inputs]}"
+            )
 
     outer_result = re.sub(r'[^A-Z]', '', transforms[outer_idx]["result"].upper())
     combined_inner = "".join(
         re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper())
         for idx in inner_indices
     )
-    container_result = re.sub(r'[^A-Z]', '', transforms[container_idx]["result"].upper())
 
     for insert_pos in range(len(container_result) - len(combined_inner) + 1):
         if container_result[insert_pos:insert_pos + len(combined_inner)] == combined_inner:
@@ -1390,6 +1420,28 @@ def _expand_implicit_container(transforms, terminal, result):
         f"Could not find insertion point for implicit container: "
         f"outer={outer_result}, inner={combined_inner}, result={result}"
     )
+
+
+def _trace_effective_role(transforms, idx):
+    """Trace back through dependency chains to find the original role.
+
+    A dependent transform (e.g. reversal) inherits the role of its source.
+    For example, if transform 3 (role="reversal") consumes transform 2
+    (role="inner_b"), the effective role of transform 3 is "inner_b".
+    Non-dependent transforms return their own role directly.
+    """
+    t = transforms[idx]
+    role = t.get("role", "")
+    # If this transform has an outer/inner role already, use it
+    if role == "outer" or role == "inner" or role.startswith("inner_"):
+        return role
+    # If it's a dependent, trace back to its source
+    if t.get("type") in DEPENDENT_TRANSFORM_TYPES and idx > 0:
+        consumed = find_consumed_predecessors(transforms, idx)
+        if consumed:
+            # Recurse into the first consumed predecessor to find the inherited role
+            return _trace_effective_role(transforms, consumed[0])
+    return role
 
 
 def _is_consumed_before(transforms, idx, before_idx):
