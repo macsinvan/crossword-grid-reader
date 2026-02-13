@@ -258,14 +258,22 @@ def get_render(clue_id, clue, session):
         "prompt": _resolve_variables(resolved_prompt, step, clue),
     }
 
-    # Intro (template may be dict keyed by indicator_type or definition_part)
+    # Intro (template may be dict keyed by indicator_type, definition_part, or clue_type)
     if "intro" in template:
         intro_data = template["intro"]
         if isinstance(intro_data, dict):
-            dict_key = _get_dict_key(step)
-            if dict_key not in intro_data:
-                raise ValueError(f"No intro for '{dict_key}' in template. Available: {list(intro_data.keys())}")
-            current_step["intro"] = intro_data[dict_key]
+            # Assembly steps use clue_type as dict key; other steps use indicator_type/definition_part
+            if step["type"] == "assembly":
+                clue_type = clue.get("clue_type", "")
+                intro_text = intro_data.get(clue_type, intro_data.get("default"))
+                if intro_text is None:
+                    raise ValueError(f"No intro for clue_type '{clue_type}' and no 'default' in assembly template. Available: {list(intro_data.keys())}")
+                current_step["intro"] = intro_text
+            else:
+                dict_key = _get_dict_key(step)
+                if dict_key not in intro_data:
+                    raise ValueError(f"No intro for '{dict_key}' in template. Available: {list(intro_data.keys())}")
+                current_step["intro"] = intro_data[dict_key]
         else:
             current_step["intro"] = intro_data
 
@@ -532,14 +540,34 @@ def _compute_fail_message(template, step, clue, words, transforms):
     return fail_msg_template.format(rawWordsList=raw_list)
 
 
+def _resolve_transform_prompt(prompt_template, clue_type, format_kwargs):
+    """Resolve a transform prompt, which may be a string or a dict keyed by clue_type.
+
+    If the template value is a dict, picks the clue_type-specific version or falls
+    back to 'default'. If it's a string, uses it directly. Then applies .format().
+    """
+    if isinstance(prompt_template, dict):
+        prompt_str = prompt_template.get(clue_type, prompt_template.get("default"))
+        if prompt_str is None:
+            raise ValueError(
+                f"Transform prompt dict has no key for clue_type '{clue_type}' and no 'default'. "
+                f"Available: {list(prompt_template.keys())}")
+    else:
+        prompt_str = prompt_template
+    return prompt_str.format(**format_kwargs)
+
+
 def _build_transform_list(transforms, transforms_done, template, clue, words,
-                           assembly_hint_index, substitution_consumed, has_substitution):
+                           assembly_hint_index, substitution_consumed, has_substitution,
+                           prior_data=None):
     """Build the display list of transforms for the assembly step.
 
     Each transform gets a prompt, status, completion text, and hint visibility.
     All transforms are always active — no locking.
     """
     TRANSFORM_PROMPTS = template.get("transformPrompts", {})
+    clue_type = clue.get("clue_type", "")
+    definition_words = prior_data.get("definitionWords", "") if prior_data else ""
     transform_list = []
     for i, t in enumerate(transforms):
         clue_word = " ".join(words[idx] for idx in t["indices"])
@@ -564,7 +592,9 @@ def _build_transform_list(transforms, transforms_done, template, clue, words,
                 prompt_key = "substitution_with_context"
                 if prompt_key not in TRANSFORM_PROMPTS:
                     raise ValueError(f"Missing '{prompt_key}' in transformPrompts in render_templates.json")
-                prompt = TRANSFORM_PROMPTS[prompt_key].format(n=letter_count)
+                prompt = _resolve_transform_prompt(
+                    TRANSFORM_PROMPTS[prompt_key], clue_type,
+                    {"n": letter_count, "definitionWords": definition_words})
             else:
                 all_solved = all(c in transforms_done for c in consumed)
                 if all_solved:
@@ -573,13 +603,20 @@ def _build_transform_list(transforms, transforms_done, template, clue, words,
                     prompt_key = t_type + "_with_input"
                     if prompt_key not in TRANSFORM_PROMPTS:
                         raise ValueError(f"Missing '{prompt_key}' in transformPrompts in render_templates.json")
-                    prompt = TRANSFORM_PROMPTS[prompt_key].format(
-                        word=clue_word, predecessorLetters=predecessor_letters, n=letter_count)
+                    prompt = _resolve_transform_prompt(
+                        TRANSFORM_PROMPTS[prompt_key], clue_type,
+                        {"word": clue_word, "predecessorLetters": predecessor_letters,
+                         "n": letter_count, "definitionWords": definition_words})
                 else:
-                    prompt = TRANSFORM_PROMPTS[t_type].format(word=clue_word, n=letter_count)
+                    prompt = _resolve_transform_prompt(
+                        TRANSFORM_PROMPTS[t_type], clue_type,
+                        {"word": clue_word, "n": letter_count, "definitionWords": definition_words})
         else:
             display_role = _format_role(t["role"])
-            prompt = TRANSFORM_PROMPTS[t_type].format(role=display_role, word=clue_word, n=letter_count)
+            prompt = _resolve_transform_prompt(
+                TRANSFORM_PROMPTS[t_type], clue_type,
+                {"role": display_role, "word": clue_word, "n": letter_count,
+                 "definitionWords": definition_words})
 
         # Determine status: completed, active, or locked
         if i in transforms_done:
@@ -722,10 +759,31 @@ def _build_assembly_data(session, step, clue):
                 substitution_consumed = find_consumed_predecessors(transforms, i)
                 break
 
+    # Extract data from earlier steps (needed for transform prompts and abbreviation auto-complete)
+    prior = _extract_prior_step_data(clue, words)
+
+    # Straight anagram detection: exactly 2 transforms (literal → anagram), clue_type is 'anagram'.
+    # Auto-complete the literal so the student sees only coaching text + letter boxes.
+    is_straight_anagram = (
+        clue.get("clue_type") == "anagram"
+        and len(transforms) == 2
+        and transforms[0]["type"] == "literal"
+        and transforms[1]["type"] == "anagram"
+    )
+    if is_straight_anagram and 0 not in transforms_done:
+        transforms_done[0] = transforms[0]["result"].upper()
+        # Clear the fail message — the intro already teaches the concept
+        fail_message = ""
+
     # Build transform display data
     transform_list = _build_transform_list(
         transforms, transforms_done, template, clue, words,
-        assembly_hint_index, substitution_consumed, has_substitution)
+        assembly_hint_index, substitution_consumed, has_substitution,
+        prior_data=prior)
+
+    # For straight anagrams, remove the completed literal from the visible transform list
+    if is_straight_anagram:
+        transform_list = [t for t in transform_list if t.get("index") != 0]
 
     # Determine phase: check only when all transforms are done
     phase = "check" if len(transforms_done) == len(transforms) else "transforms"
@@ -736,11 +794,8 @@ def _build_assembly_data(session, step, clue):
     # Compute position map (completed letters computed after auto-complete below)
     position_map = _compute_position_map(step)
 
-    # Extract data from earlier steps
-    prior = _extract_prior_step_data(clue, words)
-    abbreviation_scan_mappings = prior["abbreviationScanMappings"]
-
     # Auto-complete abbreviation transforms when abbreviation_scan step exists
+    abbreviation_scan_mappings = prior["abbreviationScanMappings"]
     if abbreviation_scan_mappings:
         for i, t in enumerate(transforms):
             if t["type"] == "abbreviation" and i not in transforms_done:

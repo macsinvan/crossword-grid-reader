@@ -88,18 +88,25 @@
     "checkPhasePrompt": "Now combine them \u2014 type the full answer:",
     "indicatorLine": "'{indicatorWords}' tells us '{innerWords}' (inner) goes inside '{outerWords}' (outer)",
     "substitutionLine": "'{indicatorWords}' tells you to swap a letter in '{sourceWord}'",
-    "intro": "The words in the clue almost never appear directly in the answer. Each one is really a clue to a shorter word \u2014 a synonym, abbreviation, or clever association. Your job is to figure out what each word is really pointing to.",
+    "intro": {
+      "default": "The words in the clue almost never appear directly in the answer. Each one is really a clue to a shorter word \u2014 a synonym, abbreviation, or clever association. Your job is to figure out what each word is really pointing to.",
+      "anagram": "You found the anagram indicator. Now look at the remaining words next to it \u2014 their letters are what you need to rearrange.",
+      "double_definition": "Both halves of the clue define the same word. Type in the answer that fits both meanings."
+    },
     "transformPrompts": {
       "synonym": "{role}, '{word}', has a {n}-letter synonym",
       "abbreviation": "{role}, '{word}', has a {n}-letter abbreviation",
-      "literal": "'{word}' gives you its letters directly ({n} letters)",
+      "literal": {
+        "default": "The word '{word}' gives you {n} letters directly.",
+        "anagram": "Notice '{word}', a {n}-letter word adjacent to the indicator."
+      },
       "reversal": "'{word}' tells you to reverse — what {n} letters do you get?",
       "reversal_with_input": "'{word}' tells you to reverse {predecessorLetters} — what {n} letters do you get?",
       "deletion": "'{word}' tells you to shorten — what {n} letters remain?",
       "deletion_with_input": "'{word}' tells you to shorten {predecessorLetters} — what {n} letters remain?",
       "letter_selection": "{role}, pick the right letters from '{word}' ({n} letters)",
-      "anagram": "rearrange these letters to find a word that matches the definition — what {n}-letter word do you get?",
-      "anagram_with_input": "rearrange {predecessorLetters} to find a word that matches the definition — what {n}-letter word do you get?",
+      "anagram": "Now rearrange those {n} letters into a word meaning '{definitionWords}'.",
+      "anagram_with_input": "Now rearrange {predecessorLetters} into a {n}-letter word meaning '{definitionWords}'.",
       "container": "'{word}' tells you one piece goes inside another — what {n}-letter word do you get?",
       "container_with_input": "'{word}' tells you to put {predecessorLetters} together — what {n}-letter word do you get?",
       "homophone": "say '{word}' out loud — what {n}-letter word sounds the same?",
