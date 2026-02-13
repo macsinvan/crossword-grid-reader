@@ -2,20 +2,34 @@
 Auth utilities for Flask routes.
 
 Verifies Supabase JWTs using the JWT secret (HS256).
-Checks admin role from the profiles table.
+Checks admin role from the profiles table using a service role client
+(bypasses RLS).
 """
 
 import functools
 import os
 
 import jwt
-from flask import request, jsonify, g
-
-from puzzle_store_supabase import get_puzzle_store
+from flask import request, jsonify, g  # noqa: F401
 
 
 # JWT secret from Supabase dashboard (Settings > API > JWT Secret)
 _JWT_SECRET = os.environ.get("SUPABASE_JWT_SECRET", "")
+
+# Service role client for profiles lookup (bypasses RLS)
+_service_client = None
+
+def _get_service_client():
+    """Lazy-init a Supabase client using the service role key."""
+    global _service_client
+    if _service_client is None:
+        from supabase import create_client
+        url = os.environ.get("SUPABASE_URL", "")
+        key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+        if not url or not key:
+            return None
+        _service_client = create_client(url, key)
+    return _service_client
 
 
 def get_current_user():
@@ -57,9 +71,13 @@ def get_current_user():
     if not user_id:
         return None
 
-    # Look up role from profiles table
-    store = get_puzzle_store()
-    result = store.client.table("profiles").select("role").eq("id", user_id).execute()
+    # Look up role from profiles table (service role bypasses RLS)
+    client = _get_service_client()
+    if not client:
+        g._current_user = {"id": user_id, "email": email, "role": "user"}
+        return g._current_user
+
+    result = client.table("profiles").select("role").eq("id", user_id).execute()
 
     if not result.data:
         role = "user"  # No profile row yet (trigger race condition edge case)

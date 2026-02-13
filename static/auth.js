@@ -23,6 +23,7 @@ const AuthModule = (function() {
 
         // Listen for auth state changes (login, logout, token refresh)
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            console.log('[Auth] onAuthStateChange:', event, 'hasSession:', !!session);
             if (session) {
                 await fetchUserRole(session.access_token);
             } else {
@@ -33,6 +34,7 @@ const AuthModule = (function() {
 
         // Check initial session state
         supabaseClient.auth.getSession().then(({ data: { session } }) => {
+            console.log('[Auth] getSession:', session ? 'found session for ' + session.user?.email : 'no session');
             if (session) {
                 fetchUserRole(session.access_token);
             } else {
@@ -52,13 +54,15 @@ const AuthModule = (function() {
 
     async function fetchUserRole(accessToken) {
         try {
+            console.log('[Auth] fetchUserRole called, token length:', accessToken?.length);
             const resp = await fetch('/auth/me', {
                 headers: { 'Authorization': 'Bearer ' + accessToken }
             });
             const data = await resp.json();
+            console.log('[Auth] /auth/me response:', JSON.stringify(data));
             currentUser = data.user;  // {email, role} or null
         } catch (err) {
-            console.error('Failed to fetch user role:', err);
+            console.error('[Auth] Failed to fetch user role:', err);
             currentUser = null;
         }
         updateUI();
