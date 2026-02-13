@@ -166,10 +166,10 @@
         window.__SUPABASE_URL = {{ supabase_url|tojson }};
         window.__SUPABASE_ANON_KEY = {{ supabase_anon_key|tojson }};
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="/static/auth.js?v=1"></script>
-    <script src="/static/trainer.js?v=112"></script>
-    <script src="/static/crossword.js?v=41"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script defer src="/static/auth.js?v=1"></script>
+    <script defer src="/static/trainer.js?v=112"></script>
+    <script defer src="/static/crossword.js?v=41"></script>
     <script>fetch('/server-info').then(r=>r.json()).then(d=>{if(d.dir)document.getElementById('server-info').textContent=d.dir+' ['+d.branch+']';});</script>
 </body>
 </html>
