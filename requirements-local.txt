@@ -1,0 +1,12 @@
+# Grid Reader — Full dependencies (local development)
+# Includes PDF processing libraries for puzzle import.
+flask>=2.0.0
+pdfplumber>=0.7.0
+Pillow>=9.0.0
+opencv-python>=4.5.0
+numpy>=1.21.0
+pyyaml>=6.0
+requests>=2.25.0
+supabase>=2.0.0
+python-dotenv>=1.0.0
+pyspellchecker>=0.7.0
