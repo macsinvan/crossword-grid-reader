@@ -92,14 +92,14 @@
     "transformPrompts": {
       "synonym": "{role}, '{word}', has a {n}-letter synonym",
       "abbreviation": "{role}, '{word}', has a {n}-letter abbreviation",
-      "literal": "{role}, '{word}', is used as-is ({n} letters)",
+      "literal": "'{word}' gives you its letters directly ({n} letters)",
       "reversal": "'{word}' tells you to reverse — what {n} letters do you get?",
       "reversal_with_input": "'{word}' tells you to reverse {predecessorLetters} — what {n} letters do you get?",
       "deletion": "'{word}' tells you to shorten — what {n} letters remain?",
       "deletion_with_input": "'{word}' tells you to shorten {predecessorLetters} — what {n} letters remain?",
       "letter_selection": "{role}, pick the right letters from '{word}' ({n} letters)",
-      "anagram": "now rearrange those letters — what {n}-letter word do you get?",
-      "anagram_with_input": "now rearrange {predecessorLetters} — what {n}-letter word do you get?",
+      "anagram": "rearrange these letters to find a word that matches the definition — what {n}-letter word do you get?",
+      "anagram_with_input": "rearrange {predecessorLetters} to find a word that matches the definition — what {n}-letter word do you get?",
       "container": "'{word}' tells you one piece goes inside another — what {n}-letter word do you get?",
       "container_with_input": "'{word}' tells you to put {predecessorLetters} together — what {n}-letter word do you get?",
       "homophone": "say '{word}' out loud — what {n}-letter word sounds the same?",
@@ -110,7 +110,8 @@
     },
     "defaultFailMessage": {
       "default": "Try putting {rawWordsList} together \u2014 it doesn\u2019t spell anything useful, does it? So what is each word really telling you?",
-      "double_definition": "All definitions point to the same answer \u2014 type it in."
+      "double_definition": "All definitions point to the same answer \u2014 type it in.",
+      "anagram": "You found the anagram indicator \u2014 now look at the remaining words next to it. Those letters are what you need to rearrange."
     },
     "completedTextTemplates": {
       "independent": "'{clueWord}' \u2192 {result}",

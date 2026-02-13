@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cryptic Trainer &mdash; Learn to Solve Cryptic Crosswords Step by Step</title>
+    <meta name="description" content="Learn to solve cryptic crosswords with interactive step-by-step coaching. Master anagrams, charades, containers, hidden words and more with real Times puzzles.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://www.cryptic-trainer.com/">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Cryptic Trainer &mdash; Learn Cryptic Crosswords Step by Step">
+    <meta property="og:description" content="Stop staring at impenetrable clues. Interactive coaching breaks down every technique so you can solve with confidence.">
+    <meta property="og:url" content="https://www.cryptic-trainer.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Cryptic Trainer">
+
+    <!-- Structured Data: WebApplication -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Cryptic Trainer",
+        "url": "https://www.cryptic-trainer.com",
+        "description": "Learn to solve cryptic crosswords step by step with guided interactive lessons based on real Times puzzles",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Web",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "GBP"
+        }
+    }
+    </script>
+
+    <!-- Structured Data: FAQPage -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": "What is a cryptic crossword?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "A cryptic crossword is a type of crossword where each clue is a mini word puzzle. Every clue contains a straight definition of the answer plus wordplay that builds the answer from coded pieces like anagrams, abbreviations, and hidden words. They are most popular in British newspapers like The Times."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "How long does it take to learn cryptic crosswords?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Most people can solve their first cryptic clue within minutes using guided coaching. Understanding all the main clue types takes a few weeks of practice. The Cryptic Trainer teaches each technique step by step using real clues, so you learn by doing."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Is Cryptic Trainer free?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes, completely free. All puzzles and step-by-step coaching are available without creating an account."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "What types of cryptic clues will I learn?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Cryptic Trainer covers all major clue types: anagrams (rearranging letters), charades (joining words end to end), containers (putting one word inside another), hidden words (answer hiding in the clue text), double definitions (two meanings for one word), reversals (spelling backwards), and deletions (removing letters)."
+                }
+            }
+        ]
+    }
+    </script>
+
+    <link rel="stylesheet" href="/static/crossword.css?v=116">
+    <link rel="stylesheet" href="/static/landing.css?v=1">
+</head>
+<body>
+
+<!-- ===== Navigation ===== -->
+<nav class="landing-nav">
+    <div class="nav-inner">
+        <a class="nav-logo" href="/">Cryptic Trainer</a>
+        <button class="nav-hamburger" aria-label="Menu" onclick="document.querySelector('.nav-links').classList.toggle('open')">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="nav-links">
+            <a href="#how-it-works">How It Works</a>
+            <a href="#clue-types">Clue Types</a>
+            <a href="#faq">FAQ</a>
+            <a href="/app" class="btn btn-primary">Open Puzzles</a>
+        </div>
+    </div>
+</nav>
+
+<!-- ===== Hero ===== -->
+<section class="hero">
+    <div class="hero-content">
+        <h1>Learn to solve cryptic crosswords, one clue at a time</h1>
+        <p class="hero-sub">Stop staring at impenetrable clues. Our step-by-step trainer breaks down every technique so you can solve with confidence.</p>
+        <a href="#try-it" class="btn btn-hero">Try a Clue &darr;</a>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+        <!-- Stylised crossword grid with magnifying glass -->
+        <svg viewBox="0 0 400 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Grid background -->
+            <rect x="40" y="30" width="250" height="250" rx="4" fill="white" stroke="#ccc" stroke-width="1"/>
+            <!-- Grid lines (5x5) -->
+            <line x1="90" y1="30" x2="90" y2="280" stroke="#ddd" stroke-width="1"/>
+            <line x1="140" y1="30" x2="140" y2="280" stroke="#ddd" stroke-width="1"/>
+            <line x1="190" y1="30" x2="190" y2="280" stroke="#ddd" stroke-width="1"/>
+            <line x1="240" y1="30" x2="240" y2="280" stroke="#ddd" stroke-width="1"/>
+            <line x1="40" y1="80" x2="290" y2="80" stroke="#ddd" stroke-width="1"/>
+            <line x1="40" y1="130" x2="290" y2="130" stroke="#ddd" stroke-width="1"/>
+            <line x1="40" y1="180" x2="290" y2="180" stroke="#ddd" stroke-width="1"/>
+            <line x1="40" y1="230" x2="290" y2="230" stroke="#ddd" stroke-width="1"/>
+            <!-- Black cells -->
+            <rect x="140" y="30" width="50" height="50" fill="#1a1a1a"/>
+            <rect x="40" y="130" width="50" height="50" fill="#1a1a1a"/>
+            <rect x="240" y="130" width="50" height="50" fill="#1a1a1a"/>
+            <rect x="140" y="230" width="50" height="50" fill="#1a1a1a"/>
+            <rect x="40" y="230" width="50" height="50" fill="#1a1a1a"/>
+            <rect x="240" y="230" width="50" height="50" fill="#1a1a1a"/>
+            <!-- Some letters -->
+            <text x="65" y="65" font-family="Georgia, serif" font-size="22" fill="#2c5aa0" text-anchor="middle">H</text>
+            <text x="115" y="65" font-family="Georgia, serif" font-size="22" fill="#2c5aa0" text-anchor="middle">I</text>
+            <text x="215" y="65" font-family="Georgia, serif" font-size="22" fill="#333" text-anchor="middle">D</text>
+            <text x="265" y="65" font-family="Georgia, serif" font-size="22" fill="#333" text-anchor="middle">E</text>
+            <text x="65" y="115" font-family="Georgia, serif" font-size="22" fill="#333" text-anchor="middle">A</text>
+            <text x="215" y="115" font-family="Georgia, serif" font-size="22" fill="#2c5aa0" text-anchor="middle">N</text>
+            <!-- Clue number indicators -->
+            <text x="46" y="43" font-family="system-ui, sans-serif" font-size="9" fill="#888">1</text>
+            <text x="196" y="43" font-family="system-ui, sans-serif" font-size="9" fill="#888">2</text>
+            <!-- Magnifying glass -->
+            <circle cx="310" cy="200" r="55" stroke="#2c5aa0" stroke-width="3" fill="rgba(44, 90, 160, 0.06)"/>
+            <line x1="350" y1="240" x2="385" y2="275" stroke="#2c5aa0" stroke-width="4" stroke-linecap="round"/>
+            <!-- Highlight inside magnifying glass -->
+            <text x="295" y="195" font-family="Georgia, serif" font-size="18" fill="#e86830" font-weight="bold">?</text>
+            <text x="315" y="210" font-family="Georgia, serif" font-size="12" fill="#888" font-style="italic">clue</text>
+            <!-- Decorative dots -->
+            <circle cx="20" cy="310" r="3" fill="#ddd"/>
+            <circle cx="32" cy="330" r="2" fill="#ddd"/>
+            <circle cx="350" cy="40" r="3" fill="#ddd"/>
+            <circle cx="370" cy="55" r="2" fill="#ddd"/>
+        </svg>
+    </div>
+</section>
+
+<!-- ===== Problem Statement ===== -->
+<section class="problem">
+    <h2>Cryptic crosswords look like gibberish. They don't have to.</h2>
+    <p>Every cryptic clue follows a set of rules. Once you know the rules, the clues start making sense. We teach you those rules, one at a time, using real puzzles from The Times.</p>
+</section>
+
+<!-- ===== How It Works ===== -->
+<section id="how-it-works" class="section">
+    <h2>How it works</h2>
+    <p class="section-intro">Three steps to solving any cryptic clue</p>
+    <div class="steps-grid">
+        <div class="step-card">
+            <div class="step-number">1</div>
+            <div class="step-icon" aria-hidden="true">
+                <!-- Mini crossword grid -->
+                <svg viewBox="0 0 64 64" fill="none" stroke="#2c5aa0" stroke-width="2">
+                    <rect x="8" y="8" width="48" height="48" rx="3"/>
+                    <line x1="8" y1="20" x2="56" y2="20"/>
+                    <line x1="8" y1="32" x2="56" y2="32"/>
+                    <line x1="8" y1="44" x2="56" y2="44"/>
+                    <line x1="20" y1="8" x2="20" y2="56"/>
+                    <line x1="32" y1="8" x2="32" y2="56"/>
+                    <line x1="44" y1="8" x2="44" y2="56"/>
+                    <rect x="32" y="8" width="12" height="12" fill="#2c5aa0" stroke="none"/>
+                    <rect x="8" y="44" width="12" height="12" fill="#2c5aa0" stroke="none"/>
+                    <!-- Pointer finger -->
+                    <circle cx="50" cy="50" r="6" fill="none" stroke="#e86830" stroke-width="1.5"/>
+                    <line x1="50" y1="44" x2="50" y2="39" stroke="#e86830" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <h3>Pick a clue</h3>
+            <p>Choose any clue from a real Times Cryptic crossword puzzle</p>
+        </div>
+        <div class="step-card">
+            <div class="step-number">2</div>
+            <div class="step-icon" aria-hidden="true">
+                <!-- Three connected stepping stones -->
+                <svg viewBox="0 0 64 64" fill="none" stroke="#2c5aa0" stroke-width="2">
+                    <circle cx="12" cy="32" r="9"/>
+                    <circle cx="32" cy="32" r="9"/>
+                    <circle cx="52" cy="32" r="9"/>
+                    <line x1="21" y1="32" x2="23" y2="32" stroke-dasharray="2 2"/>
+                    <line x1="41" y1="32" x2="43" y2="32" stroke-dasharray="2 2"/>
+                    <text x="12" y="36" font-family="system-ui" font-size="11" fill="#2c5aa0" text-anchor="middle" stroke="none">1</text>
+                    <text x="32" y="36" font-family="system-ui" font-size="11" fill="#2c5aa0" text-anchor="middle" stroke="none">2</text>
+                    <text x="52" y="36" font-family="system-ui" font-size="11" fill="#2c5aa0" text-anchor="middle" stroke="none">3</text>
+                    <!-- Arrows -->
+                    <polyline points="21,28 23,28 22,26" stroke="#e86830" stroke-width="1.5" fill="none"/>
+                    <polyline points="41,28 43,28 42,26" stroke="#e86830" stroke-width="1.5" fill="none"/>
+                </svg>
+            </div>
+            <h3>Follow the steps</h3>
+            <p>Find the definition, spot the indicator words, identify the technique</p>
+        </div>
+        <div class="step-card">
+            <div class="step-number">3</div>
+            <div class="step-icon" aria-hidden="true">
+                <!-- Lightbulb with letter squares -->
+                <svg viewBox="0 0 64 64" fill="none" stroke="#2c5aa0" stroke-width="2">
+                    <!-- Bulb -->
+                    <path d="M32 6C22 6 14 14 14 24C14 30 18 35 22 38V44H42V38C46 35 50 30 50 24C50 14 42 6 32 6Z"/>
+                    <!-- Filament -->
+                    <path d="M27 24C27 24 30 28 32 28C34 28 37 24 37 24" stroke="#e86830" stroke-width="1.5"/>
+                    <!-- Base -->
+                    <rect x="24" y="44" width="16" height="4" rx="1"/>
+                    <rect x="26" y="48" width="12" height="3" rx="1"/>
+                    <!-- Rays -->
+                    <line x1="32" y1="0" x2="32" y2="3" stroke="#e86830" stroke-width="1" stroke-linecap="round"/>
+                    <line x1="8" y1="24" x2="11" y2="24" stroke="#e86830" stroke-width="1" stroke-linecap="round"/>
+                    <line x1="53" y1="24" x2="56" y2="24" stroke="#e86830" stroke-width="1" stroke-linecap="round"/>
+                    <!-- Letter hints -->
+                    <rect x="2" y="52" width="14" height="12" rx="2" fill="white" stroke="#2c5aa0" stroke-width="1.5"/>
+                    <text x="9" y="62" font-family="Georgia" font-size="9" fill="#2c5aa0" text-anchor="middle" stroke="none">A</text>
+                    <rect x="48" y="52" width="14" height="12" rx="2" fill="white" stroke="#2c5aa0" stroke-width="1.5"/>
+                    <text x="55" y="62" font-family="Georgia" font-size="9" fill="#2c5aa0" text-anchor="middle" stroke="none">B</text>
+                </svg>
+            </div>
+            <h3>Build the answer</h3>
+            <p>Combine the pieces yourself and discover why it all fits together</p>
+        </div>
+    </div>
+</section>
+
+<!-- ===== Try It (Interactive Demo) ===== -->
+<section id="try-it" class="try-it">
+    <h2>See for yourself</h2>
+    <p class="section-intro">Try solving this real clue. We'll guide you through every step.</p>
+    <div class="demo-wrapper">
+        <div class="demo-header">
+            <span class="demo-clue-number">12A</span>
+            <span class="demo-clue-text">Loading clue...</span>
+        </div>
+        <div id="demo-trainer-container" class="trainer-container">
+            <div class="demo-loading">
+                <p>Preparing your first clue...</p>
+            </div>
+        </div>
+    </div>
+    <div id="demo-complete" class="demo-complete hidden">
+        <p>You just solved a cryptic clue. There are hundreds more waiting.</p>
+        <a href="/app" class="btn btn-primary">Explore All Puzzles</a>
+    </div>
+</section>
+
+<!-- ===== Clue Types ===== -->
+<section id="clue-types" class="section">
+    <h2>What you'll learn</h2>
+    <p class="section-intro">Every cryptic clue uses one of these techniques. Master them all.</p>
+    <div class="types-grid">
+        <div class="type-card">
+            <div class="type-icon" aria-hidden="true">
+                <!-- Anagram: scattered letters with arrows -->
+                <svg viewBox="0 0 48 48" fill="none" stroke="#2c5aa0" stroke-width="1.5">
+                    <text x="8" y="18" font-family="Georgia" font-size="14" fill="#2c5aa0" stroke="none">A</text>
+                    <text x="28" y="14" font-family="Georgia" font-size="14" fill="#888" stroke="none">B</text>
+                    <text x="18" y="38" font-family="Georgia" font-size="14" fill="#888" stroke="none">C</text>
+                    <!-- Circular arrow -->
+                    <path d="M36 24C36 30.6 30.6 36 24 36C17.4 36 12 30.6 12 24" stroke="#e86830" stroke-width="1.5" fill="none" stroke-dasharray="3 2"/>
+                    <polyline points="10,22 12,24 14,22" stroke="#e86830" stroke-width="1.5" fill="none"/>
+                </svg>
+            </div>
+            <h3>Anagram</h3>
+            <p>Letters scrambled into a new word, flagged by an indicator</p>
+        </div>
+        <div class="type-card">
+            <div class="type-icon" aria-hidden="true">
+                <!-- Charade: blocks joined -->
+                <svg viewBox="0 0 48 48" fill="none" stroke="#2c5aa0" stroke-width="1.5">
+                    <rect x="2" y="16" width="14" height="16" rx="2" fill="rgba(44,90,160,0.1)"/>
+                    <text x="9" y="28" font-family="system-ui" font-size="10" fill="#2c5aa0" text-anchor="middle" stroke="none">+</text>
+                    <rect x="17" y="16" width="14" height="16" rx="2" fill="rgba(44,90,160,0.1)"/>
+                    <text x="24" y="28" font-family="system-ui" font-size="10" fill="#2c5aa0" text-anchor="middle" stroke="none">+</text>
+                    <rect x="32" y="16" width="14" height="16" rx="2" fill="rgba(44,90,160,0.1)"/>
+                    <!-- Equals line -->
+                    <line x1="6" y1="38" x2="42" y2="38" stroke="#e86830" stroke-width="1.5"/>
+                </svg>
+            </div>
+            <h3>Charade</h3>
+            <p>Shorter words join end to end to spell the answer</p>
+        </div>
+        <div class="type-card">
+            <div class="type-icon" aria-hidden="true">
+                <!-- Container: nested boxes -->
+                <svg viewBox="0 0 48 48" fill="none" stroke="#2c5aa0" stroke-width="1.5">
+                    <rect x="4" y="10" width="40" height="28" rx="3" fill="rgba(44,90,160,0.05)"/>
+                    <rect x="14" y="16" width="20" height="16" rx="2" fill="rgba(232,104,48,0.1)" stroke="#e86830"/>
+                    <text x="24" y="28" font-family="Georgia" font-size="10" fill="#e86830" text-anchor="middle" stroke="none">in</text>
+                </svg>
+            </div>
+            <h3>Container</h3>
+            <p>One word placed inside another to build the answer</p>
+        </div>
+        <div class="type-card">
+            <div class="type-icon" aria-hidden="true">
+                <!-- Hidden: text with highlighted span -->
+                <svg viewBox="0 0 48 48" fill="none" stroke="#2c5aa0" stroke-width="1.5">
+                    <line x1="4" y1="24" x2="12" y2="24" stroke="#ccc"/>
+                    <rect x="12" y="18" width="24" height="12" rx="2" fill="rgba(232,104,48,0.15)" stroke="#e86830"/>
+                    <line x1="36" y1="24" x2="44" y2="24" stroke="#ccc"/>
+                    <text x="24" y="27" font-family="Georgia" font-size="8" fill="#e86830" text-anchor="middle" stroke="none">hidden</text>
+                </svg>
+            </div>
+            <h3>Hidden</h3>
+            <p>The answer hiding in plain sight across word boundaries</p>
+        </div>
+        <div class="type-card">
+            <div class="type-icon" aria-hidden="true">
+                <!-- Double definition: two arrows to one word -->
+                <svg viewBox="0 0 48 48" fill="none" stroke="#2c5aa0" stroke-width="1.5">
+                    <text x="24" y="30" font-family="Georgia" font-size="11" fill="#2c5aa0" text-anchor="middle" stroke="none" font-weight="bold">?</text>
+                    <!-- Left arrow -->
+                    <line x1="4" y1="16" x2="18" y2="24" stroke="#e86830"/>
+                    <polyline points="16,21 18,24 15,25" stroke="#e86830" fill="none"/>
+                    <!-- Right arrow -->
+                    <line x1="44" y1="16" x2="30" y2="24" stroke="#e86830"/>
+                    <polyline points="32,21 30,24 33,25" stroke="#e86830" fill="none"/>
+                    <!-- Labels -->
+                    <text x="4" y="12" font-family="Georgia" font-size="7" fill="#888" stroke="none">def 1</text>
+                    <text x="36" y="12" font-family="Georgia" font-size="7" fill="#888" stroke="none">def 2</text>
+                </svg>
+            </div>
+            <h3>Double Definition</h3>
+            <p>Two meanings side by side, both pointing to the same word</p>
+        </div>
+        <div class="type-card">
+            <div class="type-icon" aria-hidden="true">
+                <!-- Reversal: backward arrow over text -->
+                <svg viewBox="0 0 48 48" fill="none" stroke="#2c5aa0" stroke-width="1.5">
+                    <text x="8" y="32" font-family="Georgia" font-size="12" fill="#ccc" stroke="none">ABC</text>
+                    <!-- Curved arrow going backwards -->
+                    <path d="M38 14C38 14 32 8 24 8C16 8 10 14 10 14" stroke="#e86830" stroke-width="1.5" fill="none"/>
+                    <polyline points="12,11 10,14 13,15" stroke="#e86830" stroke-width="1.5" fill="none"/>
+                    <text x="28" y="32" font-family="Georgia" font-size="12" fill="#2c5aa0" stroke="none" font-weight="bold">CBA</text>
+                </svg>
+            </div>
+            <h3>Reversal</h3>
+            <p>A word spelled backwards, signalled by a turning indicator</p>
+        </div>
+    </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section id="faq" class="faq-section">
+    <h2>Frequently Asked Questions</h2>
+    <div class="faq-list">
+        <details>
+            <summary>What is a cryptic crossword?</summary>
+            <p>A cryptic crossword is a type of crossword where each clue is a mini word puzzle. Every clue contains a straight definition of the answer plus wordplay that builds the answer from coded pieces &mdash; anagrams, abbreviations, hidden words, and more. They're most popular in British newspapers like The Times, The Guardian, and The Telegraph.</p>
+        </details>
+        <details>
+            <summary>Do I need any experience to start?</summary>
+            <p>None at all. The trainer guides you through every step of every clue. You'll start by finding the definition, then learn to spot the wordplay technique, and finally assemble the answer yourself. Each clue teaches a specific trick that you'll recognise in future puzzles.</p>
+        </details>
+        <details>
+            <summary>Is this free?</summary>
+            <p>Yes, completely free. All puzzles and step-by-step coaching are available without creating an account. Just pick a clue and start solving.</p>
+        </details>
+        <details>
+            <summary>Which puzzles are available?</summary>
+            <p>We currently feature Times Cryptic crossword puzzles with full step-by-step guides for every clue. New puzzles are added regularly.</p>
+        </details>
+        <details>
+            <summary>How is this different from reading a cryptic crossword guide?</summary>
+            <p>Guides explain the theory. We make you practise it. Every clue in the trainer asks you to find the definition, identify the technique, and build the answer yourself &mdash; with hints if you get stuck. You learn by doing, not by reading.</p>
+        </details>
+    </div>
+</section>
+
+<!-- ===== Footer ===== -->
+<footer class="landing-footer">
+    <p>Cryptic Trainer &mdash; Learn to solve cryptic crosswords step by step</p>
+</footer>
+
+<!-- Scripts -->
+<script src="/static/trainer.js?v=112"></script>
+<script src="/static/landing.js?v=1"></script>
+
+</body>
+</html>

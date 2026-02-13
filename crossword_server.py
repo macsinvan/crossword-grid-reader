@@ -412,8 +412,14 @@ def process_pdf_and_store(pdf_file, answers_file=None):
 
 
 @app.route('/')
-def index():
-    """Serve the main page"""
+def landing():
+    """Serve the landing page"""
+    return render_template('landing.html')
+
+
+@app.route('/app')
+def app_view():
+    """Serve the puzzle app"""
     return render_template('index.html',
         supabase_url=os.environ.get('SUPABASE_URL', ''),
         supabase_anon_key=os.environ.get('SUPABASE_ANON_KEY', ''),
