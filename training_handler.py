@@ -958,9 +958,6 @@ def _build_assembly_data(session, step, clue):
     if is_straight_anagram or is_simple_hidden_word or is_simple_substitution:
         transform_list = []
 
-    # Determine phase: check only when all transforms are done
-    phase = "check" if len(transforms_done) == len(transforms) else "transforms"
-
     # Compute result letter grouping for tile spacing (e.g. "ASWAN DAM" → [5, 3])
     result_parts = [len(word) for word in step["result"].split()]
 
@@ -976,6 +973,11 @@ def _build_assembly_data(session, step, clue):
 
     # Compute completed letters after auto-complete so abbreviation letters show in boxes
     completed_letters = _compute_completed_letters(transforms_done, position_map, step)
+
+    # Determine phase: check when completed letters spell the answer but auto-skip didn't fire
+    final_result = re.sub(r'[^A-Z]', '', step["result"].upper())
+    assembled = "".join(l for l in completed_letters if l)
+    phase = "check" if assembled == final_result else "transforms"
 
     # Build abbreviation summary
     abbreviation_summary = _build_abbreviation_summary(abbreviation_scan_mappings, words, template)
@@ -1176,14 +1178,13 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
                             if c > 0 and transforms[c]["type"] in DEPENDENT_TRANSFORM_TYPES:
                                 queue.append(c)
 
-            # Check if all transforms now complete → auto-skip if answer is spelled out
-            if len(transforms_done) == len(transforms):
-                position_map = _compute_position_map(step)
-                completed_letters = _compute_completed_letters(transforms_done, position_map, step)
-                final_result = re.sub(r'[^A-Z]', '', step["result"].upper())
-                assembled = "".join(l for l in completed_letters if l)
+            # Auto-skip: do the completed letters spell the answer?
+            position_map = _compute_position_map(step)
+            completed_letters = _compute_completed_letters(transforms_done, position_map, step)
+            final_result = re.sub(r'[^A-Z]', '', step["result"].upper())
+            assembled = "".join(l for l in completed_letters if l)
 
-                if assembled == final_result:
+            if assembled == final_result:
                     # Auto-skip check phase — assembly is complete
                     step_index = session["step_index"]
                     session["completed_steps"].append(step_index)
@@ -1203,9 +1204,6 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
 
     elif transform_index is None:
         # Check phase: validate the full assembled result
-        all_done = len(transforms_done) == len(transforms)
-        if not all_done:
-            raise ValueError("Cannot check assembly: not all transforms completed")
 
         expected = step["result"]
         user_text = re.sub(r'[^A-Z]', '', str(value).upper())

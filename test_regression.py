@@ -910,9 +910,17 @@ def test_dependent_prompt_update(server, clue):
                                            transform_index=t["index"])
             if not correct:
                 return False, f"Predecessor transform {t['index']} rejected"
+            # Auto-skip may have completed the assembly step
+            current = render.get("currentStep")
+            if current is None or current.get("inputMode") != "assembly":
+                return True, ""
 
     # Re-check the dependent transform's prompt
-    assembly_data = render["currentStep"]["assemblyData"]
+    # If auto-skip completed the assembly step, the prompt update is moot — pass
+    current = render.get("currentStep")
+    if current is None or current.get("inputMode") != "assembly":
+        return True, ""
+    assembly_data = current["assemblyData"]
     transforms = assembly_data["transforms"]
     for t in transforms:
         if t["index"] == dep_idx:
