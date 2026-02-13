@@ -20,9 +20,6 @@ import tempfile
 from flask import Flask, render_template, request, jsonify
 import yaml
 
-from crossword_processor import CrosswordGridProcessor
-from pdf_processor import process_times_pdf, fix_ocr_errors, validate_words
-
 # Supabase is required — no silent fallback to local storage
 from puzzle_store_supabase import get_puzzle_store
 puzzle_store = get_puzzle_store()
@@ -116,6 +113,8 @@ def reconcile_clues(stored_clues, yaml_data):
     Cross-reference stored PDF-extracted clues with YAML-provided clues and answers.
     Auto-resolves text differences where possible, flags all differences for review.
 
+    Lazy-imports OCR utilities to avoid loading heavy dependencies at startup.
+
     Args:
         stored_clues: dict with 'across'/'down' lists from Supabase,
                       each entry: {number, clue, enumeration}
@@ -126,6 +125,8 @@ def reconcile_clues(stored_clues, yaml_data):
     Returns:
         reconciliation_log: list of log entry dicts
     """
+    from pdf_processor import fix_ocr_errors, validate_words
+
     log = []
 
     # Build YAML lookup by (direction, number)
@@ -278,7 +279,14 @@ def process_pdf_and_store(pdf_file, answers_file=None):
     Process a PDF file and store the puzzle.
     Returns (puzzle_data, warnings, storage_info).
     Answers are added separately via the /answers route (with reconciliation).
+
+    Lazy-imports PDF processing libraries (opencv, pdfplumber, Pillow, numpy)
+    so they don't slow down cold starts for non-import requests.
     """
+    # Lazy-load heavy PDF dependencies
+    from crossword_processor import CrosswordGridProcessor
+    from pdf_processor import process_times_pdf
+
     with tempfile.TemporaryDirectory() as tmpdir:
         pdf_path = os.path.join(tmpdir, 'crossword.pdf')
         pdf_file.save(pdf_path)

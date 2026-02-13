@@ -15,7 +15,15 @@ class TemplateTrainer {
         this.onComplete = options.onComplete;
 
         this.render = null;
+        this.session = null;
         this.loading = true;
+    }
+
+    /** Extract and store session state from any server response. */
+    _updateSession(renderObj) {
+        if (renderObj && renderObj.session) {
+            this.session = renderObj.session;
+        }
     }
 
     // =========================================================================
@@ -27,11 +35,12 @@ class TemplateTrainer {
             const resp = await fetch('/trainer/input', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clue_id: this.clueId, value })
+                body: JSON.stringify({ clue_id: this.clueId, session: this.session, value })
             });
             const data = await resp.json();
 
             if (data.render) {
+                this._updateSession(data.render);
                 this.render = data.render;
             }
             this.renderUI();
@@ -47,9 +56,10 @@ class TemplateTrainer {
             const resp = await fetch('/trainer/ui-state', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clue_id: this.clueId, action, ...data })
+                body: JSON.stringify({ clue_id: this.clueId, session: this.session, action, ...data })
             });
             const result = await resp.json();
+            this._updateSession(result);
             this.render = result;
             // Silent sync for typing — don't re-render (preserves focus/cursor)
             // Only re-render if server locked the answer
@@ -65,9 +75,10 @@ class TemplateTrainer {
             const resp = await fetch('/trainer/reveal', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clue_id: this.clueId })
+                body: JSON.stringify({ clue_id: this.clueId, session: this.session })
             });
             const data = await resp.json();
+            this._updateSession(data);
             this.render = data;
             this.renderUI();
         } catch (err) {
@@ -80,11 +91,12 @@ class TemplateTrainer {
             const resp = await fetch('/trainer/check-answer', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ clue_id: this.clueId, answer })
+                body: JSON.stringify({ clue_id: this.clueId, session: this.session, answer })
             });
             const data = await resp.json();
 
             if (data.render) {
+                this._updateSession(data.render);
                 this.render = data.render;
             }
             this.renderUI();
@@ -648,10 +660,13 @@ class TemplateTrainer {
                     const resp = await fetch('/trainer/input', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ clue_id: this.clueId, transform_inputs: byTransform })
+                        body: JSON.stringify({ clue_id: this.clueId, session: this.session, transform_inputs: byTransform })
                     });
                     const data = await resp.json();
-                    if (data.render) this.render = data.render;
+                    if (data.render) {
+                        this._updateSession(data.render);
+                        this.render = data.render;
+                    }
                     this.renderUI();
                     this.showToast(data.correct ? 'success' : 'error', data.message);
                 } catch (err) {

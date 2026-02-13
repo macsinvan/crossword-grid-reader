@@ -4,6 +4,9 @@ Trainer Routes - Flask Blueprint
 
 Thin HTTP layer. All business logic lives in training_handler.py.
 
+Sessions are client-carried: the server sends session state in every response,
+and the client sends it back with every request. No server-side session storage.
+
 Routes:
     /trainer/clue-ids       - List all clue IDs with training data
     /trainer/start          - Start training session
@@ -18,6 +21,21 @@ from flask import Blueprint, request, jsonify
 import training_handler
 
 trainer_bp = Blueprint('trainer', __name__)
+
+
+def _get_session_and_clue(data):
+    """Extract and restore session + look up clue data. Returns (clue_id, clue_data, session) or raises."""
+    clue_id = data.get('clue_id')
+    raw_session = data.get('session')
+    if not clue_id or raw_session is None:
+        return None, None, None
+
+    clue_data = training_handler.lookup_clue_by_id(clue_id)
+    if not clue_data:
+        return clue_id, None, None
+
+    session = training_handler.restore_session(raw_session)
+    return clue_id, clue_data, session
 
 
 # ---------------------------------------------------------------------------
@@ -77,15 +95,13 @@ def trainer_input():
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
-    clue_id = data.get('clue_id')
-    clue_data = training_handler.get_clue_data(clue_id) if clue_id else None
-
-    if not clue_id or not clue_data:
-        return jsonify({'error': 'Invalid clue_id'}), 400
+    clue_id, clue_data, session = _get_session_and_clue(data)
+    if not clue_id or not clue_data or not session:
+        return jsonify({'error': 'Invalid clue_id or session'}), 400
 
     transform_index = data.get('transform_index')  # None for non-assembly inputs
     transform_inputs = data.get('transform_inputs')  # Combined check: {tIdx: letters}
-    result = training_handler.handle_input(clue_id, clue_data, value=data.get('value'), transform_index=transform_index, transform_inputs=transform_inputs)
+    result = training_handler.handle_input(clue_id, clue_data, session, value=data.get('value'), transform_index=transform_index, transform_inputs=transform_inputs)
     return jsonify(result)
 
 
@@ -96,14 +112,12 @@ def trainer_ui_state():
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
-    clue_id = data.get('clue_id')
+    clue_id, clue_data, session = _get_session_and_clue(data)
+    if not clue_id or not clue_data or not session:
+        return jsonify({'error': 'Invalid clue_id or session'}), 400
+
     action = data.get('action')
-    clue_data = training_handler.get_clue_data(clue_id) if clue_id else None
-
-    if not clue_id or not clue_data:
-        return jsonify({'error': 'Invalid clue_id'}), 400
-
-    render = training_handler.update_ui_state(clue_id, clue_data, action, data)
+    render = training_handler.update_ui_state(clue_id, clue_data, session, action, data)
     return jsonify(render)
 
 
@@ -114,13 +128,11 @@ def trainer_reveal():
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
-    clue_id = data.get('clue_id')
-    clue_data = training_handler.get_clue_data(clue_id) if clue_id else None
+    clue_id, clue_data, session = _get_session_and_clue(data)
+    if not clue_id or not clue_data or not session:
+        return jsonify({'error': 'Invalid clue_id or session'}), 400
 
-    if not clue_id or not clue_data:
-        return jsonify({'error': 'Invalid clue_id'}), 400
-
-    render = training_handler.reveal_answer(clue_id, clue_data)
+    render = training_handler.reveal_answer(clue_id, clue_data, session)
     return jsonify(render)
 
 
@@ -131,12 +143,10 @@ def trainer_check_answer():
     if not data:
         return jsonify({'error': 'No data provided'}), 400
 
-    clue_id = data.get('clue_id')
+    clue_id, clue_data, session = _get_session_and_clue(data)
+    if not clue_id or not clue_data or not session:
+        return jsonify({'error': 'Invalid clue_id or session'}), 400
+
     answer = data.get('answer', '')
-    clue_data = training_handler.get_clue_data(clue_id) if clue_id else None
-
-    if not clue_id or not clue_data:
-        return jsonify({'error': 'Invalid clue_id'}), 400
-
-    result = training_handler.check_answer(clue_id, clue_data, answer)
+    result = training_handler.check_answer(clue_id, clue_data, session, answer)
     return jsonify(result)

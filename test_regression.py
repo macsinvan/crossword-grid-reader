@@ -70,9 +70,14 @@ def start_session(server, clue):
     return body
 
 
-def submit_input(server, clue_id, value, transform_index=None):
+def _session(render):
+    """Extract session state from a render response."""
+    return render.get("session")
+
+
+def submit_input(server, clue_id, value, render, transform_index=None):
     """Submit input for the current step. Returns (correct, render)."""
-    payload = {"clue_id": clue_id, "value": value}
+    payload = {"clue_id": clue_id, "session": _session(render), "value": value}
     if transform_index is not None:
         payload["transform_index"] = transform_index
     status, body = api_post(server, "/input", payload)
@@ -81,17 +86,17 @@ def submit_input(server, clue_id, value, transform_index=None):
     return body["correct"], body["render"]
 
 
-def check_answer(server, clue_id, answer):
+def check_answer(server, clue_id, answer, render):
     """Check a typed answer. Returns (correct, render)."""
-    status, body = api_post(server, "/check-answer", {"clue_id": clue_id, "answer": answer})
+    status, body = api_post(server, "/check-answer", {"clue_id": clue_id, "session": _session(render), "answer": answer})
     if status != 200:
         raise RuntimeError(f"Check-answer failed ({status}): {body}")
     return body["correct"], body["render"]
 
 
-def reveal(server, clue_id):
+def reveal(server, clue_id, render):
     """Reveal the full answer. Returns render."""
-    status, body = api_post(server, "/reveal", {"clue_id": clue_id})
+    status, body = api_post(server, "/reveal", {"clue_id": clue_id, "session": _session(render)})
     if status != 200:
         raise RuntimeError(f"Reveal failed ({status}): {body}")
     return body
@@ -246,7 +251,7 @@ def submit_assembly_transforms(server, clue_id, transforms, render):
         if t_entry["status"] == "locked":
             raise RuntimeError(f"Transform {idx} is locked — test data ordering error")
 
-        correct, render = submit_input(server, clue_id, val, transform_index=idx)
+        correct, render = submit_input(server, clue_id, val, render, transform_index=idx)
         if not correct:
             raise RuntimeError(f"Transform {idx} value '{val}' rejected as incorrect")
 
@@ -261,7 +266,7 @@ def walk_to_assembly(server, clue):
     for step in clue["steps"]:
         if step["inputMode"] == "assembly":
             break
-        correct, render = submit_input(server, clue_id, step["value"])
+        correct, render = submit_input(server, clue_id, step["value"], render)
         if not correct:
             raise RuntimeError(f"Pre-assembly step {step['type']} failed for {clue['id']}")
 
@@ -279,7 +284,7 @@ def walk_to_completion(server, clue):
                 server, clue_id, step["transforms"], render
             )
         else:
-            correct, render = submit_input(server, clue_id, step["value"])
+            correct, render = submit_input(server, clue_id, step["value"], render)
             if not correct:
                 raise RuntimeError(f"Step {step['type']} was rejected for {clue['id']}")
 
@@ -410,7 +415,7 @@ def test_response_contract(server, clue):
     first_step = clue["steps"][0]
     if first_step["inputMode"] != "assembly":
         status, body = api_post(server, "/input", {
-            "clue_id": render["clue_id"], "value": first_step["value"]
+            "clue_id": render["clue_id"], "session": _session(render), "value": first_step["value"]
         })
         if status != 200:
             return False, f"First input failed ({status})"
@@ -436,7 +441,7 @@ def test_response_contract(server, clue):
     # 4. Check-answer response shape
     render_fresh = start_session(server, clue)
     status, body = api_post(server, "/check-answer", {
-        "clue_id": render_fresh["clue_id"], "answer": clue["answer"]
+        "clue_id": render_fresh["clue_id"], "session": _session(render_fresh), "answer": clue["answer"]
     })
     if status != 200:
         return False, f"Check-answer failed ({status})"
@@ -446,7 +451,7 @@ def test_response_contract(server, clue):
 
     # 5. Reveal response shape
     render_fresh2 = start_session(server, clue)
-    reveal_render = reveal(server, render_fresh2["clue_id"])
+    reveal_render = reveal(server, render_fresh2["clue_id"], render_fresh2)
     ok, err = _check_render_shape(reveal_render, "/reveal")
     if not ok:
         return False, err
@@ -480,7 +485,7 @@ def test_wrong_input(server, clue):
     clue_id = render["clue_id"]
 
     step_before = render["currentStep"]["index"]
-    correct, render = submit_input(server, clue_id, clue["wrong_value_step0"])
+    correct, render = submit_input(server, clue_id, clue["wrong_value_step0"], render)
 
     if correct:
         return False, "Wrong input was accepted as correct"
@@ -521,13 +526,13 @@ def test_check_answer(server, clue):
     render = start_session(server, clue)
     clue_id = render["clue_id"]
 
-    correct, render = check_answer(server, clue_id, "ZZZZZ")
+    correct, render = check_answer(server, clue_id, "ZZZZZ", render)
     if correct:
         return False, "Wrong answer was accepted"
     if render.get("answerLocked"):
         return False, "answerLocked should be False after wrong answer"
 
-    correct, render = check_answer(server, clue_id, clue["answer"])
+    correct, render = check_answer(server, clue_id, clue["answer"], render)
     if not correct:
         return False, f"Correct answer '{clue['answer']}' was rejected"
     if not render.get("answerLocked"):
@@ -541,7 +546,7 @@ def test_reveal(server, clue):
     render = start_session(server, clue)
     clue_id = render["clue_id"]
 
-    render = reveal(server, clue_id)
+    render = reveal(server, clue_id, render)
 
     if not render.get("complete"):
         return False, f"Expected complete=True after reveal, got {render.get('complete')}"
@@ -875,7 +880,7 @@ def test_dependent_prompt_update(server, clue):
     # Solve the predecessor(s)
     for t in assembly_step["transforms"]:
         if t["index"] < dep_idx:
-            correct, render = submit_input(server, clue_id, t["value"],
+            correct, render = submit_input(server, clue_id, t["value"], render,
                                            transform_index=t["index"])
             if not correct:
                 return False, f"Predecessor transform {t['index']} rejected"

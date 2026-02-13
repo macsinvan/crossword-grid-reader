@@ -110,49 +110,74 @@ def lookup_clue(puzzle_number, clue_number, direction):
     return item_id, item
 
 
-def get_clue_data(clue_id):
-    """Get clue data from the active session. Returns clue_data or None."""
-    session = _sessions.get(clue_id)
-    if session:
-        return session.get('clue_data')
-    return None
+def lookup_clue_by_id(clue_id):
+    """Look up clue data from a clue_id like 'times-29147-1a'.
+    Returns clue_data or None. Used by routes that receive clue_id from the client."""
+    import re as _re
+    m = _re.match(r'^[a-z]+-(\d+)-(\d+)([ad])$', clue_id)
+    if not m:
+        return None
+    puzzle_number = m.group(1)
+    clue_number = int(m.group(2))
+    direction = 'across' if m.group(3) == 'a' else 'down'
+    try:
+        found_id, clue_data = lookup_clue(puzzle_number, clue_number, direction)
+    except ValueError:
+        return None
+    if not found_id:
+        return None
+    return clue_data
 
-# --- Sessions ---
 
-_sessions = {}
+_SESSION_FIELDS = {
+    "step_index": 0,
+    "completed_steps": [],
+    "selected_indices": [],
+    "hint_visible": False,
+    "step_expanded": False,
+    "user_answer": [],
+    "answer_locked": False,
+    "highlights": [],
+    "assembly_transforms_done": {},
+    "assembly_hint_index": None,
+}
+
+
+def _new_session():
+    """Create a fresh session state dict."""
+    return {k: (v.copy() if isinstance(v, (list, dict)) else v) for k, v in _SESSION_FIELDS.items()}
+
+
+def restore_session(raw):
+    """Restore session from client-sent JSON. Validates and normalises types."""
+    session = _new_session()
+    if not isinstance(raw, dict):
+        raise ValueError("Invalid session data")
+    for key in _SESSION_FIELDS:
+        if key in raw:
+            session[key] = raw[key]
+    # JSON round-trip turns int dict keys to strings — convert back
+    atd = session["assembly_transforms_done"]
+    if atd:
+        session["assembly_transforms_done"] = {int(k): v for k, v in atd.items()}
+    return session
 
 
 def start_session(clue_id, clue):
     """Initialize a training session. Returns the initial render."""
-    _sessions[clue_id] = {
-        "clue_id": clue_id,
-        "clue_data": clue,
-        "step_index": 0,
-        "completed_steps": [],
-        "selected_indices": [],
-        "hint_visible": False,
-        "step_expanded": False,
-        "user_answer": [],
-        "answer_locked": False,
-        "highlights": [],
-        "assembly_transforms_done": {},
-        "assembly_hint_index": None,
-    }
-    return get_render(clue_id, clue)
+    session = _new_session()
+    return get_render(clue_id, clue, session)
 
 
-def get_render(clue_id, clue):
+def get_render(clue_id, clue, session):
     """Build the complete render object for the current state."""
-    session = _sessions.get(clue_id)
-    if not session:
-        raise ValueError(f"No session for clue_id: {clue_id}")
 
     steps = clue["steps"]
     step_index = session["step_index"]
 
     # All steps done → show completed step list (no separate completion view)
     if step_index >= len(steps):
-        return _build_all_done(session, clue)
+        return _build_all_done(session, clue, clue_id)
 
     step = steps[step_index]
 
@@ -164,7 +189,7 @@ def get_render(clue_id, clue):
         session["answer_locked"] = True
         answer_letters = list(re.sub(r'[^A-Z]', '', clue["answer"].upper()))
         session["user_answer"] = answer_letters
-        return _build_all_done(session, clue)
+        return _build_all_done(session, clue, clue_id)
 
     template = RENDER_TEMPLATES.get(step["type"])
 
@@ -263,14 +288,12 @@ def get_render(clue_id, clue):
         "userAnswer": session["user_answer"],
         "answerLocked": session["answer_locked"],
         "complete": False,
+        "session": session,
     }
 
 
-def handle_input(clue_id, clue, value, transform_index=None, transform_inputs=None):
+def handle_input(clue_id, clue, session, value, transform_index=None, transform_inputs=None):
     """Validate user input for the current step. Returns {correct, render, message?}."""
-    session = _sessions.get(clue_id)
-    if not session:
-        raise ValueError(f"No session for clue_id: {clue_id}")
 
     steps = clue["steps"]
     step_index = session["step_index"]
@@ -322,16 +345,13 @@ def handle_input(clue_id, clue, value, transform_index=None, transform_inputs=No
         session["assembly_transforms_done"] = {}
         session["assembly_hint_index"] = None
 
-        return {"correct": True, "message": feedback["step_correct"], "render": get_render(clue_id, clue)}
+        return {"correct": True, "message": feedback["step_correct"], "render": get_render(clue_id, clue, session)}
     else:
-        return {"correct": False, "message": feedback["step_incorrect"], "render": get_render(clue_id, clue)}
+        return {"correct": False, "message": feedback["step_incorrect"], "render": get_render(clue_id, clue, session)}
 
 
-def update_ui_state(clue_id, clue, action, data):
+def update_ui_state(clue_id, clue, session, action, data):
     """Update UI state without validating. Returns updated render."""
-    session = _sessions.get(clue_id)
-    if not session:
-        raise ValueError(f"No session for clue_id: {clue_id}")
 
     if action == "toggle_hint":
         session["hint_visible"] = not session["hint_visible"]
@@ -365,14 +385,11 @@ def update_ui_state(clue_id, clue, action, data):
     else:
         raise ValueError(f"Unknown UI action: {action}")
 
-    return get_render(clue_id, clue)
+    return get_render(clue_id, clue, session)
 
 
-def reveal_answer(clue_id, clue):
+def reveal_answer(clue_id, clue, session):
     """Skip to completion, revealing the full decode."""
-    session = _sessions.get(clue_id)
-    if not session:
-        raise ValueError(f"No session for clue_id: {clue_id}")
 
     steps = clue["steps"]
 
@@ -395,24 +412,20 @@ def reveal_answer(clue_id, clue):
     answer_letters = list(re.sub(r'[^A-Z]', '', clue["answer"].upper()))
     session["user_answer"] = answer_letters
 
-    return get_render(clue_id, clue)
+    return get_render(clue_id, clue, session)
 
 
-def check_answer(clue_id, clue, answer):
+def check_answer(clue_id, clue, session, answer):
     """Check if the typed answer matches. Returns {correct, render}."""
-    session = _sessions.get(clue_id)
-    if not session:
-        raise ValueError(f"No session for clue_id: {clue_id}")
-
     user_text = re.sub(r'[^A-Z]', '', str(answer).upper())
     expected_text = re.sub(r'[^A-Z]', '', clue["answer"].upper())
     feedback = RENDER_TEMPLATES["feedback"]
 
     if user_text == expected_text:
         session["answer_locked"] = True
-        return {"correct": True, "message": feedback["answer_correct"], "render": get_render(clue_id, clue)}
+        return {"correct": True, "message": feedback["answer_correct"], "render": get_render(clue_id, clue, session)}
     else:
-        return {"correct": False, "message": feedback["answer_incorrect"], "render": get_render(clue_id, clue)}
+        return {"correct": False, "message": feedback["answer_incorrect"], "render": get_render(clue_id, clue, session)}
 
 
 # --- Internal helpers ---
@@ -731,12 +744,12 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
                 any_wrong = True
         # Return combined result
         if any_correct:
-            return {"correct": True, "message": feedback["step_correct"], "render": get_render(clue_id, clue)}
+            return {"correct": True, "message": feedback["step_correct"], "render": get_render(clue_id, clue, session)}
         elif any_wrong:
-            return {"correct": False, "message": feedback["step_incorrect"], "render": get_render(clue_id, clue)}
+            return {"correct": False, "message": feedback["step_incorrect"], "render": get_render(clue_id, clue, session)}
         else:
             # Nothing to check (all empty or already done)
-            return {"correct": False, "message": feedback["step_incorrect"], "render": get_render(clue_id, clue)}
+            return {"correct": False, "message": feedback["step_incorrect"], "render": get_render(clue_id, clue, session)}
 
     if transform_index is not None and 0 <= transform_index < len(transforms):
         # Transform submission: validate against this specific transform
@@ -787,9 +800,9 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
                     answer_letters = list(re.sub(r'[^A-Z]', '', clue["answer"].upper()))
                     session["user_answer"] = answer_letters
 
-            return {"correct": True, "message": feedback["step_correct"], "render": get_render(clue_id, clue)}
+            return {"correct": True, "message": feedback["step_correct"], "render": get_render(clue_id, clue, session)}
         else:
-            return {"correct": False, "message": feedback["step_incorrect"], "render": get_render(clue_id, clue)}
+            return {"correct": False, "message": feedback["step_incorrect"], "render": get_render(clue_id, clue, session)}
 
     elif transform_index is None:
         # Check phase: validate the full assembled result
@@ -814,9 +827,9 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
             session["answer_locked"] = True
             answer_letters = list(re.sub(r'[^A-Z]', '', clue["answer"].upper()))
             session["user_answer"] = answer_letters
-            return {"correct": True, "message": feedback["step_correct"], "render": get_render(clue_id, clue)}
+            return {"correct": True, "message": feedback["step_correct"], "render": get_render(clue_id, clue, session)}
         else:
-            return {"correct": False, "message": feedback["step_incorrect"], "render": get_render(clue_id, clue)}
+            return {"correct": False, "message": feedback["step_incorrect"], "render": get_render(clue_id, clue, session)}
 
     else:
         raise ValueError(f"Invalid transform_index: {transform_index}")
@@ -1018,7 +1031,7 @@ def _get_transform_results(steps, completed_steps):
     return {}
 
 
-def _build_all_done(session, clue):
+def _build_all_done(session, clue, clue_id):
     """Build the render when all steps are completed. Same layout, no currentStep."""
     # Populate answer boxes if not already filled
     if not session["user_answer"]:
@@ -1035,7 +1048,7 @@ def _build_all_done(session, clue):
                 answer_groups.append(total)
 
     return {
-        "clue_id": session["clue_id"],
+        "clue_id": clue_id,
         "words": clue["words"],
         "answer": clue["answer"],
         "enumeration": clue["enumeration"],
@@ -1048,6 +1061,7 @@ def _build_all_done(session, clue):
         "userAnswer": session["user_answer"],
         "answerLocked": session["answer_locked"],
         "complete": True,
+        "session": session,
     }
 
 

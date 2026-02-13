@@ -241,7 +241,8 @@ class CrosswordPuzzle {
                 onBack: () => this.closeTrainer()
             });
 
-            // Store the render state (solved_view mode)
+            // Store the render state and session
+            this.templateTrainer._updateSession(data);
             this.templateTrainer.render = data;
             this.templateTrainer.loading = false;
             this.templateTrainer.renderUI();

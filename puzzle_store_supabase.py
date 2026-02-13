@@ -49,6 +49,9 @@ _env_path = _find_dotenv()
 if _env_path:
     load_dotenv(_env_path)
     print(f"Loaded .env from {_env_path}")
+elif os.environ.get("SUPABASE_URL"):
+    # Vercel / production: env vars injected directly, no .env file needed
+    print("Using environment variables (no .env file)")
 else:
     raise FileNotFoundError(
         f".env file not found in {_script_dir} or any git worktree root. "
