@@ -34,7 +34,11 @@ def _get_session_and_clue(data):
     if not clue_data:
         return clue_id, None, None
 
-    session = training_handler.restore_session(raw_session)
+    try:
+        session = training_handler.restore_session(raw_session)
+    except ValueError as e:
+        print(f"Session restore failed for {clue_id}: {e}")
+        return clue_id, clue_data, None
     return clue_id, clue_data, session
 
 

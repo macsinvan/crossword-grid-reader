@@ -18,6 +18,7 @@ import re
 import tempfile
 
 from flask import Flask, render_template, request, jsonify
+from werkzeug.utils import secure_filename
 import yaml
 
 # Supabase is required — no silent fallback to local storage
@@ -27,6 +28,9 @@ print(f"Using puzzle store: {type(puzzle_store).__name__}")
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload
+
+# Detect production environment — Vercel sets VERCEL=1 automatically
+IS_PRODUCTION = bool(os.environ.get("VERCEL"))
 
 # Register trainer Blueprint (all /trainer/* routes)
 from trainer_routes import trainer_bp
@@ -294,7 +298,10 @@ def process_pdf_and_store(pdf_file, answers_file=None):
         # Save answers file if provided
         answers_data = None
         if answers_file and answers_file.filename:
-            answers_path = os.path.join(tmpdir, answers_file.filename)
+            safe_name = secure_filename(answers_file.filename)
+            if not safe_name:
+                return jsonify({'error': 'Invalid filename'}), 400
+            answers_path = os.path.join(tmpdir, safe_name)
             answers_file.save(answers_path)
             answers_data = load_clues_file(answers_path)
 
@@ -423,7 +430,9 @@ def status():
 
 @app.route('/server-info')
 def server_info():
-    """Return server directory and git branch for debugging."""
+    """Return server directory and git branch for debugging. Disabled in production."""
+    if IS_PRODUCTION:
+        return jsonify({})
     import subprocess
     server_dir = os.path.dirname(os.path.abspath(__file__))
     try:
@@ -461,10 +470,11 @@ def upload():
 
     except Exception as e:
         import traceback
-        return jsonify({
-            'error': str(e),
-            'traceback': traceback.format_exc()
-        }), 500
+        app.logger.error(f"Upload error: {e}\n{traceback.format_exc()}")
+        error_response = {'error': str(e)}
+        if not IS_PRODUCTION:
+            error_response['traceback'] = traceback.format_exc()
+        return jsonify(error_response), 500
 
 
 @app.route('/puzzles', methods=['GET'])
@@ -500,7 +510,10 @@ def add_answers(series, puzzle_number):
     answers_file = request.files['answers_file']
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        answers_path = os.path.join(tmpdir, answers_file.filename)
+        safe_name = secure_filename(answers_file.filename)
+        if not safe_name:
+            return jsonify({'error': 'Invalid filename'}), 400
+        answers_path = os.path.join(tmpdir, safe_name)
         answers_file.save(answers_path)
 
         try:
@@ -541,10 +554,11 @@ def add_answers(series, puzzle_number):
 
         except Exception as e:
             import traceback
-            return jsonify({
-                'error': str(e),
-                'traceback': traceback.format_exc()
-            }), 500
+            app.logger.error(f"Add answers error: {e}\n{traceback.format_exc()}")
+            error_response = {'error': str(e)}
+            if not IS_PRODUCTION:
+                error_response['traceback'] = traceback.format_exc()
+            return jsonify(error_response), 500
 
 
 @app.route('/puzzles/<series>/<puzzle_number>', methods=['DELETE'])

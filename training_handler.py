@@ -6,12 +6,21 @@ Reads flat steps from clue metadata, looks up render templates by step type,
 presents each step, validates input, advances. That's it.
 """
 
+import hashlib
+import hmac
 import json
 import os
 import re
+import secrets
 
 from training_constants import DEPENDENT_TRANSFORM_TYPES, find_consumed_predecessors, find_terminal_transforms
 from validate_training import validate_training_item
+
+# Session signing secret — from env var or generated at startup (dev only)
+_SESSION_SECRET = os.environ.get("SESSION_SECRET", "").encode("utf-8")
+if not _SESSION_SECRET:
+    _SESSION_SECRET = secrets.token_bytes(32)
+    print("[WARNING] No SESSION_SECRET env var — using random key (sessions won't survive restarts)")
 
 # --- Render templates (auto-reload) ---
 
@@ -148,14 +157,34 @@ def _new_session():
     return {k: (v.copy() if isinstance(v, (list, dict)) else v) for k, v in _SESSION_FIELDS.items()}
 
 
+def _sign_session(session_data):
+    """Sign a session dict with HMAC. Returns {"data": ..., "sig": "..."}."""
+    payload = json.dumps(session_data, sort_keys=True, separators=(',', ':'))
+    sig = hmac.new(_SESSION_SECRET, payload.encode('utf-8'), hashlib.sha256).hexdigest()
+    return {"data": session_data, "sig": sig}
+
+
+def _verify_session(signed):
+    """Verify and extract session data from a signed session. Raises ValueError on tamper."""
+    if not isinstance(signed, dict) or "data" not in signed or "sig" not in signed:
+        raise ValueError("Invalid session format — missing signature")
+    payload = json.dumps(signed["data"], sort_keys=True, separators=(',', ':'))
+    expected_sig = hmac.new(_SESSION_SECRET, payload.encode('utf-8'), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(signed["sig"], expected_sig):
+        raise ValueError("Session signature invalid — possible tampering")
+    return signed["data"]
+
+
 def restore_session(raw):
-    """Restore session from client-sent JSON. Validates and normalises types."""
+    """Restore session from client-sent signed JSON. Verifies signature, validates and normalises types."""
+    verified_data = _verify_session(raw)
+
     session = _new_session()
-    if not isinstance(raw, dict):
+    if not isinstance(verified_data, dict):
         raise ValueError("Invalid session data")
     for key in _SESSION_FIELDS:
-        if key in raw:
-            session[key] = raw[key]
+        if key in verified_data:
+            session[key] = verified_data[key]
     # JSON round-trip turns int dict keys to strings — convert back
     atd = session["assembly_transforms_done"]
     if atd:
@@ -288,7 +317,7 @@ def get_render(clue_id, clue, session):
         "userAnswer": session["user_answer"],
         "answerLocked": session["answer_locked"],
         "complete": False,
-        "session": session,
+        "session": _sign_session(session),
     }
 
 
@@ -1061,7 +1090,7 @@ def _build_all_done(session, clue, clue_id):
         "userAnswer": session["user_answer"],
         "answerLocked": session["answer_locked"],
         "complete": True,
-        "session": session,
+        "session": _sign_session(session),
     }
 
 

@@ -9,6 +9,13 @@
  * - Answer validation
  */
 
+/** Escape a string for safe insertion into innerHTML. */
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
 class CrosswordPuzzle {
     constructor() {
         this.puzzle = null;
@@ -220,7 +227,7 @@ class CrosswordPuzzle {
                 const msg = data.message || data.error;
                 document.getElementById('trainer-container').innerHTML = `
                     <div style="padding: 2rem; text-align: center; color: #666;">
-                        <p>${msg}</p>
+                        <p>${escapeHTML(msg)}</p>
                     </div>
                 `;
                 return;
@@ -374,16 +381,16 @@ class CrosswordPuzzle {
             item.className = 'puzzle-item';
             item.innerHTML = `
                 <div class="puzzle-item-info">
-                    <div class="puzzle-item-title">${puzzle.series} #${puzzle.number}</div>
+                    <div class="puzzle-item-title">${escapeHTML(decodeURIComponent(puzzle.series))} #${escapeHTML(puzzle.number)}</div>
                     <div class="puzzle-item-meta">
-                        ${puzzle.date ? `<span class="puzzle-date">${puzzle.date}</span>` : ''}
+                        ${puzzle.date ? `<span class="puzzle-date">${escapeHTML(puzzle.date)}</span>` : ''}
                         ${puzzle.has_answers ? '<span class="has-answers">✓ Answers</span>' : '<span class="no-answers">No answers</span>'}
                     </div>
                 </div>
                 <div class="puzzle-item-actions">
-                    ${!puzzle.has_answers ? `<button class="btn btn-small btn-secondary add-answers-btn" data-series="${puzzle.series}" data-number="${puzzle.number}">Add Answers</button>` : ''}
-                    <button class="btn btn-small btn-primary play-btn" data-series="${puzzle.series}" data-number="${puzzle.number}">Play</button>
-                    <button class="btn btn-small btn-danger delete-btn" data-series="${puzzle.series}" data-number="${puzzle.number}" title="Delete puzzle">✕</button>
+                    ${!puzzle.has_answers ? `<button class="btn btn-small btn-secondary add-answers-btn" data-series="${escapeHTML(puzzle.series)}" data-number="${escapeHTML(puzzle.number)}">Add Answers</button>` : ''}
+                    <button class="btn btn-small btn-primary play-btn" data-series="${escapeHTML(puzzle.series)}" data-number="${escapeHTML(puzzle.number)}">Play</button>
+                    <button class="btn btn-small btn-danger delete-btn" data-series="${escapeHTML(puzzle.series)}" data-number="${escapeHTML(puzzle.number)}" title="Delete puzzle">✕</button>
                 </div>
             `;
             container.appendChild(item);
@@ -448,7 +455,8 @@ class CrosswordPuzzle {
             // Try to restore saved progress
             this.loadProgress();
 
-            const titleParts = [`${this.puzzle.series || this.puzzle.publication} #${this.puzzle.number}`];
+            const seriesName = decodeURIComponent(this.puzzle.series || this.puzzle.publication);
+            const titleParts = [`${seriesName} #${this.puzzle.number}`];
             if (this.puzzle.date) {
                 titleParts.push(`— ${this.puzzle.date}`);
             }
@@ -545,12 +553,12 @@ class CrosswordPuzzle {
                 submitBtn.textContent = 'Done';
                 submitBtn.disabled = false;
             } else {
-                statusDiv.innerHTML = `<div class="status-error">${data.error || 'Failed to add answers'}</div>`;
+                statusDiv.innerHTML = `<div class="status-error">${escapeHTML(data.error || 'Failed to add answers')}</div>`;
                 submitBtn.textContent = 'Add Answers';
                 submitBtn.disabled = false;
             }
         } catch (error) {
-            statusDiv.innerHTML = `<div class="status-error">Failed to add answers: ${error.message}</div>`;
+            statusDiv.innerHTML = `<div class="status-error">Failed to add answers: ${escapeHTML(error.message)}</div>`;
             submitBtn.textContent = 'Add Answers';
             submitBtn.disabled = false;
         }
@@ -600,7 +608,8 @@ class CrosswordPuzzle {
                 this.showWarnings(data.warnings);
             }
 
-            const titleParts = [`${this.puzzle.series || this.puzzle.publication} #${this.puzzle.number}`];
+            const seriesName = decodeURIComponent(this.puzzle.series || this.puzzle.publication);
+            const titleParts = [`${seriesName} #${this.puzzle.number}`];
             if (this.puzzle.date) {
                 titleParts.push(`— ${this.puzzle.date}`);
             }
@@ -642,7 +651,7 @@ class CrosswordPuzzle {
             container.insertBefore(div, container.querySelector('.puzzle-layout'));
         }
         const el = document.getElementById('validation-warnings');
-        el.innerHTML = `<strong>Warnings (${warnings.length}):</strong><ul>${warnings.map(w => `<li>${w}</li>`).join('')}</ul>`;
+        el.innerHTML = `<strong>Warnings (${warnings.length}):</strong><ul>${warnings.map(w => `<li>${escapeHTML(w)}</li>`).join('')}</ul>`;
         el.classList.add('visible');
     }
 
@@ -656,21 +665,21 @@ class CrosswordPuzzle {
         if (errors.length > 0) {
             html += `<div class="recon-section recon-errors">`;
             html += `<strong>Unresolved conflicts (${errors.length}) — fix these before import can continue:</strong>`;
-            html += `<ul>${errors.map(e => `<li><strong>${e.clue}:</strong> ${e.message}<br><span class="recon-pdf">PDF: ${e.pdf_text || '-'}</span><br><span class="recon-yaml">YAML: ${e.yaml_text || '-'}</span></li>`).join('')}</ul>`;
+            html += `<ul>${errors.map(e => `<li><strong>${escapeHTML(e.clue)}:</strong> ${escapeHTML(e.message)}<br><span class="recon-pdf">PDF: ${escapeHTML(e.pdf_text || '-')}</span><br><span class="recon-yaml">YAML: ${escapeHTML(e.yaml_text || '-')}</span></li>`).join('')}</ul>`;
             html += `</div>`;
         }
 
         if (resolved.length > 0) {
             html += `<div class="recon-section recon-resolved">`;
             html += `<strong>Auto-resolved (${resolved.length}) — please verify:</strong>`;
-            html += `<ul>${resolved.map(e => `<li><strong>${e.clue}:</strong> ${e.message} (chose ${e.chosen})<br><span class="recon-pdf">PDF: ${e.pdf_text || '-'}</span><br><span class="recon-yaml">YAML: ${e.yaml_text || '-'}</span></li>`).join('')}</ul>`;
+            html += `<ul>${resolved.map(e => `<li><strong>${escapeHTML(e.clue)}:</strong> ${escapeHTML(e.message)} (chose ${escapeHTML(e.chosen)})<br><span class="recon-pdf">PDF: ${escapeHTML(e.pdf_text || '-')}</span><br><span class="recon-yaml">YAML: ${escapeHTML(e.yaml_text || '-')}</span></li>`).join('')}</ul>`;
             html += `</div>`;
         }
 
         if (warnings.length > 0) {
             html += `<div class="recon-section recon-warnings">`;
             html += `<strong>Warnings (${warnings.length}):</strong>`;
-            html += `<ul>${warnings.map(e => `<li><strong>${e.clue}:</strong> ${e.message}</li>`).join('')}</ul>`;
+            html += `<ul>${warnings.map(e => `<li><strong>${escapeHTML(e.clue)}:</strong> ${escapeHTML(e.message)}</li>`).join('')}</ul>`;
             html += `</div>`;
         }
 
@@ -794,7 +803,7 @@ class CrosswordPuzzle {
             const li = document.createElement('li');
             li.dataset.direction = 'across';
             li.dataset.number = clue.number;
-            li.innerHTML = `<span class="clue-number">${clue.number}</span>${clue.clue}`;
+            li.innerHTML = `<span class="clue-number">${escapeHTML(clue.number)}</span>${escapeHTML(clue.clue)}`;
             li.addEventListener('click', () => {
                 this.selectClue('across', clue.number);
             });
@@ -809,7 +818,7 @@ class CrosswordPuzzle {
             const li = document.createElement('li');
             li.dataset.direction = 'down';
             li.dataset.number = clue.number;
-            li.innerHTML = `<span class="clue-number">${clue.number}</span>${clue.clue}`;
+            li.innerHTML = `<span class="clue-number">${escapeHTML(clue.number)}</span>${escapeHTML(clue.clue)}`;
             li.addEventListener('click', () => {
                 this.selectClue('down', clue.number);
             });
