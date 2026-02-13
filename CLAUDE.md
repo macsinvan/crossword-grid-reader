@@ -161,7 +161,10 @@ Open http://localhost:8080
 | `pdf_processor.py` | PDF parsing, grid/clue extraction |
 | `crossword_processor.py` | Grid structure detection |
 | `templates/index.html` | Web UI (bump `?v=N` for cache busting) |
-| `static/crossword.js` | Grid UI, keyboard nav, localStorage persistence |
+| `static/crossword.js` | Grid UI, keyboard nav, localStorage persistence, auth headers on admin APIs |
+| `auth.py` | JWT verification (`get_current_user()`), `@require_admin` decorator |
+| `static/auth.js` | Frontend auth module (Supabase Google OAuth, role-based UI) |
+| `migrations/006_auth_profiles.sql` | Auth profiles table + auto-insert trigger |
 
 ### Trainer (trainer_routes.py)
 | File | Purpose |
@@ -189,10 +192,14 @@ Open http://localhost:8080
 ```
 Grid Reader (8080)
      │
-     ├── crossword.js (grid UI, persistence)
+     ├── crossword.js (grid UI, persistence, auth headers on admin APIs)
      ├── trainer.js (stateless teaching UI)
+     ├── auth.js (Google OAuth, role-based UI show/hide)
      │
      ├── crossword_server.py (Flask app + infrastructure routes)
+     │        │
+     │        ├── auth.py (JWT verification, @require_admin decorator)
+     │        │        └── Uses service role client to read profiles (bypasses RLS)
      │        │
      │        ├── trainer_routes.py (Blueprint: thin HTTP layer, /trainer/* routes)
      │        │        └── delegates to training_handler.py
@@ -202,9 +209,11 @@ Grid Reader (8080)
      │        │        └── render_templates.json (presentation templates, always file-based)
      │        │
      │        └── puzzle_store_supabase.py → Supabase PostgreSQL
+     │
+     └── Supabase Auth (Google OAuth) → auth.users → profiles table (role)
 ```
 
-Supabase is required. `SUPABASE_URL` and `SUPABASE_ANON_KEY` must be set in `.env`. The server will not start without a valid connection.
+Supabase is required. `SUPABASE_URL` and `SUPABASE_ANON_KEY` must be set in `.env`. The server will not start without a valid connection. Authentication requires `SUPABASE_JWT_SECRET` and `SUPABASE_SERVICE_ROLE_KEY` (admin routes return 401 without these).
 
 For full architecture diagrams, data models, template system details, API endpoints, and UI specs, see `SPEC.md`.
 
@@ -258,7 +267,10 @@ Create `.env` file (see `.env.example`):
 ```
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_JWT_SECRET=your-jwt-secret
 ```
+`SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_JWT_SECRET` are required for authentication. Without them, admin routes (`/upload`, `DELETE /puzzles`, `POST /answers`) return 401. The trainer remains public.
 
 ## Common Commands
 ```bash
@@ -421,7 +433,18 @@ Baseline security implemented (see SPEC.md Section 15):
 - **HMAC session signing** — client-carried sessions signed with SHA256, verified with constant-time comparison
 - **Secure file uploads** — `secure_filename()` on all uploaded filenames
 
-Remaining: authentication (Phase 4), rate limiting (Phase 5), file upload access control (Phase 4).
+Remaining: rate limiting (Phase 5).
+
+### User Authentication — COMPLETE
+Supabase Auth with Google OAuth implemented (Phase 4):
+- **Google OAuth** via Supabase Auth — handles token storage, refresh, session management
+- **`profiles` table** — FK to `auth.users`, stores `role` column (`admin`/`user`), auto-created by trigger on sign-up
+- **`auth.py`** — `get_current_user()` verifies JWT (HS256), looks up role via service role client (bypasses RLS). `@require_admin` decorator on protected routes.
+- **`auth.js`** — Frontend module: Supabase JS client via CDN, `onAuthStateChange` listener, `updateUI()` shows/hides admin elements (Import tab, delete buttons)
+- **Protected routes** — `POST /upload`, `DELETE /puzzles/<>/<>`, `POST /puzzles/<>/<>/answers` require admin JWT
+- **Trainer is public** — no auth required for `/trainer/*` routes
+- **`/auth/me`** — returns `{user: {email, role}}` or `{user: null}` for current session
+- **Admin promotion** — manual SQL: `UPDATE profiles SET role = 'admin' WHERE email = '...';`
 
 ### Non-Linear Step Completion — COMPLETE
 All pre-assembly steps available simultaneously. Assembly gated on all prior steps complete. `step_index` repurposed as expanded-step pointer. New `select_step` UI action for switching steps. Four visual states in step list rendering.

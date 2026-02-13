@@ -1288,7 +1288,7 @@ The app is deployment-ready. The codebase has been restructured for stateless se
 
 **Known limitations:**
 - PDF import cold start is ~5-10 seconds (opencv + numpy loading). Acceptable since only admins use this, at most once per day.
-- No user authentication yet (Phase 4). All data is publicly readable via Supabase anon key.
+- Admin routes protected by Supabase Auth (Google OAuth). Trainer is public.
 - No rate limiting yet (Phase 5).
 
 **Files added/modified for deployment:**
@@ -1304,15 +1304,23 @@ The app is deployment-ready. The codebase has been restructured for stateless se
 | `puzzle_store_supabase.py` | Falls through to env vars when no `.env` file |
 | `test_regression.py` | Threads session state through all test API calls |
 
-### Phase 4: User Authentication (Planned)
-- Supabase Auth (Google OAuth + email/password)
-- Row-level security
-- Progress tied to user accounts
+### Phase 4: User Authentication — COMPLETE
+- **Supabase Auth** with Google OAuth — token storage, refresh, session management handled by Supabase JS client
+- **`profiles` table** — `id` (FK to `auth.users`), `email`, `role` (`admin`/`user`), `created_at`. Auto-created by `handle_new_user()` trigger on sign-up. RLS enabled: users read own profile, service role reads all.
+- **`auth.py`** — `get_current_user()` extracts JWT from `Authorization: Bearer` header, verifies with HS256 using `SUPABASE_JWT_SECRET`, looks up role from `profiles` via service role client (bypasses RLS). Result cached in `flask.g`. `@require_admin` decorator returns 401 (no token) or 403 (not admin).
+- **`auth.js`** — Frontend IIFE module. Creates Supabase client from injected config (`window.__SUPABASE_URL/KEY`). `onAuthStateChange` listener calls `/auth/me` to fetch role. `updateUI()` shows/hides admin elements (Import tab, delete buttons, sign in/out). `getAccessToken()` provides JWT for admin API calls.
+- **Protected routes** — `POST /upload`, `DELETE /puzzles/<series>/<number>`, `POST /puzzles/<series>/<number>/answers` — all require `@require_admin`
+- **Public routes** — all `/trainer/*` routes, `GET /puzzles`, `GET /puzzles/<series>/<number>`, `/auth/me`
+- **`/auth/me`** — returns `{"user": {"email", "role"}}` or `{"user": null}`
+- **Admin promotion** — manual SQL: `UPDATE profiles SET role = 'admin' WHERE email = '...';`
+- **Environment variables** — `SUPABASE_JWT_SECRET` (JWT verification), `SUPABASE_SERVICE_ROLE_KEY` (profiles lookup bypassing RLS). Both required in production (Vercel env vars).
+- **`crossword.js`** — `deletePuzzle()`, `processUpload()`, `submitAnswersFile()` add `Authorization: Bearer` header via `AuthModule.getAccessToken()`. `renderPuzzleList()` calls `AuthModule.updateUI()` after DOM creation.
+- Remaining for future: progress tied to user accounts, row-level security on puzzle data
 
 ### Phase 5: Multi-User Features (Planned)
 - Rate limiting
 - Analytics
-- Security hardening — **partially complete** (see Section 15). Remaining: authentication, rate limiting, file upload access control.
+- Security hardening — **mostly complete** (see Section 15). Remaining: rate limiting, CSRF protection.
 
 ### Phase 6: Automated Clue Annotation (Future)
 - Build solver that generates metadata from cold clues
@@ -1467,7 +1475,7 @@ Publication is extracted from item ID (e.g. `times-29453-11a` → `times`). All 
 
 ## 15. Security Hardening
 
-Security measures implemented to protect the production deployment. These are baseline hardening steps; authentication and rate limiting are deferred to Phase 4/5.
+Security measures implemented to protect the production deployment. Authentication is complete (Phase 4, see Section 12.4). Rate limiting and CSRF protection are deferred to Phase 5.
 
 ### 15.1 Production Mode Detection
 
@@ -1510,13 +1518,18 @@ Uploaded filenames are sanitised with `werkzeug.utils.secure_filename()` to prev
 
 Applied to answer image uploads in `crossword_server.py` (2 locations).
 
-### 15.7 Remaining Security Work
+### 15.7 Authentication (Phase 4)
+
+See Section 12.4 for full details. Summary: Supabase Auth with Google OAuth protects admin routes (`/upload`, `DELETE /puzzles`, `POST /answers`) via `@require_admin` decorator. Trainer is public. JWT verified server-side with HS256. Role stored in `profiles` table, read via service role client.
+
+### 15.8 Remaining Security Work
 
 | Item | Phase | Status |
 |------|-------|--------|
-| User authentication (Supabase Auth) | Phase 4 | Planned |
-| Row-level security (Supabase RLS) | Phase 4 | Planned |
-| File upload access control (admin only) | Phase 4 | Planned |
+| User authentication (Supabase Auth) | Phase 4 | ✅ Complete |
+| File upload access control (admin only) | Phase 4 | ✅ Complete (via `@require_admin`) |
+| Row-level security on puzzle data | Future | Planned — currently all puzzle data is public via anon key |
+| Progress tied to user accounts | Future | Planned |
 | Rate limiting | Phase 5 | Planned |
-| CSRF protection | Phase 5 | Planned — note: current API is JSON-only POST, which provides partial CSRF resistance |
+| CSRF protection | Phase 5 | Planned — current API is JSON-only POST, which provides partial CSRF resistance |
 
