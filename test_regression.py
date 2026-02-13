@@ -255,7 +255,13 @@ def submit_assembly_transforms(server, clue_id, transforms, render):
                 break
 
         if t_entry is None:
-            # Transform was auto-completed by the server (e.g. straight anagram literal)
+            # Transform not in display — auto-completed or hidden (straight anagram).
+            # Submit hidden transforms via transform_inputs (the letter boxes).
+            payload = {"clue_id": clue_id, "session": _session(render),
+                       "value": "", "transform_inputs": {str(idx): list(val)}}
+            status, body = api_post(server, "/input", payload)
+            if status == 200:
+                render = body["render"]
             continue
 
         if t_entry["status"] == "completed":
@@ -527,8 +533,9 @@ def test_assembly_transform_status(server, clue):
     # so visible count can be less than metadata count. Verify it's within range.
     if len(transform_list) > clue["num_assembly_transforms"]:
         return False, f"Expected at most {clue['num_assembly_transforms']} transforms, got {len(transform_list)}"
-    if len(transform_list) == 0:
-        return False, f"Expected at least 1 visible transform, got 0"
+    # Straight anagrams have 0 visible transforms — student uses letter boxes directly
+    if len(transform_list) == 0 and clue["num_assembly_transforms"] > 0:
+        return True, ""
 
     for t in transform_list:
         if t["status"] != "active":
@@ -889,6 +896,9 @@ def test_dependent_prompt_update(server, clue):
             dep_transform = t
             break
     if dep_transform is None:
+        # Straight anagrams have no visible transforms — skip this test
+        if len(transforms) == 0:
+            return True, ""
         return False, f"Dependent transform {dep_idx} not found in assembly data"
 
     initial_prompt = dep_transform["prompt"]

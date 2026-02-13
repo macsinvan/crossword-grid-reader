@@ -88,6 +88,7 @@
     "checkPhasePrompt": "Now combine them \u2014 type the full answer:",
     "indicatorLine": "'{indicatorWords}' tells us '{innerWords}' (inner) goes inside '{outerWords}' (outer)",
     "substitutionLine": "'{indicatorWords}' tells you to swap a letter in '{sourceWord}'",
+    "straightAnagramCoaching": "You found the anagram indicator \u2014 notice you have '{fodderWord}', a {enumeration}-letter word adjacent to the indicator. Now rearrange {fodderWordUpper} into a {enumeration}-letter word meaning '{definitionWords}'.",
     "intro": {
       "default": "The words in the clue almost never appear directly in the answer. Each one is really a clue to a shorter word \u2014 a synonym, abbreviation, or clever association. Your job is to figure out what each word is really pointing to.",
       "anagram": "You found the anagram indicator. Now look at the remaining words next to it \u2014 their letters are what you need to rearrange.",

@@ -449,6 +449,23 @@ Supabase Auth with Google OAuth implemented (Phase 4):
 ### Non-Linear Step Completion — COMPLETE
 All pre-assembly steps available simultaneously. Assembly gated on all prior steps complete. `step_index` repurposed as expanded-step pointer. New `select_step` UI action for switching steps. Four visual states in step list rendering.
 
+### Assembly Coaching Rework — IN PROGRESS
+Reworking all assembly coaching text to read as coherent, flowing guidance from an expert teacher — not disconnected robotic steps. Each clue type gets a dedicated coaching template that connects the prior steps to the assembly as one natural paragraph.
+
+**Principle:** Fidelity over efficiency. Each clue type deserves its own template rather than sharing generic text that reads mechanically.
+
+**Completed:**
+- **Simple anagram** — Dedicated `straightAnagramCoaching` template in `render_templates.json`. For clues with exactly one literal word → anagram (e.g. 12A SEMINAR), the student sees a single flowing paragraph: "You found the anagram indicator — notice you have '{word}', a {n}-letter word adjacent to the indicator. Now rearrange {WORD} into a {n}-letter word meaning '{definition}'." No separate definition line, no transform prompts, no fail message — just coaching text and letter boxes. See 12A as the reference example.
+
+**TODO:**
+- Container (insertion) — dedicated coaching flow
+- Charade — dedicated coaching flow
+- Compound anagram (multiple parts → anagram) — dedicated coaching flow
+- Double definition — review current flow
+- Hidden word — review current flow
+- Deletion — review current flow
+- Reversal — review current flow
+
 **IMPORTANT: Puzzle 29453 is the verified reference. It is locked in Supabase (`training_locked = TRUE`) and 100% read-only. The upload script and all store write methods refuse to modify locked puzzles. Use `python3 lock_puzzle.py --unlock 29453` only if you genuinely need to fix data.**
 
 ## Worktrees

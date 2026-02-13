@@ -772,7 +772,7 @@ def _build_assembly_data(session, step, clue):
     )
     if is_straight_anagram and 0 not in transforms_done:
         transforms_done[0] = transforms[0]["result"].upper()
-        # Clear the fail message — the intro already teaches the concept
+        # Clear the fail message — the single coaching paragraph covers everything
         fail_message = ""
 
     # Build transform display data
@@ -781,9 +781,11 @@ def _build_assembly_data(session, step, clue):
         assembly_hint_index, substitution_consumed, has_substitution,
         prior_data=prior)
 
-    # For straight anagrams, remove the completed literal from the visible transform list
+    # For straight anagrams, hide ALL transforms from display — the coaching paragraph
+    # replaces the definition line + transform prompt with one flowing sentence.
+    # The anagram transform still runs server-side via the letter boxes.
     if is_straight_anagram:
-        transform_list = [t for t in transform_list if t.get("index") != 0]
+        transform_list = []
 
     # Determine phase: check only when all transforms are done
     phase = "check" if len(transforms_done) == len(transforms) else "transforms"
@@ -823,10 +825,22 @@ def _build_assembly_data(session, step, clue):
     virtual_step["abbreviationSummary"] = abbreviation_summary
     virtual_step["sourceWord"] = source_word
 
+    # For straight anagrams, add fodder word variables for the coaching template
+    if is_straight_anagram:
+        fodder_word = " ".join(words[i] for i in transforms[0]["indices"])
+        virtual_step["fodderWord"] = fodder_word
+        virtual_step["fodderWordUpper"] = fodder_word.upper()
+
     # Resolve coaching lines
     definition_line, indicator_line, check_phase_prompt = _build_coaching_lines(
         template, virtual_step, clue, has_substitution,
         prior["indicatorWords"], source_word, abbreviation_summary)
+
+    # Straight anagram: replace definitionLine with single coaching paragraph
+    if is_straight_anagram:
+        coaching_template = template.get("straightAnagramCoaching", "")
+        definition_line = _resolve_variables(coaching_template, virtual_step, clue)
+        indicator_line = ""  # No separate indicator line needed
 
     return {
         "phase": phase,
@@ -1314,6 +1328,8 @@ def _resolve_assembly_context_variables(text, step):
         "{outerWords}": "outerWords",
         "{abbreviationSummary}": "abbreviationSummary",
         "{sourceWord}": "sourceWord",
+        "{fodderWord}": "fodderWord",
+        "{fodderWordUpper}": "fodderWordUpper",
     }
     for placeholder, field in variable_map.items():
         if placeholder in text:
