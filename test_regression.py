@@ -94,6 +94,17 @@ def check_answer(server, clue_id, answer, render):
     return body["correct"], body["render"]
 
 
+def send_ui_state(server, clue_id, render, action, extra=None):
+    """Send a UI state action. Returns render."""
+    payload = {"clue_id": clue_id, "session": _session(render), "action": action}
+    if extra:
+        payload.update(extra)
+    status, body = api_post(server, "/ui-state", payload)
+    if status != 200:
+        raise RuntimeError(f"UI state '{action}' failed ({status}): {body}")
+    return body
+
+
 def reveal(server, clue_id, render):
     """Reveal the full answer. Returns render."""
     status, body = api_post(server, "/reveal", {"clue_id": clue_id, "session": _session(render)})
@@ -911,6 +922,34 @@ def test_dependent_prompt_update(server, clue):
     return True, ""
 
 
+def test_help_toggle(server, clue):
+    """Verify phase help toggle: starts collapsed, toggles open/closed, has text."""
+    render = start_session(server, clue)
+
+    # Help should start collapsed with non-empty text
+    if render.get("helpVisible") is not False:
+        return False, f"helpVisible should be False at start, got {render.get('helpVisible')}"
+    if not render.get("helpText"):
+        return False, "helpText should be non-empty at start"
+
+    # Toggle open
+    render = send_ui_state(server, clue["id"], render, "toggle_help")
+    if render.get("helpVisible") is not True:
+        return False, f"helpVisible should be True after toggle, got {render.get('helpVisible')}"
+    text_after_open = render.get("helpText")
+    if not text_after_open:
+        return False, "helpText should be non-empty when visible"
+
+    # Toggle closed
+    render = send_ui_state(server, clue["id"], render, "toggle_help")
+    if render.get("helpVisible") is not False:
+        return False, f"helpVisible should be False after second toggle, got {render.get('helpVisible')}"
+    if render.get("helpText") != text_after_open:
+        return False, "helpText should not change on toggle"
+
+    return True, ""
+
+
 # ---------------------------------------------------------------------------
 # Test runner
 # ---------------------------------------------------------------------------
@@ -928,6 +967,7 @@ ALL_TESTS = [
     ("Abbreviation scan consistency", test_abbreviation_scan_consistency),
     ("Assembly combined check", test_assembly_combined_check),
     ("Dependent prompt update", test_dependent_prompt_update),
+    ("Help toggle", test_help_toggle),
 ]
 
 

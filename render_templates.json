@@ -215,5 +215,9 @@
     "step_incorrect": "Not quite \u2014 try again.",
     "answer_correct": "Correct!",
     "answer_incorrect": "Not the right answer."
+  },
+  "phaseHelp": {
+    "scan": "Every cryptic clue has two parts: a <strong>definition</strong> that points straight to the answer, and <strong>wordplay</strong> that builds it from coded pieces. Skilled solvers scan for the obvious parts first. Open any step below to find that piece \u2014 work in whatever order you like. Once you\u2019ve found them all, you can assemble the answer.",
+    "assembly": "You\u2019ve found all the pieces \u2014 now put them together. You can work from the definition (what word fits?) and confirm it with the wordplay, or assemble the wordplay first and see if it produces a real word."
   }
 }

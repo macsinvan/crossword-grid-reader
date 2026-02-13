@@ -121,8 +121,8 @@ The trainer UI (`trainer.js`) has ZERO state. ALL state lives on the server. If 
 **Exception: Silent server sync for typing**
 Answer/step input boxes sync to server on each keystroke BUT don't trigger re-render (to preserve focus). Only re-render when server sets `answerLocked=true`.
 
-**Step state resets on advance**
-When `step_index` increments, engine clears: `hint_visible`, `selected_indices`, `step_expanded`, `assembly_transforms_done`, `assembly_hint_index`. Answer boxes persist across steps.
+**Non-linear step completion**
+All pre-assembly steps are available simultaneously — the student can tackle them in any order. Assembly is gated: it becomes active only when all prior steps are completed. `step_index` is the expanded-step pointer (which step the user is currently looking at), not a gatekeeper. Switching steps (via `select_step` action or auto-advance after correct answer) resets per-step UI state: `hint_visible`, `selected_indices`, `step_expanded`, `assembly_transforms_done`, `assembly_hint_index`. Answer boxes persist across steps.
 
 **NO AI/LLM in this app.** Teaching mode uses pre-annotated step data from the Supabase database, NOT dynamically generated explanations.
 
@@ -237,8 +237,8 @@ The trainer engine (`training_handler.py`, ~1100 lines) owns ALL trainer busines
 
 **Why deprecated:** These tap steps are redundant — the words they identify are the same words the assembly transforms operate on. The assembly step handles both identification and transformation in one place, which is simpler for the student and avoids interdependency issues (e.g. when a word needs transformation before its role is clear).
 
-**Step Menu with Inline Expansion:**
-Steps are listed as a roadmap. The active step is collapsed by default (click chevron to expand). Completed steps show green ✓ and completion text. The `stepExpanded` flag in session state controls visibility.
+**Step Menu with Non-Linear Completion:**
+Steps are listed as a roadmap. All pre-assembly steps start as active (blue circles) — the student picks any order. Only one step is expanded at a time; clicking another active step switches the expansion. Assembly is gated on all prior steps being completed. Completed steps show green ✓ and completion text. Four visual states: completed, active+expanded, active+collapsed (clickable), pending. The `stepExpanded` flag in session state controls active step visibility.
 
 **Assembly Steps (assembly):**
 Assembly is a multi-phase step with its own sub-state (`assembly_phase`, `assembly_transforms_done`). The layout shows:
@@ -411,6 +411,20 @@ All 30 clues annotated, validated, and passing regression tests (1104/1104 tests
 - Added many entries to CRYPTIC_ABBREVIATIONS dictionary
 
 **Process:** Two-phase approach: (1) Solve as AI expert with clue+definition+answer, (2) Encode as training metadata. Hints teach Times conventions (the macro-level checks become the hints).
+
+### Security Hardening — COMPLETE
+Baseline security implemented (see SPEC.md Section 15):
+- **IS_PRODUCTION flag** — `os.environ.get("VERCEL")` gates debug features
+- **Stack trace suppression** — production API errors return message only, tracebacks logged server-side
+- **Server-info disabled in production** — `/server-info` returns `{}` on Vercel
+- **XSS prevention** — `escapeHTML()` helper applied to all `innerHTML` in `crossword.js`
+- **HMAC session signing** — client-carried sessions signed with SHA256, verified with constant-time comparison
+- **Secure file uploads** — `secure_filename()` on all uploaded filenames
+
+Remaining: authentication (Phase 4), rate limiting (Phase 5), file upload access control (Phase 4).
+
+### Non-Linear Step Completion — COMPLETE
+All pre-assembly steps available simultaneously. Assembly gated on all prior steps complete. `step_index` repurposed as expanded-step pointer. New `select_step` UI action for switching steps. Four visual states in step list rendering.
 
 **IMPORTANT: Puzzle 29453 is the verified reference. It is locked in Supabase (`training_locked = TRUE`) and 100% read-only. The upload script and all store write methods refuse to modify locked puzzles. Use `python3 lock_puzzle.py --unlock 29453` only if you genuinely need to fix data.**
 

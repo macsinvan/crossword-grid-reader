@@ -149,6 +149,7 @@ _SESSION_FIELDS = {
     "highlights": [],
     "assembly_transforms_done": {},
     "assembly_hint_index": None,
+    "help_visible": False,
 }
 
 
@@ -313,6 +314,15 @@ def get_render(clue_id, clue, session):
             if total > 0:
                 answer_groups.append(total)
 
+    # Phase help — scan or assembly text based on current step type
+    phase_help = RENDER_TEMPLATES.get("phaseHelp")
+    if not phase_help:
+        raise ValueError("render_templates.json missing 'phaseHelp' section")
+    help_key = "assembly" if step["type"] == "assembly" else "scan"
+    help_text = phase_help.get(help_key)
+    if not help_text:
+        raise ValueError(f"phaseHelp missing '{help_key}' text in render_templates.json")
+
     return {
         "clue_id": clue_id,
         "words": clue["words"],
@@ -322,6 +332,8 @@ def get_render(clue_id, clue, session):
         "steps": step_list,
         "currentStep": current_step,
         "stepExpanded": session["step_expanded"],
+        "helpVisible": session["help_visible"],
+        "helpText": help_text,
         "highlights": session["highlights"],
         "selectedIndices": session["selected_indices"],
         "userAnswer": session["user_answer"],
@@ -402,6 +414,9 @@ def update_ui_state(clue_id, clue, session, action, data):
                 session["assembly_hint_index"] = None
             else:
                 session["assembly_hint_index"] = transform_idx
+
+    elif action == "toggle_help":
+        session["help_visible"] = not session["help_visible"]
 
     elif action == "select_word":
         index = data.get("index")
@@ -1139,6 +1154,8 @@ def _build_all_done(session, clue, clue_id):
         "steps": _build_step_list(session, clue),
         "currentStep": None,
         "stepExpanded": False,
+        "helpVisible": False,
+        "helpText": "",
         "highlights": session["highlights"],
         "selectedIndices": [],
         "userAnswer": session["user_answer"],

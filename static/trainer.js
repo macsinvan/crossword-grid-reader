@@ -260,6 +260,12 @@ class TemplateTrainer {
 
         let html = '<div style="padding: 0.25rem 1.25rem 1rem;">';
 
+        // Phase help — scan guidance (shown when not in assembly phase and not complete)
+        const isAssemblyPhase = currentStep && currentStep.inputMode === 'assembly';
+        if (!r.complete && !isAssemblyPhase && r.helpText) {
+            html += this.renderPhaseHelp(r);
+        }
+
         for (const step of steps) {
             const isAvailable = step.status === 'active';
             const isCompleted = step.status === 'completed';
@@ -274,6 +280,29 @@ class TemplateTrainer {
         }
 
         html += '</div>';
+        return html;
+    }
+
+    renderPhaseHelp(r) {
+        const isVisible = r.helpVisible;
+        let html = '';
+
+        // Collapsible help header
+        html += `<div class="help-toggle" style="display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0; cursor: pointer; margin-bottom: 0.25rem;">`;
+        html += `<span style="width: 18px; height: 18px; border-radius: 50%; background: ${isVisible ? '#3b82f6' : '#e2e8f0'}; color: ${isVisible ? 'white' : '#94a3b8'}; font-size: 0.65rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">?</span>`;
+        html += `<span style="font-size: 0.8rem; color: #94a3b8; font-weight: 500;">How to approach this</span>`;
+        if (isVisible) {
+            html += '<svg width="10" height="10" viewBox="0 0 12 12"><path d="M3 8l3-3 3 3" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>';
+        } else {
+            html += '<svg width="10" height="10" viewBox="0 0 12 12"><path d="M3 5l3 3 3-3" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>';
+        }
+        html += `</div>`;
+
+        // Expanded content
+        if (isVisible) {
+            html += `<div style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.75rem; padding: 0.5rem 0.75rem; background: #f8fafc; border-radius: 0.5rem; border-left: 2px solid #93c5fd; line-height: 1.6;">${r.helpText}</div>`;
+        }
+
         return html;
     }
 
@@ -404,6 +433,11 @@ class TemplateTrainer {
         }
 
         let html = '<div style="padding: 0.5rem 0 0.75rem 1.75rem;">';
+
+        // Assembly phase help
+        if (r.helpText) {
+            html += this.renderPhaseHelp(r);
+        }
 
         // Coaching context — server provides ready-to-render strings
         if (data.definitionLine) {
@@ -615,6 +649,14 @@ class TemplateTrainer {
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.updateUIState('toggle_hint');
+            });
+        });
+
+        // Phase help toggle
+        this.container.querySelectorAll('.help-toggle').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.updateUIState('toggle_help');
             });
         });
 
