@@ -457,14 +457,21 @@ Reworking all assembly coaching text to read as coherent, flowing guidance from 
 **Completed:**
 - **Simple anagram** — Dedicated `straightAnagramCoaching` template in `render_templates.json`. For clues with exactly one literal word → anagram (e.g. 12A SEMINAR), the student sees a single flowing paragraph: "You found the anagram indicator — notice you have '{word}', a {n}-letter word adjacent to the indicator. Now rearrange {WORD} into a {n}-letter word meaning '{definition}'." No separate definition line, no transform prompts, no fail message — just coaching text and letter boxes. See 12A as the reference example.
 
-**TODO:**
-- Container (insertion) — dedicated coaching flow
-- Charade — dedicated coaching flow
-- Compound anagram (multiple parts → anagram) — dedicated coaching flow
+**TODO — Simple indicator-based clues (dedicated coaching flow, no transforms):**
+- Simple container — indicator + outer + inner, no transforms needed
+- Simple hidden word — indicator + source text, answer is literally inside
+- Simple reversal — indicator + word, just reverse it
+- Simple deletion — indicator + word, remove letters
+
+**TODO — Clues with transforms (full assembly machinery: fail message, transform prompts, combined check):**
+- Container with transforms — parts need synonyms/abbreviations before inserting
+- Charade with transforms — parts need synonyms/abbreviations before joining
+- Compound anagram — multiple parts (some transformed) → anagram
+- Deletion with transforms — base word needs transformation before deletion
+
+**TODO — Review existing:**
 - Double definition — review current flow
-- Hidden word — review current flow
-- Deletion — review current flow
-- Reversal — review current flow
+- Reversal with transforms — review if needed
 
 **IMPORTANT: Puzzle 29453 is the verified reference. It is locked in Supabase (`training_locked = TRUE`) and 100% read-only. The upload script and all store write methods refuse to modify locked puzzles. Use `python3 lock_puzzle.py --unlock 29453` only if you genuinely need to fix data.**
 

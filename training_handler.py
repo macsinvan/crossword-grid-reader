@@ -775,16 +775,30 @@ def _build_assembly_data(session, step, clue):
         # Clear the fail message — the single coaching paragraph covers everything
         fail_message = ""
 
+    # Simple hidden word detection: exactly 1 transform (letter_selection), clue has a hidden_word indicator.
+    # The student sees only coaching text + letter boxes — no transform prompts.
+    has_hidden_word_indicator = any(
+        s.get("type") == "indicator" and s.get("indicator_type") == "hidden_word"
+        for s in clue.get("steps", [])
+    )
+    is_simple_hidden_word = (
+        has_hidden_word_indicator
+        and len(transforms) == 1
+        and transforms[0]["type"] == "letter_selection"
+    )
+    if is_simple_hidden_word:
+        fail_message = ""
+
     # Build transform display data
     transform_list = _build_transform_list(
         transforms, transforms_done, template, clue, words,
         assembly_hint_index, substitution_consumed, has_substitution,
         prior_data=prior)
 
-    # For straight anagrams, hide ALL transforms from display — the coaching paragraph
-    # replaces the definition line + transform prompt with one flowing sentence.
-    # The anagram transform still runs server-side via the letter boxes.
-    if is_straight_anagram:
+    # For straight anagrams and simple hidden words, hide ALL transforms from display —
+    # the coaching paragraph replaces the definition line + transform prompt with one
+    # flowing sentence. The transform still runs server-side via the letter boxes.
+    if is_straight_anagram or is_simple_hidden_word:
         transform_list = []
 
     # Determine phase: check only when all transforms are done
@@ -825,8 +839,8 @@ def _build_assembly_data(session, step, clue):
     virtual_step["abbreviationSummary"] = abbreviation_summary
     virtual_step["sourceWord"] = source_word
 
-    # For straight anagrams, add fodder word variables for the coaching template
-    if is_straight_anagram:
+    # For straight anagrams and simple hidden words, add fodder word variables for the coaching template
+    if is_straight_anagram or is_simple_hidden_word:
         fodder_word = " ".join(words[i] for i in transforms[0]["indices"])
         virtual_step["fodderWord"] = fodder_word
         virtual_step["fodderWordUpper"] = fodder_word.upper()
@@ -839,6 +853,12 @@ def _build_assembly_data(session, step, clue):
     # Straight anagram: replace definitionLine with single coaching paragraph
     if is_straight_anagram:
         coaching_template = template.get("straightAnagramCoaching", "")
+        definition_line = _resolve_variables(coaching_template, virtual_step, clue)
+        indicator_line = ""  # No separate indicator line needed
+
+    # Simple hidden word: replace definitionLine with single coaching paragraph
+    if is_simple_hidden_word:
+        coaching_template = template.get("simpleHiddenWordCoaching", "")
         definition_line = _resolve_variables(coaching_template, virtual_step, clue)
         indicator_line = ""  # No separate indicator line needed
 

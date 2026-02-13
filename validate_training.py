@@ -280,6 +280,9 @@ VALID_INDICATOR_TYPES = {"container", "anagram", "deletion", "reversal", "orderi
 # Valid definition_part values for multi_definition steps
 VALID_DEFINITION_PARTS = {"first", "second", "third"}
 
+# Valid profile values (coaching flow identifiers)
+VALID_PROFILES = {"simple_anagram", "simple_hidden_word"}
+
 # Indicator type equivalences (hidden_word covers reversal)
 INDICATOR_EQUIVALENCES = {"hidden_word": {"reversal", "hidden_word"}}
 
@@ -753,6 +756,11 @@ def validate_training_item(item_id, item):
     words = item["words"]
     answer = item["answer"]
     steps = item["steps"]
+
+    # --- 1b. Validate profile if present ---
+    if "profile" in item:
+        if item["profile"] not in VALID_PROFILES:
+            errors.append(f"Invalid profile '{item['profile']}', must be one of {VALID_PROFILES}")
 
     # --- 2. Words match clue text (ignoring enumeration and punctuation) ---
     # clue is display text (with punctuation, enumeration); words is the tokenised breakdown
