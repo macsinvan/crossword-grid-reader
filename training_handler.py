@@ -819,8 +819,8 @@ def _build_assembly_data(session, step, clue):
     # Container with transforms detection: clue has a container indicator,
     # and the assembly has a container transform plus other transforms (synonym,
     # abbreviation, etc.). The coaching paragraph replaces definition + indicator +
-    # fail message. The container transform is auto-completed and hidden — only the
-    # independent transforms (synonyms, abbreviations) are shown to the student.
+    # fail message. The container transform is visible — the student completes the
+    # insertion step themselves.
     has_container_indicator = any(
         s.get("type") == "indicator" and s.get("indicator_type") == "container"
         for s in clue.get("steps", [])
@@ -832,14 +832,7 @@ def _build_assembly_data(session, step, clue):
         has_container_indicator
         and len(container_transform_indices) > 0
     )
-    # Auto-complete container transforms — the student doesn't enter these
     if is_container_with_transforms:
-        for ci in container_transform_indices:
-            if ci not in transforms_done:
-                # Only auto-complete if all predecessors are done
-                consumed = find_consumed_predecessors(transforms, ci)
-                if all(c in transforms_done for c in consumed):
-                    transforms_done[ci] = transforms[ci]["result"].upper()
         fail_message = ""
 
     # Determine profile_key for transform prompt lookup
@@ -850,11 +843,6 @@ def _build_assembly_data(session, step, clue):
         transforms, transforms_done, template, clue, words,
         assembly_hint_index, substitution_consumed, has_substitution,
         prior_data=prior, profile_key=profile_key)
-
-    # For container profiles, hide the container transform from display —
-    # it's auto-completed, the student only sees independent transforms
-    if is_container_with_transforms:
-        transform_list = [t for t in transform_list if t["role"] != "container"]
 
     # For simple coaching profiles, hide ALL transforms from display —
     # the coaching paragraph replaces the definition line + transform prompt with one
@@ -929,11 +917,8 @@ def _build_assembly_data(session, step, clue):
         definition_line = _resolve_variables(coaching_template, virtual_step, clue)
         indicator_line = ""  # No separate indicator line needed
 
-    # Container with transforms: replace definitionLine with coaching paragraph
-    if is_container_with_transforms:
-        coaching_template = template.get("containerCoaching", "")
-        definition_line = _resolve_variables(coaching_template, virtual_step, clue)
-        indicator_line = ""  # No separate indicator line needed
+    # Container with transforms: use standard definition + indicator lines
+    # (coaching paragraph will be added per-subtype in future)
 
     return {
         "phase": phase,
@@ -1009,14 +994,6 @@ def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=
                             # If this predecessor is itself dependent, recurse
                             if c > 0 and transforms[c]["type"] in DEPENDENT_TRANSFORM_TYPES:
                                 queue.append(c)
-
-            # Auto-complete container transforms whose predecessors are all done
-            # (only container — other dependent types like reversal/anagram need student input)
-            for j, jt in enumerate(transforms):
-                if j not in transforms_done and jt["type"] == "container" and j > 0:
-                    consumed = find_consumed_predecessors(transforms, j)
-                    if consumed and all(c in transforms_done for c in consumed):
-                        transforms_done[j] = jt["result"].upper()
 
             # Check if all transforms now complete → auto-skip if answer is spelled out
             if len(transforms_done) == len(transforms):
