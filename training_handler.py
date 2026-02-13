@@ -681,6 +681,7 @@ def _extract_prior_step_data(clue, words):
         "innerWords": "",
         "outerWords": "",
         "abbreviationScanMappings": {},
+        "indicatorsByType": {},
     }
     for s in clue["steps"]:
         if s["type"] == "definition" and "indices" in s:
@@ -688,6 +689,9 @@ def _extract_prior_step_data(clue, words):
         elif s["type"] == "indicator" and "indices" in s:
             data["indicatorHint"] = s.get("hint", "")
             data["indicatorWords"] = " ".join(words[i] for i in s["indices"])
+            indicator_type = s.get("indicator_type", "")
+            if indicator_type:
+                data["indicatorsByType"][indicator_type] = " ".join(words[i] for i in s["indices"])
         elif s["type"] == "outer_word" and "indices" in s:
             data["outerWords"] = " ".join(words[i] for i in s["indices"])
         elif s["type"] == "inner_word" and "indices" in s:
@@ -835,6 +839,59 @@ def _build_assembly_data(session, step, clue):
     if is_container_with_transforms:
         fail_message = ""
 
+    # Pure charade detection: no indicator steps at all, all transforms are
+    # synonyms/abbreviations/literals with part roles (part1, part2, etc.)
+    has_any_indicators = any(
+        s.get("type") == "indicator" for s in clue.get("steps", [])
+    )
+    charade_transform_types = {"synonym", "abbreviation", "literal"}
+    is_pure_charade = (
+        not has_any_indicators
+        and not is_container_with_transforms
+        and all(t["type"] in charade_transform_types for t in transforms)
+    )
+    if is_pure_charade:
+        fail_message = ""
+
+    # Charade with single indicator detection: exactly one indicator (deletion or
+    # reversal), no container transform, transforms include the indicator type
+    # plus synonyms/abbreviations/literals.
+    indicator_types = [
+        s.get("indicator_type") for s in clue.get("steps", [])
+        if s.get("type") == "indicator"
+    ]
+    charade_with_indicator_types = {"synonym", "abbreviation", "literal", "deletion", "reversal", "letter_selection"}
+    is_deletion_charade = (
+        indicator_types == ["deletion"]
+        and not is_container_with_transforms
+        and all(t["type"] in charade_with_indicator_types for t in transforms)
+    )
+    is_reversal_charade = (
+        indicator_types == ["reversal"]
+        and not is_container_with_transforms
+        and all(t["type"] in charade_with_indicator_types for t in transforms)
+    )
+    is_letter_selection_charade = (
+        indicator_types == ["letter_selection"]
+        and not is_container_with_transforms
+        and all(t["type"] in charade_with_indicator_types for t in transforms)
+    )
+    if is_deletion_charade or is_reversal_charade or is_letter_selection_charade:
+        fail_message = ""
+
+    # Compound anagram detection: anagram indicator, transforms include anagram
+    # plus literals/abbreviations/synonyms (more than just one literal → anagram)
+    compound_anagram_types = {"synonym", "abbreviation", "literal", "anagram"}
+    is_compound_anagram = (
+        "anagram" in indicator_types
+        and not is_container_with_transforms
+        and any(t["type"] == "anagram" for t in transforms)
+        and all(t["type"] in compound_anagram_types for t in transforms)
+        and not is_straight_anagram
+    )
+    if is_compound_anagram:
+        fail_message = ""
+
     # Determine profile_key for transform prompt lookup
     profile_key = "container" if is_container_with_transforms else None
 
@@ -887,6 +944,13 @@ def _build_assembly_data(session, step, clue):
     virtual_step["outerWords"] = prior["outerWords"]
     virtual_step["abbreviationSummary"] = abbreviation_summary
     virtual_step["sourceWord"] = source_word
+    # Per-indicator-type words for coaching templates
+    indicators_by_type = prior["indicatorsByType"]
+    virtual_step["containerIndicatorWords"] = indicators_by_type.get("container", "")
+    virtual_step["reversalIndicatorWords"] = indicators_by_type.get("reversal", "")
+    virtual_step["deletionIndicatorWords"] = indicators_by_type.get("deletion", "")
+    virtual_step["letterSelectionIndicatorWords"] = indicators_by_type.get("letter_selection", "")
+    virtual_step["anagramIndicatorWords"] = indicators_by_type.get("anagram", "")
 
     # For straight anagrams and simple hidden words, add fodder word variables for the coaching template
     if is_straight_anagram or is_simple_hidden_word:
@@ -917,8 +981,47 @@ def _build_assembly_data(session, step, clue):
         definition_line = _resolve_variables(coaching_template, virtual_step, clue)
         indicator_line = ""  # No separate indicator line needed
 
-    # Container with transforms: use standard definition + indicator lines
-    # (coaching paragraph will be added per-subtype in future)
+    # Container with transforms: per-variant coaching paragraph
+    if is_container_with_transforms:
+        coaching_dict = template.get("containerCoaching", {})
+        # Determine variant key from non-container indicators
+        non_container_indicators = [
+            itype for itype in indicators_by_type if itype != "container"
+        ]
+        variant_key = non_container_indicators[0] if len(non_container_indicators) == 1 else "default"
+        coaching_template = coaching_dict.get(variant_key, coaching_dict.get("default", ""))
+        definition_line = _resolve_variables(coaching_template, virtual_step, clue)
+        indicator_line = ""
+
+    # Pure charade: coaching paragraph
+    if is_pure_charade:
+        coaching_template = template.get("charadeCoaching", "")
+        definition_line = _resolve_variables(coaching_template, virtual_step, clue)
+        indicator_line = ""
+
+    # Deletion charade: coaching paragraph
+    if is_deletion_charade:
+        coaching_template = template.get("deletionCharadeCoaching", "")
+        definition_line = _resolve_variables(coaching_template, virtual_step, clue)
+        indicator_line = ""
+
+    # Reversal charade: coaching paragraph
+    if is_reversal_charade:
+        coaching_template = template.get("reversalCharadeCoaching", "")
+        definition_line = _resolve_variables(coaching_template, virtual_step, clue)
+        indicator_line = ""
+
+    # Letter selection charade: coaching paragraph
+    if is_letter_selection_charade:
+        coaching_template = template.get("letterSelectionCharadeCoaching", "")
+        definition_line = _resolve_variables(coaching_template, virtual_step, clue)
+        indicator_line = ""
+
+    # Compound anagram: coaching paragraph
+    if is_compound_anagram:
+        coaching_template = template.get("compoundAnagramCoaching", "")
+        definition_line = _resolve_variables(coaching_template, virtual_step, clue)
+        indicator_line = ""
 
     return {
         "phase": phase,
@@ -1059,8 +1162,14 @@ def _compute_position_map(step):
     """Compute which final-answer positions each terminal transform fills.
 
     A transform is 'terminal' if no later dependent transform supersedes it.
-    For containers: find where inner sits inside outer via pattern matching.
-    For charades/chains: terminal transforms concatenate left-to-right.
+
+    Two container styles:
+    - Explicit container transform (29463 style): container is terminal,
+      outer/inner feed into it. Handled by expanding container terminals.
+    - Implicit container (29453 style): outer and inners are all terminal,
+      no container transform. Handled by _expand_implicit_container.
+
+    Non-container terminals are laid out left-to-right (charade order).
     """
     transforms = step["transforms"]
     result = re.sub(r'[^A-Z]', '', step["result"].upper())
@@ -1068,56 +1177,115 @@ def _compute_position_map(step):
     # Identify terminal transforms (those not superseded by a later dependent)
     terminal = find_terminal_transforms(transforms)
 
-    # Check if this is a pure container clue (container result IS the full answer)
-    # vs a hybrid charade+container (container is just one piece among others)
-    # Pure container: outer/inner roles exist and the container result spans the full answer
-    # Hybrid: container exists but other terminal transforms also contribute → charade at top level
-    container_idx = None
-    for i, t in enumerate(transforms):
-        if t["role"] == "container":
-            container_idx = i
-            break
-
-    # Route based on terminal transform structure:
-    # 1. Single container terminal whose result IS the full answer → assign all positions to it
-    # 2. Outer/inner roles without explicit container transform (29453 style) → container positions
-    # 3. Everything else (charades, hybrids) → charade positions
-    roles = {t["role"] for t in transforms}
+    # Check for implicit container: outer/inner roles, all terminal, no container transform
+    roles = {transforms[i]["role"] for i in terminal}
+    has_outer = "outer" in roles
     has_inner = "inner" in roles or any(r.startswith("inner_") for r in roles)
+    has_container_type = any(transforms[i]["type"] == "container" for i in terminal)
 
-    if container_idx is not None and container_idx in terminal and len(terminal) == 1:
-        # Single container terminal — it owns all positions
-        container_result = re.sub(r'[^A-Z]', '', transforms[container_idx]["result"].upper())
-        if container_result == result:
-            return {container_idx: list(range(len(result)))}
-        return _compute_container_positions(transforms, terminal, result)
-    elif "outer" in roles and has_inner and container_idx is None:
-        # No explicit container transform — outer/inner roles define the container (29453 style)
-        return _compute_container_positions(transforms, terminal, result)
-    else:
-        return _compute_charade_positions(transforms, terminal, result)
+    if has_outer and has_inner and not has_container_type:
+        # 29453 style: all outer/inner are terminal, insertion is implicit
+        return _expand_implicit_container(transforms, terminal, result)
+
+    # Lay out terminals left-to-right, expanding any container terminals
+    position_map = {}
+    pos = 0
+    for idx in sorted(terminal):
+        t = transforms[idx]
+        if t["type"] == "container":
+            # Expand container into outer/inner sub-groups
+            sub_map = _expand_container_terminal(transforms, terminal, idx, pos)
+            position_map.update(sub_map)
+            container_len = len(re.sub(r'[^A-Z]', '', t["result"].upper()))
+            pos += container_len
+        else:
+            t_result = re.sub(r'[^A-Z]', '', t["result"].upper())
+            position_map[idx] = list(range(pos, pos + len(t_result)))
+            pos += len(t_result)
+    return position_map
 
 
-def _compute_container_positions(transforms, terminal, result):
-    """For container clues: find where inner word(s) sit inside outer word.
+def _expand_container_terminal(transforms, terminal, container_idx, offset):
+    """Expand a container terminal into outer/inner position sub-groups.
 
-    Supports multiple inner transforms (charade within container):
-    e.g. SOLE wrapping ARE+C+LIPS → SOL(ARECLIPS)E
-    Each inner transform gets its own slice of the inner region.
+    Finds the outer and terminal inner transforms that feed into this container,
+    pattern-matches where the inner sits inside the outer, and returns position
+    assignments for each piece (offset by the container's start position).
     """
+    # Find outer and terminal inner transforms
     outer_idx = None
     inner_indices = []
     for i, t in enumerate(transforms):
+        if i in terminal:
+            continue  # terminal transforms are peers, not inputs to this container
         if t["role"] == "outer":
             outer_idx = i
-        if t["role"] == "inner" or t["role"].startswith("inner_"):
+        elif t["role"] == "inner" or t["role"].startswith("inner_"):
+            # Only use terminal inners (not consumed by a later dependent)
+            if i in terminal or not _is_consumed_before(transforms, i, container_idx):
+                inner_indices.append(i)
+
+    if outer_idx is None or not inner_indices:
+        container_result = re.sub(r'[^A-Z]', '', transforms[container_idx]["result"].upper())
+        raise ValueError(
+            f"Container transform {container_idx} (result={container_result}) "
+            f"has no outer/inner inputs. Roles: {[t['role'] for t in transforms]}"
+        )
+
+    outer_result = re.sub(r'[^A-Z]', '', transforms[outer_idx]["result"].upper())
+    combined_inner = "".join(
+        re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper())
+        for idx in inner_indices
+    )
+    container_result = re.sub(r'[^A-Z]', '', transforms[container_idx]["result"].upper())
+
+    for insert_pos in range(len(container_result) - len(combined_inner) + 1):
+        if container_result[insert_pos:insert_pos + len(combined_inner)] == combined_inner:
+            remaining = container_result[:insert_pos] + container_result[insert_pos + len(combined_inner):]
+            if remaining == outer_result:
+                position_map = {}
+                # Outer positions: prefix + suffix around the inner
+                outer_positions = (
+                    list(range(offset, offset + insert_pos)) +
+                    list(range(offset + insert_pos + len(combined_inner), offset + len(container_result)))
+                )
+                position_map[outer_idx] = outer_positions
+                # Each inner transform gets its slice
+                inner_pos = offset + insert_pos
+                for idx in inner_indices:
+                    inner_len = len(re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper()))
+                    position_map[idx] = list(range(inner_pos, inner_pos + inner_len))
+                    inner_pos += inner_len
+                return position_map
+
+    raise ValueError(
+        f"Could not find insertion point for container transform {container_idx}: "
+        f"outer={outer_result}, inner={combined_inner}, container={container_result}"
+    )
+
+
+def _expand_implicit_container(transforms, terminal, result):
+    """For 29453-style containers: outer/inner are all terminal, no container transform.
+
+    Find the outer and inner terminals, pattern-match the insertion point,
+    and assign positions to each piece.
+    """
+    outer_idx = None
+    inner_indices = []
+    for i in sorted(terminal):
+        t = transforms[i]
+        if t["role"] == "outer":
+            outer_idx = i
+        elif t["role"] == "inner" or t["role"].startswith("inner_"):
             inner_indices.append(i)
 
     if outer_idx is None or not inner_indices:
-        return {}
+        raise ValueError(
+            f"Implicit container has no outer/inner terminals. "
+            f"Terminal roles: {[transforms[i]['role'] for i in sorted(terminal)]}"
+        )
 
     outer_result = re.sub(r'[^A-Z]', '', transforms[outer_idx]["result"].upper())
-    # Combine all inner results in order
     combined_inner = "".join(
         re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper())
         for idx in inner_indices
@@ -1127,9 +1295,12 @@ def _compute_container_positions(transforms, terminal, result):
         if result[insert_pos:insert_pos + len(combined_inner)] == combined_inner:
             remaining = result[:insert_pos] + result[insert_pos + len(combined_inner):]
             if remaining == outer_result:
-                outer_positions = list(range(0, insert_pos)) + list(range(insert_pos + len(combined_inner), len(result)))
-                position_map = {outer_idx: outer_positions}
-                # Assign each inner transform its slice of the inner region
+                position_map = {}
+                outer_positions = (
+                    list(range(0, insert_pos)) +
+                    list(range(insert_pos + len(combined_inner), len(result)))
+                )
+                position_map[outer_idx] = outer_positions
                 inner_pos = insert_pos
                 for idx in inner_indices:
                     inner_len = len(re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper()))
@@ -1137,19 +1308,21 @@ def _compute_container_positions(transforms, terminal, result):
                     inner_pos += inner_len
                 return position_map
 
-    return {}
+    raise ValueError(
+        f"Could not find insertion point for implicit container: "
+        f"outer={outer_result}, inner={combined_inner}, result={result}"
+    )
 
 
-def _compute_charade_positions(transforms, terminal, result):
-    """For charade/chain clues: terminal transforms concatenate left-to-right."""
-    position_map = {}
-    pos = 0
-    for idx in sorted(terminal):
-        t_result = re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper())
-        positions = list(range(pos, pos + len(t_result)))
-        position_map[idx] = positions
-        pos += len(t_result)
-    return position_map
+def _is_consumed_before(transforms, idx, before_idx):
+    """Check if transform at idx is consumed by a dependent transform before before_idx."""
+    for i in range(idx + 1, before_idx):
+        t = transforms[i]
+        if t.get("type") in DEPENDENT_TRANSFORM_TYPES:
+            consumed = find_consumed_predecessors(transforms, i)
+            if idx in consumed:
+                return True
+    return False
 
 
 def _compute_completed_letters(transforms_done, position_map, step):
@@ -1408,6 +1581,11 @@ def _resolve_assembly_context_variables(text, step):
         "{sourceWord}": "sourceWord",
         "{fodderWord}": "fodderWord",
         "{fodderWordUpper}": "fodderWordUpper",
+        "{containerIndicatorWords}": "containerIndicatorWords",
+        "{reversalIndicatorWords}": "reversalIndicatorWords",
+        "{deletionIndicatorWords}": "deletionIndicatorWords",
+        "{letterSelectionIndicatorWords}": "letterSelectionIndicatorWords",
+        "{anagramIndicatorWords}": "anagramIndicatorWords",
     }
     for placeholder, field in variable_map.items():
         if placeholder in text:

@@ -419,7 +419,7 @@ All 30 clues annotated, validated, and passing regression tests (1104/1104 tests
 - `_check_substitution`: new check — result must be same length as input, differing by exactly one letter
 - Added `substitution` to VALID_TRANSFORM_TYPES, VALID_INDICATOR_TYPES, and DEPENDENT_TRANSFORM_TYPES
 - Added `abbreviation_scan` to VALID_STEP_TYPES and STEP_REQUIRED_FIELDS
-- Added `inner_c` and `inner reversed` to roleDisplayNames in render_templates.json
+- Added `inner_c` and `inner_r` to roleDisplayNames in render_templates.json
 - Added many entries to CRYPTIC_ABBREVIATIONS dictionary
 
 **Process:** Two-phase approach: (1) Solve as AI expert with clue+definition+answer, (2) Encode as training metadata. Hints teach Times conventions (the macro-level checks become the hints).
@@ -458,6 +458,7 @@ Reworking all assembly coaching text to read as coherent, flowing guidance from 
 - **Simple anagram** — Dedicated `straightAnagramCoaching` template in `render_templates.json`. For clues with exactly one literal word → anagram (e.g. 12A SEMINAR), the student sees a single flowing paragraph: "You found the anagram indicator — notice you have '{word}', a {n}-letter word adjacent to the indicator. Now rearrange {WORD} into a {n}-letter word meaning '{definition}'." No separate definition line, no transform prompts, no fail message — just coaching text and letter boxes. See 12A as the reference example.
 - **Simple hidden word** — Dedicated `simpleHiddenWordCoaching` template. For clues with exactly one letter_selection transform + hidden_word indicator (e.g. 7D IDA). Single coaching paragraph: "You found the hidden word indicator — now look at '{word}' next to it. The answer is spelled out inside: scan for a {n}-letter sequence meaning '{definition}'."
 - **Simple substitution** — Dedicated `simpleSubstitutionCoaching` template. For clues with literal source + substitution transform + substitution indicator (e.g. 27A TIE). Single coaching paragraph connecting the abbreviation scan, indicator, and source word into one flowing sentence.
+- **Container with transforms** — Dedicated `containerCoaching` template. For container clues where parts need synonyms/abbreviations before inserting. Replaces definition + indicator + fail message with a coaching paragraph; container transform remains visible for student to complete.
 
 **TODO — Simple indicator-based clues (dedicated coaching flow, no transforms):**
 - Simple container — indicator + outer + inner, no transforms needed
@@ -465,7 +466,6 @@ Reworking all assembly coaching text to read as coherent, flowing guidance from 
 - Simple deletion — indicator + word, remove letters
 
 **TODO — Clues with transforms (full assembly machinery: fail message, transform prompts, combined check):**
-- Container with transforms — parts need synonyms/abbreviations before inserting
 - Charade with transforms — parts need synonyms/abbreviations before joining
 - Compound anagram — multiple parts (some transformed) → anagram
 - Deletion with transforms — base word needs transformation before deletion
