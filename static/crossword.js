@@ -479,6 +479,12 @@ class CrosswordPuzzle {
     hideModal() {
         document.getElementById('answers-modal').classList.add('hidden');
         document.getElementById('add-answers-form').reset();
+        const statusDiv = document.getElementById('modal-status');
+        statusDiv.classList.add('hidden');
+        statusDiv.innerHTML = '';
+        const submitBtn = document.getElementById('modal-submit');
+        submitBtn.textContent = 'Add Answers';
+        submitBtn.disabled = false;
     }
 
     async submitAnswersFile() {
@@ -490,6 +496,15 @@ class CrosswordPuzzle {
             alert('Please select an answers file');
             return;
         }
+
+        const submitBtn = document.getElementById('modal-submit');
+        const statusDiv = document.getElementById('modal-status');
+
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Importing…';
+        statusDiv.classList.remove('hidden');
+        statusDiv.innerHTML = '<div class="status-importing">Importing answers…</div>';
 
         const formData = new FormData();
         formData.append('answers_file', answersFile);
@@ -503,23 +518,40 @@ class CrosswordPuzzle {
             const data = await response.json();
 
             if (data.status === 'conflicts') {
-                this.hideModal();
-                this.showReconciliationLog(data.reconciliation_log);
+                // Show conflicts inside the modal
+                statusDiv.innerHTML = '';
+                this.renderReconciliationLog(data.reconciliation_log, statusDiv);
+                submitBtn.textContent = 'Add Answers';
+                submitBtn.disabled = false;
                 return;
             }
 
             if (data.success) {
-                this.hideModal();
-                this.loadPuzzleList();
-                // Show reconciliation log if there are resolved items or warnings
-                if (data.reconciliation_log && data.reconciliation_log.length > 0) {
-                    this.showReconciliationLog(data.reconciliation_log);
+                // Show success, then close after brief delay
+                const log = data.reconciliation_log || [];
+                if (log.length > 0) {
+                    statusDiv.innerHTML = '<div class="status-success">Answers imported successfully.</div>';
+                    this.renderReconciliationLog(log, statusDiv);
+                } else {
+                    statusDiv.innerHTML = '<div class="status-success">Answers imported successfully.</div>';
                 }
+                this.loadPuzzleList();
+                // Auto-close after 1.5s if no warnings, otherwise stay open
+                const hasWarnings = log.some(e => e.level === 'warning' || e.level === 'resolved');
+                if (!hasWarnings) {
+                    setTimeout(() => this.hideModal(), 1500);
+                }
+                submitBtn.textContent = 'Done';
+                submitBtn.disabled = false;
             } else {
-                alert(data.error || 'Failed to add answers');
+                statusDiv.innerHTML = `<div class="status-error">${data.error || 'Failed to add answers'}</div>`;
+                submitBtn.textContent = 'Add Answers';
+                submitBtn.disabled = false;
             }
         } catch (error) {
-            alert('Failed to add answers: ' + error.message);
+            statusDiv.innerHTML = `<div class="status-error">Failed to add answers: ${error.message}</div>`;
+            submitBtn.textContent = 'Add Answers';
+            submitBtn.disabled = false;
         }
     }
 
@@ -613,15 +645,7 @@ class CrosswordPuzzle {
         el.classList.add('visible');
     }
 
-    showReconciliationLog(log) {
-        const existing = document.getElementById('reconciliation-log');
-        if (existing) existing.remove();
-
-        const container = document.getElementById('upload-section');
-        const div = document.createElement('div');
-        div.id = 'reconciliation-log';
-        div.className = 'reconciliation-log';
-
+    renderReconciliationLog(log, container) {
         const errors = log.filter(e => e.level === 'error');
         const resolved = log.filter(e => e.level === 'resolved');
         const warnings = log.filter(e => e.level === 'warning');
@@ -649,8 +673,18 @@ class CrosswordPuzzle {
             html += `</div>`;
         }
 
+        const div = document.createElement('div');
+        div.className = 'reconciliation-log';
         div.innerHTML = html;
         container.appendChild(div);
+    }
+
+    showReconciliationLog(log) {
+        const existing = document.getElementById('reconciliation-log');
+        if (existing) existing.remove();
+
+        const container = document.getElementById('upload-section');
+        this.renderReconciliationLog(log, container);
     }
 
     initUserGrid() {
@@ -763,6 +797,10 @@ class CrosswordPuzzle {
             li.addEventListener('click', () => {
                 this.selectClue('across', clue.number);
             });
+            li.addEventListener('dblclick', () => {
+                this.selectClue('across', clue.number);
+                this.openTrainer();
+            });
             acrossEl.appendChild(li);
         }
 
@@ -773,6 +811,10 @@ class CrosswordPuzzle {
             li.innerHTML = `<span class="clue-number">${clue.number}</span>${clue.clue}`;
             li.addEventListener('click', () => {
                 this.selectClue('down', clue.number);
+            });
+            li.addEventListener('dblclick', () => {
+                this.selectClue('down', clue.number);
+                this.openTrainer();
             });
             downEl.appendChild(li);
         }

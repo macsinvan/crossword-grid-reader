@@ -16,7 +16,6 @@ class TemplateTrainer {
 
         this.render = null;
         this.loading = true;
-        this.feedback = null; // {type: 'success'|'error', message}
     }
 
     // =========================================================================
@@ -32,14 +31,11 @@ class TemplateTrainer {
             });
             const data = await resp.json();
 
-            this.feedback = { type: data.correct ? 'success' : 'error', message: data.message };
-
             if (data.render) {
                 this.render = data.render;
             }
             this.renderUI();
-
-            setTimeout(() => { this.feedback = null; this.renderUI(); }, 1500);
+            this.showToast(data.correct ? 'success' : 'error', data.message);
         } catch (err) {
             console.error('submitInput error:', err);
         }
@@ -88,16 +84,59 @@ class TemplateTrainer {
             });
             const data = await resp.json();
 
-            this.feedback = { type: data.correct ? 'success' : 'error', message: data.message };
-
             if (data.render) {
                 this.render = data.render;
             }
             this.renderUI();
-            setTimeout(() => { this.feedback = null; this.renderUI(); }, 1500);
+            this.showToast(data.correct ? 'success' : 'error', data.message);
         } catch (err) {
             console.error('checkAnswer error:', err);
         }
+    }
+
+    // =========================================================================
+    // TOAST FEEDBACK (overlay, no layout shift)
+    // =========================================================================
+
+    showToast(type, message) {
+        // Remove any existing toast
+        const old = this.container.querySelector('.trainer-toast');
+        if (old) old.remove();
+
+        const toast = document.createElement('div');
+        toast.className = 'trainer-toast';
+        const isSuccess = type === 'success';
+        toast.textContent = message;
+        Object.assign(toast.style, {
+            position: 'absolute',
+            top: '0.5rem',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            padding: '0.3rem 1rem',
+            borderRadius: '1rem',
+            fontSize: '0.8rem',
+            fontWeight: '600',
+            color: isSuccess ? '#16a34a' : '#dc2626',
+            background: isSuccess ? '#f0fdf4' : '#fef2f2',
+            border: `1px solid ${isSuccess ? '#bbf7d0' : '#fecaca'}`,
+            opacity: '0',
+            transition: 'opacity 0.2s ease',
+            zIndex: '10',
+            pointerEvents: 'none'
+        });
+
+        // Container needs relative positioning for the overlay
+        this.container.style.position = 'relative';
+        this.container.appendChild(toast);
+
+        // Fade in
+        requestAnimationFrame(() => { toast.style.opacity = '1'; });
+
+        // Fade out and remove
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 200);
+        }, 1300);
     }
 
     // =========================================================================
@@ -128,12 +167,6 @@ class TemplateTrainer {
 
         // Answer boxes + buttons
         html += this.renderAnswerSection(r);
-
-        // Feedback banner
-        if (this.feedback) {
-            const bg = this.feedback.type === 'success' ? '#16a34a' : '#dc2626';
-            html += `<div class="trainer-feedback" style="padding: 0.4rem 1rem; background: ${bg}; color: white; text-align: center; font-size: 0.8rem; font-weight: 500;">${this.feedback.message}</div>`;
-        }
 
         // Step list
         html += this.renderStepList(r);
@@ -618,10 +651,9 @@ class TemplateTrainer {
                         body: JSON.stringify({ clue_id: this.clueId, transform_inputs: byTransform })
                     });
                     const data = await resp.json();
-                    this.feedback = { type: data.correct ? 'success' : 'error', message: data.message };
                     if (data.render) this.render = data.render;
                     this.renderUI();
-                    setTimeout(() => { this.feedback = null; this.renderUI(); }, 1500);
+                    this.showToast(data.correct ? 'success' : 'error', data.message);
                 } catch (err) {
                     console.error('Assembly combined check error:', err);
                 }
