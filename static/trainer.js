@@ -554,10 +554,13 @@ class TemplateTrainer {
         }
         html += '</div>';
 
-        // Check button
-        html += '<div style="margin-top: 0.5rem;">';
-        html += '<button class="assembly-combined-check" style="padding: 0.35rem 1.25rem; background: #3b82f6; color: white; border: none; border-radius: 1rem; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Check</button>';
-        html += '</div>';
+        // Check button — hide when all letters are static (check phase has its own inputs)
+        const hasActiveInputs = data.transforms.some(t => t.status !== 'completed');
+        if (hasActiveInputs) {
+            html += '<div style="margin-top: 0.5rem;">';
+            html += '<button class="assembly-combined-check" style="padding: 0.35rem 1.25rem; background: #3b82f6; color: white; border: none; border-radius: 1rem; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Check</button>';
+            html += '</div>';
+        }
 
         html += '</div>';
         return html;
@@ -745,6 +748,18 @@ class TemplateTrainer {
             el.addEventListener('input', (e) => {
                 const letter = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
                 e.target.value = letter;
+
+                // Sync to top answer boxes
+                const pos = parseInt(el.dataset.letterPos, 10);
+                const answerBox = this.container.querySelector(`.answer-box[data-letter-index="${pos}"]`);
+                if (answerBox) answerBox.value = letter;
+
+                // Sync all check-phase letters to server (silent, no re-render)
+                const letters = [];
+                this.container.querySelectorAll('.assembly-result-letter').forEach(box => {
+                    letters.push(box.value || '');
+                });
+                this.updateUIState('type_answer', { letters });
 
                 if (letter) {
                     let next = el.nextElementSibling;
