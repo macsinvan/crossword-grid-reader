@@ -136,6 +136,9 @@ Training metadata is fetched on demand from the `training_metadata` JSONB column
 - **Supabase training data**: Lazy-loaded per request — always fresh, no restart needed.
 - **Python code**: The server runs with `debug=True` (Werkzeug reloader). Any `.py` file change triggers an automatic server restart. `render_templates.json` is also in `extra_files` as a safety net.
 
+**Fix at source — MANDATORY**
+We control all code and data. Always fix at source — start with the clue metadata, then render templates, then server logic. Never patch around bad data in the UI or test layer. If metadata is wrong, fix the metadata. If a template doesn't cover a case, fix or add a template. Work upward from the data, not downward from the symptom.
+
 **Error out, don't fallback — MANDATORY (code AND tests)**
 Do NOT add fallbacks in the code without explicit approval from the user. Never silently swallow errors, substitute defaults for missing data, or degrade functionality without raising an error. If something is wrong, crash with a clear message. Silent fallbacks hide bugs and cause confusion.
 
@@ -457,6 +460,22 @@ All assembly coaching text reworked as coherent, flowing guidance from an expert
 **Templates:** `straightAnagramCoaching`, `simpleHiddenWordCoaching`, `simpleSubstitutionCoaching`, `containerCoaching`, `charadeCoaching`, `deletionCharadeCoaching`, `reversalCharadeCoaching`, `compoundAnagramCoaching`, `letterSelectionCharadeCoaching`, `homophoneCoaching`, `reversedHiddenWordCoaching`, `orderingCharadeCoaching`, `deletionReversalCharadeCoaching`.
 
 **IMPORTANT: Puzzle 29453 is the verified reference. It is locked in Supabase (`training_locked = TRUE`) and 100% read-only. The upload script and all store write methods refuse to modify locked puzzles. Use `python3 lock_puzzle.py --unlock 29453` only if you genuinely need to fix data.**
+
+### Puzzle 29463 Bugs — TODO
+
+**Rules:** One bug at a time. Analyse and report findings. Investigate the generic case, not just the specific clue. Do not code without GO. Fix at source (metadata → templates → server). Follow architecture guidance.
+
+| # | Clue | Bug | Category | Fix approach |
+|---|------|-----|----------|--------------|
+| B1 | 9D PHOSGENE | Assembly coaching text duplicates/covers multiple cases poorly — "signals a rearrangement" is vague, should say "signals an anagram". Coaching should be clue-type-specific so students recognise the pattern next time. | Template text | Fix coaching template — may need a separate template for container+anagram combos |
+| B2 | 7D BRUIN | Multiple abbreviations to find ("Back", "One") — if user finds one and presses Check, toast says "try again" with no acknowledgement that 1 of N was found | Template/server | When user finds a subset of expected abbreviations, flash "we need {N} more" instead of generic "try again" |
+| B3 | 5A GAMBIT | Inconsistent assembly transform hints — some show answer with no explanation, others show prompt with explanation but no answer. Need both: answer + cryptic coaching explanation (e.g. "'doctor' → MB — 'Doctor' commonly abbreviates to MB (Medicinae Baccalaureus) in cryptics") | Template text | Fix transform prompt templates to consistently show solution + coaching explanation |
+| B4 | 5A GAMBIT | Missing implied synonym transform — GAIT (synonym for "carriage") is not shown as a step. Container is GA(MB)IT but no carriage→GAIT transform exists | Metadata | Add missing synonym transform to clue metadata. Fix test to catch missing transforms |
+| B5 | 12A SEMINAR | Correct answer typed in top answer boxes shows green but is not accepted when Check pressed | Server | Architecture violation — investigate server-side answer validation |
+| B6 | 12A SEMINAR | No Check button in assembly letter entry field | Server | Investigate `showCombinedCheck` logic for hidden word clues |
+| B7 | 11A EPICURE | Assembly guidance wrong for PIE — says "gives you 3 letters directly" then "rearrange PIE to get EPI", but PIE is not an anagram of EPI in this context. Investigate the actual parse | Template/metadata | Investigate and report — may be metadata or template issue |
+| B8 | 20A ACERBITY | Two separate implied transforms grouped into one — "Find a 5-letter synonym for 'very fine line'" combines ACE (very fine) + RY (line/railway) into one prompt. These are separate transforms | Metadata | Split into two separate transforms in metadata |
+| B9 | General | Assembly step: entering letters in answer field, then opening a help hint, wipes out the entered letters | Server | Hint toggle triggers re-render that loses unsaved input — investigate `shouldRender` or answer persistence |
 
 ## Worktrees
 This repo uses git worktrees:

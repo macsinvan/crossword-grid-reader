@@ -18,6 +18,13 @@ All user-facing text comes from render_templates.json with {variable} substituti
 - Layer 2: render_templates.json — generic presentation ({variable} placeholders)
 - **NO per-clue prompt overrides.** Never add `prompt` fields to individual steps or transforms in training metadata. All prompts come from render_templates.json. If a template doesn't cover a case, extend the template. Use `hint` for clue-specific teaching.
 
+## Fix at Source
+We control all code and data. Always fix at source — start with clue metadata, then render templates, then server logic.
+- Never patch around bad data in the UI or test layer
+- If metadata is wrong, fix the metadata
+- If a template doesn't cover a case, fix or add a template
+- Work upward from the data, not downward from the symptom
+
 ## Error Out, Don't Fallback
 No silent fallbacks. If data is missing, crash with a clear error message.
 Never substitute defaults for missing data without explicit approval.
