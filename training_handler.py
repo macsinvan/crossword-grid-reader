@@ -599,6 +599,7 @@ def _build_transform_list(transforms, transforms_done, template, clue, words,
     for i, t in enumerate(transforms):
         clue_word = " ".join(words[idx] for idx in t["indices"])
         letter_count = len(re.sub(r'[^A-Z]', '', t["result"].upper()))
+        word_letter_count = len(re.sub(r'[^A-Za-z]', '', clue_word))
         if "type" not in t:
             raise ValueError(f"Transform {i} is missing 'type' field in assembly step")
         t_type = t["type"]
@@ -621,7 +622,8 @@ def _build_transform_list(transforms, transforms_done, template, clue, words,
                     raise ValueError(f"Missing '{prompt_key}' in transformPrompts in render_templates.json")
                 prompt = _resolve_transform_prompt(
                     TRANSFORM_PROMPTS[prompt_key], clue_type,
-                    {"n": letter_count, "definitionWords": definition_words},
+                    {"n": letter_count, "wordLetterCount": word_letter_count,
+                     "definitionWords": definition_words},
                     profile_key=profile_key)
             else:
                 all_solved = all(c in transforms_done for c in consumed)
@@ -634,18 +636,22 @@ def _build_transform_list(transforms, transforms_done, template, clue, words,
                     prompt = _resolve_transform_prompt(
                         TRANSFORM_PROMPTS[prompt_key], clue_type,
                         {"word": clue_word, "predecessorLetters": predecessor_letters,
-                         "n": letter_count, "definitionWords": definition_words},
+                         "n": letter_count, "wordLetterCount": word_letter_count,
+                         "definitionWords": definition_words},
                         profile_key=profile_key)
                 else:
                     prompt = _resolve_transform_prompt(
                         TRANSFORM_PROMPTS[t_type], clue_type,
-                        {"word": clue_word, "n": letter_count, "definitionWords": definition_words},
+                        {"word": clue_word, "n": letter_count,
+                         "wordLetterCount": word_letter_count,
+                         "definitionWords": definition_words},
                         profile_key=profile_key)
         else:
             display_role = _format_role(t["role"])
             prompt = _resolve_transform_prompt(
                 TRANSFORM_PROMPTS[t_type], clue_type,
                 {"role": display_role, "word": clue_word, "n": letter_count,
+                 "wordLetterCount": word_letter_count,
                  "definitionWords": definition_words},
                 profile_key=profile_key)
 
@@ -970,7 +976,12 @@ def _build_assembly_data(session, step, clue):
         fail_message = ""
 
     # Determine profile_key for transform prompt lookup
-    profile_key = "container" if is_container_with_transforms else None
+    if is_container_with_transforms:
+        profile_key = "container"
+    elif is_compound_anagram:
+        profile_key = "compound_anagram"
+    else:
+        profile_key = None
 
     # Build transform display data
     transform_list = _build_transform_list(
@@ -1042,6 +1053,23 @@ def _build_assembly_data(session, step, clue):
         fodder_word = " ".join(words[i] for i in transforms[0]["indices"])
         virtual_step["fodderWord"] = fodder_word
         virtual_step["fodderWordUpper"] = fodder_word.upper()
+
+    # For compound anagrams, add letter-counting variables for coaching paragraph
+    if is_compound_anagram:
+        independent_words = []
+        raw_letter_total = 0
+        for t in transforms:
+            if t["type"] not in DEPENDENT_TRANSFORM_TYPES:
+                t_word = " ".join(words[idx] for idx in t["indices"])
+                independent_words.append(t_word)
+                raw_letter_total += len(re.sub(r'[^A-Za-z]', '', t_word))
+        virtual_step["rawLetterTotal"] = str(raw_letter_total)
+        if len(independent_words) == 1:
+            virtual_step["remainingWordsList"] = "'" + independent_words[0] + "'"
+        else:
+            virtual_step["remainingWordsList"] = (
+                "'" + "' and '".join(independent_words) + "'"
+            )
 
     # Resolve coaching lines
     definition_line, indicator_line, check_phase_prompt = _build_coaching_lines(
@@ -1835,6 +1863,8 @@ def _resolve_assembly_context_variables(text, step):
         "{homophoneIndicatorWords}": "homophoneIndicatorWords",
         "{orderingIndicatorWords}": "orderingIndicatorWords",
         "{hiddenWordIndicatorWords}": "hiddenWordIndicatorWords",
+        "{rawLetterTotal}": "rawLetterTotal",
+        "{remainingWordsList}": "remainingWordsList",
     }
     for placeholder, field in variable_map.items():
         if placeholder in text:

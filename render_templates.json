@@ -94,7 +94,7 @@
     "charadeCoaching": "There are no indicator words here \u2014 that's a charade. The remaining words each clue a shorter word that chains end-to-end into a {enumeration}-letter word meaning '{definitionWords}'. What does each one really point to?",
     "deletionCharadeCoaching": "'{deletionIndicatorWords}' tells you to remove letters from something. The remaining words build the answer end-to-end, but one piece needs trimming first. Work out what each word clues, then apply the deletion to find a {enumeration}-letter word meaning '{definitionWords}'.",
     "reversalCharadeCoaching": "'{reversalIndicatorWords}' tells you to read something backwards. The remaining words build the answer end-to-end, but one piece needs reversing. Work out what each word clues, then flip the right one to find a {enumeration}-letter word meaning '{definitionWords}'.",
-    "compoundAnagramCoaching": "'{anagramIndicatorWords}' signals an anagram \u2014 but the letters come from several words, and not all of them are used as-is. Some are abbreviations or synonyms for shorter words. Work out what each one actually contributes, gather the letters, and rearrange them into a {enumeration}-letter word meaning '{definitionWords}'.",
+    "compoundAnagramCoaching": "You've found the anagram indicator, '{anagramIndicatorWords}' \u2014 this tells you letters need rearranging. Look at what's left: {remainingWordsList}. The problem is you need {enumeration} letters but these words give you {rawLetterTotal}. This is common in cryptic clues \u2014 it signals that one or more words need to be transformed to deliver the required {enumeration} letters that when rearranged will give a word meaning '{definitionWords}'.",
     "letterSelectionCharadeCoaching": "'{letterSelectionIndicatorWords}' tells you to pick specific letters \u2014 first, last, or alternating are the usual patterns. The remaining words build the answer end-to-end, but one contributes only selected letters. Work out what each word clues, extract the right letters, and chain them into a {enumeration}-letter word meaning '{definitionWords}'.",
     "homophoneCoaching": "'{homophoneIndicatorWords}' tells you this clue works by sound \u2014 the answer sounds like another word but is spelled differently. Work out what each remaining word clues, say them aloud, and listen for a {enumeration}-letter word meaning '{definitionWords}'.",
     "reversedHiddenWordCoaching": "'{hiddenWordIndicatorWords}' tells you the answer is hiding in plain sight, spelled out across the letters of adjacent words \u2014 but there's a twist. The reversal signal means it's hidden backwards. Scan the text for a {enumeration}-letter sequence that, read in reverse, means '{definitionWords}'.",
@@ -115,23 +115,26 @@
     "transformPrompts": {
       "synonym": {
         "default": "What does '{word}' mean? ({n} letters)",
-        "container": "What does '{word}' mean? ({n} letters)"
+        "container": "What does '{word}' mean? ({n} letters)",
+        "compound_anagram": "'{word}' \u2014 use as is or transform? It has {wordLetterCount} letters but you need {n}. What does it really mean?"
       },
       "abbreviation": {
         "default": "What does '{word}' stand for in crosswords? ({n} letters)",
-        "container": "What {n}-letter abbreviation does '{word}' give you?"
+        "container": "What {n}-letter abbreviation does '{word}' give you?",
+        "compound_anagram": "'{word}' \u2014 use as is or transform? It has {wordLetterCount} letters but you need {n}. What does it stand for?"
       },
       "literal": {
         "default": "'{word}' is used at face value here \u2014 type its {n} letters as they are.",
-        "anagram": "Notice '{word}', a {n}-letter word adjacent to the indicator."
+        "anagram": "Notice '{word}', a {n}-letter word adjacent to the indicator.",
+        "compound_anagram": "'{word}' \u2014 use as is or transform? It has {n} letters."
       },
       "reversal": "'{word}' tells you to reverse — what {n} letters do you get?",
       "reversal_with_input": "'{word}' tells you to reverse {predecessorLetters} — what {n} letters do you get?",
       "deletion": "'{word}' tells you to shorten — what {n} letters remain?",
       "deletion_with_input": "'{word}' tells you to shorten {predecessorLetters} — what {n} letters remain?",
       "letter_selection": "Which letters do you take from '{word}'? ({n} letters)",
-      "anagram": "Now rearrange those {n} letters — what word do they make?",
-      "anagram_with_input": "Now rearrange {predecessorLetters} — what {n}-letter word do they make?",
+      "anagram": "Now combine and rearrange all {n} letters \u2014 what word meaning '{definitionWords}' do they give you?",
+      "anagram_with_input": "Now rearrange {predecessorLetters} \u2014 what {n}-letter word meaning '{definitionWords}' do they give you?",
       "container": "Now complete the insertion — what {n}-letter word do you get?",
       "container_with_input": "Now put {predecessorLetters} together — what {n}-letter word do you get?",
       "homophone": "say '{word}' out loud — what {n}-letter word sounds the same?",
