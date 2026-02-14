@@ -371,7 +371,7 @@ def _check_assembly_data_shape(data, prefix=""):
     """Validate the shape of assemblyData. Returns error string or None."""
     required = [
         "phase", "failMessage", "transforms", "resultParts",
-        "positionMap", "completedLetters", "definitionLine",
+        "positionMap", "resultGroups", "completedLetters", "definitionLine",
         "indicatorLine", "checkPhasePrompt",
     ]
     for field in required:

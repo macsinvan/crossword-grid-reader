@@ -456,20 +456,6 @@ All assembly coaching text reworked as coherent, flowing guidance from an expert
 
 **Templates:** `straightAnagramCoaching`, `simpleHiddenWordCoaching`, `simpleSubstitutionCoaching`, `containerCoaching`, `charadeCoaching`, `deletionCharadeCoaching`, `reversalCharadeCoaching`, `compoundAnagramCoaching`, `letterSelectionCharadeCoaching`, `homophoneCoaching`, `reversedHiddenWordCoaching`, `orderingCharadeCoaching`, `deletionReversalCharadeCoaching`.
 
-### Stateless Client Violations — TODO
-Architectural audit found 8 violations of the stateless client rule in `trainer.js`. The client derives data, makes rendering decisions, and syncs DOM cross-widget — all of which should be server-driven.
-
-| # | Violation | Location | Fix |
-|---|-----------|----------|-----|
-| V1 | Client builds `posToTransform` reverse map | trainer.js:518-524, 569-595 | Server sends pre-computed `resultGroups` |
-| V2 | Client derives per-position render metadata `{letter, isEditable}` | trainer.js:527-530, 544 | Server sends per-position `{letter, isEditable}` |
-| V3 | Client decides Check button visibility from transform statuses | trainer.js:558 | Server sends `showCombinedCheck` flag |
-| V4 | Client DOM-walks to build `byTransform` for submission | trainer.js:711-717 | Client submits raw letters+positions, server does grouping |
-| V5 | DOM cross-widget sync of check-phase inputs to answer boxes | trainer.js:752-755 | Remove — server handles answer state |
-| V6 | Client decides whether to re-render | trainer.js:64-66 | Server sends `shouldRender` flag |
-| V7 | Client guards submit button with own validation | trainer.js:810-813 | Submit button only rendered when server says valid |
-| V8 | Cross letters merged into assembly position data client-side | trainer.js | Server merges cross letters into position data |
-
 **IMPORTANT: Puzzle 29453 is the verified reference. It is locked in Supabase (`training_locked = TRUE`) and 100% read-only. The upload script and all store write methods refuse to modify locked puzzles. Use `python3 lock_puzzle.py --unlock 29453` only if you genuinely need to fix data.**
 
 ## Worktrees

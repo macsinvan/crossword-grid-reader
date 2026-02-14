@@ -61,10 +61,8 @@ class TemplateTrainer {
             const result = await resp.json();
             this._updateSession(result);
             this.render = result;
-            // Silent sync for typing — don't re-render (preserves focus/cursor)
-            // Only re-render if server locked the answer
-            if (action === 'type_answer' && !result.answerLocked) return;
-            this.renderUI();
+            // Server decides whether a re-render is needed
+            if (result.shouldRender) this.renderUI();
         } catch (err) {
             console.error('updateUIState error:', err);
         }
@@ -412,7 +410,7 @@ class TemplateTrainer {
         }
 
         // Submit button
-        if (step.inputMode === 'tap_words' && (r.selectedIndices || []).length > 0) {
+        if (r.showSubmitButton) {
             html += `<div style="margin-top: 0.75rem;">`;
             html += `<button class="submit-btn" style="padding: 0.4rem 1.5rem; background: #3b82f6; color: white; border: none; border-radius: 1rem; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Check</button>`;
             html += `</div>`;
@@ -506,57 +504,35 @@ class TemplateTrainer {
     }
 
     renderCombinedResult(data) {
-        const letters = data.completedLetters;
-        if (!letters || !data.resultParts) return '';
+        if (!data.resultParts) return '';
 
         let html = '<div style="margin: 0.75rem 0; padding: 0.6rem 0; border-top: 1px solid #e2e8f0;">';
 
-        // Build groups from positionMap: find contiguous runs belonging to each transform
-        const posMap = data.positionMap || {};
-        const groups = this.buildPositionGroups(letters, posMap);
-
-        // Build reverse map: position → transform index (for editable inputs)
-        const posToTransform = {};
-        for (const [tIdx, positions] of Object.entries(posMap)) {
-            for (const pos of positions) {
-                posToTransform[pos] = parseInt(tIdx);
-            }
-        }
-
-        // Find which transforms are completed vs active
-        const completedTransforms = new Set();
-        for (const t of data.transforms) {
-            if (t.status === 'completed') completedTransforms.add(t.index);
-        }
+        // Server provides pre-computed groups: each group is [{pos, transformIndex, letter, isEditable, crossLetter}, ...]
+        const groups = data.resultGroups || [];
 
         html += '<div style="display: flex; gap: 3px; flex-wrap: wrap; align-items: center;">';
         for (let g = 0; g < groups.length; g++) {
             if (g > 0) html += '<div style="font-size: 1rem; font-weight: 700; color: #94a3b8; padding: 0 0.2rem;">+</div>';
-            for (const pos of groups[g]) {
-                const letter = letters[pos];
-                const crossLetter = this.getCrossLetter(pos);
-                const tIdx = posToTransform[pos];
-                const isCompleted = completedTransforms.has(tIdx);
-                const filled = letter !== null;
-                const hasCross = !filled && crossLetter;
-                const displayLetter = letter || crossLetter || '';
+            for (const entry of groups[g]) {
+                const pos = entry.pos;
+                const displayLetter = entry.letter || entry.crossLetter || '';
 
-                if (filled || isCompleted) {
+                if (!entry.isEditable) {
                     // Completed — green static display
                     html += `<div style="width: 2.2rem; height: 2.4rem; display: flex; align-items: center; justify-content: center; border-bottom: 3px solid #22c55e; background: #f0fdf4; font-size: 1.1rem; font-weight: 700; font-family: monospace; color: #15803d; letter-spacing: 0.05em;">${displayLetter}</div>`;
                 } else {
                     // Active — editable input (cross letters shown as placeholder, overwritable)
-                    html += `<input type="text" class="assembly-combined-letter" data-transform-index="${tIdx}" data-pos="${pos}" `
-                        + `value="" placeholder="${crossLetter || ''}" maxlength="1" `
+                    html += `<input type="text" class="assembly-combined-letter" data-pos="${pos}" `
+                        + `value="" placeholder="${entry.crossLetter || ''}" maxlength="1" `
                         + `style="width: 2.2rem; height: 2.4rem; text-align: center; border: none; border-bottom: 3px solid #93c5fd; border-radius: 0; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; background: white; color: #1e293b; outline: none; font-family: monospace;" />`;
                 }
             }
         }
         html += '</div>';
 
-        // Check button — hide when all letters are static (check phase has its own inputs)
-        const hasActiveInputs = data.transforms.some(t => t.status !== 'completed');
-        if (hasActiveInputs) {
+        // Check button — server decides visibility
+        if (data.showCombinedCheck) {
             html += '<div style="margin-top: 0.5rem;">';
             html += '<button class="assembly-combined-check" style="padding: 0.35rem 1.25rem; background: #3b82f6; color: white; border: none; border-radius: 1rem; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Check</button>';
             html += '</div>';
@@ -564,34 +540,6 @@ class TemplateTrainer {
 
         html += '</div>';
         return html;
-    }
-
-    buildPositionGroups(letters, posMap) {
-        // Build a map: position → transform index
-        const posToTransform = {};
-        for (const [tIdx, positions] of Object.entries(posMap)) {
-            for (const pos of positions) {
-                posToTransform[pos] = parseInt(tIdx);
-            }
-        }
-
-        // Walk positions in order, grouping contiguous runs with the same transform
-        const groups = [];
-        let currentGroup = [];
-        let currentTransform = null;
-
-        for (let pos = 0; pos < letters.length; pos++) {
-            const t = posToTransform[pos];
-            if (t !== currentTransform && currentGroup.length > 0) {
-                groups.push(currentGroup);
-                currentGroup = [];
-            }
-            currentGroup.push(pos);
-            currentTransform = t;
-        }
-        if (currentGroup.length > 0) groups.push(currentGroup);
-
-        return groups;
     }
 
     renderAssemblyCheck(data) {
@@ -709,17 +657,15 @@ class TemplateTrainer {
         this.container.querySelectorAll('.assembly-combined-check').forEach(el => {
             el.addEventListener('click', async () => {
                 const allInputs = this.container.querySelectorAll('.assembly-combined-letter');
-                const byTransform = {};
+                const letterPositions = {};
                 allInputs.forEach(box => {
-                    const tIdx = box.dataset.transformIndex;
-                    if (!byTransform[tIdx]) byTransform[tIdx] = [];
-                    byTransform[tIdx].push(box.value || box.placeholder || '');
+                    letterPositions[box.dataset.pos] = box.value || box.placeholder || '';
                 });
                 try {
                     const resp = await fetch('/trainer/input', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ clue_id: this.clueId, session: this.session, transform_inputs: byTransform })
+                        body: JSON.stringify({ clue_id: this.clueId, session: this.session, letter_positions: letterPositions })
                     });
                     const data = await resp.json();
                     if (data.render) {
@@ -748,11 +694,6 @@ class TemplateTrainer {
             el.addEventListener('input', (e) => {
                 const letter = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
                 e.target.value = letter;
-
-                // Sync to top answer boxes
-                const pos = parseInt(el.dataset.letterPos, 10);
-                const answerBox = this.container.querySelector(`.answer-box[data-letter-index="${pos}"]`);
-                if (answerBox) answerBox.value = letter;
 
                 // Sync all check-phase letters to server (silent, no re-render)
                 const letters = [];
@@ -807,10 +748,7 @@ class TemplateTrainer {
         // Submit button (for tap_words)
         this.container.querySelectorAll('.submit-btn').forEach(el => {
             el.addEventListener('click', () => {
-                const selected = this.render?.selectedIndices || [];
-                if (selected.length > 0) {
-                    this.submitInput(selected);
-                }
+                this.submitInput(this.render?.selectedIndices || []);
             });
         });
 

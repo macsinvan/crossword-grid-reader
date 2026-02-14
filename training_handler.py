@@ -150,6 +150,7 @@ _SESSION_FIELDS = {
     "assembly_transforms_done": {},
     "assembly_hint_index": None,
     "help_visible": False,
+    "cross_letters": [],
 }
 
 
@@ -193,9 +194,11 @@ def restore_session(raw):
     return session
 
 
-def start_session(clue_id, clue):
+def start_session(clue_id, clue, cross_letters=None):
     """Initialize a training session. Returns the initial render."""
     session = _new_session()
+    if cross_letters:
+        session["cross_letters"] = cross_letters
     return get_render(clue_id, clue, session)
 
 
@@ -344,6 +347,7 @@ def get_render(clue_id, clue, session):
         "helpText": help_text,
         "highlights": session["highlights"],
         "selectedIndices": session["selected_indices"],
+        "showSubmitButton": current_step["inputMode"] == "tap_words" and len(session["selected_indices"]) > 0,
         "userAnswer": session["user_answer"],
         "answerLocked": session["answer_locked"],
         "complete": False,
@@ -351,7 +355,7 @@ def get_render(clue_id, clue, session):
     }
 
 
-def handle_input(clue_id, clue, session, value, transform_index=None, transform_inputs=None):
+def handle_input(clue_id, clue, session, value, transform_index=None, transform_inputs=None, letter_positions=None):
     """Validate user input for the current step. Returns {correct, render, message?}."""
 
     steps = clue["steps"]
@@ -367,7 +371,7 @@ def handle_input(clue_id, clue, session, value, transform_index=None, transform_
 
     # Assembly steps have their own multi-phase validation
     if template["inputMode"] == "assembly":
-        return _handle_assembly_input(session, step, clue, clue_id, value, transform_index, transform_inputs)
+        return _handle_assembly_input(session, step, clue, clue_id, value, transform_index, transform_inputs, letter_positions)
 
     input_mode = template["inputMode"]
     expected = _resolve_expected(step, template)
@@ -461,7 +465,15 @@ def update_ui_state(clue_id, clue, session, action, data):
     else:
         raise ValueError(f"Unknown UI action: {action}")
 
-    return get_render(clue_id, clue, session)
+    render = get_render(clue_id, clue, session)
+
+    # Silent sync: type_answer doesn't need re-render unless answer was locked
+    if action == "type_answer" and not session["answer_locked"]:
+        render["shouldRender"] = False
+    else:
+        render["shouldRender"] = True
+
+    return render
 
 
 def reveal_answer(clue_id, clue, session):
@@ -974,6 +986,9 @@ def _build_assembly_data(session, step, clue):
     # Compute completed letters after auto-complete so abbreviation letters show in boxes
     completed_letters = _compute_completed_letters(transforms_done, position_map, step)
 
+    # Pre-compute result groups for combined display (eliminates client reverse-map logic)
+    result_groups = _compute_result_groups(position_map, step, completed_letters, transforms_done, session.get("cross_letters"))
+
     # Determine phase: check when completed letters spell the answer but auto-skip didn't fire
     final_result = re.sub(r'[^A-Z]', '', step["result"].upper())
     assembled = "".join(l for l in completed_letters if l)
@@ -1103,25 +1118,56 @@ def _build_assembly_data(session, step, clue):
         definition_line = _resolve_variables(coaching_template, virtual_step, clue)
         indicator_line = ""
 
+    # Show combined check button when at least one transform is still active
+    show_combined_check = any(t["status"] != "completed" for t in transform_list)
+
     return {
         "phase": phase,
         "failMessage": fail_message,
         "transforms": transform_list,
         "resultParts": result_parts,
         "positionMap": {str(k): v for k, v in position_map.items()},
+        "resultGroups": result_groups,
         "completedLetters": completed_letters,
+        "showCombinedCheck": show_combined_check,
         "definitionLine": definition_line,
         "indicatorLine": indicator_line,
         "checkPhasePrompt": check_phase_prompt,
     }
 
 
-def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=None, transform_inputs=None):
+def _handle_assembly_input(session, step, clue, clue_id, value, transform_index=None, transform_inputs=None, letter_positions=None):
     """Handle input for an assembly step. Transforms can be submitted in any order."""
     steps = clue["steps"]
     transforms = step["transforms"]
     transforms_done = session["assembly_transforms_done"]
     feedback = RENDER_TEMPLATES["feedback"]
+
+    # Position-based check: client sends raw {pos: letter} pairs,
+    # server groups them by transform using positionMap
+    if letter_positions is not None:
+        position_map = _compute_position_map(step)
+        # Build reverse map: position → transform index
+        pos_to_transform = {}
+        for t_idx, positions in position_map.items():
+            for pos in positions:
+                pos_to_transform[pos] = t_idx
+        # Group letters by transform
+        by_transform = {}
+        for pos_str, letter in letter_positions.items():
+            pos = int(pos_str)
+            t_idx = pos_to_transform.get(pos)
+            if t_idx is not None:
+                if t_idx not in by_transform:
+                    by_transform[t_idx] = {}
+                by_transform[t_idx][pos] = letter
+        # Convert to ordered letter arrays matching position_map order
+        grouped = {}
+        for t_idx, pos_letters in by_transform.items():
+            ordered_positions = position_map[t_idx]
+            grouped[str(t_idx)] = [pos_letters.get(p, '') for p in ordered_positions]
+        # Delegate to existing transform_inputs logic
+        return _handle_assembly_input(session, step, clue, clue_id, value, transform_inputs=grouped)
 
     # Combined check: client sends all letter inputs grouped by transform
     # Server decides which are complete and validates them
@@ -1451,6 +1497,62 @@ def _is_consumed_before(transforms, idx, before_idx):
             if idx in consumed:
                 return True
     return False
+
+
+def _compute_result_groups(position_map, step, completed_letters, transforms_done, cross_letters=None):
+    """Pre-compute grouped position data for the combined result display.
+
+    Returns a list of groups, where each group is a list of
+    {pos, transformIndex, letter, isEditable, crossLetter}.
+    Groups are contiguous runs of positions belonging to the same transform.
+
+    Per-position metadata:
+    - letter: the completed letter at this position (string or None)
+    - isEditable: False when letter is filled or the position's transform is done
+    - crossLetter: letter from crossing word at this position (string or "")
+    """
+    result = re.sub(r'[^A-Z]', '', step["result"].upper())
+    total_positions = len(result)
+
+    # Build cross-letter lookup: position → letter
+    cross_map = {}
+    if cross_letters:
+        for cl in cross_letters:
+            if cl.get("letter"):
+                cross_map[cl["position"]] = cl["letter"]
+
+    # Build reverse map: position → transform index
+    pos_to_transform = {}
+    for t_idx_str, positions in position_map.items():
+        t_idx = int(t_idx_str) if isinstance(t_idx_str, str) else t_idx_str
+        for pos in positions:
+            pos_to_transform[pos] = t_idx
+
+    # Walk positions in order, grouping contiguous runs with the same transform
+    groups = []
+    current_group = []
+    current_transform = None
+
+    for pos in range(total_positions):
+        t = pos_to_transform.get(pos)
+        if t != current_transform and current_group:
+            groups.append(current_group)
+            current_group = []
+        letter = completed_letters[pos] if pos < len(completed_letters) else None
+        is_editable = letter is None and t not in transforms_done
+        current_group.append({
+            "pos": pos,
+            "transformIndex": t,
+            "letter": letter,
+            "isEditable": is_editable,
+            "crossLetter": cross_map.get(pos, ""),
+        })
+        current_transform = t
+
+    if current_group:
+        groups.append(current_group)
+
+    return groups
 
 
 def _compute_completed_letters(transforms_done, position_map, step):

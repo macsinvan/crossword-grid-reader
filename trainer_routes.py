@@ -87,7 +87,8 @@ def trainer_start():
             'message': 'This clue has not been annotated for training yet.',
         }), 404
 
-    render = training_handler.start_session(clue_id, clue_data)
+    cross_letters = data.get('cross_letters')
+    render = training_handler.start_session(clue_id, clue_data, cross_letters=cross_letters)
     render['clue_id'] = clue_id
     return jsonify(render)
 
@@ -105,7 +106,8 @@ def trainer_input():
 
     transform_index = data.get('transform_index')  # None for non-assembly inputs
     transform_inputs = data.get('transform_inputs')  # Combined check: {tIdx: letters}
-    result = training_handler.handle_input(clue_id, clue_data, session, value=data.get('value'), transform_index=transform_index, transform_inputs=transform_inputs)
+    letter_positions = data.get('letter_positions')  # Position-based check: {pos: letter}
+    result = training_handler.handle_input(clue_id, clue_data, session, value=data.get('value'), transform_index=transform_index, transform_inputs=transform_inputs, letter_positions=letter_positions)
     return jsonify(result)
 
 
