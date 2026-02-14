@@ -667,6 +667,10 @@ def _build_transform_list(transforms, transforms_done, template, clue, words,
             else:
                 completed_text = completed_templates["independent"].format(
                     clueWord=clue_word, result=result)
+            # Append hint as coaching explanation so the student sees both answer and why
+            hint = t.get("hint", "")
+            if hint:
+                completed_text += " — " + hint
         else:
             status = "active"
             result = None
