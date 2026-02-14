@@ -173,6 +173,8 @@
       "part4": "Part 4",
       "part5": "Part 5",
       "outer": "Outer",
+      "outer_a": "Outer A",
+      "outer_b": "Outer B",
       "inner": "Inner",
       "inner_a": "Inner A",
       "inner_b": "Inner B",

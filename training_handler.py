@@ -870,7 +870,7 @@ def _build_assembly_data(session, step, clue):
         i for i, t in enumerate(transforms) if t["type"] == "container"
     ]
     has_outer_inner_roles = (
-        any(t.get("role") == "outer" for t in transforms)
+        any(t.get("role") == "outer" or t.get("role", "").startswith("outer_") for t in transforms)
         and any(t.get("role", "").startswith("inner") for t in transforms)
     )
     is_container_with_transforms = (
@@ -1350,7 +1350,7 @@ def _compute_position_map(step):
 
     # Check for implicit container: outer/inner roles, all terminal, no container transform
     roles = {transforms[i]["role"] for i in terminal}
-    has_outer = "outer" in roles
+    has_outer = "outer" in roles or any(r.startswith("outer_") for r in roles)
     has_inner = "inner" in roles or any(r.startswith("inner_") for r in roles)
     has_container_type = any(transforms[i]["type"] == "container" for i in terminal)
 
@@ -1390,12 +1390,12 @@ def _expand_container_terminal(transforms, terminal, container_idx, offset):
     # Find the container's direct inputs via dependency analysis
     direct_inputs = find_consumed_predecessors(transforms, container_idx)
 
-    outer_idx = None
+    outer_indices = []
     inner_indices = []
     for i in direct_inputs:
         effective_role = _trace_effective_role(transforms, i)
-        if effective_role == "outer":
-            outer_idx = i
+        if effective_role == "outer" or effective_role.startswith("outer_"):
+            outer_indices.append(i)
         elif effective_role == "inner" or effective_role.startswith("inner_"):
             inner_indices.append(i)
 
@@ -1404,7 +1404,7 @@ def _expand_container_terminal(transforms, terminal, container_idx, offset):
     # If role-based classification didn't find outer/inner (e.g. sub-container
     # in a charade using part roles), determine from letter pattern matching:
     # try each direct input as outer, rest as inner, check if insertion works.
-    if outer_idx is None or not inner_indices:
+    if not outer_indices or not inner_indices:
         from itertools import permutations as _perms
         input_results = {
             i: re.sub(r'[^A-Z]', '', transforms[i]["result"].upper())
@@ -1419,7 +1419,7 @@ def _expand_container_terminal(transforms, terminal, container_idx, offset):
                     if container_result[pos:pos + len(combined)] == combined:
                         remaining = container_result[:pos] + container_result[pos + len(combined):]
                         if remaining == input_results[candidate_outer]:
-                            outer_idx = candidate_outer
+                            outer_indices = [candidate_outer]
                             inner_indices = list(perm)
                             found = True
                             break
@@ -1434,7 +1434,11 @@ def _expand_container_terminal(transforms, terminal, container_idx, offset):
                 f"Roles: {[transforms[i]['role'] for i in direct_inputs]}"
             )
 
-    outer_result = re.sub(r'[^A-Z]', '', transforms[outer_idx]["result"].upper())
+    # Combine all outer parts into one result string (multi-part outers: outer_a + outer_b)
+    outer_result = "".join(
+        re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper())
+        for idx in outer_indices
+    )
     combined_inner = "".join(
         re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper())
         for idx in inner_indices
@@ -1450,7 +1454,12 @@ def _expand_container_terminal(transforms, terminal, container_idx, offset):
                     list(range(offset, offset + insert_pos)) +
                     list(range(offset + insert_pos + len(combined_inner), offset + len(container_result)))
                 )
-                position_map[outer_idx] = outer_positions
+                # Distribute outer positions among outer pieces (same pattern as inner)
+                outer_pos_cursor = 0
+                for idx in outer_indices:
+                    piece_len = len(re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper()))
+                    position_map[idx] = outer_positions[outer_pos_cursor:outer_pos_cursor + piece_len]
+                    outer_pos_cursor += piece_len
                 # Each inner transform gets its slice
                 inner_pos = offset + insert_pos
                 for idx in inner_indices:
@@ -1471,22 +1480,26 @@ def _expand_implicit_container(transforms, terminal, result):
     Find the outer and inner terminals, pattern-match the insertion point,
     and assign positions to each piece.
     """
-    outer_idx = None
+    outer_indices = []
     inner_indices = []
     for i in sorted(terminal):
         t = transforms[i]
-        if t["role"] == "outer":
-            outer_idx = i
+        if t["role"] == "outer" or t["role"].startswith("outer_"):
+            outer_indices.append(i)
         elif t["role"] == "inner" or t["role"].startswith("inner_"):
             inner_indices.append(i)
 
-    if outer_idx is None or not inner_indices:
+    if not outer_indices or not inner_indices:
         raise ValueError(
             f"Implicit container has no outer/inner terminals. "
             f"Terminal roles: {[transforms[i]['role'] for i in sorted(terminal)]}"
         )
 
-    outer_result = re.sub(r'[^A-Z]', '', transforms[outer_idx]["result"].upper())
+    # Combine all outer parts (multi-part outers: outer_a + outer_b)
+    outer_result = "".join(
+        re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper())
+        for idx in outer_indices
+    )
     combined_inner = "".join(
         re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper())
         for idx in inner_indices
@@ -1501,7 +1514,12 @@ def _expand_implicit_container(transforms, terminal, result):
                     list(range(0, insert_pos)) +
                     list(range(insert_pos + len(combined_inner), len(result)))
                 )
-                position_map[outer_idx] = outer_positions
+                # Distribute outer positions among outer pieces
+                outer_pos_cursor = 0
+                for idx in outer_indices:
+                    piece_len = len(re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper()))
+                    position_map[idx] = outer_positions[outer_pos_cursor:outer_pos_cursor + piece_len]
+                    outer_pos_cursor += piece_len
                 inner_pos = insert_pos
                 for idx in inner_indices:
                     inner_len = len(re.sub(r'[^A-Z]', '', transforms[idx]["result"].upper()))
@@ -1526,7 +1544,7 @@ def _trace_effective_role(transforms, idx):
     t = transforms[idx]
     role = t.get("role", "")
     # If this transform has an outer/inner role already, use it
-    if role == "outer" or role == "inner" or role.startswith("inner_"):
+    if role == "outer" or role == "inner" or role.startswith("inner_") or role.startswith("outer_"):
         return role
     # If it's a dependent, trace back to its source
     if t.get("type") in DEPENDENT_TRANSFORM_TYPES and idx > 0:
@@ -1921,7 +1939,8 @@ def _resolve_assembly_breakdown(text, step, clue):
     # Detect container clues (outer/inner roles — inner can be "inner", "inner_a", etc.)
     roles = {t["role"] for t in transforms}
     has_inner = "inner" in roles or any(r.startswith("inner_") for r in roles)
-    is_container = "outer" in roles and has_inner
+    has_outer = "outer" in roles or any(r.startswith("outer_") for r in roles)
+    is_container = has_outer and has_inner
 
     if is_container:
         breakdown = _resolve_container_breakdown(
@@ -1938,19 +1957,20 @@ def _resolve_container_breakdown(transforms, step, clue, independent_tpl,
                                   container_notation_tpl, container_fallback_tpl, part_joiner):
     """Build container notation breakdown (e.g. SOL(ARE + C + LIPS)E)."""
     # Find outer, inner, and container transform by role
-    outer_idx = None
+    # Supports multi-part outers (outer_a, outer_b) same as multi-part inners (inner_a, inner_b)
+    outer_parts = []
     inner_parts = []
     container_idx = None
     for i, t in enumerate(transforms):
-        if t["role"] == "outer":
-            outer_idx = i
+        if t["role"] == "outer" or t["role"].startswith("outer_"):
+            outer_parts.append((i, t["result"].upper()))
         elif t["role"] == "inner" or t["role"].startswith("inner_"):
             inner_parts.append((i, t["result"].upper()))
         elif t["type"] == "container":
             container_idx = i
 
-    # If an inner part is consumed by a dependent transform (e.g. reversal),
-    # use the dependent's result instead of the raw inner result.
+    # If an inner/outer part is consumed by a dependent transform (e.g. reversal),
+    # use the dependent's result instead of the raw result.
     consumed_by = {}  # maps consumed index → dependent index
     for i, t in enumerate(transforms):
         if i > 0 and t["type"] in DEPENDENT_TRANSFORM_TYPES and t["type"] != "container":
@@ -1962,11 +1982,17 @@ def _resolve_container_breakdown(transforms, step, clue, independent_tpl,
         if idx in consumed_by else (idx, result)
         for idx, result in inner_parts
     ]
+    outer_parts = [
+        (consumed_by[idx], transforms[consumed_by[idx]]["result"].upper())
+        if idx in consumed_by else (idx, result)
+        for idx, result in outer_parts
+    ]
 
-    if outer_idx is None or not inner_parts:
+    if not outer_parts or not inner_parts:
         raise ValueError("Container clue has outer/inner roles but no terminal outer or inner transforms found")
 
-    outer_result = re.sub(r'[^A-Z]', '', transforms[outer_idx]["result"].upper())
+    # Combine outer parts (single outer or multi-part outer_a + outer_b)
+    outer_result = "".join(re.sub(r'[^A-Z]', '', p[1]) for p in outer_parts)
     combined_inner = "".join(re.sub(r'[^A-Z]', '', p[1]) for p in inner_parts)
     # Use the container transform's result for position matching
     if container_idx is not None:
@@ -2003,7 +2029,7 @@ def _resolve_container_breakdown(transforms, step, clue, independent_tpl,
     source_parts = []
     for i, t in enumerate(transforms):
         role = t.get("role", "")
-        if role not in ("outer", "inner") and not role.startswith("inner_"):
+        if role not in ("outer", "inner") and not role.startswith("inner_") and not role.startswith("outer_"):
             continue
         if t["type"] == "abbreviation":
             continue
@@ -2022,7 +2048,7 @@ def _resolve_container_breakdown(transforms, step, clue, independent_tpl,
         if t["type"] == "container" and not container_placed:
             parts.append(container_notation)
             container_placed = True
-        elif t["role"] not in container_roles and not t["role"].startswith("inner_"):
+        elif t["role"] not in container_roles and not t["role"].startswith("inner_") and not t["role"].startswith("outer_"):
             result_upper = t["result"].upper()
             clue_word = " ".join(words[idx] for idx in t["indices"]) if words and "indices" in t else ""
             if clue_word and clue_word.upper().replace(" ", "") != result_upper.replace(" ", ""):

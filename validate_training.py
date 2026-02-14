@@ -602,7 +602,7 @@ def _check_container(transforms, current_idx, result):
 
     # If more than 2 predecessors, try concatenating all non-outer pieces as inner
     if len(predecessor_results) > 2:
-        from itertools import permutations
+        from itertools import permutations, combinations
         for i, outer in enumerate(predecessor_results):
             others = [p for j, p in enumerate(predecessor_results) if j != i]
             # Try all orderings of the inner pieces
@@ -612,6 +612,23 @@ def _check_container(transforms, current_idx, result):
                     combined = outer[:pos] + inner + outer[pos:]
                     if combined == result_alpha:
                         return None
+
+        # Also try: multiple predecessors as outer (concatenated), rest as inner
+        # e.g. ACE+RY = ACERY as outer, BIT as inner → ACER(BIT)Y
+        n = len(predecessor_results)
+        for outer_count in range(2, n):
+            for outer_indices in combinations(range(n), outer_count):
+                inner_indices_set = [j for j in range(n) if j not in outer_indices]
+                outer_parts = [predecessor_results[j] for j in outer_indices]
+                inner_parts_list = [predecessor_results[j] for j in inner_indices_set]
+                for outer_perm in permutations(outer_parts):
+                    outer_combined = "".join(outer_perm)
+                    for inner_perm in permutations(inner_parts_list):
+                        inner_combined = "".join(inner_perm)
+                        for pos in range(1, len(outer_combined)):
+                            combined = outer_combined[:pos] + inner_combined + outer_combined[pos:]
+                            if combined == result_alpha:
+                                return None
 
     return f"container check failed: '{result}' cannot be formed by inserting one predecessor inside another (predecessors: {predecessor_results})"
 
