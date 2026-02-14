@@ -469,22 +469,20 @@ class TemplateTrainer {
         let html = '';
         const tIdx = transform.index !== undefined ? transform.index : index;
 
-        if (transform.status === 'completed') {
-            // Completed — compact single line with server-provided text
-            html += `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; margin-bottom: 0.25rem;">`;
-            html += `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#22c55e" stroke-width="1.5" fill="#f0fdf4"/><path d="M5 8l2 2 4-4" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-            const completedHtml = (transform.completedText || transform.result).replace(/\n/g, '<br>');
-            html += `<span style="font-size: 0.85rem; color: #1e293b; font-family: monospace; letter-spacing: 0.03em;">${completedHtml}</span>`;
-            html += `</div>`;
-
-        } else if (transform.status === 'active') {
-            // Active — prompt and hint only (letter entry is in combined display below)
+        if (transform.status === 'completed' || transform.status === 'active') {
+            // Both completed and active use the same layout:
+            // Line 1: prompt (with hint toggle + lookup for active, green check for completed)
+            // Line 2: solve + hint (always shown for completed, shown on hint toggle for active)
+            const isCompleted = transform.status === 'completed';
             html += `<div style="padding: 0.25rem 0; margin-bottom: 0.15rem;">`;
 
-            // Prompt with hint
+            // Prompt row
             html += `<div style="display: flex; align-items: flex-start; gap: 0.5rem;">`;
+            if (isCompleted) {
+                html += `<svg style="flex-shrink: 0; margin-top: 2px;" width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#22c55e" stroke-width="1.5" fill="#f0fdf4"/><path d="M5 8l2 2 4-4" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+            }
             html += `<span style="font-size: 0.8rem; font-weight: 600; color: #334155; flex: 1; line-height: 1.5;">${transform.prompt}</span>`;
-            if (transform.hint) {
+            if (!isCompleted && transform.hint) {
                 html += `<span class="assembly-hint-toggle" data-transform-index="${tIdx}" style="cursor: pointer; width: 20px; height: 20px; border-radius: 50%; background: ${transform.hintVisible ? '#3b82f6' : '#e2e8f0'}; color: ${transform.hintVisible ? 'white' : '#94a3b8'}; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;" title="Hint">?</span>`;
             }
             if (transform.lookup) {
@@ -492,10 +490,10 @@ class TemplateTrainer {
             }
             html += `</div>`;
 
-            // Hint — show solve + hint in two-line format (same as completed display)
-            if (transform.hintVisible && transform.completedText) {
-                const hintHtml = transform.completedText.replace(/\n/g, '<br>');
-                html += `<div style="font-size: 0.8rem; color: #1e40af; margin-top: 0.25rem; padding-left: 0.75rem; border-left: 2px solid #93c5fd; line-height: 1.5;">${hintHtml}</div>`;
+            // Solve + hint (always for completed, on hint toggle for active)
+            if ((isCompleted || transform.hintVisible) && transform.completedText) {
+                const solveHtml = transform.completedText.replace(/\n/g, '<br>');
+                html += `<div style="font-size: 0.8rem; color: #1e40af; margin-top: 0.25rem; padding-left: 0.75rem; border-left: 2px solid #93c5fd; line-height: 1.5;">${solveHtml}</div>`;
             }
 
             html += `</div>`;
