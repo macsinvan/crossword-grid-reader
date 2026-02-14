@@ -1132,8 +1132,10 @@ def _build_assembly_data(session, step, clue):
         definition_line = _resolve_variables(coaching_template, virtual_step, clue)
         indicator_line = ""
 
-    # Show combined check button when at least one transform is still active
-    show_combined_check = any(t["status"] != "completed" for t in transform_list)
+    # Show combined check button when any letter box is editable
+    show_combined_check = any(
+        entry["isEditable"] for group in result_groups for entry in group
+    )
 
     return {
         "phase": phase,
