@@ -410,6 +410,16 @@ def handle_input(clue_id, clue, session, value, transform_index=None, transform_
 
         return {"correct": True, "message": feedback["step_correct"], "render": get_render(clue_id, clue, session)}
     else:
+        # Partial match for tap_words: user found some correct words but not all
+        if input_mode == "tap_words" and isinstance(value, list) and isinstance(expected, list):
+            user_set = set(value)
+            expected_set = set(expected)
+            if user_set and user_set < expected_set and user_set.issubset(expected_set):
+                found = len(user_set)
+                remaining = len(expected_set) - found
+                partial_template = feedback.get("step_partial", "Good — {found} found, {remaining} more to find.")
+                msg = partial_template.replace("{found}", str(found)).replace("{remaining}", str(remaining))
+                return {"correct": False, "message": msg, "render": get_render(clue_id, clue, session)}
         return {"correct": False, "message": feedback["step_incorrect"], "render": get_render(clue_id, clue, session)}
 
 

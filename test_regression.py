@@ -973,6 +973,45 @@ def test_help_toggle(server, clue):
     return True, ""
 
 
+def test_partial_tap_feedback(server, clue):
+    """Submitting a correct subset of tap_words indices should give partial feedback, not generic 'try again'."""
+    # Find a step with tap_words inputMode that expects 2+ indices
+    multi_index_step = None
+    multi_index_step_idx = None
+    for i, sv in enumerate(clue["steps"]):
+        if sv["inputMode"] == "tap_words" and isinstance(sv.get("value"), list) and len(sv["value"]) >= 2:
+            multi_index_step = sv
+            multi_index_step_idx = i
+            break
+
+    if not multi_index_step:
+        return True, ""  # No multi-index tap_words step — skip
+
+    render = start_session(server, clue)
+    clue_id = render["clue_id"]
+
+    # Navigate to the target step if it's not already expanded
+    current = render.get("currentStep", {})
+    if current.get("index") != multi_index_step_idx:
+        render = send_ui_state(server, clue_id, render, "select_step", {"step_index": multi_index_step_idx})
+
+    # Submit just the first correct index (a proper subset)
+    partial_value = [multi_index_step["value"][0]]
+    payload = {"clue_id": clue_id, "session": _session(render), "value": partial_value}
+    status, body = api_post(server, "/input", payload)
+    if status != 200:
+        return False, f"Input failed ({status}): {body}"
+
+    if body["correct"]:
+        return False, "Partial selection was accepted as fully correct"
+
+    msg = body.get("message", "")
+    if "more" not in msg.lower():
+        return False, f"Partial tap feedback should mention 'more', got: '{msg}'"
+
+    return True, ""
+
+
 # ---------------------------------------------------------------------------
 # Test runner
 # ---------------------------------------------------------------------------
@@ -991,6 +1030,7 @@ ALL_TESTS = [
     ("Assembly combined check", test_assembly_combined_check),
     ("Dependent prompt update", test_dependent_prompt_update),
     ("Help toggle", test_help_toggle),
+    ("Partial tap feedback", test_partial_tap_feedback),
 ]
 
 

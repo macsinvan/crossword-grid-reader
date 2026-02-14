@@ -246,6 +246,7 @@
   "feedback": {
     "step_correct": "Correct!",
     "step_incorrect": "Not quite \u2014 try again.",
+    "step_partial": "Good \u2014 {found} found, {remaining} more to find.",
     "answer_correct": "Correct!",
     "answer_incorrect": "Not the right answer."
   },
