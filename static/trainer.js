@@ -492,9 +492,10 @@ class TemplateTrainer {
             }
             html += `</div>`;
 
-            // Hint
-            if (transform.hintVisible && transform.hint) {
-                html += `<div style="font-size: 0.8rem; color: #1e40af; margin-top: 0.25rem; padding-left: 0.75rem; border-left: 2px solid #93c5fd; line-height: 1.5;">${transform.hint}</div>`;
+            // Hint — show solve + hint in two-line format (same as completed display)
+            if (transform.hintVisible && transform.completedText) {
+                const hintHtml = transform.completedText.replace(/\n/g, '<br>');
+                html += `<div style="font-size: 0.8rem; color: #1e40af; margin-top: 0.25rem; padding-left: 0.75rem; border-left: 2px solid #93c5fd; line-height: 1.5;">${hintHtml}</div>`;
             }
 
             html += `</div>`;

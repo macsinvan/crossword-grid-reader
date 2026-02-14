@@ -659,27 +659,33 @@ def _build_transform_list(transforms, transforms_done, template, clue, words,
         if i in transforms_done:
             status = "completed"
             result = transforms_done[i]
-            # Build completed text from templates
-            completed_templates = template["completedTextTemplates"]
-            if t_type in DEPENDENT_TRANSFORM_TYPES and i > 0:
-                consumed = find_consumed_predecessors(transforms, i)
+        else:
+            status = "active"
+            result = None
+
+        # Build completedText for ALL transforms (used for completed display AND hint reveal)
+        # Use actual result from transforms_done if completed, else from metadata
+        display_result = result if result else t["result"].upper()
+        completed_templates = template["completedTextTemplates"]
+        if t_type in DEPENDENT_TRANSFORM_TYPES and i > 0:
+            consumed = find_consumed_predecessors(transforms, i)
+            if status == "completed":
                 for c in consumed:
                     if c not in transforms_done:
                         raise ValueError(f"Transform {i} is dependent but predecessor {c} has no result in transforms_done")
                 prev_parts = [transforms_done[c] for c in consumed]
-                prev_result = " + ".join(prev_parts)
-                completed_text = completed_templates["dependent"].format(
-                    prevResult=prev_result, result=result)
             else:
-                completed_text = completed_templates["independent"].format(
-                    clueWord=clue_word, result=result)
-            # Append hint as coaching explanation so the student sees both answer and why
-            hint = t.get("hint", "")
-            if hint:
-                completed_text += "\n" + hint
+                prev_parts = [transforms[c]["result"].upper() for c in consumed]
+            prev_result = " + ".join(prev_parts)
+            completed_text = completed_templates["dependent"].format(
+                prevResult=prev_result, result=display_result)
         else:
-            status = "active"
-            result = None
+            completed_text = completed_templates["independent"].format(
+                clueWord=clue_word, result=display_result)
+        # Append hint as coaching explanation
+        hint = t.get("hint", "")
+        if hint:
+            completed_text += "\n" + hint
 
         transform_entry = {
             "role": t["role"],
@@ -691,9 +697,8 @@ def _build_transform_list(transforms, transforms_done, template, clue, words,
             "hint": t.get("hint", ""),
             "hintVisible": (assembly_hint_index == i),
             "index": i,
+            "completedText": completed_text,
         }
-        if status == "completed":
-            transform_entry["completedText"] = completed_text
         if "lookup" in t:
             transform_entry["lookup"] = t["lookup"]
         transform_list.append(transform_entry)
