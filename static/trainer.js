@@ -473,7 +473,8 @@ class TemplateTrainer {
             // Completed — compact single line with server-provided text
             html += `<div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; margin-bottom: 0.25rem;">`;
             html += `<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#22c55e" stroke-width="1.5" fill="#f0fdf4"/><path d="M5 8l2 2 4-4" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-            html += `<span style="font-size: 0.85rem; color: #1e293b; font-family: monospace; letter-spacing: 0.03em;">${transform.completedText || transform.result}</span>`;
+            const completedHtml = (transform.completedText || transform.result).replace(/\n/g, '<br>');
+            html += `<span style="font-size: 0.85rem; color: #1e293b; font-family: monospace; letter-spacing: 0.03em;">${completedHtml}</span>`;
             html += `</div>`;
 
         } else if (transform.status === 'active') {

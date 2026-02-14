@@ -676,7 +676,7 @@ def _build_transform_list(transforms, transforms_done, template, clue, words,
             # Append hint as coaching explanation so the student sees both answer and why
             hint = t.get("hint", "")
             if hint:
-                completed_text += " — " + hint
+                completed_text += "\n" + hint
         else:
             status = "active"
             result = None
@@ -1988,7 +1988,29 @@ def _resolve_container_breakdown(transforms, step, clue, independent_tpl,
     # Collect terminal transforms and build full breakdown
     container_roles = {"outer", "inner", "container"}
     terminal = find_terminal_transforms(transforms)
+    words = clue.get("words", [])
+
+    # Build source-word mappings for outer/inner transforms (non-abbreviation)
+    # These show what the student discovered during assembly (e.g. 'carriage' → GAIT)
+    # Use the transform's own result (what the student found), not a dependent's result
+    # (e.g. show 'scheme' → RUSE, not 'scheme' → ESUR — the reversal is in the notation).
+    # Abbreviation transforms are skipped — they're shown by the abbreviation_scan step.
+    source_parts = []
+    for i, t in enumerate(transforms):
+        role = t.get("role", "")
+        if role not in ("outer", "inner") and not role.startswith("inner_"):
+            continue
+        if t["type"] == "abbreviation":
+            continue
+        result_upper = t["result"].upper()
+        clue_word = " ".join(words[idx] for idx in t["indices"]) if words and "indices" in t else ""
+        if clue_word and clue_word.upper().replace(" ", "") != result_upper.replace(" ", ""):
+            source_parts.append(independent_tpl.replace("{clueWord}", clue_word).replace("{result}", result_upper))
+
     parts = []
+    # Add source-word mappings before the container notation
+    parts.extend(source_parts)
+
     container_placed = False
     for i in sorted(terminal):
         t = transforms[i]
@@ -1997,14 +2019,13 @@ def _resolve_container_breakdown(transforms, step, clue, independent_tpl,
             container_placed = True
         elif t["role"] not in container_roles and not t["role"].startswith("inner_"):
             result_upper = t["result"].upper()
-            words = clue.get("words", [])
             clue_word = " ".join(words[idx] for idx in t["indices"]) if words and "indices" in t else ""
             if clue_word and clue_word.upper().replace(" ", "") != result_upper.replace(" ", ""):
                 parts.append(independent_tpl.replace("{clueWord}", clue_word).replace("{result}", result_upper))
             else:
                 parts.append(result_upper)
     if not container_placed:
-        parts.insert(0, container_notation)
+        parts.append(container_notation)
 
     return part_joiner.join(parts)
 

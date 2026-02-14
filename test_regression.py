@@ -1012,6 +1012,72 @@ def test_partial_tap_feedback(server, clue):
     return True, ""
 
 
+def test_container_breakdown_sources(server, clue):
+    """Container clue completed summary must show source word → result for non-abbreviation transforms."""
+    if not clue["is_container"]:
+        return True, ""  # Not a container clue — skip
+
+    # Find the assembly step metadata to check for non-abbreviation outer/inner transforms
+    assembly_meta = None
+    for step in clue["steps_meta"]:
+        if step["type"] == "assembly":
+            assembly_meta = step
+            break
+    if not assembly_meta:
+        return True, ""  # No assembly step
+
+    transforms = assembly_meta.get("transforms", [])
+    words = clue["words"]
+
+    # Collect non-abbreviation outer/inner transforms where clue word ≠ result
+    expected_mappings = []
+    for t in transforms:
+        role = t.get("role", "")
+        t_type = t.get("type", "")
+        if role in ("outer", "inner") or role.startswith("inner_"):
+            if t_type == "abbreviation":
+                continue  # abbreviations shown by abbreviation_scan step
+            if t_type == "container":
+                continue  # container notation shown separately
+            result_upper = t["result"].upper()
+            clue_word = " ".join(words[idx] for idx in t["indices"]) if "indices" in t else ""
+            if clue_word and clue_word.upper().replace(" ", "") != result_upper.replace(" ", ""):
+                expected_mappings.append((clue_word, result_upper))
+
+    if not expected_mappings:
+        return True, ""  # No non-abbreviation transforms to check
+
+    # Walk to completion and check the assembly completed title
+    clue_id, render = walk_to_completion(server, clue)
+    if not render.get("complete"):
+        return False, "Clue did not complete"
+
+    assembly_step = None
+    for s in render.get("steps", []):
+        if s["type"] == "assembly":
+            assembly_step = s
+            break
+    if not assembly_step:
+        return False, "No assembly step found in completed steps"
+
+    title = assembly_step.get("title", "")
+
+    # Each expected mapping should appear in the title
+    missing = []
+    for clue_word, result in expected_mappings:
+        # Check for 'clueWord' → RESULT pattern in the title
+        if clue_word not in title or result not in title:
+            missing.append(f"'{clue_word}' → {result}")
+
+    if missing:
+        return False, (
+            f"Assembly completed title missing source mappings: {', '.join(missing)}. "
+            f"Title was: '{title}'"
+        )
+
+    return True, ""
+
+
 # ---------------------------------------------------------------------------
 # Test runner
 # ---------------------------------------------------------------------------
@@ -1031,6 +1097,7 @@ ALL_TESTS = [
     ("Dependent prompt update", test_dependent_prompt_update),
     ("Help toggle", test_help_toggle),
     ("Partial tap feedback", test_partial_tap_feedback),
+    ("Container breakdown sources", test_container_breakdown_sources),
 ]
 
 
