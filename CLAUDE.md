@@ -178,6 +178,7 @@ Open http://localhost:8080
 | `static/trainer.js` | Stateless trainer UI (renders server state) |
 | `validate_training.py` | Training metadata validator — structural, semantic, convention, and publication checks |
 | `test_regression.py` | Fully dynamic regression tests — fetches all clues from Supabase, zero hardcoded data |
+| `review_coaching.py` | Assembly coaching review tool — renders full student-facing assembly output for consistency checking |
 
 ### Database & Migrations
 | File | Purpose |
@@ -290,6 +291,9 @@ python3 backup_puzzle.py --puzzle 29453                              # Backup pu
 python3 restore_puzzle.py --puzzle 29453                             # Restore puzzle training data from backup (must unlock first)
 python3 restore_puzzle.py --puzzle 29453 --dry-run                   # Preview restore without writing
 python3 validate_training.py                                         # Validate all training items in Supabase (structural + semantic + convention + publication)
+python3 review_coaching.py                                           # Review assembly coaching text for all clues (server must be running)
+python3 review_coaching.py --clue times-29463-11a                    # Review one clue's assembly coaching
+python3 review_coaching.py --puzzle 29463                            # Review one puzzle's assembly coaching
 ```
 
 ## Cache Busting
@@ -476,6 +480,7 @@ All assembly coaching text reworked as coherent, flowing guidance from an expert
 | B7 | 11A EPICURE | Assembly guidance wrong for PIE — says "gives you 3 letters directly" then "rearrange PIE to get EPI", but PIE is not an anagram of EPI in this context. Investigate the actual parse | Template/metadata | Investigate and report — may be metadata or template issue |
 | B8 | 20A ACERBITY | Two separate implied transforms grouped into one — "Find a 5-letter synonym for 'very fine line'" combines ACE (very fine) + RY (line/railway) into one prompt. These are separate transforms | Metadata | Split into two separate transforms in metadata |
 | B9 | General | Assembly step: entering letters in answer field, then opening a help hint, wipes out the entered letters | Server | Hint toggle triggers re-render that loses unsaved input — investigate `shouldRender` or answer persistence |
+| B10 | General | Assembly coaching text cannot be reviewed for consistency — coaching paragraph, transform prompts, and context lines are in separate sections of render_templates.json, so nobody reads them as the student would see them. Need a review tool that renders the full assembly output (coaching paragraph + all transform prompts + hints) for a given clue so it can be checked as a whole before approving | Tooling | Build a review/preview tool that outputs the complete assembly step text for a clue, composed exactly as the student would see it |
 
 ## Worktrees
 This repo uses git worktrees:
