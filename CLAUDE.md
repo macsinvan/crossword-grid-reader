@@ -469,18 +469,26 @@ All assembly coaching text reworked as coherent, flowing guidance from an expert
 
 **Rules:** One bug at a time. Analyse and report findings. Investigate the generic case, not just the specific clue. Do not code without GO. Fix at source (metadata → templates → server). Follow architecture guidance.
 
-| # | Clue | Bug | Category | Fix approach |
-|---|------|-----|----------|--------------|
-| B1 | 9D PHOSGENE | Assembly coaching text duplicates/covers multiple cases poorly — "signals a rearrangement" is vague, should say "signals an anagram". Coaching should be clue-type-specific so students recognise the pattern next time. | Template text | Fix coaching template — may need a separate template for container+anagram combos |
-| B2 | 7D BRUIN | Multiple abbreviations to find ("Back", "One") — if user finds one and presses Check, toast says "try again" with no acknowledgement that 1 of N was found | Template/server | When user finds a subset of expected abbreviations, flash "we need {N} more" instead of generic "try again" |
-| B3 | 5A GAMBIT | Inconsistent assembly transform hints — some show answer with no explanation, others show prompt with explanation but no answer. Need both: answer + cryptic coaching explanation (e.g. "'doctor' → MB — 'Doctor' commonly abbreviates to MB (Medicinae Baccalaureus) in cryptics") | Template text | Fix transform prompt templates to consistently show solution + coaching explanation |
-| B4 | 5A GAMBIT | Missing implied synonym transform — GAIT (synonym for "carriage") is not shown as a step. Container is GA(MB)IT but no carriage→GAIT transform exists | Metadata | Add missing synonym transform to clue metadata. Fix test to catch missing transforms |
-| B5 | 12A SEMINAR | Correct answer typed in top answer boxes shows green but is not accepted when Check pressed | Server | Architecture violation — investigate server-side answer validation |
-| B6 | 12A SEMINAR | No Check button in assembly letter entry field | Server | Investigate `showCombinedCheck` logic for hidden word clues |
-| B7 | 11A EPICURE | Assembly guidance wrong for PIE — says "gives you 3 letters directly" then "rearrange PIE to get EPI", but PIE is not an anagram of EPI in this context. Investigate the actual parse | Template/metadata | Investigate and report — may be metadata or template issue |
-| B8 | 20A ACERBITY | Two separate implied transforms grouped into one — "Find a 5-letter synonym for 'very fine line'" combines ACE (very fine) + RY (line/railway) into one prompt. These are separate transforms | Metadata | Split into two separate transforms in metadata |
-| B9 | General | Assembly step: entering letters in answer field, then opening a help hint, wipes out the entered letters | Server | Hint toggle triggers re-render that loses unsaved input — investigate `shouldRender` or answer persistence |
-| B10 | General | Assembly coaching text cannot be reviewed for consistency — coaching paragraph, transform prompts, and context lines are in separate sections of render_templates.json, so nobody reads them as the student would see them. Need a review tool that renders the full assembly output (coaching paragraph + all transform prompts + hints) for a given clue so it can be checked as a whole before approving | Tooling | Build a review/preview tool that outputs the complete assembly step text for a clue, composed exactly as the student would see it |
+| # | Clue | Bug | Status | Category | Fix approach |
+|---|------|-----|--------|----------|--------------|
+| B1 | 9D PHOSGENE | Assembly coaching text duplicates/covers multiple cases poorly — "signals a rearrangement" is vague, should say "signals an anagram". Coaching should be clue-type-specific so students recognise the pattern next time. | TODO | Template text | Fix coaching template — may need a separate template for container+anagram combos |
+| B2 | 7D BRUIN | Multiple abbreviations to find ("Back", "One") — if user finds one and presses Check, toast says "try again" with no acknowledgement that 1 of N was found | TODO | Template/server | When user finds a subset of expected abbreviations, flash "we need {N} more" instead of generic "try again" |
+| B3 | 5A GAMBIT | Inconsistent assembly transform hints — some show answer with no explanation, others show prompt with explanation but no answer. Need both: answer + cryptic coaching explanation | **DONE** | Template text | Two-line format: solve + hint. Commit 6688450, fccd6bc |
+| B4 | 5A GAMBIT | Missing implied synonym transform — GAIT (synonym for "carriage") is not shown as a step | **DONE** | Metadata | Container breakdown source mappings. Commit bd3ddca |
+| B5 | 12A SEMINAR | Correct answer typed in top answer boxes shows green but is not accepted when Check pressed | TODO | Server | Architecture violation — investigate server-side answer validation |
+| B6 | 12A SEMINAR | No Check button in assembly letter entry field | TODO | Server | Investigate `showCombinedCheck` logic for hidden word clues |
+| B7 | 11A EPICURE | Assembly guidance wrong for PIE — says "gives you 3 letters directly" then "rearrange PIE to get EPI", but PIE is not an anagram of EPI in this context | **DONE** | Template/metadata | Fixed metadata parse |
+| B8 | 20A ACERBITY | Two separate implied transforms grouped into one — "Find a 5-letter synonym for 'very fine line'" combines ACE (very fine) + RY (line/railway) into one prompt | **DONE** | Metadata | Split into outer_a/outer_b. Commit 9fc2a48 |
+| B9 | General | Assembly step: entering letters in answer field, then opening a help hint, wipes out the entered letters | **DONE** | Server | Combined-letter inputs sync to server on keystroke. Commit 9fdd685 |
+| B10 | General | Assembly coaching text cannot be reviewed for consistency | **DONE** | Tooling | review_coaching.py tool. Commit bf34e6d |
+
+### Summary Refactor — TODO
+
+Refactor the solve and summary pages in trainer. Current behaviour; If a user presses reveal or types the answer in the answer field and presses check, they are taken to a separate summary page that look quite similar to the "working" solver page. New behaviour. Stay on the solve page. Show a user friendly summary there (we have all the content and context to do this here). With this done the user will see two new buttons. Back to Grid > user gets taken back to grid with the clue updated on the grid. "Review Learnings" > User gets taken to a new summary page that lists what we learned. This is coaching that they will carry forward. It confirms that in this clue we found some patterns that you will see again - that is the teaching tone.
+
+**Two steps:**
+1. Refactor the working solve page. "Review Learnings" will navigate to the existing summary page.
+2. A new "what we learned" summary page.
 
 ## Worktrees
 This repo uses git worktrees:
