@@ -523,8 +523,9 @@ class TemplateTrainer {
                     html += `<div style="width: 2.2rem; height: 2.4rem; display: flex; align-items: center; justify-content: center; border-bottom: 3px solid #22c55e; background: #f0fdf4; font-size: 1.1rem; font-weight: 700; font-family: monospace; color: #15803d; letter-spacing: 0.05em;">${displayLetter}</div>`;
                 } else {
                     // Active — editable input (cross letters shown as placeholder, overwritable)
+                    const inputValue = entry.letter || '';
                     html += `<input type="text" class="assembly-combined-letter" data-pos="${pos}" `
-                        + `value="" placeholder="${entry.crossLetter || ''}" maxlength="1" `
+                        + `value="${inputValue}" placeholder="${entry.crossLetter || ''}" maxlength="1" `
                         + `style="width: 2.2rem; height: 2.4rem; text-align: center; border: none; border-bottom: 3px solid #93c5fd; border-radius: 0; font-size: 1.1rem; font-weight: 700; text-transform: uppercase; background: white; color: #1e293b; outline: none; font-family: monospace;" />`;
                 }
             }
@@ -627,6 +628,13 @@ class TemplateTrainer {
                         next.focus();
                     }
                 }
+
+                // Sync all combined-letter values to server (silent, no re-render)
+                const combinedLetters = {};
+                this.container.querySelectorAll('.assembly-combined-letter').forEach(box => {
+                    combinedLetters[box.dataset.pos] = box.value || '';
+                });
+                this.updateUIState('type_combined_letters', { combined_letters: combinedLetters });
             });
 
             el.addEventListener('keydown', (e) => {

@@ -151,6 +151,7 @@ _SESSION_FIELDS = {
     "assembly_hint_index": None,
     "help_visible": False,
     "cross_letters": [],
+    "combined_letters": {},
 }
 
 
@@ -467,18 +468,22 @@ def update_ui_state(clue_id, clue, session, action, data):
                 session["step_expanded"] = True
                 session["assembly_transforms_done"] = {}
                 session["assembly_hint_index"] = None
+                session["combined_letters"] = {}
 
     elif action == "type_step_input":
         # For text input steps (not used in definition, but ready)
         pass
+
+    elif action == "type_combined_letters":
+        session["combined_letters"] = data.get("combined_letters", {})
 
     else:
         raise ValueError(f"Unknown UI action: {action}")
 
     render = get_render(clue_id, clue, session)
 
-    # Silent sync: type_answer doesn't need re-render unless answer was locked
-    if action == "type_answer" and not session["answer_locked"]:
+    # Silent sync: typing actions don't need re-render unless answer was locked
+    if action in ("type_answer", "type_combined_letters") and not session["answer_locked"]:
         render["shouldRender"] = False
     else:
         render["shouldRender"] = True
@@ -1017,7 +1022,7 @@ def _build_assembly_data(session, step, clue):
     completed_letters = _compute_completed_letters(transforms_done, position_map, step)
 
     # Pre-compute result groups for combined display (eliminates client reverse-map logic)
-    result_groups = _compute_result_groups(position_map, step, completed_letters, transforms_done, session.get("cross_letters"))
+    result_groups = _compute_result_groups(position_map, step, completed_letters, transforms_done, session.get("cross_letters"), session.get("combined_letters", {}))
 
     # Determine phase: check when completed letters spell the answer but auto-skip didn't fire
     final_result = re.sub(r'[^A-Z]', '', step["result"].upper())
@@ -1566,7 +1571,7 @@ def _is_consumed_before(transforms, idx, before_idx):
     return False
 
 
-def _compute_result_groups(position_map, step, completed_letters, transforms_done, cross_letters=None):
+def _compute_result_groups(position_map, step, completed_letters, transforms_done, cross_letters=None, user_combined_letters=None):
     """Pre-compute grouped position data for the combined result display.
 
     Returns a list of groups, where each group is a list of
@@ -1588,6 +1593,13 @@ def _compute_result_groups(position_map, step, completed_letters, transforms_don
             if cl.get("letter"):
                 cross_map[cl["position"]] = cl["letter"]
 
+    # Build user-typed letter lookup: position (string key from JSON) → letter
+    typed_map = {}
+    if user_combined_letters:
+        for pos_str, letter in user_combined_letters.items():
+            if letter:
+                typed_map[int(pos_str)] = letter
+
     # Build reverse map: position → transform index
     pos_to_transform = {}
     for t_idx_str, positions in position_map.items():
@@ -1607,6 +1619,9 @@ def _compute_result_groups(position_map, step, completed_letters, transforms_don
             current_group = []
         letter = completed_letters[pos] if pos < len(completed_letters) else None
         is_editable = letter is None and t not in transforms_done
+        # Restore user-typed letters (editable, not locked)
+        if letter is None and pos in typed_map:
+            letter = typed_map[pos]
         current_group.append({
             "pos": pos,
             "transformIndex": t,
@@ -2021,17 +2036,14 @@ def _resolve_container_breakdown(transforms, step, clue, independent_tpl,
     terminal = find_terminal_transforms(transforms)
     words = clue.get("words", [])
 
-    # Build source-word mappings for outer/inner transforms (non-abbreviation)
+    # Build source-word mappings for outer/inner transforms
     # These show what the student discovered during assembly (e.g. 'carriage' → GAIT)
     # Use the transform's own result (what the student found), not a dependent's result
     # (e.g. show 'scheme' → RUSE, not 'scheme' → ESUR — the reversal is in the notation).
-    # Abbreviation transforms are skipped — they're shown by the abbreviation_scan step.
     source_parts = []
     for i, t in enumerate(transforms):
         role = t.get("role", "")
         if role not in ("outer", "inner") and not role.startswith("inner_") and not role.startswith("outer_"):
-            continue
-        if t["type"] == "abbreviation":
             continue
         result_upper = t["result"].upper()
         clue_word = " ".join(words[idx] for idx in t["indices"]) if words and "indices" in t else ""

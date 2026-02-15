@@ -1013,7 +1013,7 @@ def test_partial_tap_feedback(server, clue):
 
 
 def test_container_breakdown_sources(server, clue):
-    """Container clue completed summary must show source word → result for non-abbreviation transforms."""
+    """Container clue completed summary must show source word → result for all outer/inner transforms."""
     if not clue["is_container"]:
         return True, ""  # Not a container clue — skip
 
@@ -1029,14 +1029,12 @@ def test_container_breakdown_sources(server, clue):
     transforms = assembly_meta.get("transforms", [])
     words = clue["words"]
 
-    # Collect non-abbreviation outer/inner transforms where clue word ≠ result
+    # Collect outer/inner transforms where clue word ≠ result
     expected_mappings = []
     for t in transforms:
         role = t.get("role", "")
         t_type = t.get("type", "")
-        if role in ("outer", "inner") or role.startswith("inner_"):
-            if t_type == "abbreviation":
-                continue  # abbreviations shown by abbreviation_scan step
+        if role in ("outer", "inner") or role.startswith("inner_") or role.startswith("outer_"):
             if t_type == "container":
                 continue  # container notation shown separately
             result_upper = t["result"].upper()
@@ -1045,7 +1043,7 @@ def test_container_breakdown_sources(server, clue):
                 expected_mappings.append((clue_word, result_upper))
 
     if not expected_mappings:
-        return True, ""  # No non-abbreviation transforms to check
+        return True, ""  # No outer/inner transforms to check
 
     # Walk to completion and check the assembly completed title
     clue_id, render = walk_to_completion(server, clue)
